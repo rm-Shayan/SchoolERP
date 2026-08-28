@@ -1,0 +1,441 @@
+@import "tailwindcss";
+
+@theme {
+  /* Primary = screen.png logo ki indigo/violet family (sa-brand-gradient se match) */
+  --color-primary-50: #f5f3ff;
+  --color-primary-100: #ede9fe;
+  --color-primary-200: #ddd6fe;
+  --color-primary-300: #c4b5fd;
+  --color-primary-400: #a78bfa;
+  --color-primary-500: #8b5cf6;
+  --color-primary-600: #7c3aed;
+  --color-primary-700: #6d28d9;
+  --color-primary-800: #5b21b6;
+  --color-primary-900: #4c1d95;
+  --color-primary-950: #2e1065;
+
+  --color-secondary-50: #f0fdf4;
+  --color-secondary-100: #dcfce7;
+  --color-secondary-200: #bbf7d0;
+  --color-secondary-300: #86efac;
+  --color-secondary-400: #4ade80;
+  --color-secondary-500: #22c55e;
+  --color-secondary-600: #16a34a;
+  --color-secondary-700: #15803d;
+  --color-secondary-800: #166534;
+  --color-secondary-900: #14532d;
+
+  --color-gray-50: #f8fafc;
+  --color-gray-100: #f1f5f9;
+  --color-gray-200: #e2e8f0;
+  --color-gray-300: #cbd5e1;
+  --color-gray-400: #94a3b8;
+  --color-gray-500: #64748b;
+  --color-gray-600: #475569;
+  --color-gray-700: #334155;
+  --color-gray-800: #1e293b;
+  --color-gray-900: #0f172a;
+  --color-gray-950: #020617;
+
+  --color-sidebar-width: 260px;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SUPER ADMIN PORTAL — UNIFIED VIOLET/INDIGO THEME
+   ═══════════════════════════════════════════════════════ */
+.superadmin-theme {
+  --color-primary-50: #f5f3ff;
+  --color-primary-100: #ede9fe;
+  --color-primary-200: #ddd6fe;
+  --color-primary-300: #c4b5fd;
+  --color-primary-400: #a78bfa;
+  --color-primary-500: #8b5cf6;
+  --color-primary-600: #7c3aed;
+  --color-primary-700: #6d28d9;
+  --color-primary-800: #5b21b6;
+  --color-primary-900: #4c1d95;
+  --color-primary-950: #2e1065;
+}
+
+.sa-brand-gradient {
+  background: linear-gradient(160deg, #4c1d95 0%, #6d28d9 50%, #7c3aed 100%);
+}
+
+.superadmin-theme .sa-brand-gradient {
+  background: linear-gradient(160deg, #4c1d95 0%, #6d28d9 50%, #7c3aed 100%);
+}
+
+.superadmin-theme .sa-card-gradient {
+  background: linear-gradient(135deg, rgba(124,58,237,0.03) 0%, rgba(139,92,246,0.06) 100%);
+}
+.superadmin-theme .sa-detail-workspace { max-width: 1480px; margin-inline: auto; }
+.superadmin-theme .sa-detail-band { border: 1px solid rgba(226,232,240,.8); border-radius: 1rem; background: rgba(255,255,255,.58); padding: .75rem; box-shadow: 0 8px 28px rgba(76,29,149,.04); }
+.superadmin-theme .sa-section-marker { display:flex; align-items:center; gap:.75rem; padding-top:.25rem; color:var(--color-primary-600); }
+.superadmin-theme .sa-section-marker span:first-child, .superadmin-theme .sa-section-marker span:last-child { background:var(--color-primary-200); }
+
+/* Nested organization/branch detail surfaces use the same Super Admin tokens.
+   These scoped aliases keep older detail cards consistent without changing
+   organization portal branding or the platform palette. */
+.superadmin-theme .from-violet-600 { --tw-gradient-from: var(--color-primary-600); }
+.superadmin-theme .from-violet-500 { --tw-gradient-from: var(--color-primary-500); }
+.superadmin-theme .from-violet-400 { --tw-gradient-from: var(--color-primary-400); }
+.superadmin-theme .to-violet-600 { --tw-gradient-to: var(--color-primary-600); }
+.superadmin-theme .to-violet-500 { --tw-gradient-to: var(--color-primary-500); }
+.superadmin-theme .to-purple-600 { --tw-gradient-to: var(--color-primary-700); }
+.superadmin-theme .from-purple-500 { --tw-gradient-from: var(--color-primary-500); }
+.superadmin-theme .to-purple-500 { --tw-gradient-to: var(--color-primary-600); }
+.superadmin-theme .bg-purple-100 { background-color: var(--color-primary-100); }
+.superadmin-theme .bg-purple-50 { background-color: var(--color-primary-50); }
+.superadmin-theme .text-purple-700 { color: var(--color-primary-700); }
+.superadmin-theme .bg-violet-50 { background-color: var(--color-primary-50); }
+.superadmin-theme .bg-violet-100 { background-color: var(--color-primary-100); }
+.superadmin-theme .bg-violet-500 { background-color: var(--color-primary-500); }
+.superadmin-theme .text-violet-700 { color: var(--color-primary-700); }
+.superadmin-theme .text-violet-600 { color: var(--color-primary-600); }
+.superadmin-theme .border-violet-200 { border-color: var(--color-primary-200); }
+.superadmin-theme .shadow-violet-200 { --tw-shadow-color: var(--color-primary-200); }
+
+/* ── Glassmorphism utilities ── */
+.sa-glass {
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+.sa-glass-card {
+  background: rgba(255,255,255,0.65);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.5);
+}
+
+/* ── Modern card hover with glow ── */
+.sa-card-glow {
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sa-card-glow:hover {
+  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.12), 0 2px 8px rgba(124, 58, 237, 0.06);
+  border-color: rgba(167, 139, 250, 0.4);
+  transform: translateY(-2px);
+}
+
+/* ── Animations ── */
+@keyframes sa-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+.sa-float:hover { animation: sa-float 2s ease-in-out infinite; }
+
+@keyframes sa-fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.sa-fade-in { animation: sa-fadeInUp 0.4s ease-out both; }
+
+@keyframes sa-staggerIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.sa-stagger-in { animation: sa-staggerIn 0.35s ease-out both; }
+
+@keyframes sa-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.sa-shimmer {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: sa-shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes sa-countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.sa-count-up { animation: sa-countUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes sa-pulse-ring {
+  0% { transform: scale(0.9); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+.sa-pulse-ring::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 2px solid currentColor;
+  animation: sa-pulse-ring 2s ease-out infinite;
+}
+
+@keyframes sa-gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.sa-gradient-shift {
+  background-size: 200% 200%;
+  animation: sa-gradient-shift 8s ease infinite;
+}
+
+@keyframes sa-slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.sa-slide-in { animation: sa-slideInRight 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes sa-scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.sa-scale-in { animation: sa-scaleIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* ── Stagger children ── */
+.sa-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.sa-stagger > *:nth-child(2) { animation-delay: 60ms; }
+.sa-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.sa-stagger > *:nth-child(4) { animation-delay: 180ms; }
+.sa-stagger > *:nth-child(5) { animation-delay: 240ms; }
+.sa-stagger > *:nth-child(6) { animation-delay: 300ms; }
+
+/* ── Stat card tints — org theme ke --color-primary-* vars follow karte hain ── */
+.sa-tint-1 { background: linear-gradient(135deg, var(--color-primary-50), var(--color-primary-100)); color: var(--color-primary-700); }
+.sa-tint-2 { background: linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200)); color: var(--color-primary-700); }
+.sa-tint-3 { background: linear-gradient(135deg, var(--color-primary-50), var(--color-primary-200)); color: var(--color-primary-800); }
+.sa-tint-4 { background: linear-gradient(135deg, var(--color-primary-100), var(--color-primary-300)); color: var(--color-primary-900); }
+.sa-tint-success { background: linear-gradient(135deg, #f0fdf4, #dcfce7); color: #16a34a; }
+.sa-tint-danger { background: linear-gradient(135deg, #fef2f2, #fee2e2); color: #dc2626; }
+.sa-tint-warning { background: linear-gradient(135deg, #fffbeb, #fef3c7); color: #d97706; }
+
+/* ── Gradient tints for stat icons ── */
+.sa-icon-violet { background: linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200)); color: var(--color-primary-600); }
+.sa-icon-emerald { background: linear-gradient(135deg, #ecfdf5, #d1fae5); color: #059669; }
+.sa-icon-amber { background: linear-gradient(135deg, #fffbeb, #fef3c7); color: #d97706; }
+.sa-icon-rose { background: linear-gradient(135deg, #fff1f2, #ffe4e6); color: #e11d48; }
+.sa-icon-sky { background: linear-gradient(135deg, #f0f9ff, #e0f2fe); color: #0284c7; }
+.sa-icon-indigo { background: linear-gradient(135deg, #eef2ff, #e0e7ff); color: #4f46e5; }
+
+/* ── Modern pagination ── */
+.sa-page-btn {
+  @apply relative inline-flex items-center justify-center min-w-[36px] h-9 px-3 rounded-xl text-sm font-semibold transition-all duration-200;
+}
+.sa-page-btn:not(.sa-page-active):hover {
+  @apply bg-primary-50 text-primary-700;
+}
+.sa-page-active {
+  @apply bg-primary-600 text-white shadow-lg shadow-primary-500/30;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-primary-300); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-primary-400); }
+
+.sidebar-transition { transition: width 0.3s ease, transform 0.3s ease; }
+
+/* ═══════════════════════════════════════════════════════
+   PUBLIC ORG LANDING PAGE — motion + texture utilities
+   ═══════════════════════════════════════════════════════ */
+@keyframes pu-fadeUp {
+  from { opacity: 0; transform: translateY(26px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.pu-fade-up { animation: pu-fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes pu-floatY {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+.pu-float { animation: pu-floatY 6s ease-in-out infinite; }
+
+@keyframes pu-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(24px, -16px) scale(1.06); }
+}
+.pu-drift { animation: pu-drift 16s ease-in-out infinite; }
+
+@keyframes pu-pulseDot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
+  60% { box-shadow: 0 0 0 7px rgba(52, 211, 153, 0); }
+}
+.pu-pulse-dot { animation: pu-pulseDot 2.2s ease-in-out infinite; }
+
+@keyframes pu-barGrow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.pu-bar-grow { transform-origin: bottom; animation: pu-barGrow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* ═══════════════════════════════════════════════════════
+   ENHANCED PORTAL — entry page & superadmin upgrades
+   ═══════════════════════════════════════════════════════ */
+
+/* Entry page floating orb animations */
+@keyframes portal-orb-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(18px, -12px) scale(1.04); }
+  50% { transform: translate(-10px, -20px) scale(1.08); }
+  75% { transform: translate(14px, 8px) scale(1.02); }
+}
+.portal-orb-drift { animation: portal-orb-drift 18s ease-in-out infinite; }
+
+@keyframes portal-orb-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-20px, 14px) scale(1.06); }
+  66% { transform: translate(16px, -18px) scale(0.96); }
+}
+.portal-orb-drift-2 { animation: portal-orb-drift-2 22s ease-in-out infinite; }
+
+/* Entry page card shimmer on hover */
+@keyframes portal-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.portal-card-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.portal-card-shimmer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+  background-size: 200% 100%;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.portal-card-shimmer:hover::before {
+  opacity: 1;
+  animation: portal-shimmer 1.5s ease-in-out;
+}
+
+/* Enhanced stat card glow on hover */
+.sa-stat-glow {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sa-stat-glow:hover {
+  box-shadow:
+    0 4px 6px rgba(124, 58, 237, 0.04),
+    0 10px 32px rgba(124, 58, 237, 0.10),
+    0 0 0 1px rgba(167, 139, 250, 0.2);
+}
+
+/* Sidebar active indicator pulse */
+@keyframes sa-active-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(255,255,255,0.4); }
+  50% { box-shadow: 0 0 14px rgba(255,255,255,0.6); }
+}
+.sa-active-indicator {
+  animation: sa-active-pulse 3s ease-in-out infinite;
+}
+
+/* Navbar glassmorphism enhancement */
+.sa-nav-glass {
+  background: rgba(255,255,255,0.78);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  box-shadow: 0 1px 3px rgba(15,23,42,0.02), 0 4px 12px rgba(15,23,42,0.01);
+}
+
+/* Quick action ripple effect */
+@keyframes sa-ripple {
+  0% { transform: scale(0); opacity: 0.3; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+.sa-ripple {
+  position: relative;
+  overflow: hidden;
+}
+.sa-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%);
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.5s;
+  pointer-events: none;
+}
+.sa-ripple:hover::after {
+  transform: scale(2.5);
+  opacity: 1;
+}
+
+/* Organization card entrance */
+@keyframes sa-card-enter {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.sa-card-enter { animation: sa-card-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.sa-card-enter:nth-child(1) { animation-delay: 0ms; }
+.sa-card-enter:nth-child(2) { animation-delay: 80ms; }
+.sa-card-enter:nth-child(3) { animation-delay: 160ms; }
+.sa-card-enter:nth-child(4) { animation-delay: 240ms; }
+.sa-card-enter:nth-child(5) { animation-delay: 320ms; }
+.sa-card-enter:nth-child(6) { animation-delay: 400ms; }
+
+/* Welcome header animated gradient */
+@keyframes sa-welcome-gradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.sa-welcome-gradient {
+  background-size: 200% 200%;
+  animation: sa-welcome-gradient 12s ease infinite;
+}
+
+/* ── Shimmer skeleton (super admin + shared) ── */
+@keyframes sk-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.sk {
+  position: relative;
+  overflow: hidden;
+  background-color: #e9edf3;
+  border-radius: 0.5rem;
+}
+.sk::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  animation: sk-shimmer 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk::after { animation: none; }
+}
+
+/* Branch card theming — uses --bt (branch theme color) for hover states */
+.branch-card { --bt: #2563eb; }
+.branch-card:hover {
+  border-color: color-mix(in srgb, var(--bt) 45%, #e5e7eb);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--bt) 14%, transparent);
+}
+.branch-card .branch-name { transition: color 0.3s; }
+.branch-card:hover .branch-name { color: var(--bt); }
+.branch-card .branch-manage { transition: all 0.2s; }
+.branch-card .branch-manage:hover {
+  color: var(--bt);
+  background: color-mix(in srgb, var(--bt) 12%, white);
+}
+.branch-card .branch-logo {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bt) 18%, white);
+}
+
+/* Subtle premium canvas background for the super admin portal */
+.sa-canvas {
+  background-color: #f5f7fb;
+  background-image:
+    radial-gradient(60rem 60rem at 100% -10%, rgba(124, 58, 237, 0.06), transparent 60%),
+    radial-gradient(50rem 50rem at -10% 110%, rgba(14, 165, 233, 0.05), transparent 55%);
+  background-attachment: fixed;
+}

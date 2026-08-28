@@ -1,0 +1,233 @@
+import examRepository from "./repository.js";
+import ApiError from "../../lib/utils/ApiError.js";
+import { getEffectiveSchoolId, assertOwnSchool, assertSchoolAccess, assertSchoolExists } from "../../lib/scope.js";
+import notificationService from "../../services/notification.service.js";
+import portalNotificationService from "../notification/notification.portalService.js";
+import { emitToRoom } from "../../config/websocket.js";
+
+class ExamService {
+  async createExam(user, schoolId, data) {
+    const targetSchoolId = getEffectiveSchoolId(user, schoolId);
+    assertOwnSchool(user, targetSchoolId);
+
+    await assertSchoolExists(targetSchoolId);
+
+    const term = await examRepository.termExists(data.termId);
+    if (!term) throw ApiError.notFoundError("Term not found");
+    if (term.academicYear.schoolId !== targetSchoolId) {
+      throw ApiError.badRequestError("Term does not belong to the given school");
+    }
+
+    const exam = await examRepository.createExam({
+      schoolId: targetSchoolId,
+      termId: data.termId,
+      name: data.name || `${term.name} Examination`,
+      startDate: new Date(data.startDate),
+      endDate: new Date(data.endDate),
+    });
+
+    portalNotificationService.create({
+      schoolId: targetSchoolId, senderId: user.id, senderName: user.name,
+      title: "EXAM_CREATED", body: `"${exam.name}" scheduled from ${new Date(exam.startDate).toLocaleDateString("en-PK")} to ${new Date(exam.endDate).toLocaleDateString("en-PK")}.`,
+      category: "EXAM", refType: "EXAM", refId: exam.id, link: "/exams",
+    }).catch(() => {});
+
+    return exam;
+  }
+
+  async listExams(user, schoolId, { termId, academicYearId, page = 1, pageSize = 50 }) {
+    const targetSchoolId = getEffectiveSchoolId(user, schoolId);
+    assertSchoolAccess(user, targetSchoolId);
+
+    return examRepository.listExamsBySchool(targetSchoolId, {
+      termId,
+      academicYearId,
+      page: Math.max(1, parseInt(page, 10) || 1),
+      pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50)),
+    });
+  }
+
+  async getExam(user, id) {
+    const exam = await examRepository.findExamById(id);
+    if (!exam) throw ApiError.notFoundError("Exam not found");
+    assertSchoolAccess(user, exam.schoolId);
+    return exam;
+  }
+
+  async deleteExam(user, id) {
+    const exam = await this.getExam(user, id);
+    assertOwnSchool(user, exam.schoolId);
+    await examRepository.deleteExam(id);
+
+    portalNotificationService.create({
+      schoolId: exam.schoolId, senderId: user.id, senderName: user.name,
+      title: "EXAM_DELETED", body: `"${exam.name}" has been deleted.`,
+      category: "EXAM", refType: "EXAM", refId: id, link: "/exams",
+    }).catch(() => {});
+
+    return true;
+  }
+
+  /**
+   * PRD §6 — Marks/result: bulk Excel-style entry.
+   * `entries`: [{ studentId, subjectId, marksObtained, maxMarks, remarks }]
+   * Results are upserted in bulk (re-entry allowed for corrections).
+   * TEACHER role sirf apne assigned sections/subjects ke results daal sakta hai.
+   */
+  async enterResults(user, examId, { sectionId, entries }) {
+    const exam = await this.getExam(user, examId);
+    assertOwnSchool(user, exam.schoolId);
+
+    if (!entries?.length) {
+      throw ApiError.badRequestError("No result entries provided");
+    }
+
+    if (user.role === "TEACHER") {
+      const coverage = await examRepository.teacherCoverage(user.id);
+      const studentMap = new Map(
+        (await examRepository.studentsByIds(entries.map((e) => e.studentId))).map((s) => [s.id, s])
+      );
+
+      for (const entry of entries) {
+        const student = studentMap.get(entry.studentId);
+        if (!student?.section) throw ApiError.badRequestError("Student not found");
+        const allowed = coverage.some(
+          (a) =>
+            a.classId === student.section.classId &&
+            (a.sectionId === null || a.sectionId === student.section.id) &&
+            (a.subjectId === null || a.subjectId === entry.subjectId)
+        );
+        if (!allowed) {
+          throw ApiError.forbiddenError("Aap sirf apne assigned class/section/subject ke results daal sakte hain");
+        }
+      }
+    }
+
+    let results = await Promise.all(
+      entries.map((entry) =>
+        examRepository.upsertExamResult({
+          examId,
+          studentId: entry.studentId,
+          subjectId: entry.subjectId,
+          marksObtained: Number(entry.marksObtained),
+          maxMarks: Number(entry.maxMarks),
+          remarks: entry.remarks || null,
+        })
+      )
+    );
+
+    emitToRoom(`school:${exam.schoolId}`, "exam_results_entered", {
+      examId,
+      count: results.length,
+    });
+
+    return results;
+  }
+
+  /**
+   * Publish results for an exam → email each parent a subject-wise summary
+   * (PRD §5 — results WhatsApp/Email; §6 — marks bulk entry).
+   */
+  async publishResults(user, examId) {
+    const exam = await this.getExam(user, examId);
+    assertOwnSchool(user, exam.schoolId);
+
+    const results = await examRepository.findResultsByExam(examId);
+    if (!results.length) {
+      throw ApiError.badRequestError("No results recorded for this exam yet");
+    }
+
+    const byStudent = results.reduce((acc, r) => {
+      const sid = r.studentId;
+      if (!acc[sid]) acc[sid] = { student: r.student, results: [] };
+      acc[sid].results.push(r);
+      return acc;
+    }, {});
+
+    // Build individualized messages per parent + filter active students + dedup
+    const emailed = new Set();
+    const recipients = [];
+    for (const { student, results: studentResults } of Object.values(byStudent)) {
+      if (!student.parent || student.status !== "ACTIVE") continue;
+      const email = student.parent.email?.trim().toLowerCase();
+      if (!email || emailed.has(email)) continue;
+      emailed.add(email);
+      const lines = studentResults.map(
+        (r) => `- ${r.subject.name}: ${Number(r.marksObtained)}/${Number(r.maxMarks)}${r.remarks ? ` (${r.remarks})` : ""}`
+      );
+      const message = `Results for ${student.firstName} ${student.lastName} (${student.section?.class?.name || ""} ${student.section?.name || ""}) — ${exam.name}:\n\n${lines.join("\n")}`;
+      recipients.push({ email, message });
+    }
+
+    const result = await notificationService.sendBulkIndividualEmails(exam.schoolId, `Results Published — ${exam.name}`, recipients);
+
+    // Portal notification to admin
+    portalNotificationService.create({
+      schoolId: exam.schoolId, senderId: user.id, senderName: user.name,
+      title: "EXAM_PUBLISHED", body: `Results for "${exam.name}" published — ${result.sent} parent(s) notified.`,
+      category: "EXAM", refType: "EXAM", refId: examId, link: "/exams",
+    }).catch(() => {});
+
+    emitToRoom(`school:${exam.schoolId}`, "exam_results_published", { examId, notified: result.sent });
+    return { examId, notified, students: Object.keys(byStudent).length };
+  }
+
+  /**
+   * Get a single student's result card for an exam (portal/office).
+   */
+  async getStudentResult(user, examId, studentId) {
+    const exam = await this.getExam(user, examId);
+    assertSchoolAccess(user, exam.schoolId);
+    return examRepository.findResultByStudent(examId, studentId);
+  }
+
+  /** Result card: per-subject breakdown + total/percentage/grade/division. */
+  async getStudentResultCard(user, examId, studentId) {
+    const exam = await this.getExam(user, examId);
+    assertSchoolAccess(user, exam.schoolId);
+
+    const student = await examRepository.studentBySchool(exam.schoolId, studentId);
+    if (!student) throw ApiError.notFoundError("Student not found");
+
+    const results = await examRepository.findResultByStudent(examId, studentId);
+    const subjects = results.map((r) => ({
+      subject: r.subject.name,
+      marksObtained: Number(r.marksObtained),
+      maxMarks: Number(r.maxMarks),
+      remarks: r.remarks || null,
+    }));
+
+    const totalObtained = subjects.reduce((sum, s) => sum + s.marksObtained, 0);
+    const totalMax = subjects.reduce((sum, s) => sum + s.maxMarks, 0);
+    const percentage = totalMax > 0 ? Math.round((totalObtained / totalMax) * 1000) / 10 : 0;
+
+    let grade = "F";
+    if (percentage >= 80) grade = "A+";
+    else if (percentage >= 70) grade = "A";
+    else if (percentage >= 60) grade = "B";
+    else if (percentage >= 50) grade = "C";
+    else if (percentage >= 40) grade = "D";
+
+    const division =
+      percentage >= 60 ? "First" : percentage >= 45 ? "Second" : percentage >= 33 ? "Third" : "Fail";
+
+    return {
+      exam: { id: exam.id, name: exam.name, startDate: exam.startDate, endDate: exam.endDate, term: exam.term?.name },
+      student: {
+        id: student.id,
+        name: `${student.firstName} ${student.lastName}`.trim(),
+        rollNumber: student.rollNumber,
+        section: student.section ? `${student.section.class?.name || ""} ${student.section.name || ""}`.trim() : "—",
+      },
+      subjects,
+      totalObtained,
+      totalMax,
+      percentage,
+      grade,
+      division,
+      result: division === "Fail" ? "FAIL" : "PASS",
+    };
+  }
+}
+
+export default new ExamService();

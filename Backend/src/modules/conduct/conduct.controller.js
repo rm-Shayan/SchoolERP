@@ -1,0 +1,42 @@
+import conductService from "./conduct.service.js";
+import { asyncHandler } from "../../lib/utils/asyncHandler.js";
+import ApiResponse from "../../lib/utils/ApiResponse.js";
+
+class ConductController {
+  /**
+   * POST /api/v1/conduct/remarks
+   * 10-second remark → email parent.
+   */
+  createRemark = asyncHandler(async (req, res) => {
+    const remark = await conductService.createRemark(req.user, req.body);
+    return res.status(201).json(ApiResponse.created("Remark recorded", remark));
+  });
+
+  /**
+   * GET /api/v1/conduct/remarks/students/:studentId
+   * Remark history for a student.
+   */
+  listByStudent = asyncHandler(async (req, res) => {
+    const result = await conductService.listByStudent(req.user, req.params.studentId, req.query);
+    return res.status(200).json(ApiResponse.ok("Remarks fetched", result));
+  });
+
+  /**
+   * GET /api/v1/conduct/remarks/sections/:sectionId
+   * Remarks for all students in a section.
+   */
+  listBySection = asyncHandler(async (req, res) => {
+    const result = await conductService.listBySection(req.user, req.params.sectionId, req.query);
+    return res.status(200).json(ApiResponse.ok("Section remarks fetched", result));
+  });
+
+  /**
+   * GET /api/v1/conduct/remarks/:id
+   */
+  getRemark = asyncHandler(async (req, res) => {
+    const remark = await conductService.getRemark(req.user, req.params.id);
+    return res.status(200).json(ApiResponse.ok("Remark fetched", remark));
+  });
+}
+
+export default new ConductController();

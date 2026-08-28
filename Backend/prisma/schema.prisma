@@ -1,0 +1,1058 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum Role {
+  SUPER_ADMIN   // Platform owner — SaaS operator (SIRF 1, seed se; organizationId = null)
+  ADMIN         // Branch Head = Principal + Admin (most common in Pakistani schools)
+  TEACHER       // Class Teacher / Subject Teacher / Section Incharge
+  RECEPTIONIST  // Front Desk + Gate Scanner / Inquiry Handling Staff
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  LEAVE
+  MANUAL_OVERRIDE
+  PENDING_LEAVE
+  APPROVED_LEAVE
+  REJECTED_LEAVE
+}
+
+enum FeeStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  OVERDUE
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  ONLINE
+  OTHER
+}
+
+enum MessageChannel {
+  WHATSAPP
+  SMS
+  EMAIL          // used for SuperAdmin/Admin credential + system emails
+  PORTAL         // in-app only dispatch — no email/SMS goes out (e.g. fee PAID alert)
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum RemarkType {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+enum AdmissionStatus {
+  INQUIRY
+  TEST_SCHEDULED
+  TEST_PASSED
+  TEST_FAILED
+  FORM_SUBMITTED
+  APPROVED
+  FEE_PENDING
+  ENROLLED
+  REJECTED
+}
+
+enum OtpType {
+  PARENT_LOGIN
+  STUDENT_LOGIN
+  // NOTE: SuperAdmin / Admin / Staff do NOT use OTP.
+  // Staff login = email + password. Credentials are emailed once
+  // at account creation (Organization signup / staff onboarding).
+}
+
+// Identifier scan method — kept generic on purpose.
+// ==========================================
+// 2a. STUDENT STATUS
+// ==========================================
+
+enum StudentStatus {
+  ACTIVE
+  GRADUATED
+  DROPPED_OUT
+  TRANSFERRED_OUT      // moved to another school
+}
+
+enum PromotionAction {
+  PROMOTED
+  REPEATED
+  TRANSFERRED_SECTION
+  GRADUATED
+  DROPPED_OUT
+}
+
+// SaaS delivery lifecycle — a School Web (dedicated LMS site) is "delivered"
+// to an Organization when the platform Super Admin clicks the organization.
+enum DeliveryStatus {
+  NOT_DELIVERED  // organization created, no web delivered yet
+  DELIVERING     // web delivery is in progress (provisioning default campus)
+  DELIVERED      // school web is live (theme + subdomain + default campus ready)
+  FAILED         // delivery failed, retryable
+}
+
+// Organization lifecycle + access state (Super Admin governance).
+// SETUP_PENDING — created but no SUPER_ADMIN account configured yet
+// ACTIVE          — working normally
+// PARTIALLY_BLOCKED — org active but at least one branch is blocked
+// BLOCKED         — Super Admin blocked the whole org (cascades to branches)
+enum OrgStatus {
+  SETUP_PENDING
+  ACTIVE
+  PARTIALLY_BLOCKED
+  BLOCKED
+}
+
+// Branch (School) access state.
+enum SchoolStatus {
+  ACTIVE
+  BLOCKED
+}
+
+// PTM session lifecycle.
+enum PtmStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum PtmScope {
+  WHOLE_SCHOOL
+  CLASS_RANGE
+  SECTIONS
+  STUDENT
+}
+
+enum CircularAudience {
+  PARENTS
+  TEACHERS
+  ALL
+}
+
+// Outgoing mail priority — quota khatam hone par LOW pehle defer hoti hai.
+// CRITICAL (OTP/reset/login creds) platform SMTP se jati hai, kabhi queue nahi.
+enum EmailPriority {
+  CRITICAL
+  HIGH
+  NORMAL
+  LOW
+}
+
+// SMTP credential tier — tenant apni PRIMARY Gmail ke saath ek SECONDARY
+// bhi de sakta hai. Primary ki daily quota khatam hone par transport chain
+// khud-ba-khud secondary par fail over karti hai.
+enum SmtpTier {
+  PRIMARY
+  SECONDARY
+}
+
+enum SecretCategory {
+  SMTP
+  CLOUDINARY
+}
+
+// ==========================================
+// 1. ORGANIZATION & MULTI-BRANCH STRUCTURE
+// ==========================================
+
+// Parent Brand / Group (e.g., Falcon Academy Group)
+// LOCKED STRUCTURE: Organization is created once by a SUPER_ADMIN user.
+// Flow: SuperAdmin signs up -> Organization row created -> credentials
+// emailed to the SuperAdmin -> SuperAdmin logs in with email+password
+// -> creates branches (School) under this Organization.
+// Tenant routing uses `slug` (e.g. yourapp.com/o/{slug} or {slug}.yourapp.com).
+model Organization {
+  id        String    @id @default(uuid())
+  name      String    // e.g. "Falcon Academy Systems"
+  slug      String    @unique // used for tenant routing, set at creation
+  code      String    @unique
+  logoUrl   String?   
+  themeColor String?  // per-org brand color (hex, e.g. "#2563eb") — used on branded login/public pages
+  phone     String?   // org public phone number
+  email     String?   // org public email
+  website   String?   // org website URL
+  facebookUrl  String? // Facebook page URL
+  instagramUrl String? // Instagram profile URL
+  twitterUrl   String? // Twitter/X profile URL
+  youtubeUrl   String? // YouTube channel URL
+  bankName          String? // e.g. "Meezan Bank" — fee voucher par print hota hai
+  bankAccountTitle  String? // account title (school/branch name)
+  bankAccountNumber String? // IBAN / account number — vouchers ka default
+  status    OrgStatus @default(SETUP_PENDING)
+  blockedAt DateTime?
+  blockedReason String? // optional admin note stored with the block
+  blockedById   String? // user id of the blocker
+  blockedByName String? // display name snapshot of the blocker
+  createdAt DateTime  @default(now())
+
+  branches  School[]
+  users     User[]
+  secrets   OrgSecrets[]
+}
+
+// Individual Branch / Campus (e.g., Gulshan Campus)
+model School {
+  id             String        @id @default(uuid())
+  organizationId String
+  name           String        // e.g. "Gulshan Campus"
+  code           String        @unique // used as branch segment alongside org slug
+  address        String?
+  phone          String?
+  logoUrl        String?       // Branch-specific logo (overrides organization logo)
+  themeColor     String?       // Branch-specific theme (overrides organization theme)
+  bankName          String?    // Branch bank override — null = organization ka default
+  bankAccountTitle  String?    // Branch account title override
+  bankAccountNumber String?    // Branch account number override (fee voucher par print hota hai)
+  status         SchoolStatus  @default(ACTIVE)
+  monthlyFeeDueDay Int         @default(10) // har month voucher ka default due day (e.g. 10 = 10th)
+  attendanceStartTime String   @default("07:45") // attendance marking/scanning start (HH:MM, 24hr)
+  attendanceCutoffTime String  @default("08:30") // late cutoff — iske baad unmarked students LATE (HH:MM, 24hr)
+  attendanceAbsentTime String  @default("10:00") // absent cutoff — iske baad unmarked students ABSENT (HH:MM, 24hr)
+  attendanceAlertTime String   @default("09:30") // jab late/absent alerts messages jayen (HH:MM, 24hr)
+  portalPassword String?       // hashed shared parent/student portal password (null = school code default)
+  scanDevices    Json?         // gate devices: [{id, deviceName, type, deviceMac, location}]
+  blockedAt      DateTime?
+  blockedReason  String?       // optional admin note stored with the block
+  blockedById    String?       // user id of the blocker
+  blockedByName  String?       // display name snapshot of the blocker
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Branch Level Relations
+  academicYears    AcademicYear[]
+  classes          Class[]
+  students         Student[]
+  users            User[]
+  feeStructures    FeeStructure[]
+  exams            Exam[]
+  circulars        Circular[]
+  ptmSessions      PTMSession[]
+  activities       Activity[]
+  notificationLogs NotificationLog[]
+  applicants       Applicant[]
+  homeworkBroadcasts HomeworkBroadcast[]
+  sectionTemplates SectionTemplate[]
+  leaveRequests   LeaveRequest[]
+  staffAttendances   StaffAttendance[]
+  orgSecrets       OrgSecrets[]
+
+  @@index([organizationId])
+}
+
+model AcademicYear {
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String   // e.g., "2025-2026"
+  startDate DateTime
+  endDate   DateTime
+  isCurrent Boolean  @default(false)
+
+  school        School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  terms         Term[]
+  feeStructures FeeStructure[]
+  promotions    PromotionRecord[]
+
+  @@index([schoolId])
+}
+
+model Term {
+  id             String       @id @default(uuid())
+  academicYearId String
+  name           String       // e.g., "Term 1"
+  startDate      DateTime
+  endDate        DateTime
+
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  exams          Exam[]
+
+  @@index([academicYearId])
+}
+
+model Class {
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String   // e.g. "Class 5"
+  code      String?
+  order     Int      @default(0) // sort order (PlayGroup < Class 1 < ...)
+
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  sections  Section[]
+  subjects  Subject[]
+  feeStructures FeeStructure[]  // ek fee structure kai classes par apply hota hai (m2m)
+  applicants    Applicant[]
+  teacherAssignments TeacherAssignment[]
+
+  @@index([schoolId])
+}
+
+model Section {
+  id         String   @id @default(uuid())
+  classId    String
+  name       String   // e.g., "A"
+  capacity   Int?
+  roomNumber String?
+
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  students  Student[]
+  timetableSlots TimetableSlot[]
+  homeworkBroadcasts HomeworkBroadcast[]
+  teacherAssignments TeacherAssignment[]
+
+  @@index([classId])
+}
+
+// School-level section pool (e.g. A, B, Morning, Evening) — SIRF generic names.
+// Capacity/room yahan nahi — wo per-class Section (class+section combination)
+// par hoti hai, kyunke har class ke classroom ki actual capacity alag hoti hai.
+model SectionTemplate {
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String   // e.g., "A", "B", "Morning"
+  createdAt DateTime @default(now())
+
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+}
+
+// ==========================================
+// 2. PEOPLE (USERS, STUDENTS, PARENTS)
+// ==========================================
+
+model User {
+  id             String        @id @default(uuid())
+  organizationId String?       // Set if Super Admin
+  schoolId       String?       // Set if Branch Staff (Admin, Teacher, etc.)
+  name           String
+  username       String?       @unique // Custom System Generated Staff ID / Username (e.g. STF-1002)
+  email          String        @unique
+  password       String
+  phone          String?
+  avatarUrl      String?       // profile picture (uploads/avatars or Cloudinary)
+  role           Role          @default(TEACHER)
+  isActive       Boolean       @default(true)
+  blockedAt      DateTime?     // set when blocked via moderation (isActive=false + reason)
+  blockedReason  String?       // optional admin note stored with the block
+  blockedById    String?       // user id of the blocker
+  blockedByName  String?       // display name snapshot of the blocker
+  credentialsEmailSentAt DateTime? // set when login email is dispatched at creation
+  createdAt      DateTime      @default(now())
+
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  school         School?       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  
+  // Optional Relations
+  timetableSlots     TimetableSlot[]
+  teacherAssignments TeacherAssignment[]
+  conductRemarks     ConductRemark[]
+  refreshTokens      RefreshToken[]
+  homeworkBroadcasts HomeworkBroadcast[]
+  staffAttendances   StaffAttendance[]
+  staffLeaveReviews  StaffAttendance[] @relation("StaffLeaveReviewer")
+
+  @@index([schoolId])
+  @@index([schoolId, role, isActive])
+  @@index([organizationId])
+}
+
+// Staff Session Tokens (Refresh Token Rotation)
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique // Hashed token stored for security
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  isRevoked Boolean  @default(false)
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+// OTP Codes for Parent & Student Portal (WhatsApp / SMS OTP login)
+// Staff (SuperAdmin/Admin/Teacher/etc.) never use OTP — see OtpType note above.
+model OtpCode {
+  id          String   @id @default(uuid())
+  identifier  String   // whatsappNo for parent, or studentPhone / parentWhatsappNo for student
+  otpType     OtpType  // PARENT_LOGIN or STUDENT_LOGIN
+  otpHash     String   // Hashed OTP for security
+  expiresAt   DateTime
+  attempts    Int      @default(0) // Track failed attempts (max 3)
+  isUsed      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([identifier, otpType])
+}
+
+model Parent {
+  id         String    @id @default(uuid())
+  name       String
+  whatsappNo String    @unique // Key identifier for WhatsApp notifications
+  phone      String?
+  email      String?   // Primary notification channel (Email) until WhatsApp API budget is available
+  address    String?
+  isBlocked  Boolean   @default(false)
+  blockedAt  DateTime?
+  blockedReason String?  // optional admin note stored with the block
+  blockedById   String?  // user id of the blocker (branch admin / super admin)
+  blockedByName String?  // display name snapshot of the blocker
+  createdAt DateTime  @default(now())
+
+  students   Student[]
+  leaveRequests LeaveRequest[]
+}
+
+model Student {
+  id             String        @id @default(uuid())
+  schoolId       String        // Branch ID for fast queries & isolation
+  sectionId      String
+  parentId       String
+  identifierCode String        @unique // QR value now; can hold RFID tag ID later — same field, no migration needed
+  rollNumber     String
+  firstName      String
+  lastName       String
+  gender         String?
+  dob            DateTime?
+  status         StudentStatus @default(ACTIVE)
+  isBlocked      Boolean       @default(false) // moderation block (distinct from ACTIVE/GRADUATED lifecycle)
+  blockedAt      DateTime?
+  blockedReason  String?       // optional admin note stored with the block
+  blockedById    String?       // user id of the blocker
+  blockedByName  String?       // display name snapshot of the blocker
+  imageUrl       String?       // R2 object storage path (active-students/ or archive/)
+  createdAt      DateTime      @default(now())
+
+  school     School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  section    Section  @relation(fields: [sectionId], references: [id])
+  parent     Parent   @relation(fields: [parentId], references: [id])
+
+  // Relations
+  applicant         Applicant?
+  attendanceRecords AttendanceRecord[]
+  attendanceYearSummaries AttendanceYearSummary[]
+  feeRecords        FeeRecord[]
+  feeYearSummaries  FeeYearSummary[]
+  conductRemarks    ConductRemark[]
+  examResults       ExamResult[]
+  promotionRecords  PromotionRecord[]
+  leaveRequests    LeaveRequest[]
+
+  // Active-list queries should always filter status = ACTIVE.
+  // Graduated/dropped-out students stay in DB (compliance/history)
+  // but are excluded from default dashboards.
+  @@index([identifierCode])
+  @@index([schoolId])
+  @@index([schoolId, status])
+  @@index([schoolId, sectionId])
+  @@index([sectionId])
+  @@index([parentId])
+  @@index([status])
+}
+
+// Tracks year-to-year movement: promotion, repeat, section transfer,
+// graduation, dropout. Needed so historical attendance/results stay
+// tied to the correct class/year even after a student moves on.
+model PromotionRecord {
+  id             String           @id @default(uuid())
+  studentId      String
+  academicYearId String           // the year this action was decided at end of
+  fromSectionId  String?
+  toSectionId    String?
+  action         PromotionAction
+  remarks        String?
+  createdAt      DateTime         @default(now())
+
+  student        Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academicYear   AcademicYear     @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([academicYearId])
+}
+
+// ==========================================
+// 3. ATTENDANCE (QR-SCAN CORE — RFID-READY)
+// ==========================================
+
+model AttendanceRecord {
+  id         String           @id @default(uuid())
+  studentId  String
+  date       DateTime         @db.Date
+  status     AttendanceStatus @default(ABSENT)
+  checkIn    DateTime?
+  checkOut   DateTime?
+  scanLog    Json?            // raw scan events: [{deviceId, method, scannedAt}]
+  remarks    String?
+  createdAt  DateTime         @default(now())
+
+  student    Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, date])
+  @@index([date])
+  @@index([date, studentId])
+}
+
+// Yearly attendance rollup — jab raw AttendanceRecord 365 din se purani ho
+// jati hai to archive job isme per-student per-year ka summary bana kar raw
+// records delete kar deti hai. DB chhota rehta hai, history phir bhi rehti
+// hai ("is bache ka is saal itne din present/absent tha").
+model AttendanceYearSummary {
+  id          String   @id @default(uuid())
+  studentId   String
+  schoolId    String   // denormalized — school-level queries ke liye
+  yearLabel   String   // calendar year, e.g. "2025" — per student per year ek row
+  dateFrom    DateTime @db.Date
+  dateTo      DateTime @db.Date
+  daysPresent Int      @default(0)
+  daysLate    Int      @default(0)
+  daysAbsent  Int      @default(0)
+  daysLeave   Int      @default(0)
+  daysManual  Int      @default(0)
+  totalDays   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, yearLabel])
+  @@index([schoolId])
+  @@index([studentId])
+}
+
+// ==========================================
+// 3b. LEAVE REQUESTS (Parent → Admin approval)
+// ==========================================
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model LeaveRequest {
+  id          String      @id @default(uuid())
+  studentId   String
+  parentId    String      // parent ne request ki
+  schoolId    String
+  dateFrom    DateTime    @db.Date
+  dateTo      DateTime    @db.Date
+  reason      String
+  status      LeaveStatus @default(PENDING)
+  reviewedBy  String?     // admin jo approve/reject kare
+  reviewedAt  DateTime?
+  remarks     String?     // admin ka note (optional)
+  createdAt   DateTime    @default(now())
+
+  student     Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  parent      Parent      @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  school      School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([parentId])
+  @@index([schoolId])
+  @@index([dateFrom, dateTo])
+  @@index([status])
+}
+
+// ==========================================
+// 3d. STAFF ATTENDANCE (Admin marks / QR scan for staff + leave requests)
+// ==========================================
+
+model StaffAttendance {
+  id         String           @id @default(uuid())
+  staffId    String
+  schoolId   String
+  date       DateTime         @db.Date
+  dateTo     DateTime?        @db.Date  // null = single day; set = leave range end
+  status     AttendanceStatus @default(ABSENT)
+  leaveType  String?          // CASUAL, SICK, PERSONAL, UNPAID (null = attendance, set = leave request)
+  reason     String?          // leave reason
+  reviewedBy String?          // admin jo approve/reject kare
+  reviewedAt DateTime?
+  checkIn    DateTime?
+  checkOut   DateTime?
+  remarks    String?
+  createdAt  DateTime         @default(now())
+
+  staff      User             @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  reviewer   User?            @relation("StaffLeaveReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  school     School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, date])
+  @@index([schoolId])
+  @@index([date])
+  @@index([staffId, date])
+  @@index([status])
+}
+
+// ==========================================
+// 4. COMMUNICATION
+// ==========================================
+
+model NotificationLog {
+  id             String         @id @default(uuid())
+  schoolId       String?        // null = platform-level event
+  organizationId String?        // org-level filtering (PORTAL notifications)
+  recipient      String         // Phone/WhatsApp Number or Email (EMAIL/SMS) — blank for PORTAL
+  recipientId    String?        // user ID (PORTAL notifications ke liye)
+  senderId       String?        // kisne bheja (null = system-generated)
+  senderName     String?        // snapshot of sender name
+  channel        MessageChannel @default(WHATSAPP)
+  title          String?        // notification title (PORTAL ke liye zaroori)
+  message        String         // body text
+  category       String?        // PTM, FEE, STAFF, ADMISSION, GENERAL (PORTAL ke liye)
+  refType        String?        // linked entity type (e.g. PTM_SESSION, FEE_RECORD)
+  refId          String?        // linked entity ID
+  link           String?        // frontend route to navigate on click
+  isRead         Boolean        @default(false) // read/unread (PORTAL ke liye)
+  status         MessageStatus  @default(PENDING)
+  errorReason    String?
+  sentAt         DateTime?
+  createdAt      DateTime       @default(now())
+
+  school         School?        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([organizationId])
+  @@index([recipientId])
+  @@index([senderId])
+  @@index([channel])
+  @@index([status])
+  @@index([category])
+  @@index([isRead])
+  @@index([isRead, schoolId])
+  @@index([isRead, organizationId])
+  @@index([isRead, recipientId])
+  @@index([createdAt])
+}
+
+// Unified secrets table — SMTP, Cloudinary, and future credentials.
+// Each row = one secret config, optionally scoped to a branch (schoolId).
+// data JSON stores the actual credentials (encrypted at rest).
+model OrgSecrets {
+  id             String         @id @default(uuid())
+  organizationId String
+  schoolId       String?        // null = org-level default; set = branch-specific override
+  category       SecretCategory // SMTP, CLOUDINARY
+  tier           SmtpTier?      // PRIMARY/SECONDARY (SMTP only; null for Cloudinary)
+  data           Json           // { host, port, secure, username, passwordEnc, fromName, dailyLimit } or { cloudName, apiKey, apiSecretEnc }
+  isVerified     Boolean        @default(false)
+  lastVerifiedAt DateTime?
+  lastError      String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  school       School?      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, schoolId, category, tier])
+  @@index([organizationId])
+  @@index([schoolId])
+}
+
+// Durable email outbox — jab tenant ki Gmail daily limit (550-5.4.5) hit ho
+// ya SMTP temporarily fail ho, email yahan PENDING save hoti hai aur
+// cron agle din quota reset hone par priority order mein auto-retry karta hai.
+// CRITICAL emails yahan kabhi nahi aati — wo platform transport se turant jaati hai.
+model PendingEmail {
+  id             String        @id @default(uuid())
+  organizationId String?       // kis tenant ka transport use karna tha (retry wahi)
+  schoolId       String?
+  payload        String        // JSON: { to, subject, text, html, attachments }
+  priority       EmailPriority @default(NORMAL)
+  status         MessageStatus @default(PENDING)
+  attempts       Int           @default(0)
+  lastError      String?
+  scheduledFor   DateTime      @default(now()) // iske baad retry allowed
+  sentAt         DateTime?
+  createdAt      DateTime      @default(now())
+
+  @@index([status, scheduledFor])
+  @@index([organizationId])
+}
+
+model HomeworkBroadcast {
+  id          String   @id @default(uuid())
+  schoolId    String
+  sectionId   String
+  createdById String? // teacher/staff who posted it (homework tracking)
+  title       String
+  content     String
+  mediaUrl    String?
+  sentAt      DateTime @default(now())
+
+  school     School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  section    Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  createdBy  User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([sectionId])
+  @@index([createdById])
+}
+
+model Circular {
+  id        String           @id @default(uuid())
+  schoolId  String
+  title     String
+  content   String
+  mediaUrl  String?
+  audience  CircularAudience @default(PARENTS)
+  createdAt DateTime         @default(now())
+
+  school    School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+}
+
+// ==========================================
+// 5. FINANCE
+// ==========================================
+
+model FeeStructure {
+  id             String        @id @default(uuid())
+  schoolId       String
+  academicYearId String        // fee amounts change year to year — must be tied to a year
+  name           String        // e.g., "Monthly Tuition 2026"
+
+  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  classes      Class[]      // ek structure kai classes par apply hota hai (m2m)
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  lineItems    FeeLineItem[]
+
+  @@index([schoolId])
+  @@index([academicYearId])
+}
+
+model FeeLineItem {
+  id             String       @id @default(uuid())
+  feeStructureId String
+  title          String       // e.g., "Tuition Fee", "Transport"
+  amount         Decimal      @db.Decimal(10, 2)
+  isLateFee      Boolean      @default(false) // agar true hai to due date cross hone par auto-add hota hai
+  lateFeeDays    Int          @default(0)     // grace period: kitne din baad late fee lage (0 = due date ke turant baad)
+
+  feeStructure   FeeStructure @relation(fields: [feeStructureId], references: [id], onDelete: Cascade)
+
+  @@index([feeStructureId])
+}
+
+model FeeRecord {
+  id          String        @id @default(uuid())
+  studentId   String
+  dueDate     DateTime
+  totalAmount Decimal       @db.Decimal(10, 2)
+  paidAmount  Decimal       @default(0.00) @db.Decimal(10, 2)
+  dueCharges  Decimal       @default(0.00) @db.Decimal(10, 2) // late fee penalty — auto-calculated
+  status      FeeStatus     @default(UNPAID)
+  // Month-wise breakdown — har period ek alag mahina hai (carry-forward arrears
+  // + current month). Voucher is invoice ki tarah itemized dikhata hai.
+  periods     Json?
+  reminderSentAt DateTime?  // overdue message sirf EK dafa jaye (ek-record-once)
+  preDueReminderSentAt DateTime? // due date se 3 din pehle ka reminder bhi ek dafa
+  createdAt   DateTime      @default(now())
+
+  student     Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  payments    FeePayment[]
+
+  @@index([studentId])
+  @@index([studentId, status])
+  @@index([status])
+  @@index([status, dueDate])
+  @@index([dueDate])
+}
+
+model FeePayment {
+  id          String        @id @default(uuid())
+  feeRecordId String
+  amount      Decimal       @db.Decimal(10, 2)
+  method      PaymentMethod @default(CASH)
+  paidAt      DateTime      @default(now())
+  reference   String?
+
+  feeRecord   FeeRecord     @relation(fields: [feeRecordId], references: [id], onDelete: Cascade)
+
+  @@index([feeRecordId])
+  @@index([paidAt])
+}
+
+// Yearly fee rollup — attendance archive wala hi pattern. Saal khatam hone par
+// raw FeeRecords (aur unke payments) delete ho jate hain, per-student per-year
+// ka summary yahan rehta hai — DB unbounded nahi barta, history phir bhi rehti
+// hai ("is bache ka is saal itna charged/paid/outstanding tha").
+model FeeYearSummary {
+  id           String   @id @default(uuid())
+  studentId    String
+  schoolId     String   // denormalized — school-level queries ke liye
+  yearLabel    String   // calendar year, e.g. "2025" — per student per year ek row
+  dateFrom     DateTime @db.Date
+  dateTo       DateTime @db.Date
+  recordCount  Int      @default(0)
+  totalCharged Decimal  @default(0.00) @db.Decimal(14, 2)
+  totalPaid    Decimal  @default(0.00) @db.Decimal(14, 2)
+  paidRecords  Int      @default(0)
+  partialRecords Int    @default(0)
+  unpaidRecords  Int    @default(0)
+  overdueRecords Int    @default(0)
+  createdAt    DateTime @default(now())
+
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, yearLabel])
+  @@index([schoolId])
+  @@index([studentId])
+}
+
+// ==========================================
+// 6. ACADEMICS & CONDUCT
+// ==========================================
+
+model Subject {
+  id        String   @id @default(uuid())
+  classId   String
+  name      String   // e.g., "Mathematics"
+  code      String?
+
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  timetableSlots    TimetableSlot[]
+  examResults       ExamResult[]
+  teacherAssignments TeacherAssignment[]
+
+  @@index([classId])
+}
+
+model Exam {
+  id        String   @id @default(uuid())
+  schoolId  String
+  termId    String
+  name      String   // e.g., "Mid-Term Examination"
+  startDate DateTime
+  endDate   DateTime
+
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  term      Term     @relation(fields: [termId], references: [id], onDelete: Cascade)
+  results   ExamResult[]
+
+  @@index([schoolId])
+}
+
+model ExamResult {
+  id           String   @id @default(uuid())
+  examId       String
+  studentId    String
+  subjectId    String
+  marksObtained Decimal  @db.Decimal(5, 2)
+  maxMarks     Decimal  @db.Decimal(5, 2)
+  remarks      String?
+
+  exam         Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject      Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, studentId, subjectId])
+  @@index([examId])
+  @@index([studentId])
+  @@index([examId, studentId])
+}
+
+model ConductRemark {
+  id        String     @id @default(uuid())
+  studentId String
+  teacherId String
+  type      RemarkType @default(NEUTRAL)
+  comment   String
+  createdAt DateTime   @default(now())
+
+  student   Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher   User       @relation(fields: [teacherId], references: [id])
+
+  @@index([studentId])
+}
+
+// ==========================================
+// 7. PTM & TIMETABLE
+// ==========================================
+
+model PTMSession {
+  id          String     @id @default(uuid())
+  schoolId    String
+  title       String
+  description String?
+  scheduledAt DateTime
+  location    String?
+  status      PtmStatus  @default(SCHEDULED)
+  scope       PtmScope   @default(WHOLE_SCHOOL) // audience type of this PTM
+  classIds    String[]   @default([]) // resolved classes (CLASS_RANGE span, or parents of picked sections)
+  sectionIds  String[]   @default([]) // resolved sections; empty = whole school
+  studentId   String?    // STUDENT scope: the single targeted child
+  teacherIds  String[]   @default([]) // teachers attending this PTM
+  createdAt   DateTime   @default(now())
+
+  school      School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+}
+
+model TimetableSlot {
+  id        String   @id @default(uuid())
+  sectionId String
+  subjectId String
+  teacherId String
+  dayOfWeek Int      // 1 = Monday, 7 = Sunday
+  startTime String   // e.g., "08:00"
+  endTime   String   // e.g., "08:45"
+
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher   User     @relation(fields: [teacherId], references: [id])
+
+  @@index([sectionId])
+  @@index([sectionId, dayOfWeek, startTime, endTime])
+  @@index([teacherId, dayOfWeek, startTime, endTime])
+}
+
+// Teacher ↔ Class assignment (optionally scoped to a specific section & subject).
+// A teacher can be assigned to multiple classes/sections/subjects.
+model TeacherAssignment {
+  id        String   @id @default(uuid())
+  teacherId String
+  classId   String
+  subjectId String?  // null = teacher for the whole class, not a specific subject
+  sectionId String?  // null = teacher for all sections of the class
+
+  teacher   User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject   Subject? @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  section   Section? @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([teacherId, classId, subjectId, sectionId])
+  @@index([teacherId])
+  @@index([classId])
+}
+
+// ==========================================
+// 8. ACTIVITIES
+// ==========================================
+
+model Activity {
+  id          String   @id @default(uuid())
+  schoolId    String
+  title       String
+  description String?
+  eventDate   DateTime
+  createdAt   DateTime @default(now())
+
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+}
+
+// ==========================================
+// 9. ADMISSIONS
+// ==========================================
+
+model Applicant {
+  id                 String          @id @default(uuid())
+  schoolId           String
+  classId            String
+  firstName          String
+  lastName           String
+  gender             String?
+  dob                DateTime?
+  parentName         String
+  parentPhone        String
+  parentWhatsappNo   String
+  parentEmail        String?   // primary notification channel (email) until WhatsApp budget available
+  parentAddress      String?
+  imageUrl           String?   // applicant/student photo — carried to Student on enroll
+  testDate           DateTime? // admission test slot (TEST_SCHEDULED)
+  testTime           String?   // e.g. "10:00 AM"
+  testVenue          String?   // e.g. "Main Campus, Room 2"
+  testMarks          String?   // test result details e.g. "45/50" (TEST_PASSED / TEST_FAILED)
+  status             AdmissionStatus @default(INQUIRY)
+  remarks            String?        // admin note — test result / rejection reason etc.
+  advanceFeeAmount   Decimal?        @db.Decimal(10, 2)
+  advanceFeeStatus   FeeStatus       @default(UNPAID)
+  studentId          String?         @unique // linked student — admission ↔ student pipeline (delete cascade service-level)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  school             School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  class              Class           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student            Student?        @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  documents          ApplicantDocument[]
+
+  @@index([schoolId])
+  @@index([classId])
+  @@index([status])
+}
+
+// B-form / birth certificate / previous school docs — applicant ki file mein
+model ApplicantDocument {
+  id          String   @id @default(uuid())
+  applicantId String
+  type        String   // B_FORM | BIRTH_CERTIFICATE | OTHER
+  filename    String   // original file name
+  url         String   // Cloudinary URL ya /uploads/... path
+  createdAt   DateTime @default(now())
+
+  applicant   Applicant @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+
+  @@index([applicantId])
+}
+
+// ==========================================
+// 10. AUDIT / ACTIVITY LOG
+// ==========================================
+
+// Chronological trail of privileged actions — logins, block/unblock,
+// org/branch/staff lifecycle. Powers the Super Admin "Activity Log" tab
+// and satisfies the governance rule: every block action is logged
+// (who blocked whom, when, optional reason).
+// All actor/entity references are stored as denormalized strings so the
+// log survives even if the referenced row is later deleted.
+model AuditLog {
+  id             String   @id @default(uuid())
+  actorId        String?  // user id who performed the action (null = system)
+  actorName      String?  // snapshot of the actor's name
+  actorRole      String?  // snapshot of the actor's role (SUPER_ADMIN/ADMIN/...)
+  action         String   // e.g. LOGIN, LOGOUT, BLOCK_ORG, UNBLOCK_ORG, CREATE_ORG, UPDATE_ORG, CREATE_STAFF, BLOCK_USER...
+  entityType     String   // ORGANIZATION | SCHOOL | USER | STUDENT | PARENT | AUTH
+  entityId       String?
+  entityName     String?  // human-readable name of the entity acted upon
+  organizationId String?
+  schoolId       String?
+  details        String?  // JSON string with extras (reason, ip, etc.)
+  ipAddress      String?
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([createdAt, action])
+  @@index([actorId])
+  @@index([action])
+  @@index([entityType])
+  @@index([organizationId])
+  @@index([schoolId])
+}

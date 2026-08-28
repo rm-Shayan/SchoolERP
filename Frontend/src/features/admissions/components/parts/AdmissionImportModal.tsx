@@ -1,0 +1,87 @@
+'use client';
+
+import { useRef, useState } from 'react';
+import { useAppSelector } from '@/store/hooks';
+import { admissionService } from '@/lib/api';
+import { Modal, Button } from '@/features/shared/components';
+import toast from 'react-hot-toast';
+
+interface AdmissionImportModalProps {
+  open: boolean;
+  onClose: () => void;
+  onImported: () => void;
+}
+
+const REQUIRED_COLUMNS = [
+  'First Name',
+  'Last Name',
+  'Class Name',
+  'Parent Name',
+  'Parent Phone',
+  'Parent Phone',
+  'Parent Email',
+  'Advance Fee',
+];
+
+export default function AdmissionImportModal({ open, onClose, onImported }: AdmissionImportModalProps) {
+  const { user, school } = useAppSelector((s) => s.auth);
+  const schoolId = school?.id ?? user?.schoolId;
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async () => {
+    if (!file) return toast.error('Select an Excel file first');
+    if (!schoolId) return;
+    setUploading(true);
+    try {
+      const { jobId, totalRows } = await admissionService.importExcel(schoolId, file);
+      toast.success(`Import started — ${totalRows} inquiries queued (job ${jobId})`);
+      setFile(null);
+      onImported();
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Failed to start import');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title="Bulk Admission Import (Excel)">
+      <div className="space-y-4">
+        <div
+          onClick={() => fileRef.current?.click()}
+          className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-primary-400 hover:bg-primary-50/40 transition-colors"
+        >
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          />
+          <svg className="w-10 h-10 mx-auto mb-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <p className="text-sm font-medium text-gray-700">{file ? file.name : 'Click to choose an .xlsx file'}</p>
+          <p className="text-xs text-gray-500 mt-1">Each row creates an INQUIRY applicant — the class is resolved by name.</p>
+        </div>
+
+        <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
+          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Expected columns</p>
+          <div className="flex flex-wrap gap-1.5">
+            {REQUIRED_COLUMNS.map((col) => (
+              <span key={col} className="text-[11px] font-medium bg-white border border-gray-200 text-gray-600 rounded px-2 py-0.5">{col}</span>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-3 pt-2">
+          <Button onClick={handleUpload} loading={uploading} disabled={!file}>Start Import</Button>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}

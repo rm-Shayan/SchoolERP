@@ -1,0 +1,10 @@
+node_modules
+logs
+uploads
+.env
+.env.*
+*.log
+src/generated
+generated
+.git
+.gitignore

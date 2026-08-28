@@ -1,0 +1,30 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "accessToken",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4NmU4ZGRmNC1hNDNjLTRhYzgtYjVmMi1kZTBkOWFmYTE1ZWUiLCJyb2xlIjoiQURNSU4iLCJzY2hvb2xJZCI6IjFmZjFjMjZkLWFmODUtNGQzOC1iY2I2LTNlNmZmZDJlZWUxMSIsIm9yZ2FuaXphdGlvbklkIjoiYWUwODQxODQtOWIxMi00MDdkLWFhNGYtODY4ZWUxNjAzNDQ5IiwidG9rZW5UeXBlIjoic3RhZmYiLCJpYXQiOjE3ODc3MzAxNTgsImV4cCI6MTc4NzczMzc1OH0.U6pLsy4jv92B9Xv_qQXo9wxKBBlsd4Vgtd2VryrUIk8"
+        },
+        {
+          "name": "school",
+          "value": "{\"id\":\"1ff1c26d-af85-4d38-bcb6-3e6ffd2eee11\",\"name\":\"Oxford Islamic Scientific School (O.I.S.S)\",\"code\":\"OX-F34-01\",\"status\":\"ACTIVE\",\"logoUrl\":null,\"themeColor\":null,\"attendanceStartTime\":\"07:45\",\"attendanceCutoffTime\":\"08:30\",\"attendanceAbsentTime\":\"10:00\",\"attendanceAlertTime\":\"09:30\"}"
+        },
+        {
+          "name": "refreshToken",
+          "value": "09ab27f5c26859df90b6de1c0190ed7360f1747f6a6558141462d74b253a743ee0c5c601717db502e5b1f26b0dce1ce43a621b8e416bf552556d91a791c14b1f"
+        },
+        {
+          "name": "user",
+          "value": "{\"id\":\"86e8ddf4-a43c-4ac8-b5f2-de0d9afa15ee\",\"name\":\"Areesha Rao\",\"username\":\"oxford\",\"email\":\"areesharao9@gmail.com\",\"phone\":\"03181196264\",\"avatarUrl\":null,\"role\":\"ADMIN\",\"isActive\":true,\"schoolId\":\"1ff1c26d-af85-4d38-bcb6-3e6ffd2eee11\",\"organizationId\":\"ae084184-9b12-407d-aa4f-868ee1603449\",\"createdAt\":\"2026-08-24T07:14:59.304Z\",\"blockedReason\":null,\"blockedAt\":null,\"blockedByName\":null,\"school\":{\"id\":\"1ff1c26d-af85-4d38-bcb6-3e6ffd2eee11\",\"name\":\"Oxford Islamic Scientific School (O.I.S.S)\",\"code\":\"OX-F34-01\",\"status\":\"ACTIVE\",\"logoUrl\":null,\"themeColor\":null,\"attendanceStartTime\":\"07:45\",\"attendanceCutoffTime\":\"08:30\",\"attendanceAbsentTime\":\"10:00\",\"attendanceAlertTime\":\"09:30\"},\"organization\":{\"id\":\"ae084184-9b12-407d-aa4f-868ee1603449\",\"name\":\"Oxford Islamic Scientific School (O.I.S.S)\",\"code\":\"ox-f34\",\"slug\":\"oxford\",\"status\":\"ACTIVE\",\"themeColor\":\"#1d4ed8\",\"logoUrl\":\"/uploads/org-logos/1787631042773-bd927fb5feda.webp\"},\"schools\":[{\"id\":\"1ff1c26d-af85-4d38-bcb6-3e6ffd2eee11\",\"name\":\"Oxford Islamic Scientific School (O.I.S.S)\",\"code\":\"OX-F34-01\",\"status\":\"ACTIVE\"}]}"
+        },
+        {
+          "name": "organization",
+          "value": "{\"id\":\"ae084184-9b12-407d-aa4f-868ee1603449\",\"name\":\"Oxford Islamic Scientific School (O.I.S.S)\",\"code\":\"ox-f34\",\"slug\":\"oxford\",\"status\":\"ACTIVE\",\"themeColor\":\"#1d4ed8\",\"logoUrl\":\"/uploads/org-logos/1787631042773-bd927fb5feda.webp\"}"
+        }
+      ]
+    }
+  ]
+}
