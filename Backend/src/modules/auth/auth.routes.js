@@ -3,6 +3,7 @@ import authController from "./auth.controller.js";
 import {
   loginSchema,
   refreshTokenSchema,
+  switchBranchSchema,
   logoutSchema,
   forgotPasswordSchema,
   updateOwnProfileSchema,
@@ -53,6 +54,23 @@ router.post("/refresh", sensitiveLimiter, validate(refreshTokenSchema), authCont
 // ==========================================
 // STAFF AUTH — Protected Routes
 // ==========================================
+
+/**
+ * POST /api/v1/auth/switch-branch
+ * Same account ke saath doosri branch par switch (token re-scope, no new creds).
+ */
+router.post(
+  "/switch-branch",
+  authenticate,
+  validate(switchBranchSchema),
+  authController.switchBranch
+);
+
+/**
+ * GET /api/v1/auth/my-branches
+ * Branches this account can open (for the Settings → My Branches switcher).
+ */
+router.get("/my-branches", authenticate, authController.myBranches);
 
 /**
  * GET /api/v1/auth/me

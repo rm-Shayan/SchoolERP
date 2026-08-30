@@ -74,6 +74,26 @@ class StaffLeaveController {
       return next(error);
     }
   };
+
+  updateOwn = async (req, res, next) => {
+    try {
+      const staffId = req.user?.id;
+      const result = await staffLeaveSelfService.updateOwn(staffId, req.params.id, req.body);
+      return res.status(200).json(ApiResponse.ok("Leave request updated", result));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  removeOwn = async (req, res, next) => {
+    try {
+      const staffId = req.user?.id;
+      const result = await staffLeaveSelfService.removeOwn(staffId, req.params.id);
+      return res.status(200).json(ApiResponse.ok("Leave request deleted", result));
+    } catch (error) {
+      return next(error);
+    }
+  };
 }
 
 export default new StaffLeaveController();

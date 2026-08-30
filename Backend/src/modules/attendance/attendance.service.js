@@ -236,6 +236,8 @@ class AttendanceService {
     } catch (_) {}
 
     const records = await attendanceRepository.getDailySchoolAttendance(schoolId, targetDate);
+    const offDays = await attendanceRepository.findOffDays(schoolId);
+    const weeklyOff = await attendanceRepository.findWeeklyOff(schoolId);
 
     const summary = {
       date: targetDate,
@@ -247,7 +249,7 @@ class AttendanceService {
       manualOverride: records.filter((r) => r.status === "MANUAL_OVERRIDE").length,
     };
 
-    const result = { summary, records };
+    const result = { summary, records, offDays, weeklyOff };
 
     try {
       // Cache for 5 minutes — invalidated after each new scan or override
@@ -259,6 +261,37 @@ class AttendanceService {
 
   async getMonthlyReport(schoolId, year, month) {
     return buildMonthlyReport(attendanceRepository, schoolId, year, month);
+  }
+
+  // ─── OFF DAYS / HOLIDAYS ────────────────────────────────────────────────
+  async getOffDays(schoolId) {
+    return attendanceRepository.findOffDays(schoolId);
+  }
+
+  async addOffDay(schoolId, date, reason) {
+    const list = await attendanceRepository.findOffDays(schoolId);
+    const exists = list.some((o) => o.date === date);
+    const next = exists
+      ? list
+      : [...list, { date, reason: reason || null }].sort((a, b) => a.date.localeCompare(b.date));
+    if (!exists) await attendanceRepository.updateOffDays(schoolId, next);
+    try { await attendanceService._invalidateDailyCache(schoolId, new Date(date)); } catch (_) {}
+    return { offDays: next };
+  }
+
+  async removeOffDay(schoolId, date) {
+    const list = await attendanceRepository.findOffDays(schoolId);
+    const next = list.filter((o) => o.date !== date);
+    if (next.length !== list.length) await attendanceRepository.updateOffDays(schoolId, next);
+    try { await attendanceService._invalidateDailyCache(schoolId, new Date(date)); } catch (_) {}
+    return { offDays: next };
+  }
+
+  async updateWeeklyOff(schoolId, weekdays) {
+    const clean = [...new Set(weekdays.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6))].sort((a, b) => a - b);
+    await attendanceRepository.updateWeeklyOff(schoolId, clean);
+    try { await attendanceService._invalidateDailyCache(schoolId, new Date()); } catch (_) {}
+    return { weeklyOff: clean };
   }
 
   async getStudentHistory(studentId, startDate, endDate) {

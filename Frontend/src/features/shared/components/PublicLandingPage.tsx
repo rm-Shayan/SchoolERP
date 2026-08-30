@@ -4,6 +4,7 @@ import Stats from './parts/Stats';
 import Features from './parts/Features';
 import Modules from './parts/Modules';
 import WhyUs from './parts/WhyUs';
+import Pricing from './parts/Pricing';
 import Access from './parts/Access';
 import Footer from './parts/Footer';
 import Reveal from './Reveal';
@@ -18,6 +19,7 @@ export default function PublicLandingPage() {
         <Reveal><Features /></Reveal>
         <Reveal><Modules /></Reveal>
         <Reveal><WhyUs /></Reveal>
+        <Reveal><Pricing /></Reveal>
         <Reveal><Access /></Reveal>
       </main>
       <Footer />

@@ -34,6 +34,14 @@ export const updateSlotSchema = z.object({
   }),
 });
 
+export const reorderSlotsSchema = z.object({
+  params: sectionIdParam.params,
+  body: z.object({
+    dayOfWeek: z.coerce.number().int().min(1).max(7),
+    slotIds: z.array(z.string().uuid()).min(1, 'At least one slot required'),
+  }),
+});
+
 export const listSlotsByTeacherSchema = z.object({
   params: z.object({ teacherId: z.string().uuid("Invalid teacherId") }),
   query: z.object({

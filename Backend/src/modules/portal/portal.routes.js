@@ -18,5 +18,8 @@ router.get("/conduct", portalController.getConduct);
 router.get("/ptm", portalController.getPTM);
 router.get("/leave", portalController.getLeaveRequests);
 router.post("/leave", portalController.createLeaveRequest);
+router.get("/exams", portalController.getExams);
+router.get("/exams/:examId/date-sheet", portalController.downloadExamDateSheet);
+router.get("/timetable/pdf", portalController.downloadTimetable);
 
 export default router;

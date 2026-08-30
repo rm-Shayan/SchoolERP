@@ -724,6 +724,10 @@ class OrganizationService {
     });
     return { jobId: job.id, totalRows: organizations.length };
   }
+  async getPublicSlugs() {
+    return await organizationRepository.findAllPublicSlugs();
+  }
+
   /**
    * Public org landing data — /o/:slug ke liye (koi auth nahi).
    * Org branding (logo, themeColor) + saari branches, taaki public page

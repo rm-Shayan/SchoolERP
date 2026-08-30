@@ -1,5 +1,13 @@
 import OrgLandingPage from '@/features/public/components/OrgLandingPage';
-import { getServerOrgPublic } from '@/lib/server/orgPublic';
+import { getServerOrgPublic, getAllOrgSlugs } from '@/lib/server/orgPublic';
+
+// ISR: built static HTML 5 min baad background me refresh hota hai.
+export const revalidate = 300;
+
+export async function generateStaticParams() {
+  const slugs = await getAllOrgSlugs();
+  return slugs.map((slug) => ({ slug }));
+}
 
 export default async function OrgLandingPageRoute({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

@@ -11,6 +11,12 @@ export interface SchoolCreatePayload {
   adminEmail?: string;
   adminName?: string;
   adminPassword?: string;
+  // Same org ka existing ADMIN — no new credentials; wo account is branch ko
+  // bhi manage karega (Settings → My Branches se switch karega).
+  existingAdminEmail?: string;
+  // Naya admin → required; existing admin → optional (inherit hota hai).
+  smtp?: { host: string; port: number; secure: boolean; username: string; password: string };
+  cloudinary?: { cloudName: string; apiKey: string; apiSecret: string };
 }
 
 export interface SchoolAdminRef {
@@ -24,12 +30,16 @@ export interface SchoolCreateResult {
   school: School;
   admin?: SchoolAdminRef | null;
   adminCredentials?: { email: string; password: string } | null;
+  smtpSetting?: unknown;
+  cloudinarySetting?: unknown;
 }
 
 export interface SchoolAdminAssignPayload {
   adminEmail?: string;
   adminName?: string;
   adminPassword?: string;
+  // Existing ADMIN mode — same account (no new credentials / no deactivation).
+  existingAdminEmail?: string;
 }
 
 export interface SchoolAdminAssignResult {

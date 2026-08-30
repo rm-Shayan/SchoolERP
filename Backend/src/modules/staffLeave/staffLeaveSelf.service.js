@@ -72,6 +72,43 @@ class StaffLeaveSelfService {
 
     return { requests, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
+
+  async updateOwn(staffId, leaveId, { dateFrom, dateTo, leaveType, reason }) {
+    const leave = await prisma.staffAttendance.findFirst({
+      where: { id: leaveId, staffId, status: "PENDING_LEAVE", leaveType: { not: null } },
+    });
+    if (!leave) throw ApiError.notFoundError("Leave request not found or already reviewed");
+
+    if (!reason?.trim()) throw ApiError.badRequestError("Reason is required");
+
+    const from = dateFrom ? new Date(dateFrom) : leave.date;
+    const to = dateTo ? new Date(dateTo) : leave.dateTo;
+    if (to && to < from) throw ApiError.badRequestError("Invalid date range");
+
+    const updated = await prisma.staffAttendance.update({
+      where: { id: leaveId },
+      data: {
+        ...(dateFrom && { date: from }),
+        ...(dateTo && { dateTo: to }),
+        ...(leaveType && { leaveType }),
+        ...(reason && { reason: reason.trim() }),
+      },
+    });
+
+    emitToRoom(`school:${leave.schoolId}`, "staff_leave_request_updated", { id: leaveId, staffId });
+    return updated;
+  }
+
+  async removeOwn(staffId, leaveId) {
+    const leave = await prisma.staffAttendance.findFirst({
+      where: { id: leaveId, staffId, status: "PENDING_LEAVE", leaveType: { not: null } },
+    });
+    if (!leave) throw ApiError.notFoundError("Leave request not found or already reviewed");
+
+    await prisma.staffAttendance.delete({ where: { id: leaveId } });
+    emitToRoom(`school:${leave.schoolId}`, "staff_leave_request_deleted", { id: leaveId });
+    return { success: true };
+  }
 }
 
 export default new StaffLeaveSelfService();

@@ -1,14 +1,16 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Card, CardContent, EmptyState } from '@/features/shared/components';
+import { Card, CardContent, EmptyState, Button } from '@/features/shared/components';
 import { portalDataService } from '@/lib/api/portalDataService';
 import type { PortalTimetableSlot } from '@/types/portal';
 import { cn } from '@/lib/utils';
 import { TimetableSkeleton } from './PortalSkeletonsB';
+import toast from 'react-hot-toast';
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const DAY_COLORS = ['bg-purple-50 text-purple-700', 'bg-blue-50 text-blue-700', 'bg-green-50 text-green-700', 'bg-yellow-50 text-yellow-700', 'bg-red-50 text-red-700', 'bg-indigo-50 text-indigo-700', 'bg-gray-50 text-gray-700'];
+// Index 0 = placeholder. 1=Monday ... 7=Sunday (matches backend dayOfWeek)
+const DAYS = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAY_COLORS = ['', 'bg-blue-50 text-blue-700', 'bg-green-50 text-green-700', 'bg-yellow-50 text-yellow-700', 'bg-red-50 text-red-700', 'bg-indigo-50 text-indigo-700', 'bg-gray-50 text-gray-700', 'bg-purple-50 text-purple-700'];
 
 export default function TimetableTab() {
   const [slots, setSlots] = useState<PortalTimetableSlot[]>([]);
@@ -40,6 +42,11 @@ export default function TimetableTab() {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button size="sm" variant="outline" onClick={() => portalDataService.downloadTimetable().catch(() => toast.error('Download failed'))}>
+          Download PDF
+        </Button>
+      </div>
       {activeDays.map((dayIdx) => (
         <Card key={dayIdx}>
           <CardContent className="p-4">

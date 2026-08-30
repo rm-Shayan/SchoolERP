@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { login } from '@/store/slices/authSlice';
-import { composeValidators, getRoleHomePath, isPassword, required, useForm } from '@/lib/utils';
+import { getRoleHomePath, required, useForm } from '@/lib/utils';
 import { Button, Input } from '@/features/shared/components';
 import { schoolService } from '@/lib/api';
 import type { SchoolBranding } from '@/types';
@@ -37,7 +37,7 @@ export default function LoginCard({ branding, onBrandingChange, heading, subhead
     initialValues: { identifier: '', password: '' },
     validators: {
       identifier: required('Email or username is required'),
-      password: composeValidators(required(), isPassword()),
+      password: required('Password is required'),
     },
     onSubmit: async (v) => {
       const trimmed = (v.identifier as string).trim();

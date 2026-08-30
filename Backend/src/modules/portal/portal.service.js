@@ -44,6 +44,26 @@ class PortalService {
     return allSlots.flat();
   }
 
+  // ── Exam Date Sheets ──────────────────────────────────
+
+  async getExams(portal) {
+    const classIds = await portalRepository.sectionClassIds(portal.sectionIds);
+    return portalRepository.examSheetsForClasses(portal.schoolId, classIds);
+  }
+
+  async getExamDateSheet(portal, examId) {
+    const exam = await portalRepository.findExamById(examId);
+    if (!exam) throw ApiError.notFoundError("Exam not found");
+    if (exam.schoolId !== portal.schoolId) {
+      throw ApiError.forbiddenError("You cannot view this exam");
+    }
+    return exam;
+  }
+
+  async getTimetablePdfSlots(portal) {
+    return this.getTimetable(portal);
+  }
+
   async getConduct(portal) {
     return portalRepository.getConductRemarks(portal.studentIds);
   }

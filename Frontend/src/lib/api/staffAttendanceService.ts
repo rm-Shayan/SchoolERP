@@ -39,6 +39,8 @@ export interface StaffDailyReport {
 export interface StaffMonthlyReport {
   month: number;
   year: number;
+  /** which weekdays are off — [0..6] (0=Sun .. 6=Sat). Default [0,6]. */
+  weeklyOff?: number[];
   records: {
     staff: { id: string; name: string; role: string; username?: string };
     days: Record<string, number>;

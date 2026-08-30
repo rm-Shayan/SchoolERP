@@ -284,6 +284,61 @@ class AttendanceRepository {
       select: { name: true, startDate: true, endDate: true },
     });
   }
+
+  /** All ACTIVE enrolled students (for the monthly attendance matrix — rows
+   *  must include students with zero marks too, not just those recorded). */
+  async getEnrolledStudentsBySection(schoolId) {
+    return prisma.student.findMany({
+      where: { schoolId, status: "ACTIVE" },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        rollNumber: true,
+        imageUrl: true,
+        sectionId: true,
+      },
+      orderBy: [{ rollNumber: "asc" }],
+    });
+  }
+
+  /** School off days / holidays (extra closures beyond weekends).
+   *  Returns [{ date, reason }] or empty array. */
+  async findOffDays(schoolId) {
+    const school = await prisma.school.findFirst({
+      where: { id: schoolId },
+      select: { offDays: true },
+    });
+    return Array.isArray(school?.offDays) ? school.offDays : [];
+  }
+
+  /** Replace the whole off-days list for a school. */
+  async updateOffDays(schoolId, offDays) {
+    return prisma.school.update({
+      where: { id: schoolId },
+      data: { offDays },
+      select: { offDays: true },
+    });
+  }
+
+  /** Which weekdays are off for this school — [0..6] (0=Sun .. 6=Sat).
+   *  null/absent = default [0, 6]. */
+  async findWeeklyOff(schoolId) {
+    const school = await prisma.school.findFirst({
+      where: { id: schoolId },
+      select: { weeklyOff: true },
+    });
+    return Array.isArray(school?.weeklyOff) ? school.weeklyOff : [0, 6];
+  }
+
+  /** Replace the weekly-off weekdays for a school. */
+  async updateWeeklyOff(schoolId, weekdays) {
+    return prisma.school.update({
+      where: { id: schoolId },
+      data: { weeklyOff: weekdays },
+      select: { weeklyOff: true },
+    });
+  }
 }
 
 

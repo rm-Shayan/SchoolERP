@@ -42,7 +42,7 @@ export default function GateScanPage({ embedded = false }: GateScanPageProps) {
         studentId: result.studentId, studentName: result.studentName,
         rollNumber: result.rollNumber, imageUrl: result.imageUrl,
         identifierCode: result.identifierCode, checkIn: result.checkIn,
-        checkOut: result.checkOut, status: result.status, scannedAt: result.scannedAt,
+        status: result.status, scannedAt: result.scannedAt,
       }));
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'Scan failed. Check the code and try again.');

@@ -9,7 +9,7 @@ import PageLoader from '@/components/PageLoader';
 
 // Har portal ka apna role-set. Isi se decide hota hai kein role is portal
 // tak pohunch sakta hai — guard har layout mein reuse hota hai taake ek
-// hi jagah authorization rahe (staff/admin/teacher cross-access na kar saken).
+// jagah authorization rahe (staff/admin/teacher cross-access na kar saken).
 export const PORTAL_ROLES: Record<string, string[]> = {
   admin: ['SUPER_ADMIN'],
   branch: ['ADMIN', 'RECEPTIONIST', 'SUPER_ADMIN'],
@@ -28,15 +28,26 @@ export default function PortalGuard({ portal, publicPaths = [], children }: Port
   const pathname = usePathname();
   const { isAuthenticated, loading, user, organization } = useAppSelector((s) => s.auth);
   const [mounted, setMounted] = useState(false);
+  // Track whether we've validated the token — prevents children from mounting
+  // and firing API calls with an expired/invalid token.
+  const [tokenValidated, setTokenValidated] = useState(false);
   const allowed = PORTAL_ROLES[portal];
   const isPublic = publicPaths.includes(pathname);
 
   useEffect(() => {
     setMounted(true);
-    if (!isAuthenticated && typeof window !== 'undefined' && localStorage.getItem('accessToken')) {
-      dispatch(loadUser());
+    // ALWAYS validate the token on mount when a stored token exists.
+    // hydrateFromStorage may have set isAuthenticated=true from localStorage
+    // without actually verifying the token is still valid on the server.
+    if (typeof window !== 'undefined' && localStorage.getItem('accessToken')) {
+      dispatch(loadUser())
+        .unwrap()
+        .catch(() => {})
+        .finally(() => setTokenValidated(true));
+    } else {
+      setTokenValidated(true);
     }
-  }, [isAuthenticated, dispatch]);
+  }, [dispatch]);
 
   useEffect(() => {
     if (!mounted || loading || isPublic) return;
@@ -50,7 +61,7 @@ export default function PortalGuard({ portal, publicPaths = [], children }: Port
   }, [isAuthenticated, loading, user, mounted, router, isPublic, allowed, organization?.slug]);
 
   if (isPublic) return <>{children}</>;
-  if (!mounted || loading) return <PageLoader />;
+  if (!mounted || loading || !tokenValidated) return <PageLoader />;
   if (!isAuthenticated) return <PageLoader />;
   if (user && !allowed.includes(user.role)) return <PageLoader />;
 

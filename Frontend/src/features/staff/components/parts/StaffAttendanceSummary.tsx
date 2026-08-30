@@ -83,11 +83,6 @@ export default function StaffAttendanceSummary({ staffId }: Props) {
                   </span>
                 )}
               </div>
-              {todayRecord.checkOut && (
-                <span className="text-xs text-gray-500">
-                  Out: {new Date(todayRecord.checkOut).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              )}
             </div>
           ) : (
             <p className="text-sm text-gray-400">No record today</p>

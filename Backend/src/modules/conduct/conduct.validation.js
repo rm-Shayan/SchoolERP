@@ -30,3 +30,22 @@ export const listRemarksBySectionSchema = z.object({
 });
 
 export const getRemarkSchema = z.object(idParam);
+
+export const updateRemarkSchema = z.object({
+  params: idParam.params,
+  body: z.object({
+    type: z.enum(["POSITIVE", "NEUTRAL", "NEGATIVE"]).optional(),
+    comment: z.string().min(1, "Comment required").max(500).optional(),
+  }),
+});
+
+export const deleteRemarkSchema = z.object(idParam);
+
+export const listRemarksBySchoolSchema = z.object({
+  query: z.object({
+    type: z.enum(["POSITIVE", "NEUTRAL", "NEGATIVE"]).optional(),
+    teacherId: z.string().uuid().optional(),
+    page: z.coerce.number().int().positive().optional(),
+    pageSize: z.coerce.number().int().positive().max(100).optional(),
+  }),
+});

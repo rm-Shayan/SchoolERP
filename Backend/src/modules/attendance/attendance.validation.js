@@ -75,3 +75,24 @@ export const markStaffAttendanceSchema = z.object({
   }),
 });
 
+const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD");
+
+export const addOffDaySchema = z.object({
+  body: z.object({
+    date: dateOnly,
+    reason: z.string().trim().max(80, "Reason too long").optional(),
+  }),
+});
+
+export const removeOffDaySchema = z.object({
+  params: z.object({
+    date: dateOnly,
+  }),
+});
+
+export const updateWeeklyOffSchema = z.object({
+  body: z.object({
+    weekdays: z.array(z.number().int().min(0).max(6)).max(7),
+  }),
+});
+

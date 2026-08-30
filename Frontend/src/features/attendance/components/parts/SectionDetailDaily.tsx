@@ -6,6 +6,7 @@ import { attendanceService } from '@/lib/api/attendanceService';
 import type { DailyAttendanceReport } from '@/types';
 import StatCards from './StatCards';
 import AttendanceOverrideModal from './AttendanceOverrideModal';
+import DayOffBanner from './DayOffBanner';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -56,7 +57,9 @@ export default function SectionDetailDaily({ sectionId }: Props) {
   }, [rows]);
 
   const dayLabel = new Date(date + 'T00:00:00').toLocaleDateString('en-PK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  const isWeekend = [0, 6].includes(new Date(date).getDay());
+  const weeklyOff = data?.weeklyOff ?? [0, 6];
+  const isWeekend = weeklyOff.includes(new Date(date).getDay());
+  const offDay = (data?.offDays ?? []).find((o) => o.date === date);
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this record?')) return;
     try { await attendanceService.deleteRecord(id); toast.success('Deleted'); load(); }
@@ -81,12 +84,12 @@ export default function SectionDetailDaily({ sectionId }: Props) {
       </div>
       <p className="text-sm font-medium text-gray-600">{dayLabel}</p>
 
-      {isWeekend ? (
-        <div className="rounded-2xl border border-gray-100 bg-white p-12 text-center">
-          <p className="text-4xl mb-3">🏖️</p>
-          <p className="text-lg font-bold text-gray-700">Weekend Off</p>
-          <p className="text-sm text-gray-400 mt-1">No attendance recorded on weekends.</p>
-        </div>
+      {isWeekend || offDay ? (
+        offDay ? (
+          <DayOffBanner emoji="🎉" title={offDay.reason || 'School Off'} desc="No attendance recorded on a school off day / holiday." />
+        ) : (
+          <DayOffBanner emoji="🏖️" title="Weekend Off" desc="No attendance recorded on weekends." />
+        )
       ) : loading ? (
         <div className="space-y-3">{[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />)}</div>
       ) : rows.length === 0 ? (

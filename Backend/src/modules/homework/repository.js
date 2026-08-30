@@ -22,9 +22,10 @@ class HomeworkRepository {
     });
   }
 
-  async listBroadcastsBySchool(schoolId, { sectionId, page, pageSize }) {
+  async listBroadcastsBySchool(schoolId, { sectionId, createdById, page, pageSize }) {
     const where = { schoolId };
     if (sectionId) where.sectionId = sectionId;
+    if (createdById) where.createdById = createdById;
 
     const [items, total] = await Promise.all([
       prisma.homeworkBroadcast.findMany({

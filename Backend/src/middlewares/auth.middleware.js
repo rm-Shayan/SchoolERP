@@ -21,6 +21,7 @@ const USER_SELECT = {
   schoolId: true,
   organizationId: true,
   isActive: true,
+  branchAccess: true,
   school: { select: { id: true, name: true, code: true, status: true, logoUrl: true } },
   organization: { select: { id: true, name: true, code: true, status: true, logoUrl: true, themeColor: true } },
 };
@@ -125,13 +126,23 @@ export const authenticate = async (req, res, next) => {
       return next(ApiError.unauthorizedError(BLOCKED_MESSAGE));
     }
 
-    // Attach user context to request
+    // Attach user context to request. The SCOPE is the JWT's claim — a
+    // multi-branch admin who switched branches carries that branch in the
+    // token; the DB row's `schoolId` stays their HOME branch (unchanged).
+    // Fallback to the DB row only when the claim is missing (legacy tokens).
+    const effectiveSchoolId =
+      decoded.schoolId && user.branchAccess && Array.isArray(user.branchAccess)
+        ? user.branchAccess.includes(decoded.schoolId) || decoded.schoolId === user.schoolId
+          ? decoded.schoolId
+          : user.schoolId
+        : decoded.schoolId || user.schoolId;
+
     req.user = {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
-      schoolId: user.schoolId,
+      schoolId: effectiveSchoolId,
       organizationId: user.organizationId,
       school: user.school,
       organization: user.organization,

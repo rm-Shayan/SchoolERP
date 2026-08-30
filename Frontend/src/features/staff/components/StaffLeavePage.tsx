@@ -10,7 +10,9 @@ import {
 import StaffLeaveCard from './parts/StaffLeaveCard';
 import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 import CreateStaffLeaveModal from './parts/CreateStaffLeaveModal';
+import StaffLeaveRequestModal from './parts/StaffLeaveRequestModal';
 import StaffLeaveReviewModal from './parts/StaffLeaveReviewModal';
+import EditStaffLeaveModal from './parts/EditStaffLeaveModal';
 import toast from 'react-hot-toast';
 
 const STATUS_OPTIONS = [
@@ -30,8 +32,10 @@ export default function StaffLeavePage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [showCreate, setShowCreate] = useState(false);
+  const [showRequest, setShowRequest] = useState(false);
   const [reviewItem, setReviewItem] = useState<StaffLeaveRequest | null>(null);
   const [reviewAction, setReviewAction] = useState<'APPROVED_LEAVE' | 'REJECTED_LEAVE'>('APPROVED_LEAVE');
+  const [editItem, setEditItem] = useState<StaffLeaveRequest | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,22 +51,23 @@ export default function StaffLeavePage() {
   }, [statusFilter, page, isAdmin]);
 
   useEffect(() => { load(); }, [load]);
-  useRealtimeRefresh(['staff_leave_request_created', 'staff_leave_request_reviewed', 'staff_leave_request_deleted'], load);
+  useRealtimeRefresh(['staff_leave_request_created', 'staff_leave_request_reviewed', 'staff_leave_request_deleted', 'staff_leave_request_updated'], load);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this leave request?')) return;
     try {
-      await staffLeaveService.delete(id);
+      if (isAdmin) await staffLeaveService.delete(id);
+      else await staffLeaveService.deleteOwn(id);
       toast.success('Leave deleted');
       load();
-    } catch (err: any) { toast.error(err?.message ?? 'Failed'); }
+    } catch (err: any) { toast.error(err?.response?.data?.message ?? err?.message ?? 'Failed'); }
   };
 
   return (
     <div className="space-y-6">
       <PageHeader title="Staff Leave Management" description={isAdmin ? "Create, review and manage staff leave requests." : "View and request leaves."}
         actions={<>
-          <Button size="sm" onClick={() => setShowCreate(true)}>Create Request</Button>
+          <Button size="sm" onClick={() => isAdmin ? setShowCreate(true) : setShowRequest(true)}>{isAdmin ? 'Create Leave' : 'Request Leave'}</Button>
         </>}
       />
       <div className="flex flex-wrap gap-3">
@@ -80,10 +85,11 @@ export default function StaffLeavePage() {
         <>
           <div className="space-y-3">
             {requests.map((req) => (
-              <StaffLeaveCard key={req.id} req={req} isAdmin={isAdmin}
+              <StaffLeaveCard key={req.id} req={req} isAdmin={isAdmin} isOwn={req.staffId === user?.id}
                 onApprove={(r) => { setReviewItem(r); setReviewAction('APPROVED_LEAVE'); }}
                 onReject={(r) => { setReviewItem(r); setReviewAction('REJECTED_LEAVE'); }}
                 onDelete={handleDelete}
+                onEdit={setEditItem}
               />
             ))}
           </div>
@@ -91,7 +97,9 @@ export default function StaffLeavePage() {
         </>
       )}
       <CreateStaffLeaveModal open={showCreate} onClose={() => setShowCreate(false)} onCreated={load} />
+      <StaffLeaveRequestModal open={showRequest} onClose={() => setShowRequest(false)} onSubmitted={load} />
       <StaffLeaveReviewModal leave={reviewItem} action={reviewAction} onClose={() => setReviewItem(null)} onDone={load} />
+      <EditStaffLeaveModal leave={editItem} onClose={() => setEditItem(null)} onUpdated={load} />
     </div>
   );
 }

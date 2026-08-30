@@ -1,13 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
-import { PageHeader, Card, CardContent, Button, ConfirmDialog, EmptyState, Select, StatsCard, CardGridSkeleton } from '@/features/shared/components';
+import { PageHeader, Card, CardContent, Button, ConfirmDialog, EmptyState, Select, CardGridSkeleton } from '@/features/shared/components';
 import { examService } from '@/lib/api';
 import { academicService, type Term } from '@/lib/api/academicService';
 import type { AcademicYear, Exam } from '@/types';
 import ExamFormModal from './parts/ExamFormModal';
 import ExamCard from './parts/ExamCard';
+import ExamStatCards from './parts/ExamStatCards';
 import toast from 'react-hot-toast';
 
 export default function ExamSchedulePage() {
@@ -20,6 +21,7 @@ export default function ExamSchedulePage() {
   const [terms, setTerms] = useState<Term[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [editing, setEditing] = useState<Exam | null>(null);
   const [deleting, setDeleting] = useState<Exam | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -70,30 +72,23 @@ export default function ExamSchedulePage() {
     }
   };
 
-  const stats = useMemo(() => {
-    const now = Date.now();
-    return [
-      { title: 'Total Exams', value: exams.length, subtitle: 'This academic year', icon: <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>, tint: 'sa-tint-1' },
-      { title: 'Upcoming', value: exams.filter((e) => new Date(e.endDate).getTime() >= now).length, subtitle: 'Not yet finished', icon: <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, tint: 'sa-tint-3' },
-      { title: 'Completed', value: exams.filter((e) => new Date(e.endDate).getTime() < now).length, subtitle: 'Already held', icon: <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, tint: 'sa-tint-2' },
-      { title: 'Terms', value: terms.length, subtitle: 'In selected year', icon: <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>, tint: 'sa-tint-4' },
-    ];
-  }, [exams, terms]);
+  const handleDownload = async (exam: Exam) => {
+    try {
+      await examService.downloadDateSheet(exam.id, exam.name);
+      toast.success('Date sheet downloaded');
+    } catch (err) {
+      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Download failed');
+    }
+  };
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Exam Schedule"
-        description="Create and manage term-wise exams per academic year."
-        actions={<Button onClick={() => setShowCreate(true)}>+ New Exam</Button>}
+        description="Create term exams and assign date-wise papers."
+        actions={<Button onClick={() => { setEditing(null); setShowCreate(true); }}>+ New Exam</Button>}
       />
-
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        {stats.map((s, i) => (
-          <StatsCard key={s.title} index={i} {...s} />
-        ))}
-      </div>
-
+      <ExamStatCards exams={exams} terms={terms} />
       <Card>
         <CardContent>
           <Select
@@ -106,7 +101,6 @@ export default function ExamSchedulePage() {
           />
         </CardContent>
       </Card>
-
       <Card>
         <CardContent>
           {loading ? (
@@ -116,24 +110,25 @@ export default function ExamSchedulePage() {
               icon={<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>}
               title="No exams scheduled"
               description={yearId ? 'No exams scheduled for this academic year yet.' : 'Create the first exam to publish the schedule.'}
-              action={<Button onClick={() => setShowCreate(true)}>+ New Exam</Button>}
+              action={<Button onClick={() => { setEditing(null); setShowCreate(true); }}>+ New Exam</Button>}
             />
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {exams.map((exam) => (
-                <ExamCard key={exam.id} exam={exam} deleting={deletingId === exam.id} onDelete={setDeleting} />
+                <ExamCard key={exam.id} exam={exam} deleting={deletingId === exam.id} onDelete={setDeleting}
+                  onEdit={setEditing} onDownload={handleDownload} />
               ))}
             </div>
           )}
         </CardContent>
       </Card>
-
       <ExamFormModal
         open={showCreate}
-        onClose={() => setShowCreate(false)}
+        onClose={() => { setShowCreate(false); setEditing(null); }}
         onSaved={load}
         schoolId={schoolId ?? ''}
         terms={terms}
+        exam={editing}
       />
       <ConfirmDialog
         open={!!deleting}

@@ -6,17 +6,18 @@ import Link from "next/link";
 const navLinks = [
   { label: "Features", href: "#features" },
   { label: "Modules", href: "#modules" },
+  { label: "Pricing", href: "#pricing" },
   { label: "Why us", href: "#why-us" },
   { label: "Get access", href: "#access" },
 ];
 
 function BrandLogo() {
   return (
-    <div className="flex h-16 w-[250px] max-w-[48vw] items-center overflow-hidden">
+    <div className="flex h-16 items-center sm:h-20">
       <img
         src="/header.png"
         alt="SchoolERP"
-        className="block h-full w-full object-contain object-left"
+        className="block h-full w-auto object-contain object-left"
       />
     </div>
   );
@@ -26,14 +27,18 @@ export default function SiteNav() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-200 bg-[#fafafa]">
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-    <Link
+    <header className="sticky top-0 z-50 border-b border-gray-200 bg-[#fafafa]/95 backdrop-blur-sm">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6 lg:px-8">
+   <Link
   href="/"
   onClick={() => setOpen(false)}
-  className="flex h-20 items-center border-0 bg-transparent p-0 outline-none ring-0 shadow-none"
+  className="flex shrink-0 items-center gap-2 py-0.5"
 >
   <BrandLogo />
+
+  <h3 className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-xl font-extrabold tracking-tight text-transparent">
+    SchoolERP
+  </h3>
 </Link>
         <nav className="hidden items-center gap-8 text-sm font-semibold text-gray-500 md:flex">
           {navLinks.map((item) => (

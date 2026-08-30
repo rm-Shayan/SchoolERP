@@ -1,4 +1,5 @@
 import api from './client';
+import { cached, invalidate } from './serviceCache';
 import type { ApiResponse } from '@/types';
 
 export interface TeachingAssignment {
@@ -20,29 +21,44 @@ export interface TeachingAssignmentPayload {
   subjectId?: string;
 }
 
+export interface TeacherDashboardStats {
+  assignments: number;
+  upcomingPtms: number;
+  totalHomework: number;
+  totalTimetableSlots: number;
+}
+
+const CACHE_TTL = 10_000;
+
 export const teachingAssignmentService = {
-  // POST /teaching-assignments/schools/:schoolId — MANAGEMENT
   assign: async (schoolId: string, data: TeachingAssignmentPayload): Promise<TeachingAssignment> => {
     const res = await api.post<ApiResponse<TeachingAssignment>>(`/teaching-assignments/schools/${schoolId}`, data);
+    invalidate(`assigns:${schoolId}`);
     return res.data.data;
   },
 
-  // GET /teaching-assignments/schools/:schoolId — ALL_STAFF
   list: async (schoolId: string, query?: { teacherId?: string; classId?: string }): Promise<TeachingAssignment[]> => {
-    const res = await api.get<ApiResponse<TeachingAssignment[]>>(`/teaching-assignments/schools/${schoolId}`, {
-      params: query,
+    const key = `assigns:${schoolId}:${JSON.stringify(query ?? {})}`;
+    return cached(key, CACHE_TTL, async () => {
+      const res = await api.get<ApiResponse<TeachingAssignment[]>>(`/teaching-assignments/schools/${schoolId}`, { params: query });
+      return res.data.data;
     });
-    return res.data.data;
   },
 
-  // GET /teaching-assignments/schools/:schoolId/me — teacher ke apne assignments
   listMine: async (schoolId: string): Promise<TeachingAssignment[]> => {
-    const res = await api.get<ApiResponse<TeachingAssignment[]>>(`/teaching-assignments/schools/${schoolId}/me`);
+    return cached(`assigns:mine:${schoolId}`, CACHE_TTL, async () => {
+      const res = await api.get<ApiResponse<TeachingAssignment[]>>(`/teaching-assignments/schools/${schoolId}/me`);
+      return res.data.data;
+    });
+  },
+
+  getDashboardStats: async (schoolId: string): Promise<TeacherDashboardStats> => {
+    const res = await api.get<ApiResponse<TeacherDashboardStats>>(`/teaching-assignments/schools/${schoolId}/dashboard-stats`);
     return res.data.data;
   },
 
-  // DELETE /teaching-assignments/:id — MANAGEMENT
   remove: async (id: string): Promise<void> => {
     await api.delete(`/teaching-assignments/${id}`);
+    invalidate('assigns:');
   },
 };

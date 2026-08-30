@@ -34,10 +34,10 @@ class AuthController {
 
   /**
    * GET /api/v1/auth/me
-   * Get currently logged-in staff profile.
+   * Get currently logged-in staff profile (scoped to the JWT's branch).
    */
   getCurrentUser = asyncHandler(async (req, res) => {
-    const user = await authService.getCurrentUser(req.user.id);
+    const user = await authService.getCurrentUser(req.user.id, req.user.schoolId);
     return res.status(200).json(
       ApiResponse.ok("Profile fetched successfully", user)
     );
@@ -69,12 +69,35 @@ class AuthController {
   /**
    * POST /api/v1/auth/refresh
    * Issue new access + refresh token pair (token rotation).
+   * Optional `schoolId` keeps the branch switch across rotation.
    */
   refreshTokens = asyncHandler(async (req, res) => {
-    const { refreshToken } = req.body;
-    const result = await authService.refreshTokens(refreshToken);
+    const { refreshToken, schoolId } = req.body;
+    const result = await authService.refreshTokens(refreshToken, schoolId);
     return res.status(200).json(
       ApiResponse.ok("Tokens refreshed successfully", result)
+    );
+  });
+
+  /**
+   * POST /api/v1/auth/switch-branch
+   * Re-scope the access token to one of the user's branches (no new creds).
+   */
+  switchBranch = asyncHandler(async (req, res) => {
+    const result = await authService.switchBranch(req.user.id, req.body.schoolId);
+    return res.status(200).json(
+      ApiResponse.ok("Branch switched successfully", result)
+    );
+  });
+
+  /**
+   * GET /api/v1/auth/my-branches
+   * Branches this account can open (home + extras), current flagged.
+   */
+  myBranches = asyncHandler(async (req, res) => {
+    const branches = await authService.myBranches(req.user.id, req.user.schoolId);
+    return res.status(200).json(
+      ApiResponse.ok("Branches fetched successfully", { branches })
     );
   });
 
@@ -216,6 +239,7 @@ class AuthController {
     const filters = {};
     if (query.search) filters.search = String(query.search).trim();
     if (query.role) filters.role = String(query.role);
+    if (query.organizationId) filters.organizationId = String(query.organizationId);
     if (query.status === "ACTIVE") filters.isActive = true;
     else if (query.status === "INACTIVE") filters.isActive = false;
     if (query.reason === "WITH_REASON") filters.hasBlockReason = true;

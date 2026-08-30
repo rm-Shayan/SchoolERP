@@ -47,7 +47,9 @@ export interface User {
   createdAt: string;
   organization?: Organization;
   school?: School;
-  /** Accessible branches — ab hamesha sirf apni branch (koi org-level admin nahi). */
+  /** Extra branches this same account can open (home branch = schoolId). */
+  branchAccess?: string[];
+  /** Accessible branches — home + extras (multi-branch admin). */
   schools?: School[];
 }
 

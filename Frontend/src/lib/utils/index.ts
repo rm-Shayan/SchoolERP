@@ -87,9 +87,18 @@ export function getUserType(role?: string): UserType | null {
   }
 }
 
-// Mirrors the backend storage rules (spec §4): 1MB hard limit, JPG/PNG/WebP only.
-export const MAX_IMAGE_UPLOAD_SIZE_MB = 1;
-const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+// Mirrors the backend storage rules (spec §4): backend caps uploads at
+// MAX_IMAGE_UPLOAD_SIZE_MB (default 5MB) and accepts JPG/PNG/WebP plus
+// HEIC/HEIF (iPhone photos, converted server-side). Keep the client limit
+// in sync with storage.service.js so valid uploads aren't blocked twice.
+export const MAX_IMAGE_UPLOAD_SIZE_MB = 5;
+const ALLOWED_IMAGE_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+]);
 
 export function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -99,7 +108,7 @@ export function formatFileSize(bytes: number) {
 
 export function validateImageUpload(file: File, maxSizeMB = MAX_IMAGE_UPLOAD_SIZE_MB) {
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-    return 'Only JPG, PNG and WebP images are allowed';
+    return 'Please upload a JPG, PNG or WebP image (iPhone HEIC photos are supported)';
   }
 
   const maxBytes = maxSizeMB * 1024 * 1024;

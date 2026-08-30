@@ -30,6 +30,18 @@ router.post(
   staffLeaveController.create
 );
 
+router.patch(
+  "/my/:id",
+  authorize("ADMIN", "TEACHER", "RECEPTIONIST", "SUPER_ADMIN"),
+  staffLeaveController.updateOwn
+);
+
+router.delete(
+  "/my/:id",
+  authorize("ADMIN", "TEACHER", "RECEPTIONIST", "SUPER_ADMIN"),
+  staffLeaveController.removeOwn
+);
+
 router.delete(
   "/:id",
   authorize("ADMIN", "SUPER_ADMIN"),

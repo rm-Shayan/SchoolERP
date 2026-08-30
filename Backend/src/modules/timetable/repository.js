@@ -46,7 +46,7 @@ class TimetableRepository {
     return prisma.timetableSlot.findMany({
       where: { sectionId },
       include: { subject: true, teacher: { select: { id: true, name: true } } },
-      orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
+      orderBy: [{ dayOfWeek: "asc" }, { order: "asc" }, { startTime: "asc" }],
     });
   }
 
@@ -56,8 +56,15 @@ class TimetableRepository {
     return prisma.timetableSlot.findMany({
       where,
       include: { section: { include: { class: true } }, subject: true },
-      orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
+      orderBy: [{ dayOfWeek: "asc" }, { order: "asc" }, { startTime: "asc" }],
     });
+  }
+
+  async reorderSlots(sectionId, dayOfWeek, slotIds) {
+    const updates = slotIds.map((id, idx) =>
+      prisma.timetableSlot.update({ where: { id }, data: { order: idx } })
+    );
+    return prisma.$transaction(updates);
   }
 
   /**

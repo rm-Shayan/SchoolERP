@@ -42,11 +42,14 @@ export const getMonthlyReport = async (schoolId, year, month) => {
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0);
 
-  const records = await prisma.staffAttendance.findMany({
-    where: { schoolId, date: { gte: startDate, lte: endDate } },
-    include: { staff: { select: { id: true, name: true, role: true, username: true } } },
-    orderBy: { date: "asc" },
-  });
+  const [records, school] = await Promise.all([
+    prisma.staffAttendance.findMany({
+      where: { schoolId, date: { gte: startDate, lte: endDate } },
+      include: { staff: { select: { id: true, name: true, role: true, username: true } } },
+      orderBy: { date: "asc" },
+    }),
+    prisma.school.findFirst({ where: { id: schoolId }, select: { weeklyOff: true } }),
+  ]);
 
   const byStaff = {};
   records.forEach((r) => {
@@ -61,7 +64,8 @@ export const getMonthlyReport = async (schoolId, year, month) => {
     byStaff[r.staffId].total++;
   });
 
-  return { month, year, records: Object.values(byStaff) };
+  const weeklyOff = Array.isArray(school?.weeklyOff) ? school.weeklyOff : [0, 6];
+  return { month, year, weeklyOff, records: Object.values(byStaff) };
 };
 
 export const getMyAttendance = async (staffId, { startDate, endDate } = {}) => {

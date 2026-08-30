@@ -111,7 +111,7 @@ export default function OrganizationDetail() {
         </div>
       </Reveal>
       <EditOrgModal open={showEditModal} org={org} onClose={closeEdit} onSave={handleEditOrg} />
-      <AddBranchModal open={showSchoolModal} onClose={closeAdd} onCreate={handleCreateSchool} />
+      <AddBranchModal open={showSchoolModal} onClose={closeAdd} organizationId={orgId} onCreate={handleCreateSchool} />
       <OrgModerationDialogs
         ref={moderationRef}
         org={org}

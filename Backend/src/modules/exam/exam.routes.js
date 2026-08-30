@@ -7,6 +7,7 @@ import {
   createExamSchema,
   listExamsSchema,
   getExamSchema,
+  updateExamSchema,
   enterResultsSchema,
   publishResultsSchema,
   getStudentResultSchema,
@@ -41,11 +42,25 @@ router.get(
   examController.getExam
 );
 
+router.get(
+  "/:id/date-sheet",
+  authorize(ROLE_GROUPS.ALL_STAFF),
+  validate(getExamSchema),
+  examController.downloadDateSheet
+);
+
 router.delete(
   "/:id",
   authorize(ROLE_GROUPS.MANAGEMENT),
   validate(getExamSchema),
   examController.deleteExam
+);
+
+router.put(
+  "/:id",
+  authorize(ROLE_GROUPS.MANAGEMENT),
+  validate(updateExamSchema),
+  examController.updateExam
 );
 
 router.post(

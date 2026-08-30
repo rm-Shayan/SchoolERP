@@ -43,6 +43,22 @@ export interface AcademicYear {
   terms?: Term[];
 }
 
+export interface ExamPaper {
+  id: string;
+  examId: string;
+  classId: string;
+  subjectId: string;
+  sectionId?: string | null;
+  date: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  maxMarks?: number | null;
+  roomNumber?: string | null;
+  subject?: { id: string; name: string };
+  section?: { id: string; name: string };
+  class?: { id: string; name: string };
+}
+
 export interface Exam {
   id: string;
   schoolId: string;
@@ -51,5 +67,6 @@ export interface Exam {
   startDate: string;
   endDate: string;
   term?: { id: string; name: string; academicYear?: { id: string; name: string } };
+  papers?: ExamPaper[];
   _count?: { results: number };
 }

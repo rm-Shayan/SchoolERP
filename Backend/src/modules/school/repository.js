@@ -25,14 +25,55 @@ class SchoolRepository {
       where: { id },
       include: {
         organization: { select: { id: true, name: true, slug: true, logoUrl: true } },
-        // Dedicated branch admins (Principal) — `users` is renamed to `admins` in the service
+        // Dedicated branch ADMINs (Principals) — `users` is renamed to `admins`
+        // in the service. Includes DEDICATED (schoolId) + multi-branch admins
+        // whose branchAccess list this branch (same account, no new credentials).
         users: {
-          where: { role: "ADMIN" },
+          where: {
+            role: "ADMIN",
+            OR: [
+              { schoolId: id },
+              { branchAccess: { array_contains: [id] } },
+            ],
+          },
           select: { id: true, name: true, email: true, phone: true, role: true, isActive: true },
           orderBy: { createdAt: "asc" },
         },
         _count: { select: { students: true, classes: true, users: true } },
       },
+    });
+  }
+
+  /**
+   * Find an ACTIVE ADMIN user who belongs to the given organization — the
+   * "existing admin" path for branch assignment (no new credentials created).
+   */
+  async findOrgAdminByEmail(email, organizationId) {
+    return prisma.user.findFirst({
+      where: {
+        email: String(email).trim().toLowerCase(),
+        organizationId,
+        role: "ADMIN",
+        isActive: true,
+      },
+      select: { id: true, name: true, email: true, role: true },
+    });
+  }
+
+  /**
+   * Grant a user access to another branch (multi-branch admin). Home branch
+   * (`schoolId`) is untouched — access is added to `branchAccess` only.
+   */
+  async addBranchAccess(userId, schoolId) {
+    const row = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { branchAccess: true },
+    });
+    const current = Array.isArray(row?.branchAccess) ? row.branchAccess : [];
+    return prisma.user.update({
+      where: { id: userId },
+      data: { branchAccess: [...new Set([...current, schoolId])] },
+      select: { id: true, name: true, email: true, role: true },
     });
   }
 

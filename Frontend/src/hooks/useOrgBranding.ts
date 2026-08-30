@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { schoolService } from '@/lib/api';
 import type { SchoolBranding } from '@/types';
 
@@ -9,15 +9,14 @@ export function useOrgBranding(params?: { code?: string; slug?: string; initialB
   const slug = params?.slug;
   const initialBranding = params?.initialBranding;
   const [branding, setBranding] = useState<SchoolBranding | null>(initialBranding ?? null);
-  const usedInitialBranding = useRef(false);
 
   useEffect(() => {
-    if (!code && !slug) {
-      setBranding(null);
+    if (initialBranding) {
+      setBranding(initialBranding);
       return;
     }
-    if (initialBranding && !usedInitialBranding.current) {
-      usedInitialBranding.current = true;
+    if (!code && !slug) {
+      setBranding(null);
       return;
     }
     let alive = true;

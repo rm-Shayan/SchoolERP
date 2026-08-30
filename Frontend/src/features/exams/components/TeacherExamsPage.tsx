@@ -116,14 +116,20 @@ export default function TeacherExamsPage() {
                       <p className="text-xs font-medium text-slate-500">
                         Term: {exam.term?.name ?? '—'}
                         <span className="ml-3">Results: {exam._count?.results ?? 0}</span>
+                        {exam.papers ? <span className="ml-3">Papers: {exam.papers.length}</span> : null}
                       </p>
-                      <Button
-                        size="sm"
-                        disabled={assignments.length === 0}
-                        onClick={() => setActiveExam(exam)}
-                      >
-                        Enter Results
-                      </Button>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => examService.downloadDateSheet(exam.id, exam.name).catch(() => toast.error('Date sheet download failed'))}
+                        >
+                          Date Sheet ↓
+                        </Button>
+                        <Button size="sm" disabled={assignments.length === 0} onClick={() => setActiveExam(exam)}>
+                          Enter Results
+                        </Button>
+                      </div>
                       {assignments.length === 0 && (
                         <p className="text-xs text-amber-600">No class has been assigned to you yet.</p>
                       )}

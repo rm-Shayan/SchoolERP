@@ -2,6 +2,7 @@ import timetableService from "./timetable.service.js";
 import { asyncHandler } from "../../lib/utils/asyncHandler.js";
 import ApiResponse from "../../lib/utils/ApiResponse.js";
 import { sendCsv } from "../../lib/utils/csv.js";
+import { streamPdf, buildTimetablePdf } from "../../lib/pdf/reportPdf.js";
 
 class TimetableController {
   /**
@@ -46,6 +47,14 @@ class TimetableController {
   });
 
   /**
+   * PATCH /api/v1/timetable/sections/:sectionId/reorder
+   */
+  reorderSlots = asyncHandler(async (req, res) => {
+    const result = await timetableService.reorderSlots(req.user, req.params.sectionId, req.body);
+    return res.status(200).json(ApiResponse.ok('Slots reordered', result));
+  });
+
+  /**
    * GET /api/v1/timetable/teachers/:teacherId
    */
   listSlotsByTeacher = asyncHandler(async (req, res) => {
@@ -81,6 +90,32 @@ class TimetableController {
   exportTimetable = asyncHandler(async (req, res) => {
     const { csv } = await timetableService.exportTimetable(req.user, req.params.sectionId);
     return sendCsv(res, csv, "timetable");
+  });
+
+  /**
+   * GET /api/v1/timetable/sections/:sectionId/pdf
+   * PDF download — weekly grid for a section.
+   */
+  downloadSectionPdf = asyncHandler(async (req, res) => {
+    const slots = await timetableService.listSlotsBySection(req.user, req.params.sectionId);
+    const sec = slots[0]?.section;
+    const title = sec && (sec.name || sec.class?.name)
+      ? `${sec.class?.name || ""} ${sec.name || ""}`.trim()
+      : "Section Timetable";
+    streamPdf(res, "timetable.pdf", (doc) =>
+      buildTimetablePdf(doc, title, new Date().toLocaleDateString("en-PK"), slots)
+    );
+  });
+
+  /**
+   * GET /api/v1/timetable/teachers/:teacherId/pdf
+   * PDF download — a teacher's weekly schedule.
+   */
+  downloadTeacherPdf = asyncHandler(async (req, res) => {
+    const slots = await timetableService.listSlotsByTeacher(req.user, req.params.teacherId, req.query);
+    streamPdf(res, "my-timetable.pdf", (doc) =>
+      buildTimetablePdf(doc, "My Timetable", new Date().toLocaleDateString("en-PK"), slots)
+    );
   });
 }
 

@@ -8,6 +8,17 @@ const schoolIdParam = {
   params: z.object({ schoolId: z.string().uuid("Invalid schoolId") }),
 };
 
+const paperSchema = z.object({
+  classId: z.string().uuid("Invalid classId"),
+  subjectId: z.string().uuid("Invalid subjectId"),
+  sectionId: z.string().uuid("Invalid sectionId").optional().nullable(),
+  date: z.string().min(1, "Paper date required"),
+  startTime: z.string().optional().nullable(),
+  endTime: z.string().optional().nullable(),
+  maxMarks: z.coerce.number().positive("maxMarks must be > 0").optional().nullable(),
+  roomNumber: z.string().optional().nullable(),
+});
+
 export const createExamSchema = z.object({
   params: schoolIdParam.params,
   body: z.object({
@@ -15,6 +26,18 @@ export const createExamSchema = z.object({
     name: z.string().min(1, "Exam name required").optional(),
     startDate: z.string().min(1, "startDate required"),
     endDate: z.string().min(1, "endDate required"),
+    papers: z.array(paperSchema).optional(),
+  }),
+});
+
+export const updateExamSchema = z.object({
+  params: idParam.params,
+  body: z.object({
+    termId: z.string().uuid("Invalid termId").optional(),
+    name: z.string().min(1, "Exam name required").optional(),
+    startDate: z.string().min(1, "startDate required").optional(),
+    endDate: z.string().min(1, "endDate required").optional(),
+    papers: z.array(paperSchema).min(1, "At least one paper required"),
   }),
 });
 

@@ -127,6 +127,31 @@ export interface PortalPTMSession {
   status: string;
 }
 
+export interface PortalExamPaper {
+  id: string;
+  classId: string;
+  subjectId: string;
+  sectionId?: string | null;
+  date: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  maxMarks?: number | null;
+  roomNumber?: string | null;
+  subject: { id: string; name: string };
+  section?: { id: string; name: string } | null;
+  class: { id: string; name: string };
+}
+
+export interface PortalExamSheet {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  term?: { id: string; name: string; academicYear?: { id: string; name: string } };
+  papers: PortalExamPaper[];
+  _count?: { results: number };
+}
+
 export interface PortalLeaveRequest {
   id: string;
   studentId: string;

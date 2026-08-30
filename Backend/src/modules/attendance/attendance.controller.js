@@ -225,6 +225,52 @@ class AttendanceController {
     }
   };
 
+  // ─── OFF DAYS / HOLIDAYS ────────────────────────────────────────────────
+  getOffDays = async (req, res, next) => {
+    try {
+      const schoolId = req.user.schoolId || req.query.schoolId;
+      if (!schoolId) return next(ApiError.badRequestError("School ID is required"));
+      const offDays = await attendanceService.getOffDays(schoolId);
+      return res.status(200).json(ApiResponse.ok("Off days fetched", offDays));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  addOffDay = async (req, res, next) => {
+    try {
+      const schoolId = req.user.schoolId || req.body.schoolId;
+      if (!schoolId) return next(ApiError.badRequestError("School ID is required"));
+      const { date, reason } = req.body;
+      const result = await attendanceService.addOffDay(schoolId, date, reason);
+      return res.status(201).json(ApiResponse.ok("Off day added", result));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  removeOffDay = async (req, res, next) => {
+    try {
+      const schoolId = req.user.schoolId || req.query.schoolId;
+      if (!schoolId) return next(ApiError.badRequestError("School ID is required"));
+      const result = await attendanceService.removeOffDay(schoolId, req.params.date);
+      return res.status(200).json(ApiResponse.ok("Off day removed", result));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  updateWeeklyOff = async (req, res, next) => {
+    try {
+      const schoolId = req.user.schoolId || req.body.schoolId || req.query.schoolId;
+      if (!schoolId) return next(ApiError.badRequestError("School ID is required"));
+      const result = await attendanceService.updateWeeklyOff(schoolId, req.body.weekdays);
+      return res.status(200).json(ApiResponse.ok("Weekly off days updated", result));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
   updateRecord = async (req, res, next) => {
     try {
       const schoolId = req.user.schoolId;

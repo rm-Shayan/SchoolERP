@@ -126,6 +126,13 @@ class TimetableService {
     return { deletedCount: count };
   }
 
+  async reorderSlots(user, sectionId, { dayOfWeek, slotIds }) {
+    const section = await timetableRepository.sectionExists(sectionId);
+    if (!section) throw ApiError.notFoundError("Section not found");
+    assertOwnSchool(user, section.class.schoolId);
+    return timetableRepository.reorderSlots(sectionId, dayOfWeek, slotIds);
+  }
+
   async listSlotsByTeacher(user, teacherId, { dayOfWeek }) {
     return timetableRepository.listSlotsByTeacher(teacherId, { dayOfWeek });
   }

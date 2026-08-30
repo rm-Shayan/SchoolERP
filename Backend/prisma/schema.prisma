@@ -231,6 +231,8 @@ model School {
   attendanceAlertTime String   @default("09:30") // jab late/absent alerts messages jayen (HH:MM, 24hr)
   portalPassword String?       // hashed shared parent/student portal password (null = school code default)
   scanDevices    Json?         // gate devices: [{id, deviceName, type, deviceMac, location}]
+  offDays        Json?         // school off days / holidays: [{date: "YYYY-MM-DD", reason?: string}] — specific-date closures
+  weeklyOff      Json?         // which weekdays are off: array of [0..6] (0=Sun .. 6=Sat). null = [0,6] (Sun+Sat)
   blockedAt      DateTime?
   blockedReason  String?       // optional admin note stored with the block
   blockedById    String?       // user id of the blocker
@@ -273,6 +275,7 @@ model AcademicYear {
   terms         Term[]
   feeStructures FeeStructure[]
   promotions    PromotionRecord[]
+  conductRemarks ConductRemark[]
 
   @@index([schoolId])
 }
@@ -303,6 +306,7 @@ model Class {
   feeStructures FeeStructure[]  // ek fee structure kai classes par apply hota hai (m2m)
   applicants    Applicant[]
   teacherAssignments TeacherAssignment[]
+  examPapers    ExamPaper[]
 
   @@index([schoolId])
 }
@@ -319,6 +323,7 @@ model Section {
   timetableSlots TimetableSlot[]
   homeworkBroadcasts HomeworkBroadcast[]
   teacherAssignments TeacherAssignment[]
+  examPapers ExamPaper[]
 
   @@index([classId])
 }
@@ -358,6 +363,7 @@ model User {
   blockedById    String?       // user id of the blocker
   blockedByName  String?       // display name snapshot of the blocker
   credentialsEmailSentAt DateTime? // set when login email is dispatched at creation
+  branchAccess  Json?         // Extra branches this same user can access (school ids); home = schoolId
   createdAt      DateTime      @default(now())
 
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -837,6 +843,7 @@ model Subject {
   timetableSlots    TimetableSlot[]
   examResults       ExamResult[]
   teacherAssignments TeacherAssignment[]
+  examPapers        ExamPaper[]
 
   @@index([classId])
 }
@@ -852,8 +859,32 @@ model Exam {
   school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   term      Term     @relation(fields: [termId], references: [id], onDelete: Cascade)
   results   ExamResult[]
+  papers    ExamPaper[]
 
   @@index([schoolId])
+}
+
+model ExamPaper {
+  id         String   @id @default(uuid())
+  examId     String
+  classId    String
+  subjectId  String
+  sectionId  String?           // optional — NULL = poore class ke liye paper
+  date       DateTime          // paper kis date par hoga
+  startTime  String?           // e.g. "09:00"
+  endTime    String?           // e.g. "11:00"
+  maxMarks   Decimal?  @db.Decimal(5, 2)
+  roomNumber String?
+
+  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  section   Section? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, classId, subjectId])
+  @@index([examId])
+  @@index([classId])
+  @@index([subjectId])
 }
 
 model ExamResult {
@@ -876,17 +907,21 @@ model ExamResult {
 }
 
 model ConductRemark {
-  id        String     @id @default(uuid())
-  studentId String
-  teacherId String
-  type      RemarkType @default(NEUTRAL)
-  comment   String
-  createdAt DateTime   @default(now())
+  id             String     @id @default(uuid())
+  studentId      String
+  teacherId      String
+  academicYearId String?    // scoped to academic year — cleanup job deletes old years
+  type           RemarkType @default(NEUTRAL)
+  comment        String
+  createdAt      DateTime   @default(now())
 
-  student   Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  teacher   User       @relation(fields: [teacherId], references: [id])
+  student        Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher        User       @relation(fields: [teacherId], references: [id])
+  academicYear   AcademicYear? @relation(fields: [academicYearId], references: [id], onDelete: SetNull)
 
   @@index([studentId])
+  @@index([teacherId])
+  @@index([academicYearId])
 }
 
 // ==========================================
@@ -921,6 +956,7 @@ model TimetableSlot {
   dayOfWeek Int      // 1 = Monday, 7 = Sunday
   startTime String   // e.g., "08:00"
   endTime   String   // e.g., "08:45"
+  order     Int      @default(0) // display order within day
 
   section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)

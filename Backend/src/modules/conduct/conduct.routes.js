@@ -8,6 +8,9 @@ import {
   listRemarksByStudentSchema,
   listRemarksBySectionSchema,
   getRemarkSchema,
+  updateRemarkSchema,
+  deleteRemarkSchema,
+  listRemarksBySchoolSchema,
 } from "./conduct.validation.js";
 
 const router = Router();
@@ -27,6 +30,19 @@ router.post(
 /**
  * GET /api/v1/conduct/remarks/students/:studentId
  */
+router.get(
+  "/remarks/mine",
+  authorize(ROLE_GROUPS.ALL_STAFF),
+  conductController.listByTeacher
+);
+
+router.get(
+  "/remarks/school",
+  authorize(ROLE_GROUPS.ACADEMIC),
+  validate(listRemarksBySchoolSchema),
+  conductController.listAllBySchool
+);
+
 router.get(
   "/remarks/students/:id",
   authorize(ROLE_GROUPS.ALL_STAFF),
@@ -52,6 +68,20 @@ router.get(
   authorize(ROLE_GROUPS.ALL_STAFF),
   validate(getRemarkSchema),
   conductController.getRemark
+);
+
+router.patch(
+  "/remarks/:id",
+  authorize(ROLE_GROUPS.ACADEMIC),
+  validate(updateRemarkSchema),
+  conductController.updateRemark
+);
+
+router.delete(
+  "/remarks/:id",
+  authorize(ROLE_GROUPS.ACADEMIC),
+  validate(deleteRemarkSchema),
+  conductController.deleteRemark
 );
 
 export default router;

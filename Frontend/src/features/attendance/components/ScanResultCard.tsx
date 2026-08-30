@@ -12,7 +12,6 @@ const STATUS: Record<string, { label: string; color: string; ring: string }> = {
   PRESENT: { label: 'Check In', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', ring: 'ring-emerald-500/30' },
   LATE: { label: 'Late Entry', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30', ring: 'ring-amber-500/30' },
   ABSENT: { label: 'Absent', color: 'bg-red-500/15 text-red-400 border-red-500/30', ring: 'ring-red-500/30' },
-  CHECK_OUT: { label: 'Check Out', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30', ring: 'ring-blue-500/30' },
 };
 
 function playBeep(freq = 880) {
@@ -62,7 +61,7 @@ export default function ScanResultCard({ result, dark = false }: Props) {
       dark ? 'bg-gray-900/80 border-gray-700/50 backdrop-blur-sm' : 'bg-white border-gray-200 shadow-lg shadow-gray-100/50'
     )}>
       {/* Status accent bar */}
-      <div className={cn('h-1', result.status === 'PRESENT' ? 'bg-emerald-500' : result.status === 'LATE' ? 'bg-amber-500' : result.status === 'CHECK_OUT' ? 'bg-blue-500' : 'bg-red-500')} />
+      <div className={cn('h-1', result.status === 'PRESENT' ? 'bg-emerald-500' : result.status === 'LATE' ? 'bg-amber-500' : 'bg-red-500')} />
       <div className="p-4">
         <div className="flex items-center gap-4">
           <div className="shrink-0">

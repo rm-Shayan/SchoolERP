@@ -10,7 +10,7 @@ export async function getServerOrgBranding(slug?: string, code?: string): Promis
   const params = new URLSearchParams(slug ? { slug: value } : { code: value });
   try {
     const response = await fetch(`${API_BASE_URL}/api/v1/schools/branding?${params.toString()}`, {
-      cache: 'no-store',
+      next: { revalidate: 30 },
       signal: AbortSignal.timeout(3500),
     });
     if (!response.ok) return null;
@@ -26,7 +26,10 @@ export async function getServerOrgBrandingState(slug?: string, code?: string) {
   if (!value) return { status: 'empty' as const, data: null };
   const params = new URLSearchParams(slug ? { slug: value } : { code: value });
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/schools/branding?${params.toString()}`, { cache: 'no-store', signal: AbortSignal.timeout(3500) });
+    const response = await fetch(`${API_BASE_URL}/api/v1/schools/branding?${params.toString()}`, {
+      next: { revalidate: 30 },
+      signal: AbortSignal.timeout(3500),
+    });
     if (!response.ok) return { status: 'failed' as const, data: null };
     const payload = (await response.json()) as ApiResponse<SchoolBranding>;
     return payload?.data ? { status: 'ready' as const, data: payload.data } : { status: 'failed' as const, data: null };

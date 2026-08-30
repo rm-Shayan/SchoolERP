@@ -1,20 +1,19 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { getSocket } from '@/lib/socket';
 
 /**
- * Subscribe to one or more socket events and call `refresh` when any arrive.
- * The callback is debounced (300ms) so rapid bursts (e.g. bulk imports) don't
- * hammer the API.
- *
- * Usage:
- *   const { refetch } = useStudentsQuery(schoolId);
- *   useRealtimeRefresh(['admission_created', 'admission_enrolled'], refetch);
+ * Subscribe to socket events and call `refresh` when any arrive.
+ * Debounced (300ms) to prevent burst re-fetches.
+ * Events array is compared by value (joined string), not reference.
  */
 export function useRealtimeRefresh(events: string[], refresh: () => void) {
   const refreshRef = useRef(refresh);
   refreshRef.current = refresh;
+
+  // Memoize the joined key so the effect only re-runs when events actually change
+  const eventsKey = useMemo(() => events.join(','), [events.join(',')]);
 
   useEffect(() => {
     const socket = getSocket();
@@ -35,5 +34,5 @@ export function useRealtimeRefresh(events: string[], refresh: () => void) {
       if (timer) clearTimeout(timer);
       events.forEach((event) => socket.off(event, debouncedRefresh));
     };
-  }, [events.join(',')]);
+  }, [eventsKey]);
 }

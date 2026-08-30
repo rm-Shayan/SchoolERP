@@ -7,6 +7,9 @@ import {
   manualOverrideSchema,
   bulkSectionAttendanceSchema,
   updateAttendanceRecordSchema,
+  addOffDaySchema,
+  removeOffDaySchema,
+  updateWeeklyOffSchema,
 } from "./attendance.validation.js";
 import { validate } from "../../middlewares/validate.middleware.js";
 import { authenticate, authorize } from "../../middlewares/auth.middleware.js";
@@ -77,6 +80,50 @@ router.get(
 );
 
 // ─── MANUAL OVERRIDE & REPORTING ────────────────────────────────────────────
+// ─── OFF DAYS / HOLIDAYS ─────────────────────────────────────────────────────
+/**
+ * GET /api/v1/attendance/off-days
+ * List school off days / holidays (extra closures beyond weekends)
+ */
+router.get(
+  "/off-days",
+  authorize(["SUPER_ADMIN", "ADMIN"]),
+  attendanceController.getOffDays
+);
+
+/**
+ * POST /api/v1/attendance/off-days
+ * Add an off day / holiday — body { date: "YYYY-MM-DD", reason? }
+ */
+router.post(
+  "/off-days",
+  authorize(["SUPER_ADMIN", "ADMIN"]),
+  validate(addOffDaySchema),
+  attendanceController.addOffDay
+);
+
+/**
+ * DELETE /api/v1/attendance/off-days/:date
+ * Remove an off day / holiday
+ */
+router.delete(
+  "/off-days/:date",
+  authorize(["SUPER_ADMIN", "ADMIN"]),
+  validate(removeOffDaySchema),
+  attendanceController.removeOffDay
+);
+
+/**
+ * PUT /api/v1/attendance/weekly-off
+ * Set which weekdays are off for this school — body { weekdays: [0..6] } (0=Sun .. 6=Sat)
+ */
+router.put(
+  "/weekly-off",
+  authorize(["SUPER_ADMIN", "ADMIN"]),
+  validate(updateWeeklyOffSchema),
+  attendanceController.updateWeeklyOff
+);
+
 /**
  * POST /api/v1/attendance/override
  * Manual Attendance Status Override (e.g. absent student turned out present with note)

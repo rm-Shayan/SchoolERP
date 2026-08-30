@@ -7,6 +7,9 @@ import { runCleanupJob } from "../jobs/cron/cleanup.job.js";
 import { runAutoVoucherJob } from "../jobs/cron/autoVoucher.job.js";
 import { runDueChargesJob } from "../jobs/cron/dueCharges.job.js";
 import { runHomeworkCleanupJob } from "../jobs/cron/homeworkCleanup.job.js";
+import { runConductCleanupJob } from "../jobs/cron/conductCleanup.job.js";
+import { runExamCleanupJob } from "../jobs/cron/examCleanup.job.js";
+import { runAttendanceCleanupJob } from "../jobs/cron/attendanceCleanup.job.js";
 import { runPendingEmailJob } from "../jobs/cron/pendingEmail.job.js";
 
 const logger = new Logger("scheduler-service");
@@ -38,6 +41,24 @@ class SchedulerService {
     cron.schedule("0 2 * * *", async () => {
       logger.logger.info("[CRON] homework year-end cleanup");
       await runHomeworkCleanupJob();
+    });
+
+    // Conduct Remarks Cleanup (daily 2:15 AM)
+    cron.schedule("15 2 * * *", async () => {
+      logger.logger.info("[CRON] conduct remarks year-end cleanup");
+      await runConductCleanupJob();
+    });
+
+    // Exam + Terms Cleanup (daily 2:30 AM)
+    cron.schedule("30 2 * * *", async () => {
+      logger.logger.info("[CRON] exams year-end cleanup");
+      await runExamCleanupJob();
+    });
+
+    // Attendance Year-End Archive (daily 2:45 AM)
+    cron.schedule("45 2 * * *", async () => {
+      logger.logger.info("[CRON] attendance year-end archive");
+      await runAttendanceCleanupJob();
     });
 
     // Data Cleanup (daily 3:00 AM)

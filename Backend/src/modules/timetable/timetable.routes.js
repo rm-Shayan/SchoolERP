@@ -10,6 +10,7 @@ import {
   getSlotSchema,
   updateSlotSchema,
   listSlotsByTeacherSchema,
+  reorderSlotsSchema,
 } from "./timetable.validation.js";
 
 const router = Router();
@@ -29,6 +30,20 @@ router.get(
   timetableController.exportTimetable
 );
 
+router.get(
+  "/sections/:sectionId/pdf",
+  authorize(ROLE_GROUPS.ALL_STAFF),
+  validate(listSlotsBySectionSchema),
+  timetableController.downloadSectionPdf
+);
+
+router.get(
+  "/teachers/:teacherId/pdf",
+  authorize(ROLE_GROUPS.ALL_STAFF),
+  validate(listSlotsByTeacherSchema),
+  timetableController.downloadTeacherPdf
+);
+
 router.post(
   "/sections/:sectionId",
   authorize(ROLE_GROUPS.ACADEMIC),
@@ -41,6 +56,13 @@ router.get(
   authorize(ROLE_GROUPS.ALL_STAFF),
   validate(listSlotsBySectionSchema),
   timetableController.listSlotsBySection
+);
+
+router.patch(
+  "/sections/:sectionId/reorder",
+  authorize(ROLE_GROUPS.ACADEMIC),
+  validate(reorderSlotsSchema),
+  timetableController.reorderSlots
 );
 
 router.get(

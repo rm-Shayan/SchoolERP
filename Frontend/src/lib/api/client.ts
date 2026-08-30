@@ -2,135 +2,123 @@
 import axios from 'axios';
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import type { ApiResponse, AuthResponse } from '@/types';
+import { buildKey, cacheGet, cacheSet, inflightGet, inflightSet, inflightDelete, clearAll } from './requestCache';
+import { clearServiceCache } from './serviceCache';
 
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1`;
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: { 'Content-Type': 'application/json' },
-});
-
+const api = axios.create({ baseURL: API_BASE_URL, headers: { 'Content-Type': 'application/json' } });
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 
 export function setTokens(access: string, refresh: string) {
-  // Never persist missing values as the literal string "undefined". This can
-  // make guards think a session exists while refresh immediately fails.
   accessToken = typeof access === 'string' && access.trim() ? access : null;
   refreshToken = typeof refresh === 'string' && refresh.trim() ? refresh : null;
   if (typeof window !== 'undefined') {
-    if (accessToken) localStorage.setItem('accessToken', accessToken);
-    else localStorage.removeItem('accessToken');
-    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
-    else localStorage.removeItem('refreshToken');
+    if (accessToken) localStorage.setItem('accessToken', accessToken); else localStorage.removeItem('accessToken');
+    if (refreshToken) localStorage.setItem('refreshToken', refreshToken); else localStorage.removeItem('refreshToken');
   }
 }
 
 export function getAccessToken() {
   if (typeof window === 'undefined') return null;
-  if (!accessToken) {
-    const stored = localStorage.getItem('accessToken');
-    accessToken = stored && stored !== 'undefined' && stored !== 'null' ? stored : null;
-  }
+  if (!accessToken) { const s = localStorage.getItem('accessToken'); accessToken = s && s !== 'undefined' && s !== 'null' ? s : null; }
   return accessToken;
 }
 
 export function getRefreshToken() {
   if (typeof window === 'undefined') return null;
-  if (!refreshToken) {
-    const stored = localStorage.getItem('refreshToken');
-    refreshToken = stored && stored !== 'undefined' && stored !== 'null' ? stored : null;
-  }
+  if (!refreshToken) { const s = localStorage.getItem('refreshToken'); refreshToken = s && s !== 'undefined' && s !== 'null' ? s : null; }
   return refreshToken;
 }
 
 export function clearAuth() {
-  accessToken = null;
-  refreshToken = null;
+  accessToken = null; refreshToken = null; clearAll(); clearServiceCache();
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
-    localStorage.removeItem('organization');
-    localStorage.removeItem('school');
+    localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user'); localStorage.removeItem('organization'); localStorage.removeItem('school');
   }
 }
 
+// ─── Request interceptor ───────────────────────────────────────────
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = getAccessToken();
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  if (config.data instanceof FormData && config.headers) {
-    config.headers.delete('Content-Type');
-  }
+  if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
+  if (config.data instanceof FormData && config.headers) config.headers.delete('Content-Type');
   return config;
 });
 
-function normalizeErrorMessage(error: AxiosError) {
-  const data = error.response?.data as { message?: unknown } | undefined;
-  const msg = data?.message;
-  if (typeof msg === 'string' && msg.trim() !== '') {
-    error.message = msg;
-  }
+// ─── Refresh queue (single-flight + waiting queue) ─────────────────
+let refreshPromise: Promise<AuthResponse> | null = null;
+let refreshQueue: Array<{ resolve: () => void; reject: (e: unknown) => void }> = [];
+const waitForRefresh = () => new Promise<void>((resolve, reject) => { refreshQueue.push({ resolve, reject }); });
+function flushRefreshQueue(error?: unknown) {
+  const q = refreshQueue; refreshQueue = [];
+  q.forEach((e) => (error ? e.reject(error) : e.resolve()));
+}
+function normalizeError(error: AxiosError) {
+  const msg = (error.response?.data as { message?: unknown } | undefined)?.message;
+  if (typeof msg === 'string' && msg.trim() !== '') error.message = msg;
   return error;
 }
 
-// Single-flight guard: concurrent 401s share ONE refresh call. Without this,
-// each failing request fires its own /auth/refresh; the first one ROTATES and
-// revokes the old refresh token, so the next one fails → instant logout.
-let refreshPromise: Promise<AuthResponse> | null = null;
-
+// ─── Response interceptor ──────────────────────────────────────────
 api.interceptors.response.use(
-  (response) => response,
+  (res) => { const k = buildDedupeKey(res.config as InternalAxiosRequestConfig); if (k) cacheSet(k, res.data); return res; },
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-    const url = originalRequest?.url ?? '';
-
-    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/refresh');
-
-    if (error.response?.status === 401 && !isAuthEndpoint && !originalRequest._retry) {
-      originalRequest._retry = true;
+    const req = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const url = req?.url ?? '';
+    if (error.response?.status === 401 && !url.includes('/auth/login') && !url.includes('/auth/refresh') && !req._retry) {
+      req._retry = true;
+      if (refreshPromise) {
+        try { await waitForRefresh(); return api(req); }
+        catch { return Promise.reject(normalizeError(error)); }
+      }
       const storedRefresh = getRefreshToken();
-
       if (storedRefresh) {
         try {
-          if (!refreshPromise) {
-            refreshPromise = axios
-              .post<ApiResponse<AuthResponse>>(`${API_BASE_URL}/auth/refresh`, {
-                refreshToken: storedRefresh,
-              })
-              .then((r) => r.data.data);
+          let schoolId: string | null = null;
+          if (typeof window !== 'undefined') {
+            try { schoolId = (JSON.parse(localStorage.getItem('user') || 'null') as any)?.schoolId || null; } catch {}
           }
+          const body = schoolId ? { refreshToken: storedRefresh, schoolId } : { refreshToken: storedRefresh };
+          refreshPromise = axios.post<ApiResponse<AuthResponse>>(`${API_BASE_URL}/auth/refresh`, body).then((r) => r.data.data);
           const data = await refreshPromise;
           setTokens(data.accessToken, data.refreshToken);
-          if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
-          }
-          return api(originalRequest);
-        } catch (refreshError) {
-          // Reset so a later request can attempt a fresh refresh
+          flushRefreshQueue();
           refreshPromise = null;
-          // Only wipe the session on a GENUINE auth rejection (4xx). A transient
-          // network error or 5xx (backend briefly unreachable during dev) must NOT
-          // log the user out — keep tokens so they survive a flaky backend.
-          const status = (refreshError as AxiosError)?.response?.status;
-          if (status && status >= 400 && status < 500) {
-            clearAuth();
-            if (typeof window !== 'undefined') window.location.href = '/login';
-          }
+          if (req.headers) req.headers.Authorization = `Bearer ${data.accessToken}`;
+          return api(req);
+        } catch (e) {
+          refreshPromise = null; flushRefreshQueue(e);
+          const s = (e as AxiosError)?.response?.status;
+          if (s && s >= 400 && s < 500) { clearAuth(); if (typeof window !== 'undefined') window.location.href = '/login'; }
           return Promise.reject(error);
-        } finally {
-          refreshPromise = null;
         }
       } else if (error.response?.status && error.response.status >= 400 && error.response.status < 500) {
-        clearAuth();
-        if (typeof window !== 'undefined') window.location.href = '/login';
+        clearAuth(); if (typeof window !== 'undefined') window.location.href = '/login';
       }
     }
-    return Promise.reject(normalizeErrorMessage(error));
-  }
+    return Promise.reject(normalizeError(error));
+  },
 );
 
+// ─── Smart GET: dedup in-flight + short cache ──────────────────────
+function buildDedupeKey(config: InternalAxiosRequestConfig): string | null {
+  if (config.method && config.method.toUpperCase() !== 'GET') return null;
+  const p = config.params ? JSON.stringify(config.params, Object.keys(config.params).sort()) : '';
+  return `${config.url ?? ''}::${p}`;
+}
+const originalGet = api.get.bind(api);
+api.get = async function dedupedGet(url: string, config?: any) {
+  if ((config?.method ?? 'get').toUpperCase() !== 'GET') return originalGet(url, config);
+  const key = buildKey(url, config?.params);
+  const cached = cacheGet(key);
+  if (cached !== undefined) return cached as any;
+  const existing = inflightGet(key);
+  if (existing) return existing as Promise<any>;
+  const promise = originalGet(url, config).then((res) => { cacheSet(key, res.data); return res; }).finally(() => inflightDelete(key));
+  inflightSet(key, promise);
+  return promise;
+};
 export default api;

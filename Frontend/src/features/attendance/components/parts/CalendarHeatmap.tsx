@@ -28,9 +28,12 @@ interface Props {
   records: AttendanceRecord[];
   year: number;
   month: number;
+  /** which weekdays are off — [0..6]. Default [0,6]. */
+  weeklyOff?: number[];
 }
 
-export default function CalendarHeatmap({ records, year, month }: Props) {
+export default function CalendarHeatmap({ records, year, month, weeklyOff }: Props) {
+  const offSet = useMemo(() => new Set(weeklyOff ?? [0, 6]), [weeklyOff]);
   const dayMap = useMemo(() => {
     const map = new Map<string, { total: number; present: number }>();
     for (const r of records) {
@@ -54,7 +57,7 @@ export default function CalendarHeatmap({ records, year, month }: Props) {
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const dt = new Date(year, month - 1, d);
-    const isWeekend = dt.getDay() === 0 || dt.getDay() === 6;
+    const isWeekend = offSet.has(dt.getDay());
     const entry = dayMap.get(dateStr);
     const pct = entry && entry.total > 0 ? Math.round((entry.present / entry.total) * 100) : null;
     cells.push({ day: d, pct, isWeekend, key: dateStr });

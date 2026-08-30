@@ -1,4 +1,5 @@
 import api from './client';
+import { downloadPdf } from './downloadPdf';
 import type { ApiResponse, Exam } from '@/types';
 
 export interface ExamResultEntry {
@@ -7,6 +8,17 @@ export interface ExamResultEntry {
   marksObtained: number;
   maxMarks: number;
   remarks?: string;
+}
+
+export interface ExamPaperInput {
+  classId: string;
+  subjectId: string;
+  sectionId?: string | null;
+  date: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  maxMarks?: number | null;
+  roomNumber?: string | null;
 }
 
 export interface ExamListEnvelope {
@@ -23,12 +35,18 @@ export interface PublishResult {
 }
 
 export const examService = {
-  // POST /exams/schools/:schoolId — ACADEMIC
+  // POST /exams/schools/:schoolId �?" ACADEMIC
   create: async (
     schoolId: string,
-    data: { termId: string; name?: string; startDate: string; endDate: string },
+    data: { termId: string; name?: string; startDate: string; endDate: string; papers?: ExamPaperInput[] },
   ): Promise<Exam> => {
     const res = await api.post<ApiResponse<Exam>>(`/exams/schools/${schoolId}`, data);
+    return res.data.data;
+  },
+
+  // PUT /exams/:id �?" MANAGEMENT (update + replace date-wise papers)
+  update: async (id: string, data: { name?: string; startDate?: string; endDate?: string; papers: ExamPaperInput[] }): Promise<Exam> => {
+    const res = await api.put<ApiResponse<Exam>>(`/exams/${id}`, data);
     return res.data.data;
   },
 
@@ -49,6 +67,12 @@ export const examService = {
   // DELETE /exams/:id — MANAGEMENT
   remove: async (id: string): Promise<void> => {
     await api.delete(`/exams/${id}`);
+  },
+
+  // GET /exams/:id/date-sheet — ALL_STAFF (real PDF file download)
+  downloadDateSheet: async (id: string, name?: string): Promise<void> => {
+    const safe = (name || 'date-sheet').replace(/[^\w-]+/g, '-').toLowerCase();
+    await downloadPdf(`/exams/${id}/date-sheet`, `${safe}-date-sheet.pdf`);
   },
 
   // POST /exams/:id/results — ACADEMIC (bulk entry, upsert)

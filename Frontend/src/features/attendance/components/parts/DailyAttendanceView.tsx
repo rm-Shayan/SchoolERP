@@ -7,6 +7,7 @@ import type { AttendanceRecord, DailyAttendanceReport } from '@/types';
 import { Card, EmptyState, Select } from '@/features/shared/components';
 import StatCards from './StatCards';
 import SectionDayCard from './SectionDayCard';
+import DayOffBanner from './DayOffBanner';
 import toast from 'react-hot-toast';
 
 function getToday() { return new Date().toISOString().split('T')[0]; }
@@ -36,7 +37,9 @@ export default function DailyAttendanceView() {
   }, [schoolId, date]);
   useEffect(() => { load(); }, [load]);
 
-  const isWeekend = useMemo(() => [0, 6].includes(new Date(date).getDay()), [date]);
+  const weeklyOff = data?.weeklyOff ?? [0, 6];
+  const isWeekend = weeklyOff.includes(new Date(date).getDay());
+  const offDay = (data?.offDays ?? []).find((o) => o.date === date);
 
   const groups = useMemo<SectionGroup[]>(() => {
     if (!data?.records) return [];
@@ -80,12 +83,12 @@ export default function DailyAttendanceView() {
       </div>
       <p className="text-sm font-medium text-gray-600">{dayLabel}</p>
 
-      {isWeekend ? (
-        <Card><div className="p-12 text-center">
-          <p className="text-4xl mb-3">🏖️</p>
-          <p className="text-lg font-bold text-gray-700">Weekend Off</p>
-          <p className="text-sm text-gray-400 mt-1">No attendance recorded on weekends.</p>
-        </div></Card>
+      {isWeekend || offDay ? (
+        offDay ? (
+          <DayOffBanner emoji="🎉" title={offDay.reason || 'School Off'} desc="No attendance recorded on a school off day / holiday." />
+        ) : (
+          <DayOffBanner emoji="🏖️" title="Weekend Off" desc="No attendance recorded on the school's weekly off days." />
+        )
       ) : loading ? (
         <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse" />)}</div>
       ) : filtered.length === 0 ? (

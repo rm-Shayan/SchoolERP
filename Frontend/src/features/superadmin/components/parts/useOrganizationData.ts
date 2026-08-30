@@ -6,8 +6,10 @@ import { dedupRequest } from '@/lib/utils/requestDedup';
 import type { Organization, School } from '@/types';
 import { downloadBlob } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import type { EditOrgFormValues, BranchFormValues } from './helpers';
+import type { EditOrgFormValues } from './helpers';
 import { orgUpdatePayload } from './helpers';
+import type { BranchFormValues } from './branchForm';
+import { branchCreatePayload } from './branchForm';
 import { takePrefetchedOrganization } from './orgPrefetch';
 const errMsg = (err: any, fallback: string) => err?.response?.data?.message || err?.message || fallback;
 
@@ -92,13 +94,7 @@ export function useOrganizationData(id: string | undefined) {
   const handleCreateSchool = useCallback(async (values: BranchFormValues) => {
     if (!id) return false;
     try {
-      const result = await schoolService.create({
-        organizationId: id, name: values.name, code: values.code,
-        address: values.address || undefined, phone: values.phone || undefined,
-        adminEmail: values.adminEmail.trim(),
-        adminName: values.adminName.trim() || undefined,
-        adminPassword: values.adminPassword || undefined,
-      });
+      const result = await schoolService.create(branchCreatePayload(values, id));
       setSchools((prev) => [...prev, result.school]);
       if (result.adminCredentials) {
         setBranchCredentials(result.adminCredentials);

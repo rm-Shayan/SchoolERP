@@ -65,7 +65,7 @@ class HomeworkService {
     return { broadcast, notifiedParents: students.length };
   }
 
-  async listBroadcasts(user, { schoolId, sectionId, page = 1, pageSize = 50 }) {
+  async listBroadcasts(user, { schoolId, sectionId, createdById, page = 1, pageSize = 50 }) {
     const targetSchoolId = schoolId || user.schoolId;
     if (!targetSchoolId) {
       if (user.role === "SUPER_ADMIN") throw ApiError.badRequestError("schoolId is required");
@@ -73,8 +73,12 @@ class HomeworkService {
     }
     assertSchoolAccess(user, targetSchoolId);
 
+    // Teachers sirf apne posts dekhein unless explicitly overridden
+    const filterUserId = createdById || (user.role === "TEACHER" ? user.id : undefined);
+
     return homeworkRepository.listBroadcastsBySchool(targetSchoolId, {
       sectionId,
+      createdById: filterUserId,
       page: Math.max(1, parseInt(page, 10) || 1),
       pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50)),
     });

@@ -91,6 +91,33 @@ const verifyPortalPassword = async (school, password) => {
 };
 
 /**
+ * Session-user overlay: token + DTO get scoped to the branch the user is
+ * actually working in (home schoolId OR one of their branchAccess schools).
+ * A shallow copy keeps the DB row (home branch) intact for access rules.
+ */
+const buildSessionUser = (user, branchSchool) => ({
+  ...user,
+  schoolId: branchSchool.id,
+  school: branchSchool,
+  organization: branchSchool.organization || user.organization,
+});
+
+/**
+ * Attach the accessible-branch list (home + extras) to a session user so the
+ * DTO's `schools` reflects every branch the account can open.
+ */
+const attachAccessibleBranches = async (sessionUser, user) => {
+  const extras = user.branchAccess && Array.isArray(user.branchAccess) ? user.branchAccess : [];
+  if (extras.length > 0) {
+    sessionUser._accessible = await authRepository.listAccessibleSchools(user.organizationId, [
+      ...(sessionUser.schoolId ? [sessionUser.schoolId] : []),
+      ...extras,
+    ]);
+  }
+  return sessionUser;
+};
+
+/**
  * Sign a JWT access token for staff
  */
 const signAccessToken = (payload) =>
@@ -159,14 +186,26 @@ class AuthService {
    */
   async login({ email, username, phone, schoolCode, password }) {
     let user = null;
+    let sessionUser = null;
     const identifier = email || username || phone;
 
     if (schoolCode && identifier) {
-      // Branch Staff Login via School Code + Identifier
-      user = await authRepository.findStaffBySchoolAndCredential(schoolCode, identifier);
+      // Branch Staff login via School Code + Identifier. `school` is the
+      // branch the code resolved to (home OR a branchAccess branch) — the
+      // whole session (token + DTO) gets scoped to it.
+      const { user: matched, school } = await authRepository.findStaffBySchoolAndCredential(schoolCode, identifier);
+      if (!matched || !school) {
+        throw ApiError.unauthorizedError("Invalid login credentials or school code");
+      }
+      if (school.status === "BLOCKED") {
+        throw ApiError.unauthorizedError(BLOCKED_MESSAGE);
+      }
+      user = matched;
+      sessionUser = buildSessionUser(user, school);
     } else if (email) {
-      // Direct Email Login (e.g. Super Admin or Direct Staff Login)
+      // Direct Email Login (Super Admin or direct staff login)
       user = await authRepository.findByEmail(email);
+      if (user) sessionUser = user;
     }
 
     if (!user) {
@@ -179,12 +218,12 @@ class AuthService {
       );
     }
 
-    // Blocking enforcement (spec §2): a blocked organization or branch locks
-    // out every role under it — Org Admin, Branch Admin, Staff — with the
-    // standard message. Checked before password verification on purpose so
-    // the reason is never masked by a generic credential error.
+    // Blocking enforcement (spec §2): a blocked organization or the session
+    // branch locks out every role under it — checked before password verify
+    // on purpose so the reason is never masked by a generic credential error.
     if (
       user.organization?.status === "BLOCKED" ||
+      sessionUser?.school?.status === "BLOCKED" ||
       user.school?.status === "BLOCKED"
     ) {
       throw ApiError.unauthorizedError(BLOCKED_MESSAGE);
@@ -207,11 +246,11 @@ class AuthService {
       throw ApiError.unauthorizedError("Invalid email, username, or password");
     }
 
-    // Generate access + refresh tokens
+    // Generate access + refresh tokens — scoped to the session branch
     const accessToken = signAccessToken({
       userId: user.id,
       role: user.role,
-      schoolId: user.schoolId,
+      schoolId: sessionUser.schoolId,
       organizationId: user.organizationId,
       tokenType: "staff",
     });
@@ -239,24 +278,41 @@ class AuthService {
       entityId: user.id,
       entityName: user.name,
       organizationId: user.organizationId,
-      schoolId: user.schoolId,
+      schoolId: sessionUser.schoolId,
       details: JSON.stringify({ loginId: identifier || email }),
     });
+
+    await attachAccessibleBranches(sessionUser, user);
 
     return {
       accessToken,
       refreshToken: rawRefreshToken,
-      user: UserResponseDTO.toDTO(user),
+      user: UserResponseDTO.toDTO(sessionUser),
     };
   }
 
   /**
    * Get the currently logged in staff user profile.
+   * `currentSchoolId` = the JWT's session branch (may differ from the user's
+   * home branch when switching branches).
    */
-  async getCurrentUser(userId) {
+  async getCurrentUser(userId, currentSchoolId) {
     const user = await authRepository.findById(userId);
     if (!user) throw ApiError.notFoundError("User not found");
-    return UserResponseDTO.toDTO(user);
+
+    let sessionUser = user;
+    if (currentSchoolId && currentSchoolId !== user.schoolId) {
+      if (!(user.branchAccess || []).includes(currentSchoolId)) {
+        throw ApiError.unauthorizedError("Access to this branch has been revoked.");
+      }
+      const school = await authRepository.findSchoolForSession(currentSchoolId);
+      if (school && school.organizationId === user.organizationId) {
+        sessionUser = buildSessionUser(user, school);
+      }
+    }
+
+    await attachAccessibleBranches(sessionUser, user);
+    return UserResponseDTO.toDTO(sessionUser);
   }
 
   /**
@@ -328,7 +384,7 @@ class AuthService {
    * Rotate refresh token — validates the existing token and issues a new pair.
    * Old token is revoked on use (token rotation).
    */
-  async refreshTokens(rawRefreshToken) {
+  async refreshTokens(rawRefreshToken, requestedSchoolId) {
     const tokenHash = hashValue(rawRefreshToken);
     const stored = await authRepository.findRefreshToken(tokenHash);
 
@@ -373,10 +429,29 @@ class AuthService {
       throw ApiError.unauthorizedError("User account not found.");
     }
 
+    // Keep the session scoped to the branch it was on before rotation.
+    let sessionUser = user;
+    let effectiveSchoolId = user.schoolId;
+    if (requestedSchoolId && requestedSchoolId !== user.schoolId) {
+      if (!(user.branchAccess || []).includes(requestedSchoolId)) {
+        throw ApiError.unauthorizedError("Access to this branch has been revoked.");
+      }
+      const school = await authRepository.findSchoolForSession(requestedSchoolId);
+      if (!school || school.organizationId !== user.organizationId) {
+        throw ApiError.unauthorizedError("Branch not found for this account.");
+      }
+      if (school.status === "BLOCKED") {
+        throw ApiError.unauthorizedError(BLOCKED_MESSAGE);
+      }
+      effectiveSchoolId = requestedSchoolId;
+      sessionUser = buildSessionUser(user, school);
+    }
+    await attachAccessibleBranches(sessionUser, user);
+
     const accessToken = signAccessToken({
       userId: user.id,
       role: user.role,
-      schoolId: user.schoolId,
+      schoolId: effectiveSchoolId,
       organizationId: user.organizationId,
       tokenType: "staff",
     });
@@ -384,8 +459,61 @@ class AuthService {
     return {
       accessToken,
       refreshToken: newRawToken,
-      user: UserResponseDTO.toDTO(user),
+      user: UserResponseDTO.toDTO(sessionUser),
     };
+  }
+
+  /**
+   * Switch the branch for an authenticated user WITHOUT new credentials —
+   * same identity/role, JWT re-scoped to the target branch. Refresh token
+   * stays (user-scoped); the client keeps the same refresh token.
+   */
+  async switchBranch(userId, targetSchoolId) {
+    const user = await authRepository.findById(userId);
+    if (!user) throw ApiError.unauthorizedError("User not found");
+
+    if (user.schoolId !== targetSchoolId && !(user.branchAccess || []).includes(targetSchoolId)) {
+      throw ApiError.forbiddenError("You do not have access to this branch");
+    }
+
+    const school = await authRepository.findSchoolForSession(targetSchoolId);
+    if (!school || school.organizationId !== user.organizationId) {
+      throw ApiError.notFoundError("Branch not found");
+    }
+    if (school.status === "BLOCKED" || user.organization?.status === "BLOCKED") {
+      throw ApiError.unauthorizedError(BLOCKED_MESSAGE);
+    }
+
+    const sessionUser = await attachAccessibleBranches(buildSessionUser(user, school), user);
+    const accessToken = signAccessToken({
+      userId: user.id,
+      role: user.role,
+      schoolId: school.id,
+      organizationId: user.organizationId,
+      tokenType: "staff",
+    });
+
+    return { accessToken, user: UserResponseDTO.toDTO(sessionUser) };
+  }
+
+  /**
+   * Branches this account can open (home + extras). `isCurrent` marks the
+   * branch the request's JWT is currently scoped to.
+   */
+  async myBranches(userId, currentSchoolId) {
+    const user = await authRepository.findById(userId);
+    if (!user) throw ApiError.unauthorizedError("User not found");
+
+    const ids = [...new Set([
+      ...(user.schoolId ? [user.schoolId] : []),
+      ...(user.branchAccess || []),
+    ])];
+    const branches = await authRepository.listAccessibleSchools(user.organizationId, ids);
+    return branches.map((b) => ({
+      ...b,
+      isHome: b.id === user.schoolId,
+      isCurrent: b.id === currentSchoolId,
+    }));
   }
 
   /**
@@ -840,7 +968,7 @@ class AuthService {
    * Platform-wide user directory for the Super Admin console.
    * Server-side filters + pagination; stats global counts hain (page-scoped nahi).
    */
-  async listAllUsersPlatform(requester, { page = 1, pageSize = 50, search, role, isActive, hasBlockReason } = {}) {
+  async listAllUsersPlatform(requester, { page = 1, pageSize = 50, search, role, isActive, hasBlockReason, organizationId } = {}) {
     if (requester.role !== ROLES.SUPER_ADMIN) {
       throw ApiError.forbiddenError(
         "Only Super Admins can view the platform-wide user directory."
@@ -848,7 +976,7 @@ class AuthService {
     }
 
     const [result, stats] = await Promise.all([
-      authRepository.findAllUsersPlatform({ page, pageSize, search, role, isActive, hasBlockReason }),
+      authRepository.findAllUsersPlatform({ page, pageSize, search, role, isActive, hasBlockReason, organizationId }),
       authRepository.platformUserStats(),
     ]);
 

@@ -76,6 +76,20 @@ class OrganizationController {
   };
 
   /**
+   * GET /api/v1/organizations/public/slugs — PUBLIC
+   * All public org slugs — ISR generateStaticParams ke liye. Must be
+   * registered BEFORE /public/:slug (route conflict se bachne ke liye).
+   */
+  publicSlugs = async (req, res, next) => {
+    try {
+      const slugs = await organizationService.getPublicSlugs();
+      return res.status(200).json(ApiResponse.ok("Organization slugs fetched successfully", slugs));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
    * GET /api/v1/organizations/public/:slug — PUBLIC
    * Org landing page ka data (branding + branches) — koi auth nahi.
    */

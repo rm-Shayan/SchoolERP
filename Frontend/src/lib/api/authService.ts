@@ -1,6 +1,14 @@
 import api from './client';
 import type { ApiResponse, AuthResponse, LoginRequest, User } from '@/types';
 
+export interface AccessibleBranch {
+  id: string;
+  name: string;
+  code: string;
+  status: string;
+  isHome: boolean;
+  isCurrent: boolean;
+}
 
 export const authService = {
   // Staff Auth
@@ -11,6 +19,16 @@ export const authService = {
   async getMe(): Promise<User> {
     const res = await api.get<ApiResponse<User>>('/auth/me');
     return res.data.data;
+  },
+  // Switch to one of the account's branches — same credentials, token re-scoped.
+  async switchBranch(schoolId: string): Promise<{ accessToken: string; user: User }> {
+    const res = await api.post<ApiResponse<{ accessToken: string; user: User }>>('/auth/switch-branch', { schoolId });
+    return res.data.data;
+  },
+  // Branches this account can open (Settings → My Branches).
+  async myBranches(): Promise<AccessibleBranch[]> {
+    const res = await api.get<ApiResponse<{ branches: AccessibleBranch[] }>>('/auth/my-branches');
+    return res.data.data.branches;
   },
   async updateMe(data: { name: string; phone?: string }): Promise<User> {
     const res = await api.patch<ApiResponse<User>>('/auth/me', data);

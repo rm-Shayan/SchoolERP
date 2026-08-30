@@ -20,6 +20,9 @@ export class UserResponseDTO {
     this.organizationId = user.organizationId || null;
     this.createdAt = user.createdAt;
 
+    // Extra branches this same account can open (home branch = schoolId).
+    this.branchAccess = Array.isArray(user.branchAccess) ? user.branchAccess : [];
+
     // Block info (populated by moderation actions) — powers the profile
     // view + blocked-reason filter on the Super Admin users page.
     this.blockedReason = user.blockedReason || null;
@@ -57,9 +60,9 @@ export class UserResponseDTO {
       };
     }
 
-    // Accessible branches — every staff user is branch-scoped now, so they
-    // only ever see their own branch (no org-level admin exists anymore).
-    this.schools = (user.school ? [user.school] : []).map((s) => ({
+    // Accessible branches — session-scoped. `user._accessible` is set by the
+    // service (multi-branch) else the branch nested on the session user.
+    this.schools = (user._accessible ?? (user.school ? [user.school] : [])).map((s) => ({
       id: s.id,
       name: s.name,
       code: s.code,

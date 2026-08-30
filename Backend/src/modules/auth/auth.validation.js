@@ -20,6 +20,14 @@ export const loginSchema = z.object({
 export const refreshTokenSchema = z.object({
   body: z.object({
     refreshToken: z.string().min(1, "Refresh token is required"),
+    // Session branch to keep after rotation (multi-branch switch persistence).
+    schoolId: z.string().uuid("Invalid branch id").optional(),
+  }),
+});
+
+export const switchBranchSchema = z.object({
+  body: z.object({
+    schoolId: z.string().uuid("Invalid branch id").min(1, "Branch id is required"),
   }),
 });
 

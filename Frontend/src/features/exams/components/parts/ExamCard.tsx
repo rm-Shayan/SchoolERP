@@ -8,14 +8,17 @@ interface ExamCardProps {
   exam: Exam;
   deleting: boolean;
   onDelete: (exam: Exam) => void;
+  onEdit?: (exam: Exam) => void;
+  onDownload?: (exam: Exam) => void;
 }
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
-export default function ExamCard({ exam, deleting, onDelete }: ExamCardProps) {
+export default function ExamCard({ exam, deleting, onDelete, onEdit, onDownload }: ExamCardProps) {
   const start = new Date(exam.startDate);
   const end = new Date(exam.endDate);
   const upcoming = end.getTime() >= Date.now();
+  const paperCount = exam.papers?.length ?? 0;
 
   return (
     <motion.div
@@ -39,11 +42,24 @@ export default function ExamCard({ exam, deleting, onDelete }: ExamCardProps) {
           <p className="mt-1 text-xs font-medium text-slate-500">
             {start.toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })} — {end.toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
           </p>
-          <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
-            <span className="truncate text-xs font-medium text-slate-500">
-              Term: <span className="font-semibold text-slate-700">{exam.term?.name ?? '—'}</span>
-              {exam.term?.academicYear ? <span className="text-slate-400"> · {exam.term.academicYear.name}</span> : ''}
-            </span>
+          <p className="mt-1 text-xs font-medium text-slate-500">
+            Term: <span className="font-semibold text-slate-700">{exam.term?.name ?? '—'}</span>
+            {exam.term?.academicYear ? <span className="text-slate-400"> · {exam.term.academicYear.name}</span> : ''}
+            {paperCount > 0 && <span className="text-slate-400"> · {paperCount} paper{paperCount === 1 ? '' : 's'}</span>}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+            <div className="flex items-center gap-1.5">
+              {onDownload && (
+                <Button size="sm" variant="outline" onClick={() => onDownload(exam)}>
+                  Date Sheet ↓
+                </Button>
+              )}
+              {onEdit && (
+                <Button size="sm" variant="ghost" onClick={() => onEdit(exam)}>
+                  Edit
+                </Button>
+              )}
+            </div>
             <Button
               size="sm"
               variant="ghost"

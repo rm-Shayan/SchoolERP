@@ -9,7 +9,9 @@ import redis from "../../config/redis.js";
 import { emitToRoom } from "../../config/websocket.js";
 import { schoolImportQueue } from "../../jobs/queues/index.js";
 import { createBranchAdmin } from "../organization/provision.js";
+import { invalidateUserCache } from "../../middlewares/auth.middleware.js";
 import smtpSettingsService from "../smtpSettings/smtpSettings.service.js";
+import storageSettingsService from "../storageSettings/storageSettings.service.js";
 import storageService from "../../services/storage.service.js";
 import { resolveBranchLogoReplace } from "./logoSync.js";
 import auditService from "../audit/audit.service.js";
@@ -64,10 +66,12 @@ class SchoolService {
   }
 
   /**
-   * Create a branch (School) with its own ADMIN (Principal).
-   * Requires adminEmail (password optional, auto-generated).
+   * Create a branch (School) with an admin.
+   * `adminEmail`   → creates a NEW Principal account (credentials emailed).
+   * `existingAdminEmail` → SAME account (an org ADMIN) manages this branch
+   *   too — no new credentials; the admin's home branch stays untouched.
    */
-  async create({ name, code, organizationId, address, phone, adminEmail, adminName, adminPassword, smtp }, requester = null, req = null) {
+  async create({ name, code, organizationId, address, phone, adminEmail, adminName, adminPassword, existingAdminEmail, smtp, cloudinary }, requester = null, req = null) {
     if (!name || !code || !organizationId) {
       throw ApiError.badRequestError("'name', 'code' and 'organizationId' are required");
     }
@@ -82,18 +86,42 @@ class SchoolService {
       throw ApiError.badRequestError("School with this code already exists");
     }
 
-    // Validate the branch-admin email BEFORE creating the school so a
-    // duplicate email cannot leave a half-created branch behind.
-    if (!adminEmail) {
-      throw ApiError.badRequestError(
-        "An email is required for the new branch admin"
-      );
+    // Existing-admin mode: must resolve to an ACTIVE ADMIN of THIS org —
+    // validated BEFORE creating the school so a bad email can't leave a
+    // half-created branch behind.
+    let existingAdmin = null;
+    if (existingAdminEmail) {
+      existingAdmin = await schoolRepository.findOrgAdminByEmail(existingAdminEmail, organizationId);
+      if (!existingAdmin) {
+        throw ApiError.badRequestError(
+          "No active admin found with this email in this organization. Use a new admin instead."
+        );
+      }
+    } else {
+      // New-admin mode: the email must be free (duplicate email validation
+      // happens before school creation too).
+      if (!adminEmail) {
+        throw ApiError.badRequestError(
+          "An email is required for the new branch admin"
+        );
+      }
+      const newAdminEmail = adminEmail.toString().trim().toLowerCase();
+      const emailTaken = await schoolRepository.userEmailExists(newAdminEmail);
+      if (emailTaken) {
+        throw ApiError.badRequestError(
+          "A user with this email already exists. Choose another email."
+        );
+      }
     }
-    const newAdminEmail = adminEmail.toString().trim().toLowerCase();
-    const emailTaken = await schoolRepository.userEmailExists(newAdminEmail);
-    if (emailTaken) {
+
+    // Naya admin → SMTP + Cloudinary zaroori (koi previous account nahi jisse
+    // inherit karein). Existing admin → optional; agar diye to wohi isi branch
+    // ke liye use honge, warna org/platform wale fallback ho jaate hain.
+    const hasSmtp = !!(smtp?.host && smtp?.username);
+    const hasCloud = !!(cloudinary?.cloudName && cloudinary?.apiKey);
+    if (!existingAdminEmail && (!hasSmtp || !hasCloud)) {
       throw ApiError.badRequestError(
-        "A user with this email already exists. Choose another email."
+        "SMTP and Cloudinary credentials are required when creating a new branch admin."
       );
     }
 
@@ -125,20 +153,43 @@ class SchoolService {
       });
     }
 
+    // Branch-level Cloudinary override (org default/platform env fallback).
+    let cloudinarySetting = null;
+    if (hasCloud) {
+      cloudinarySetting = await storageSettingsService.provision(organizationId, cloudinary, school.id);
+    }
+
     emitToRoom("super_admins", "school_created", { schoolId: school.id, name: school.name, organizationId });
     emitToRoom(`org:${organizationId}`, "school_created", { schoolId: school.id, name: school.name });
     emitToRoom("super_admins", "overview_updated", {});
+
+    // ── Existing-admin mode: same credentials, extra branch access ───────
+    if (existingAdmin) {
+      const admin = await schoolRepository.addBranchAccess(existingAdmin.id, school.id);
+      await invalidateUserCache(existingAdmin.id);
+      auditService.record(
+        auditService.fromRequest(requester, req, {
+          action: AUDIT_ACTIONS.CREATE_SCHOOL,
+          entityType: AUDIT_ENTITY_TYPES.SCHOOL,
+          entityId: school.id,
+          entityName: school.name,
+          organizationId,
+          details: JSON.stringify({ code: school.code, adminMode: "existing", adminEmail: existingAdmin.email }),
+        })
+      );
+      return { school, admin, adminCredentials: null, smtpSetting, cloudinarySetting };
+    }
 
     // Don't email the super admin when they designate their OWN email as
     // the new branch principal (they created the branch themselves).
     const selfDesignation =
       requester?.email &&
-      String(requester.email).trim().toLowerCase() === newAdminEmail;
+      String(requester.email).trim().toLowerCase() === adminEmail.trim().toLowerCase();
     const created = await createBranchAdmin({
       organizationId,
       schoolId: school.id,
       name: adminName,
-      email: newAdminEmail,
+      email: adminEmail,
       password: adminPassword,
       orgName: org.name,
       orgSlug: org.slug,
@@ -158,7 +209,7 @@ class SchoolService {
       })
     );
 
-    return { school, admin: created.user, adminCredentials: created.credentials, smtpSetting };
+    return { school, admin: created.user, adminCredentials: created.credentials, smtpSetting, cloudinarySetting };
   }
 
   async getById(id) {
@@ -189,12 +240,41 @@ class SchoolService {
   }
 
   /**
-   * Re-assign a branch's admin — create a fresh ADMIN (Principal) account for
-   * this branch and email credentials; the previous Principal is deactivated.
+   * Re-assign a branch's admin.
+   * `adminEmail`   → create a fresh ADMIN (Principal) + email credentials; the
+   *                  previous dedicated Principal is deactivated.
+   * `existingAdminEmail` → the SAME account (an org ADMIN) also manages this
+   *                  branch — no new credentials, nobody is deactivated.
    */
-  async assignAdmin(schoolId, { adminEmail, adminName, adminPassword }, requester = null, req = null) {
+  async assignAdmin(schoolId, { adminEmail, adminName, adminPassword, existingAdminEmail }, requester = null, req = null) {
     const school = await this.getById(schoolId);
     const orgName = school.organization?.name || "Organization";
+
+    // ── Existing-admin mode: attach access, never deactivate/create ─────────
+    if (existingAdminEmail) {
+      const existingAdmin = await schoolRepository.findOrgAdminByEmail(existingAdminEmail, school.organizationId);
+      if (!existingAdmin) {
+        throw ApiError.badRequestError(
+          "No active admin found with this email in this organization. Use a new admin instead."
+        );
+      }
+      const admin = await schoolRepository.addBranchAccess(existingAdmin.id, schoolId);
+      await invalidateUserCache(existingAdmin.id);
+      await this._bustAdminCaches(schoolId, school.organizationId);
+
+      auditService.record(
+        auditService.fromRequest(requester, req, {
+          action: AUDIT_ACTIONS.ASSIGN_SCHOOL_ADMIN,
+          entityType: AUDIT_ENTITY_TYPES.SCHOOL,
+          entityId: schoolId,
+          entityName: school.name,
+          organizationId: school.organizationId,
+          schoolId,
+          details: JSON.stringify({ mode: "existing", adminEmail: existingAdmin.email }),
+        })
+      );
+      return { mode: "existing", admin, adminCredentials: null };
+    }
 
     if (!adminEmail) {
       throw ApiError.badRequestError("An email is required for the new branch admin");

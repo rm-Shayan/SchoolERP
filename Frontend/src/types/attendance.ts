@@ -22,10 +22,19 @@ export interface DailyAttendanceSummary {
   manualOverride: number;
 }
 
+/** School off day / holiday — extra closure beyond weekends */
+export interface OffDay {
+  date: string; // "YYYY-MM-DD"
+  reason?: string | null;
+}
+
 /** GET /attendance/daily returns { summary, records } — array nahi! */
 export interface DailyAttendanceReport {
   summary: DailyAttendanceSummary;
   records: AttendanceRecord[];
+  offDays?: OffDay[];
+  /** which weekdays are off — [0..6] (0=Sun .. 6=Sat). Default [0,6]. */
+  weeklyOff?: number[];
 }
 
 /** Archived yearly attendance rollup — AttendanceYearSummary (365 din purani
@@ -46,12 +55,24 @@ export interface AttendanceYearSummary {
   createdAt: string;
 }
 
+/** Minimal student row for the monthly attendance matrix (all enrolled,
+ *  not just the ones with records that month). */
+export interface StudentLite {
+  id: string;
+  firstName: string;
+  lastName: string;
+  rollNumber: string;
+  imageUrl?: string | null;
+  sectionId?: string;
+}
+
 /** Per-section attendance summary within the monthly report */
 export interface SectionAttendanceSummary {
   classId: string;
   className: string;
   sectionId: string;
   sectionName: string;
+  students: StudentLite[];
   summary: {
     totalStudents: number;
     present: number;
@@ -84,5 +105,8 @@ export interface MonthlyAttendanceReport {
     manualOverride: number;
     totalWorkingDays: number;
   };
+  offDays?: OffDay[];
+  /** which weekdays are off — [0..6] (0=Sun .. 6=Sat). Default [0,6]. */
+  weeklyOff?: number[];
   classes: ClassAttendanceGroup[];
 }

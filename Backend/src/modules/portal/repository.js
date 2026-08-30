@@ -120,6 +120,48 @@ class PortalRepository {
     });
   }
 
+  // ── Exam Date Sheets ──────────────────────────────────
+
+  async sectionClassIds(sectionIds) {
+    const rows = await prisma.section.findMany({
+      where: { id: { in: sectionIds } },
+      select: { classId: true },
+    });
+    return [...new Set(rows.map((r) => r.classId))];
+  }
+
+  async examSheetsForClasses(schoolId, classIds) {
+    if (classIds.length === 0) return [];
+    return prisma.exam.findMany({
+      where: {
+        schoolId,
+        term: { academicYear: { isCurrent: true } },
+        papers: { some: { classId: { in: classIds } } },
+      },
+      include: {
+        term: { include: { academicYear: true } },
+        papers: {
+          where: { classId: { in: classIds } },
+          include: { subject: { select: { id: true, name: true } }, section: { select: { id: true, name: true } }, class: { select: { id: true, name: true } } },
+          orderBy: { date: "asc" },
+        },
+        _count: { select: { results: true } },
+      },
+      orderBy: { startDate: "desc" },
+    });
+  }
+
+  async findExamById(id) {
+    return prisma.exam.findUnique({
+      where: { id },
+      include: {
+        school: { select: { id: true, name: true } },
+        term: { include: { academicYear: true } },
+        papers: { include: { subject: true, section: true, class: true } },
+      },
+    });
+  }
+
   // ── Timetable ──────────────────────────────────────────
 
   async getTimetable(sectionId) {

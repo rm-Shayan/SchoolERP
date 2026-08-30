@@ -23,6 +23,8 @@ export { notificationService } from './notificationService';
 export { promotionService } from './promotionService';
 export { parentService } from './parentService';
 export { portalService } from './portalService';
+export { portalDataService } from './portalDataService';
+export { portalNotificationService } from './portalNotifications';
 export { moderationService } from './moderationService';
 export { auditLogService } from './auditLogService';
 export { teachingAssignmentService } from './teachingAssignmentService';

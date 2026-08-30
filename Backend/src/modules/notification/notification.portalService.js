@@ -64,10 +64,14 @@ class PortalNotificationService {
         },
       });
 
-      emitToRoom("super_admins", "portal_notification_created", notification);
-      if (schoolId) emitToRoom(`school:${schoolId}`, "portal_notification_created", notification);
-      if (organizationId) emitToRoom(`org:${organizationId}`, "portal_notification_created", notification);
-      return notification;
+      // Frontend DTO body=message — DB column `message` ko `body` alias karo
+      // taki socket payload aur list() dono consistent rahen.
+      const payload = { ...notification, body: notification.message };
+
+      emitToRoom("super_admins", "portal_notification_created", payload);
+      if (schoolId) emitToRoom(`school:${schoolId}`, "portal_notification_created", payload);
+      if (organizationId) emitToRoom(`org:${organizationId}`, "portal_notification_created", payload);
+      return payload;
     } catch (err) {
       logger.logger.error(`[PortalNotif] Create failed: ${err.message}`);
       return null;
@@ -84,7 +88,7 @@ class PortalNotificationService {
     } else if (user.role === "ADMIN") {
       where.OR = [
         { recipientId: user.id },
-        { recipientId: null, organizationId: user.organizationId },
+        { recipientId: null, organizationId: user.organizationId, schoolId: null },
         { recipientId: null, schoolId: user.schoolId },
       ];
     } else {
@@ -102,7 +106,7 @@ class PortalNotificationService {
       prisma.notificationLog.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * pageSize, take: pageSize }),
       prisma.notificationLog.count({ where }),
     ]);
-    return { items, total, page, pageSize };
+    return { items: items.map((n) => ({ ...n, body: n.message })), total, page, pageSize };
   }
 
   async markRead(user, ids) {
@@ -119,7 +123,7 @@ class PortalNotificationService {
     if (user.role !== "SUPER_ADMIN") {
       if (user.role === "ADMIN") {
         where.OR = [
-          { organizationId: user.organizationId },
+          { organizationId: user.organizationId, schoolId: null },
           { schoolId: user.schoolId },
         ];
       } else {
@@ -139,7 +143,7 @@ class PortalNotificationService {
     if (user.role === "SUPER_ADMIN") {
       // super admin can delete any
     } else if (user.role === "ADMIN") {
-      where.OR = [{ recipientId: user.id }, { schoolId: user.schoolId }, { organizationId: user.organizationId }];
+      where.OR = [{ recipientId: user.id }, { schoolId: user.schoolId }, { organizationId: user.organizationId, schoolId: null }];
     } else {
       where.recipientId = user.id;
     }
@@ -159,7 +163,7 @@ class PortalNotificationService {
     } else if (user.role === "ADMIN") {
       where.OR = [
         { recipientId: user.id },
-        { recipientId: null, organizationId: user.organizationId },
+        { recipientId: null, organizationId: user.organizationId, schoolId: null },
         { recipientId: null, schoolId: user.schoolId },
       ];
     } else {

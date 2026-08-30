@@ -5,6 +5,7 @@ import SuperAdminSidebar from './SuperAdminSidebar';
 import SuperAdminNavbar from './SuperAdminNavbar';
 import { useSocket } from '@/hooks/useSocket';
 import type { ReactNode } from 'react';
+import PortalErrorBoundary from '@/components/PortalErrorBoundary';
 
 interface SuperAdminLayoutProps {
   links: { label: string; path: string; icon: React.ReactNode }[];
@@ -29,7 +30,9 @@ export default function SuperAdminLayout({ links, title, children }: SuperAdminL
       <div className={`min-h-screen overflow-x-hidden transition-[margin] duration-300 ease-out ${collapsed ? 'lg:ml-[76px]' : 'lg:ml-[252px]'}`}>
         <SuperAdminNavbar title={title} onMenuClick={() => setMobileOpen(true)} />
         <main className="sa-canvas mx-auto min-h-[calc(100vh-72px)] max-w-[1440px] p-3 sm:p-5 lg:p-8">
-          {children}
+          <PortalErrorBoundary section="Page">
+            {children}
+          </PortalErrorBoundary>
         </main>
       </div>
     </div>

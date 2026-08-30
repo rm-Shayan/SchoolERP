@@ -15,14 +15,60 @@ class ExamRepository {
     });
   }
 
+  async findClassById(id) {
+    return prisma.class.findUnique({
+      where: { id },
+      select: { id: true, schoolId: true, subjects: { select: { id: true } } },
+    });
+  }
+
   async createExam(data) {
-    return prisma.exam.create({ data });
+    return prisma.exam.create({
+      data,
+      include: {
+        term: { include: { academicYear: true } },
+        papers: { include: { subject: true, section: true, class: true } },
+      },
+    });
   }
 
   async findExamById(id) {
     return prisma.exam.findUnique({
       where: { id },
-      include: { school: { select: { id: true, name: true } }, term: { include: { academicYear: true } } },
+      include: {
+        school: { select: { id: true, name: true } },
+        term: { include: { academicYear: true } },
+        papers: { include: { subject: true, section: true, class: true } },
+      },
+    });
+  }
+
+  async updateExamPapers(id, data, papers) {
+    return prisma.$transaction(async (tx) => {
+      await tx.exam.update({ where: { id }, data });
+      await tx.examPaper.deleteMany({ where: { examId: id } });
+      if (papers?.length) {
+        await tx.examPaper.createMany({
+          data: papers.map((p) => ({
+            examId: id,
+            classId: p.classId,
+            subjectId: p.subjectId,
+            sectionId: p.sectionId || null,
+            date: new Date(p.date),
+            startTime: p.startTime || null,
+            endTime: p.endTime || null,
+            maxMarks: p.maxMarks != null ? p.maxMarks : null,
+            roomNumber: p.roomNumber || null,
+          })),
+        });
+      }
+      return tx.exam.findUnique({
+        where: { id },
+        include: {
+          term: { include: { academicYear: true } },
+          papers: { include: { subject: true, section: true, class: true } },
+        },
+      });
     });
   }
 
@@ -34,7 +80,11 @@ class ExamRepository {
     const [items, total] = await Promise.all([
       prisma.exam.findMany({
         where,
-        include: { term: { include: { academicYear: true } }, _count: { select: { results: true } } },
+        include: {
+          term: { include: { academicYear: true } },
+          papers: { include: { subject: true, section: true, class: true } },
+          _count: { select: { results: true } },
+        },
         orderBy: { startDate: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,

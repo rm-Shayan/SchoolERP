@@ -40,6 +40,7 @@ export const schoolAdminLinks: SidebarNavItem[] = [
       { label: 'Homework', path: '/branch/homework', icon: icon(I.homework) },
       { label: 'Timetable', path: '/branch/timetable', icon: icon(I.timetable) },
       { label: 'PTM', path: '/branch/ptm', icon: icon(I.ptm) },
+      { label: 'Conduct Remarks', path: '/branch/conduct', icon: icon(I.conduct) },
     ],
   },
   {
@@ -90,10 +91,14 @@ export const schoolAdminLinks: SidebarNavItem[] = [
 export const teacherLinks: NavLink[] = [
   { label: 'Dashboard', path: '/teacher/dashboard', icon: icon(I.dashboard) },
   { label: 'Section Attendance', path: '/teacher/attendance', icon: icon(I.roster) },
-  { label: 'My Leave', path: '/teacher/leave', icon: icon(I.leave) },
-  { label: 'Homework', path: '/teacher/homework', icon: icon(I.homework) },
-  { label: 'Conduct Remarks', path: '/teacher/conduct', icon: icon(I.conduct) },
+  { label: 'My Attendance', path: '/teacher/my-attendance', icon: icon(I.gate) },
   { label: 'My Timetable', path: '/teacher/timetable', icon: icon(I.timetable) },
+  { label: 'My PTM', path: '/teacher/ptm', icon: icon(I.ptm) },
+  { label: 'Homework', path: '/teacher/homework', icon: icon(I.homework) },
+  { label: 'Give Remark', path: '/teacher/conduct', icon: icon(I.conduct) },
+  { label: 'Remarks History', path: '/teacher/remarks-history', icon: icon(I.conduct) },
+  { label: 'My Leave', path: '/teacher/leave', icon: icon(I.leave) },
   { label: 'Exams', path: '/teacher/exams', icon: icon(I.exam) },
   { label: 'Announcements', path: '/teacher/announcements', icon: icon(I.circular) },
+  { label: 'Notifications', path: '/teacher/notifications', icon: icon(I.activity) },
 ];

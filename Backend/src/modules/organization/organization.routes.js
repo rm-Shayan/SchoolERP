@@ -10,6 +10,7 @@ const adminOnly = [authenticate, authorize("SUPER_ADMIN")];
 const orgSelf = [authenticate, authorizeOrgSelf()];
 
 // ─── PUBLIC: org landing page data (/o/:slug) — koi auth nahi ───────────────
+router.get("/public/slugs", organizationController.publicSlugs);
 router.get("/public/:slug", organizationController.getPublicBySlug);
 
 // ─── BULK IMPORT (must be before /:id to avoid route conflict) ────────────────

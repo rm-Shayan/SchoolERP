@@ -1,6 +1,7 @@
 import examService from "./exam.service.js";
 import { asyncHandler } from "../../lib/utils/asyncHandler.js";
 import ApiResponse from "../../lib/utils/ApiResponse.js";
+import { streamPdf, buildExamDateSheetPdf } from "../../lib/pdf/reportPdf.js";
 
 class ExamController {
   /**
@@ -31,11 +32,32 @@ class ExamController {
   });
 
   /**
+   * GET /api/v1/exams/:id/date-sheet
+   * PDF download — paper-wise date sheet for the exam.
+   */
+  downloadDateSheet = asyncHandler(async (req, res) => {
+    const exam = await examService.getExam(req.user, req.params.id);
+    const safe = (exam.name || "exam").replace(/[^\w-]+/g, "-").toLowerCase();
+    streamPdf(res, `${safe}-date-sheet.pdf`, (doc) =>
+      buildExamDateSheetPdf(doc, exam, exam.school?.name || "School", exam.papers)
+    );
+  });
+
+  /**
    * DELETE /api/v1/exams/:id
    */
   deleteExam = asyncHandler(async (req, res) => {
     await examService.deleteExam(req.user, req.params.id);
     return res.status(200).json(ApiResponse.ok("Exam deleted"));
+  });
+
+  /**
+   * PUT /api/v1/exams/:id
+   * Update exam details + replace date-wise papers.
+   */
+  updateExam = asyncHandler(async (req, res) => {
+    const exam = await examService.updateExam(req.user, req.params.id, req.body);
+    return res.status(200).json(ApiResponse.ok("Exam updated", exam));
   });
 
   /**

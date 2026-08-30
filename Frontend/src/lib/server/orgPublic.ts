@@ -3,11 +3,33 @@ import type { OrgPublicData } from '@/lib/api/orgService';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
 
+const REVALIDATE = 300;
+
 export async function getServerOrgPublic(slug: string): Promise<OrgPublicData | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/organizations/public/${encodeURIComponent(slug)}`, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+    const response = await fetch(`${API_BASE_URL}/api/v1/organizations/public/${encodeURIComponent(slug)}`, {
+      next: { revalidate: REVALIDATE },
+      signal: AbortSignal.timeout(5000),
+    });
     if (!response.ok) return null;
     const payload = (await response.json()) as ApiResponse<OrgPublicData>;
     return payload?.data ?? null;
   } catch { return null; }
+}
+
+/**
+ * All public org slugs — generateStaticParams ke liye (ISR).
+ * Build par backend up na ho to [] return hota hai → koi static page nahi,
+ * bas on-demand dynamic rendering chalta rahta hai.
+ */
+export async function getAllOrgSlugs(): Promise<string[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/organizations/public/slugs`, {
+      next: { revalidate: REVALIDATE },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) return [];
+    const payload = (await response.json()) as ApiResponse<string[]>;
+    return Array.isArray(payload?.data) ? payload.data : [];
+  } catch { return []; }
 }

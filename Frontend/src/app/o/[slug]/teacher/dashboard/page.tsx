@@ -1,11 +1,11 @@
-﻿import { Suspense } from 'react';
-import SectionAttendancePage from '@/features/teacher/components/SectionAttendancePage';
+import { Suspense } from 'react';
+import TeacherDashboard from '@/features/teacher/components/TeacherDashboard';
 import PageLoader from '@/components/PageLoader';
 
 export default function TeacherDashboardPage() {
   return (
     <Suspense fallback={<PageLoader />}>
-      <SectionAttendancePage />
+      <TeacherDashboard />
     </Suspense>
   );
 }

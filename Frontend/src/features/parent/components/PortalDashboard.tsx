@@ -1,8 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { portalService, parentService } from '@/lib/api';
-import { notificationService } from '@/lib/api/notificationService';
+import { portalService, parentService, portalNotificationService } from '@/lib/api';
 import { usePortalSocket } from '@/hooks/usePortalSocket';
 import type { PortalStudentProfile } from '@/lib/api/portalService';
 import type { ParentProfile } from '@/lib/api/parentService';
@@ -17,15 +16,17 @@ import HomeworkTab from './parts/HomeworkTab';
 import NoticesTab from './parts/NoticesTab';
 import ResultsTab from './parts/ResultsTab';
 import TimetableTab from './parts/TimetableTab';
+import ExamSheetTab from './parts/ExamSheetTab';
 import LeaveRequestsTab from './parts/LeaveRequestsTab';
 import ProfileTab from './parts/ProfileTab';
 import ConductTab from './parts/ConductTab';
 import PTMTab from './parts/PTMTab';
 import NotificationInboxTab from './parts/NotificationInboxTab';
+import PortalErrorBoundary from '@/components/PortalErrorBoundary';
 
 const TAB_CONTENT: Record<PortalTab, React.FC> = {
   overview: OverviewTab, attendance: AttendanceTab, fees: FeesTab, homework: HomeworkTab,
-  notices: NoticesTab, results: ResultsTab, timetable: TimetableTab, conduct: ConductTab,
+  notices: NoticesTab, results: ResultsTab, exams: ExamSheetTab, timetable: TimetableTab, conduct: ConductTab,
   ptm: PTMTab, leave: () => null, notifications: NotificationInboxTab, profile: ProfileTab,
 };
 
@@ -52,7 +53,8 @@ export default function PortalDashboard() {
           localStorage.setItem('parentProfile', JSON.stringify(p));
           if (p.children.length) setActiveChildId(p.children[0].id);
         }
-        const count = await notificationService.getUnreadCount();
+        // Use portalDataService (correct auth) instead of notificationService (staff auth)
+        const count = await portalNotificationService.getUnreadCount();
         setUnreadCount(count);
       } catch { router.replace('/parent/login'); } finally { setLoading(false); }
     })();
@@ -75,7 +77,22 @@ export default function PortalDashboard() {
     () => [...new Set(children.map((c) => c.section?.id).filter(Boolean))],
     [children]
   );
-  usePortalSocket(sectionIds, child?.school?.id);
+  const socketRef = usePortalSocket(sectionIds, child?.school?.id);
+
+  // Real-time: increment unread count when new notification arrives via socket
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket) return;
+    const onCreated = () => setUnreadCount((c) => c + 1);
+    const onAllRead = () => setUnreadCount(0);
+    socket.on('portal_notification_created', onCreated);
+    socket.on('portal_all_read', onAllRead);
+    return () => {
+      socket.off('portal_notification_created', onCreated);
+      socket.off('portal_all_read', onAllRead);
+    };
+  }, [socketRef.current]);
+
   const TabContent = TAB_CONTENT[tab];
 
   if (loading) return (
@@ -104,11 +121,13 @@ export default function PortalDashboard() {
             </div>
             <PortalTabNav active={tab} onChange={setTab} unreadCount={unreadCount} />
             <div className="px-4 py-4">
-              {tab === 'leave' ? (
-                <LeaveRequestsTab children={children.map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, rollNumber: c.rollNumber }))} />
-              ) : (
-                <TabContent key={`${tab}-${child.id}`} />
-              )}
+              <PortalErrorBoundary section={tab}>
+                {tab === 'leave' ? (
+                  <LeaveRequestsTab children={children.map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, rollNumber: c.rollNumber }))} />
+                ) : (
+                  <TabContent key={tab} />
+                )}
+              </PortalErrorBoundary>
             </div>
           </>
         )}

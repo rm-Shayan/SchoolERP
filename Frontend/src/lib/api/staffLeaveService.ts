@@ -57,6 +57,14 @@ export const staffLeaveService = {
     return client.delete(`/staff-leave/${leaveId}`);
   },
 
+  updateOwn(leaveId: string, data: { dateFrom?: string; dateTo?: string; leaveType?: string; reason?: string }) {
+    return client.patch<{ data: StaffLeaveRequest }>(`/staff-leave/my/${leaveId}`, data);
+  },
+
+  deleteOwn(leaveId: string) {
+    return client.delete(`/staff-leave/my/${leaveId}`);
+  },
+
   getMyLeaves(params?: { status?: string; page?: number; limit?: number }) {
     return client.get<{ data: StaffLeaveListResponse }>('/staff-leave/my', { params });
   },

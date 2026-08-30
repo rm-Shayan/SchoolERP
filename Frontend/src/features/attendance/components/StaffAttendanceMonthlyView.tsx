@@ -43,6 +43,7 @@ export default function StaffAttendanceMonthlyView() {
   const monthLabel = new Date(year, month - 1).toLocaleString('en-PK', { month: 'long', year: 'numeric' });
 
   const statusMap: Record<string, number> = { PRESENT: 1, LATE: 2, ABSENT: 3, LEAVE: 4 };
+  const weeklyOffSet = new Set(report?.weeklyOff ?? [0, 6]);
 
   return (
     <div className="space-y-5">
@@ -109,7 +110,7 @@ export default function StaffAttendanceMonthlyView() {
                         val = statusMap[dayStatuses[i]] ?? 0;
                       }
                       const dayNum = new Date(year, month - 1, day).getDay();
-                      const isWeekend = dayNum === 0;
+                      const isWeekend = weeklyOffSet.has(dayNum);
                       return (
                         <td key={i} className="text-center py-2.5 px-1">
                           <span className={cn('inline-flex w-6 h-6 items-center justify-center rounded-md text-[9px] font-bold',

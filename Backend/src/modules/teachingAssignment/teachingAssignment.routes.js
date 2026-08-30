@@ -1,5 +1,6 @@
 import { Router } from "express";
 import teachingAssignmentController from "./teachingAssignment.controller.js";
+import teacherDashboardController from "./teacherDashboard.controller.js";
 import { validate } from "../../middlewares/validate.middleware.js";
 import { authenticate, authorize, assertSameSchool } from "../../middlewares/auth.middleware.js";
 import { ROLE_GROUPS } from "../../constants.js";
@@ -26,6 +27,13 @@ router.get(
   assertSameSchool,
   validate(listAssignmentsSchema),
   teachingAssignmentController.listMe
+);
+
+router.get(
+  "/schools/:schoolId/dashboard-stats",
+  authorize(ROLE_GROUPS.ALL_STAFF),
+  assertSameSchool,
+  teacherDashboardController.getStats
 );
 
 router.get(

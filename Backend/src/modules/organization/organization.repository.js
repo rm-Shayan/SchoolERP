@@ -243,6 +243,17 @@ class OrganizationRepository {
   }
 
   /**
+   * All public slugs — ISR generateStaticParams ke liye (koi auth nahi).
+   */
+  async findAllPublicSlugs() {
+    const orgs = await prisma.organization.findMany({
+      where: { slug: { not: null } },
+      select: { slug: true },
+    });
+    return orgs.map((o) => o.slug);
+  }
+
+  /**
    * Public landing data: org + uski saari branches (public page ke liye).
    */
   async findBySlugWithBranches(slug) {

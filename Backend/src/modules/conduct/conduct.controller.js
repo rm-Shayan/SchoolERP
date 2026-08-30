@@ -13,6 +13,15 @@ class ConductController {
   });
 
   /**
+   * GET /api/v1/conduct/remarks/school
+   * All remarks for the school (admin view).
+   */
+  listAllBySchool = asyncHandler(async (req, res) => {
+    const result = await conductService.listAllBySchool(req.user, req.query);
+    return res.status(200).json(ApiResponse.ok("School remarks fetched", result));
+  });
+
+  /**
    * GET /api/v1/conduct/remarks/students/:studentId
    * Remark history for a student.
    */
@@ -31,11 +40,36 @@ class ConductController {
   });
 
   /**
+   * GET /api/v1/conduct/remarks/mine
+   * Teacher's own remarks history.
+   */
+  listByTeacher = asyncHandler(async (req, res) => {
+    const result = await conductService.listByTeacher(req.user, req.query);
+    return res.status(200).json(ApiResponse.ok("Your remarks fetched", result));
+  });
+
+  /**
    * GET /api/v1/conduct/remarks/:id
    */
   getRemark = asyncHandler(async (req, res) => {
     const remark = await conductService.getRemark(req.user, req.params.id);
     return res.status(200).json(ApiResponse.ok("Remark fetched", remark));
+  });
+
+  /**
+   * PATCH /api/v1/conduct/remarks/:id
+   */
+  updateRemark = asyncHandler(async (req, res) => {
+    const remark = await conductService.updateRemark(req.user, req.params.id, req.body);
+    return res.status(200).json(ApiResponse.ok("Remark updated", remark));
+  });
+
+  /**
+   * DELETE /api/v1/conduct/remarks/:id
+   */
+  deleteRemark = asyncHandler(async (req, res) => {
+    await conductService.deleteRemark(req.user, req.params.id);
+    return res.status(200).json(ApiResponse.ok("Remark deleted"));
   });
 }
 

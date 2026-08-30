@@ -136,13 +136,3 @@ export function orgUpdatePayload(v: EditOrgFormValues) {
     bankAccountNumber: v.bankAccountNumber.trim() || null,
   };
 }
-
-export interface BranchFormValues {
-  name: string;
-  code: string;
-  address: string;
-  phone: string;
-  adminEmail: string;
-  adminName: string;
-  adminPassword: string;
-}

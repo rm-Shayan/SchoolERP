@@ -13,6 +13,20 @@ function minutesOf(time) {
   return h * 60 + m;
 }
 
+/** Local (server tz) YYYY-MM-DD — matches School.offDays dates users pick. */
+function localDateKey(d) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** Skip when today is a weekly-off day (School.weeklyOff) or a holiday (School.offDays). */
+function isOffDay(school, today) {
+  const weeklyOff = Array.isArray(school.weeklyOff) ? school.weeklyOff : [0, 6];
+  if (weeklyOff.includes(today.getDay())) return true;
+  const offSet = new Set((school.offDays || []).map((o) => o?.date));
+  return offSet.has(localDateKey(today));
+}
+
 /**
  * Attendance alert — per-school `attendanceAlertTime`.
  * Runs every 15 min. At/after the configured alert time (within a 45-min
@@ -33,10 +47,13 @@ export async function runAttendanceAlertJob() {
 
   try {
     const schools = await prisma.school.findMany({
-      select: { id: true, name: true, attendanceAlertTime: true },
+      select: { id: true, name: true, attendanceAlertTime: true, weeklyOff: true, offDays: true },
     });
 
     for (const school of schools) {
+      // Weekly off (weekend) or holiday set → school closed, no absent/late alerts.
+      if (isOffDay(school, today)) continue;
+
       const alertMin = minutesOf(school.attendanceAlertTime || "09:30");
       if (nowMin < alertMin) continue;
       if (nowMin > alertMin + 45) continue;

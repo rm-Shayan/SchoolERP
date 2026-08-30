@@ -6,6 +6,56 @@ import portalNotificationService from "../notification/notification.portalServic
 import { emitToRoom } from "../../config/websocket.js";
 
 class ExamService {
+  /**
+   * Normalize + validate paper list. Dedupes by classId:subjectId and returns
+   * Prisma-ready paper objects (already scoped to the given school).
+   */
+  async _validatePapers(schoolId, papers) {
+    if (!papers?.length) return { creates: [] };
+    const seen = new Set();
+    const creates = [];
+    for (const p of papers) {
+      const cls = await examRepository.findClassById(p.classId);
+      if (!cls || cls.schoolId !== schoolId) {
+        throw ApiError.badRequestError("Paper class does not belong to this school");
+      }
+      if (!cls.subjects.some((s) => s.id === p.subjectId)) {
+        throw ApiError.badRequestError("Subject does not belong to the given class");
+      }
+      if (p.sectionId) {
+        const sec = await examRepository.sectionExists(p.sectionId);
+        if (!sec || sec.classId !== p.classId) {
+          throw ApiError.badRequestError("Section does not belong to the given class");
+        }
+      }
+      const key = `${p.classId}:${p.subjectId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      creates.push({
+        classId: p.classId,
+        subjectId: p.subjectId,
+        sectionId: p.sectionId || null,
+        date: new Date(p.date),
+        startTime: p.startTime || null,
+        endTime: p.endTime || null,
+        maxMarks: p.maxMarks != null ? p.maxMarks : null,
+        roomNumber: p.roomNumber || null,
+      });
+    }
+    return { creates };
+  }
+
+  _guardPaperDates(creates, startDate, endDate) {
+    const ss = startDate.toISOString().slice(0, 10);
+    const es = endDate.toISOString().slice(0, 10);
+    for (const p of creates) {
+      const ds = p.date.toISOString().slice(0, 10);
+      if (ds < ss || ds > es) {
+        throw ApiError.badRequestError(`Paper date ${ds} is outside the exam window (${ss} → ${es})`);
+      }
+    }
+  }
+
   async createExam(user, schoolId, data) {
     const targetSchoolId = getEffectiveSchoolId(user, schoolId);
     assertOwnSchool(user, targetSchoolId);
@@ -18,12 +68,20 @@ class ExamService {
       throw ApiError.badRequestError("Term does not belong to the given school");
     }
 
+    const startDate = new Date(data.startDate);
+    const endDate = new Date(data.endDate);
+    if (endDate < startDate) throw ApiError.badRequestError("End date cannot be before start date");
+
+    const { creates } = await this._validatePapers(targetSchoolId, data.papers);
+    this._guardPaperDates(creates, startDate, endDate);
+
     const exam = await examRepository.createExam({
       schoolId: targetSchoolId,
       termId: data.termId,
       name: data.name || `${term.name} Examination`,
-      startDate: new Date(data.startDate),
-      endDate: new Date(data.endDate),
+      startDate,
+      endDate,
+      papers: creates.length > 0 ? { create: creates } : undefined,
     });
 
     portalNotificationService.create({
@@ -66,6 +124,46 @@ class ExamService {
     }).catch(() => {});
 
     return true;
+  }
+
+  /** PUT /exams/:id — update exam dates/details + replace date-wise papers. */
+  async updateExam(user, id, data) {
+    const exam = await this.getExam(user, id);
+    assertOwnSchool(user, exam.schoolId);
+
+    const updateData = {};
+    if (data.termId) {
+      const term = await examRepository.termExists(data.termId);
+      if (!term) throw ApiError.notFoundError("Term not found");
+      if (term.academicYear.schoolId !== exam.schoolId) {
+        throw ApiError.badRequestError("Term does not belong to the given school");
+      }
+      updateData.termId = data.termId;
+    }
+    if (data.name != null) updateData.name = data.name;
+    if (data.startDate) updateData.startDate = new Date(data.startDate);
+    if (data.endDate) updateData.endDate = new Date(data.endDate);
+    if (data.startDate && data.endDate && new Date(data.endDate) < new Date(data.startDate)) {
+      throw ApiError.badRequestError("End date cannot be before start date");
+    }
+
+    const { creates } = await this._validatePapers(exam.schoolId, data.papers);
+    this._guardPaperDates(
+      creates,
+      updateData.startDate || new Date(exam.startDate),
+      updateData.endDate || new Date(exam.endDate)
+    );
+
+    const updated = await examRepository.updateExamPapers(id, updateData, creates);
+
+    portalNotificationService.create({
+      schoolId: exam.schoolId, senderId: user.id, senderName: user.name,
+      title: "EXAM_UPDATED", body: `"${updated.name}" date sheet updated — papers assigned date-wise.`,
+      category: "EXAM", refType: "EXAM", refId: id, link: "/exams",
+    }).catch(() => {});
+
+    emitToRoom(`school:${exam.schoolId}`, "exam_date_sheet_updated", { examId: id });
+    return updated;
   }
 
   /**

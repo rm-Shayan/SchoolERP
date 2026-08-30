@@ -9,6 +9,7 @@ import { useSocket } from '@/hooks/useSocket';
 import { orgThemeStyle, applyOrgThemeToRoot, clearOrgThemeFromRoot } from '@/lib/theme';
 import { isNavGroup, type SidebarNavItem } from '@/config/navLinks';
 import type { ReactNode } from 'react';
+import PortalErrorBoundary from '@/components/PortalErrorBoundary';
 
 interface DashboardLayoutProps {
   links: SidebarNavItem[];
@@ -82,7 +83,9 @@ export default function DashboardLayout({ links, title, children }: DashboardLay
         )}
         <Navbar title={title} onMenuClick={() => setMobileOpen(true)} />
         <main className="p-4 md:p-6">
-          {children}
+          <PortalErrorBoundary section="Page">
+            {children}
+          </PortalErrorBoundary>
         </main>
       </div>
     </div>

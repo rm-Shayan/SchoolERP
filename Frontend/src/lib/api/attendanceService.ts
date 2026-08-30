@@ -1,5 +1,5 @@
 import api from './client';
-import type { ApiResponse, AttendanceRecord, AttendanceStatus, AttendanceYearSummary, DailyAttendanceReport, MonthlyAttendanceReport, User } from '@/types';
+import type { ApiResponse, AttendanceRecord, AttendanceStatus, AttendanceYearSummary, DailyAttendanceReport, MonthlyAttendanceReport, OffDay, User } from '@/types';
 
 export interface ScanPayload {
   identifierCode: string;
@@ -127,6 +127,15 @@ export const attendanceService = {
     return res.data.data;
   },
 
+  // ─── OFF DAYS / HOLIDAYS + WEEKLY OFF (SUPER_ADMIN, ADMIN) ────────────────
+  getOffDays: (schoolId?: string): Promise<OffDay[]> =>
+    api.get<ApiResponse<OffDay[]>>('/attendance/off-days', { params: { schoolId } }).then((r) => r.data.data),
+  addOffDay: (data: { schoolId?: string; date: string; reason?: string }): Promise<{ offDays: OffDay[] }> =>
+    api.post<ApiResponse<{ offDays: OffDay[] }>>('/attendance/off-days', data).then((r) => r.data.data),
+  removeOffDay: (date: string, schoolId?: string): Promise<{ offDays: OffDay[] }> =>
+    api.delete<ApiResponse<{ offDays: OffDay[] }>>(`/attendance/off-days/${date}`, { params: { schoolId } }).then((r) => r.data.data),
+  updateWeeklyOff: (data: { schoolId?: string; weekdays: number[] }): Promise<{ weeklyOff: number[] }> =>
+    api.put<ApiResponse<{ weeklyOff: number[] }>>('/attendance/weekly-off', data).then((r) => r.data.data),
   // PUT /attendance/:id — update single record
   updateRecord: async (id: string, data: { status?: string; remarks?: string }): Promise<AttendanceRecord> => {
     const res = await api.put<ApiResponse<AttendanceRecord>>(`/attendance/${id}`, data);

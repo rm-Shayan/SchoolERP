@@ -1,5 +1,17 @@
 import prisma from "../../config/db.js";
 
+// Org branding fields shared by the #userInclude and session-school queries —
+// matches what the UserResponseDTO exposes for the nested `organization`.
+const ORG_BRAND_SELECT = {
+  id: true,
+  name: true,
+  code: true,
+  slug: true,
+  status: true,
+  themeColor: true,
+  logoUrl: true,
+};
+
 // Safe staff list shape — password hash kabhi response mein nahi jata aur
 // payload chhota rehta hai (pageSize=500 par noticeable farq parta hai).
 const STAFF_LIST_SELECT = {
@@ -47,13 +59,7 @@ class AuthRepository {
     },
     organization: {
       select: {
-        id: true,
-        name: true,
-        code: true,
-        slug: true,
-        status: true,
-        themeColor: true,
-        logoUrl: true,
+        ...ORG_BRAND_SELECT,
       },
     },
   };
@@ -70,11 +76,19 @@ class AuthRepository {
 
   /**
    * Find staff member by School Code and Email/Username/Phone.
-   * Branch staff (ADMIN/TEACHER/...) — branch relation se (apni branch locked).
+   * Matches when the school code is the user's HOME branch OR sits in their
+   * `branchAccess` (multi-branch admin). Returns { user, school } where
+   * `school` is the branch the code resolved to (the effective session branch).
    */
   async findStaffBySchoolAndCredential(schoolCode, identifier) {
     const cleanIdentifier = identifier.toString().trim();
     const code = schoolCode.toString().trim().toUpperCase();
+    const school = await prisma.school.findFirst({
+      where: { code },
+      include: { organization: { select: ORG_BRAND_SELECT } },
+    });
+    if (!school) return { user: null, school: null };
+
     const identifierMatch = {
       OR: [
         { username: cleanIdentifier },
@@ -82,9 +96,44 @@ class AuthRepository {
         { phone: cleanIdentifier },
       ],
     };
-    return prisma.user.findFirst({
-      where: { school: { code }, ...identifierMatch },
+    const user = await prisma.user.findFirst({
+      where: {
+        AND: [
+          {
+            OR: [
+              { schoolId: school.id },
+              { branchAccess: { array_contains: [school.id] } },
+            ],
+          },
+          identifierMatch,
+        ],
+      },
       include: this.#userInclude,
+    });
+    return { user, school };
+  }
+
+  /**
+   * Branch row (with org branding) for the CURRENT session — used by login,
+   * switch-branch, refresh and /auth/me when the token is scoped to a
+   * non-home branch.
+   */
+  async findSchoolForSession(id) {
+    return prisma.school.findUnique({
+      where: { id },
+      include: { organization: { select: ORG_BRAND_SELECT } },
+    });
+  }
+
+  /**
+   * Minimal branch rows for a user's accessible set (home + branchAccess).
+   */
+  async listAccessibleSchools(organizationId, ids) {
+    if (!ids || ids.length === 0) return [];
+    return prisma.school.findMany({
+      where: { id: { in: ids }, organizationId },
+      select: { id: true, name: true, code: true, status: true },
+      orderBy: { code: "asc" },
     });
   }
 
@@ -153,8 +202,9 @@ class AuthRepository {
    * Filters: search (name/email/username/org/branch), role, isActive,
    * hasBlockReason — server-side, taake frontend ko 500-record cap na chahiye.
    */
-  async findAllUsersPlatform({ page = 1, pageSize = 50, search, role, isActive, hasBlockReason } = {}) {
+  async findAllUsersPlatform({ page = 1, pageSize = 50, search, role, isActive, hasBlockReason, organizationId } = {}) {
     const where = {};
+    if (organizationId) where.organizationId = organizationId;
     if (role) where.role = role;
     if (isActive !== undefined) where.isActive = isActive;
     if (hasBlockReason !== undefined) where.blockedReason = hasBlockReason ? { not: null } : null;
