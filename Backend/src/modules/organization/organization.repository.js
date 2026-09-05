@@ -6,18 +6,30 @@ class OrganizationRepository {
   }
 
   async findAll() {
-    return await prisma.organization.findMany({
+    const orgs = await prisma.organization.findMany({
       include: {
         users: {
           where: { role: "SUPER_ADMIN" },
           select: { username: true },
           take: 1,
         },
-        branches: { select: { status: true } },
         _count: { select: { branches: true, users: true } },
       },
       orderBy: { createdAt: "asc" },
     });
+
+    // Aggregate blocked branch counts in a single query instead of loading all branch rows
+    const blockedGroups = await prisma.school.groupBy({
+      by: ["organizationId"],
+      where: { status: "BLOCKED" },
+      _count: { id: true },
+    });
+    const blockedMap = Object.fromEntries(blockedGroups.map((g) => [g.organizationId, g._count.id]));
+
+    return orgs.map((org) => ({
+      ...org,
+      blockedBranchCount: blockedMap[org.id] || 0,
+    }));
   }
 
   /**
@@ -148,7 +160,7 @@ class OrganizationRepository {
     const staff = await prisma.user.findMany({
       where: { organizationId },
       include: {
-        school: { select: { id: true, name: true } },
+        school: { select: { id: true, name: true, logoUrl: true, organization: { select: { logoUrl: true } } } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -192,6 +204,39 @@ class OrganizationRepository {
 
     const totalRevenue = monthKeys.reduce((s, m) => s + m.total, 0);
 
+    // ── Enrollment trends (new students per month) ──────────────────
+    const newStudents = await prisma.student.findMany({
+      where: { school: { organizationId }, createdAt: { gte: since } },
+      select: { createdAt: true, schoolId: true },
+    });
+    const enrollmentByMonth = {};
+    for (const s of newStudents) {
+      const key = `${s.createdAt.getFullYear()}-${s.createdAt.getMonth() + 1}`;
+      enrollmentByMonth[key] = (enrollmentByMonth[key] || 0) + 1;
+    }
+
+    // ── Attendance rate (present vs total per month) ─────────────────
+    const attendanceRecords = await prisma.attendanceRecord.findMany({
+      where: { student: { school: { organizationId } }, date: { gte: since } },
+      select: { date: true, status: true },
+    });
+    const attendanceByMonth = {};
+    for (const a of attendanceRecords) {
+      const key = `${a.date.getFullYear()}-${a.date.getMonth() + 1}`;
+      if (!attendanceByMonth[key]) attendanceByMonth[key] = { present: 0, total: 0 };
+      attendanceByMonth[key].total += 1;
+      if (a.status === "PRESENT" || a.status === "LATE") attendanceByMonth[key].present += 1;
+    }
+
+    // ── Fee collection vs due ───────────────────────────────────────
+    const feeRecords = await prisma.feeRecord.findMany({
+      where: { student: { school: { organizationId } } },
+      select: { totalAmount: true, paidAmount: true, status: true },
+    });
+    const totalDue = feeRecords.reduce((s, r) => s + (Number(r.totalAmount) || 0), 0);
+    const totalPaid = feeRecords.reduce((s, r) => s + (Number(r.paidAmount) || 0), 0);
+    const totalPending = totalDue - totalPaid;
+
     return {
       branches: branches.map((b) => ({
         id: b.id,
@@ -206,6 +251,20 @@ class OrganizationRepository {
         total: totalRevenue,
         monthly: monthKeys,
       },
+      enrollment: {
+        monthly: monthKeys.map((m) => ({ ...m, count: enrollmentByMonth[m.key] || 0 })),
+      },
+      attendance: {
+        monthly: monthKeys.map((m) => {
+          const a = attendanceByMonth[m.key];
+          return { ...m, rate: a ? Math.round((a.present / a.total) * 100) : 0 };
+        }),
+      },
+      fees: {
+        totalDue,
+        totalPaid,
+        totalPending,
+      },
       staff: staff.map((u) => ({
         id: u.id,
         name: u.name,
@@ -215,6 +274,8 @@ class OrganizationRepository {
         blockedReason: u.blockedReason || null,
         schoolId: u.schoolId,
         schoolName: u.school?.name || null,
+        schoolLogoUrl: u.school?.logoUrl || u.school?.organization?.logoUrl || null,
+        avatarUrl: u.avatarUrl || null,
         joinedAt: u.createdAt,
       })),
     };
@@ -247,7 +308,6 @@ class OrganizationRepository {
    */
   async findAllPublicSlugs() {
     const orgs = await prisma.organization.findMany({
-      where: { slug: { not: null } },
       select: { slug: true },
     });
     return orgs.map((o) => o.slug);
@@ -291,6 +351,68 @@ class OrganizationRepository {
    */
   async countBranches(organizationId) {
     return await prisma.school.count({ where: { organizationId } });
+  }
+
+  /**
+   * School health audit — returns branches with issues:
+   * 1. Blocked/inactive branches
+   * 2. Branches with no admin (ADMIN role user)
+   * 3. Branches with zero staff (no active users at all)
+   * 4. Organizations with zero branches
+   */
+  async schoolHealth() {
+    const [blocked, noAdmin, noStaff, emptyOrgs] = await Promise.all([
+      prisma.school.findMany({
+        where: { status: "BLOCKED" },
+        select: {
+          id: true, name: true, code: true, status: true,
+          blockedReason: true, blockedByName: true,
+          organization: { select: { id: true, name: true } },
+        },
+        orderBy: { blockedAt: "desc" },
+      }),
+      prisma.$queryRaw`
+        SELECT s.id, s.name, s.code, s."organizationId", o.name AS "orgName"
+        FROM "School" s
+        JOIN "Organization" o ON o.id = s."organizationId"
+        WHERE s.id NOT IN (
+          SELECT DISTINCT "schoolId" FROM "User"
+          WHERE "schoolId" IS NOT NULL AND role = 'ADMIN'
+        )
+        AND s.id NOT IN (
+          SELECT DISTINCT value::text FROM "User", jsonb_array_elements_text(COALESCE("branchAccess", '[]'::jsonb)) WHERE role = 'ADMIN'
+        )
+        ORDER BY o.name, s.name
+      `,
+      prisma.$queryRaw`
+        SELECT s.id, s.name, s.code, s."organizationId", o.name AS "orgName"
+        FROM "School" s
+        JOIN "Organization" o ON o.id = s."organizationId"
+        WHERE s.id NOT IN (
+          SELECT DISTINCT "schoolId" FROM "User"
+          WHERE "schoolId" IS NOT NULL AND "isActive" = true
+        )
+        ORDER BY o.name, s.name
+      `,
+      prisma.organization.findMany({
+        where: { branches: { none: {} } },
+        select: { id: true, name: true, code: true },
+        orderBy: { name: "asc" },
+      }),
+    ]);
+
+    return {
+      blocked,
+      noAdmin: (noAdmin ?? []).map((r) => ({
+        id: r.id, name: r.name, code: r.code,
+        organization: { id: r.organizationId, name: r.orgName },
+      })),
+      noStaff: (noStaff ?? []).map((r) => ({
+        id: r.id, name: r.name, code: r.code,
+        organization: { id: r.organizationId, name: r.orgName },
+      })),
+      emptyOrgs,
+    };
   }
 }
 

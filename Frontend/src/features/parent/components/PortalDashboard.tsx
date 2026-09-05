@@ -1,34 +1,33 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { portalService, parentService, portalNotificationService } from '@/lib/api';
+import { portalService, parentService } from '@/lib/api';
+import { PARENT_PROFILE_UPDATED_EVENT } from '@/lib/api/parentService';
 import { usePortalSocket } from '@/hooks/usePortalSocket';
+import { portalLoginRedirect } from '@/lib/utils/orgTheme';
 import type { PortalStudentProfile } from '@/lib/api/portalService';
 import type { ParentProfile } from '@/lib/api/parentService';
-import { AuthCenteredScreen, Loading } from '@/features/shared/components';
-import { ChildSummaryCard, PortalBrandIcon, PortalHeader } from './portalCards';
-import SiblingSelector from './SiblingSelector';
-import PortalTabNav, { type PortalTab } from './parts/PortalTabNav';
-import OverviewTab from './parts/OverviewTab';
-import AttendanceTab from './parts/AttendanceTab';
-import FeesTab from './parts/FeesTab';
-import HomeworkTab from './parts/HomeworkTab';
-import NoticesTab from './parts/NoticesTab';
-import ResultsTab from './parts/ResultsTab';
-import TimetableTab from './parts/TimetableTab';
-import ExamSheetTab from './parts/ExamSheetTab';
-import LeaveRequestsTab from './parts/LeaveRequestsTab';
-import ProfileTab from './parts/ProfileTab';
-import ConductTab from './parts/ConductTab';
-import PTMTab from './parts/PTMTab';
-import NotificationInboxTab from './parts/NotificationInboxTab';
-import PortalErrorBoundary from '@/components/PortalErrorBoundary';
+import { ChildSummaryCard } from './portalCards';
+import PortalShell from './PortalShell';
+import type { PortalTab } from './parts/portalTabs';
+import PortalTabHost from './parts/PortalTabHost';
+import type { PortalChildBrief } from './parts/portalChildGroup';
+import { OverviewSkeleton } from './parts/PortalSkeletonsA';
 
-const TAB_CONTENT: Record<PortalTab, React.FC> = {
-  overview: OverviewTab, attendance: AttendanceTab, fees: FeesTab, homework: HomeworkTab,
-  notices: NoticesTab, results: ResultsTab, exams: ExamSheetTab, timetable: TimetableTab, conduct: ConductTab,
-  ptm: PTMTab, leave: () => null, notifications: NotificationInboxTab, profile: ProfileTab,
-};
+type SchoolInfo = { themeColor?: string | null; logoUrl?: string | null; slug?: string | null };
+
+/** Org branding (theme + logo + slug) localStorage me save — logout par login?org= mile. */
+function saveOrgBranding(school?: SchoolInfo | null) {
+  if (typeof window === 'undefined' || !school?.themeColor && !school?.logoUrl) return;
+  let prev: Record<string, unknown> = {};
+  try { prev = JSON.parse(localStorage.getItem('organization') || '{}'); } catch { /* noop */ }
+  localStorage.setItem('organization', JSON.stringify({
+    ...prev,
+    themeColor: school.themeColor ?? prev.themeColor ?? null,
+    logoUrl: school.logoUrl ?? prev.logoUrl ?? null,
+    slug: school.slug ?? prev.slug ?? null,
+  }));
+}
 
 export default function PortalDashboard() {
   const router = useRouter();
@@ -38,7 +37,6 @@ export default function PortalDashboard() {
   const [activeChildId, setActiveChildId] = useState('');
   const [tab, setTab] = useState<PortalTab>('overview');
   const [loading, setLoading] = useState(true);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -47,91 +45,103 @@ export default function PortalDashboard() {
           const s = await portalService.studentGetMe();
           setStudent(s);
           localStorage.setItem('studentProfile', JSON.stringify(s));
+          saveOrgBranding(s.school);
         } else {
           const p = await parentService.getMe();
           setParent(p);
           localStorage.setItem('parentProfile', JSON.stringify(p));
-          if (p.children.length) setActiveChildId(p.children[0].id);
+          // Last-selected child restore karo (child switcher), warna pehla bacha.
+          const saved = localStorage.getItem('activeChildId');
+          const initial = p.children.some((c) => c.id === saved) ? saved : p.children[0]?.id;
+          if (initial) {
+            localStorage.setItem('activeChildId', initial);
+            setActiveChildId(initial);
+          }
+          saveOrgBranding(p.children[0]?.school);
         }
-        // Use portalDataService (correct auth) instead of notificationService (staff auth)
-        const count = await portalNotificationService.getUnreadCount();
-        setUnreadCount(count);
-      } catch { router.replace('/parent/login'); } finally { setLoading(false); }
+      } catch { router.replace(portalLoginRedirect()); } finally { setLoading(false); }
     })();
   }, [isStudent, router]);
+
+  // Parent photo/name update (header/upload) hone par profile refresh.
+  useEffect(() => {
+    if (isStudent) return;
+    const reload = () => {
+      parentService.getMe().then((p) => {
+        setParent(p);
+        localStorage.setItem('parentProfile', JSON.stringify(p));
+      }).catch(() => {});
+    };
+    window.addEventListener(PARENT_PROFILE_UPDATED_EVENT, reload);
+    return () => window.removeEventListener(PARENT_PROFILE_UPDATED_EVENT, reload);
+  }, [isStudent]);
 
   const logout = useCallback(() => {
     localStorage.removeItem(isStudent ? 'studentToken' : 'parentToken');
     localStorage.removeItem(isStudent ? 'studentProfile' : 'parentProfile');
-    router.push('/parent/login');
+    router.push(portalLoginRedirect());
   }, [isStudent, router]);
 
   const children = (isStudent && student ? [student] : (parent?.children ?? [])) as Array<any>;
   const child = children.find((c) => c.id === activeChildId) ?? children[0];
+  const briefs: PortalChildBrief[] = children.map((c) => ({
+    id: c.id,
+    firstName: c.firstName,
+    lastName: c.lastName,
+    rollNumber: c.rollNumber,
+    sectionId: c.section?.id,
+    className: c.class?.name,
+    sectionName: c.section?.name,
+    imageUrl: c.imageUrl ?? null,
+  }));
+  const orgSchool = isStudent ? student?.school : (children[0]?.school ?? null);
+  const orgName = orgSchool?.name ?? (isStudent ? 'Student Portal' : 'Parent Portal');
+  const orgLogoUrl = orgSchool?.logoUrl ?? null;
+  const avatarUrl = isStudent ? (student?.imageUrl ?? null) : (parent?.imageUrl ?? null);
   const title = isStudent ? 'Student Portal' : 'Parent Portal';
   const subtitle = isStudent
     ? `${student?.firstName ?? ''} ${student?.lastName ?? ''} · Roll #${student?.rollNumber ?? ''}`
     : `${parent?.name ?? ''} · ${parent?.whatsappNo ?? ''}`;
 
+  const switchChild = useCallback((id: string) => {
+    localStorage.setItem('activeChildId', id);
+    setActiveChildId(id);
+  }, []);
+
   const sectionIds = useMemo(
     () => [...new Set(children.map((c) => c.section?.id).filter(Boolean))],
     [children]
   );
-  const socketRef = usePortalSocket(sectionIds, child?.school?.id);
+  usePortalSocket(sectionIds, child?.school?.id);
 
-  // Real-time: increment unread count when new notification arrives via socket
-  useEffect(() => {
-    const socket = socketRef.current;
-    if (!socket) return;
-    const onCreated = () => setUnreadCount((c) => c + 1);
-    const onAllRead = () => setUnreadCount(0);
-    socket.on('portal_notification_created', onCreated);
-    socket.on('portal_all_read', onAllRead);
-    return () => {
-      socket.off('portal_notification_created', onCreated);
-      socket.off('portal_all_read', onAllRead);
-    };
-  }, [socketRef.current]);
-
-  const TabContent = TAB_CONTENT[tab];
-
-  if (loading) return (
-    <AuthCenteredScreen variant="secondary" brandIcon={<PortalBrandIcon />} brandLabel="SchoolERP" brandSub={isStudent ? 'Student Portal' : 'Parent Portal'}>
-      <Loading className="py-2" />
-      <h1 className="text-xl font-bold text-slate-900">Loading your portal</h1>
-    </AuthCenteredScreen>
+  const shell = (content: React.ReactNode) => (
+    <PortalShell active={tab} onChange={setTab} title={title} subtitle={subtitle} avatarUrl={avatarUrl} onLogout={logout}
+      orgName={orgName} orgLogoUrl={orgLogoUrl} canEditPhoto={!isStudent}
+      childList={!isStudent && children.length > 1 ? briefs : undefined}
+      activeChildId={!isStudent ? activeChildId : undefined}
+      onChildChange={!isStudent ? switchChild : undefined}
+    >
+      {content}
+    </PortalShell>
   );
+
+  if (loading) return shell(<OverviewSkeleton />);
   if (!student && !parent) return null;
 
-  return (
-    <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
-      <PortalHeader title={title} subtitle={subtitle} onLogout={logout} />
-      <div className="max-w-4xl mx-auto">
-        {children.length === 0 ? (
-          <div className="m-4 rounded-xl border border-gray-200 bg-white p-12 text-center text-gray-500">No linked profiles found.</div>
-        ) : (
-          <>
-            <div className="px-4 pt-4">
-              {!isStudent && children.length > 1 && (
-                <SiblingSelector items={children} activeId={child.id} onChange={setActiveChildId} />
-              )}
-              <ChildSummaryCard firstName={child.firstName} lastName={child.lastName} schoolName={child.school?.name}
-                className={child.class?.name} sectionName={child.section?.name} rollNumber={child.rollNumber}
-                status={child.status} isActive={child.isActive} />
-            </div>
-            <PortalTabNav active={tab} onChange={setTab} unreadCount={unreadCount} />
-            <div className="px-4 py-4">
-              <PortalErrorBoundary section={tab}>
-                {tab === 'leave' ? (
-                  <LeaveRequestsTab children={children.map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, rollNumber: c.rollNumber }))} />
-                ) : (
-                  <TabContent key={tab} />
-                )}
-              </PortalErrorBoundary>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+  return shell(
+    <>
+      {children.length === 0 ? (
+        <div className="rounded-xl border border-gray-200 bg-white p-12 text-center text-gray-500">No linked profiles found.</div>
+      ) : (
+        <>
+          <div className="mb-6">
+            <ChildSummaryCard firstName={child.firstName} lastName={child.lastName} imageUrl={child.imageUrl} schoolName={child.school?.name}
+              className={child.class?.name} sectionName={child.section?.name} rollNumber={child.rollNumber}
+              status={child.status} isActive={child.isActive} />
+          </div>
+          <PortalTabHost tab={tab} activeChildId={activeChildId} children={briefs} onChildChange={!isStudent ? switchChild : undefined} />
+        </>
+      )}
+    </>
   );
 }

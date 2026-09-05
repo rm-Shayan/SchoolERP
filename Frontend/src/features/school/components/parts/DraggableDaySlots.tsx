@@ -3,7 +3,6 @@
 import { memo, useCallback, useRef, useState } from 'react';
 import type { TimetableSlot } from '@/lib/api/timetableService';
 import { timetableService } from '@/lib/api';
-import { Card } from '@/features/shared/components';
 import { cn } from '@/lib/utils';
 import { getSubjectColor } from '@/lib/utils/subjectColors';
 import toast from 'react-hot-toast';

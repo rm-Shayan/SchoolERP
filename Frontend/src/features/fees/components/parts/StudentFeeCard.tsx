@@ -92,7 +92,6 @@ export default function StudentFeeCard({ student: s, records: recs, isSelected, 
             {recs.length === 0 && <p className="text-xs text-gray-400 text-center py-3">No vouchers found.</p>}
             {recs.map((r) => {
               const bal = Number(r.totalAmount) - Number(r.paidAmount);
-              const pct = Number(r.totalAmount) > 0 ? Math.round((Number(r.paidAmount) / Number(r.totalAmount)) * 100) : 0;
               return (
                 <div key={r.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-gray-50/80 border border-gray-100/60 hover:bg-gray-50 transition-colors group/item">
                   <div className="space-y-1.5">

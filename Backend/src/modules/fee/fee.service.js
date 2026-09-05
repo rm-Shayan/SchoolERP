@@ -982,6 +982,70 @@ class FeeService {
   }
 
   /**
+   * Batched fee reminders — ek parent ke SARE bachon ko EK email.
+   * Groups records by parent email, combines children's details, and attaches
+   * individual voucher PDFs for each child. Parent ko 1 email aata hai with
+   * all children's fee summary + vouchers.
+   */
+  async _sendBatchedFeeReminders(records, { title, withStatus = false }) {
+    // Group by parent email
+    const byEmail = new Map();
+    for (const record of records) {
+      const student = record.student;
+      if (!student?.parent?.email) continue;
+      const email = student.parent.email.trim().toLowerCase();
+      if (!byEmail.has(email)) byEmail.set(email, { schoolId: student.schoolId, parentPhone: student.parent.phone, items: [] });
+      byEmail.get(email).items.push(record);
+    }
+
+    const dispatch = [];
+    for (const [email, group] of byEmail) {
+      const lines = [];
+      const attachments = [];
+
+      for (const record of group.items) {
+        const student = record.student;
+        const ctx = this._reminderContext(record);
+        const pending = Number(record.totalAmount) - Number(record.paidAmount) + Number(record.dueCharges || 0);
+        record._pending = pending;
+
+        lines.push(`Student: ${ctx.studentName}`);
+        lines.push(`Class: ${ctx.className || "—"}`);
+        lines.push(`Fee Period: ${ctx.monthLabel}`);
+        lines.push(`Pending Amount: Rs. ${pending.toFixed(2)}`);
+        lines.push(`Due Date: ${ctx.dueStr}`);
+        if (withStatus) lines.push(`Status: ${record.status}`);
+        lines.push("");
+
+        // Generate voucher PDF for this child
+        try {
+          const pdfBuffer = await this._buildVoucherForRecord(record);
+          if (pdfBuffer) {
+            const safeName = ctx.studentName.replace(/[^a-zA-Z0-9]/g, "_");
+            attachments.push({ filename: `Voucher_${safeName}_${ctx.monthLabel.replace(/\s+/g, "_")}.pdf`, content: pdfBuffer });
+          }
+        } catch (_) {}
+      }
+
+      const combinedMessage = lines.join("\n").trim();
+      dispatch.push(
+        notificationService.notifyParent({
+          schoolId: group.schoolId,
+          parentEmail: email,
+          parentPhone: group.parentPhone,
+          message: combinedMessage,
+          title,
+          details: [],
+          attachments: attachments.length ? attachments : undefined,
+        }).catch(() => {})
+      );
+    }
+
+    if (dispatch.length) await Promise.allSettled(dispatch);
+    return dispatch.length;
+  }
+
+  /**
    * Overdue sweep (PRD §4): due date guzar chuki records ko OVERDUE mark karo
    * aur har parent ko overdue message sirf EK dafa bhejo (reminderSentAt dedup).
    */
@@ -996,7 +1060,7 @@ class FeeService {
     const dueRecords = await feeRepository.listRecordsNeedingOverdueReminder();
     let remindersSent = 0;
     const notifiedIds = [];
-    const dispatch = [];
+    const emailRecords = [];
     for (const record of dueRecords) {
       const student = record.student;
       if (!student || student.status !== "ACTIVE") continue;
@@ -1005,13 +1069,7 @@ class FeeService {
 
       const ctx = this._reminderContext(record);
       record._pending = pending;
-      // Parallel dispatch — job me har record ka sequential email wait nahi (H2).
-      dispatch.push(
-        this._sendFeeReminder(record, ctx, {
-          title: `Fee Overdue — ${ctx.monthLabel}`,
-          message: `Dear Parent, the due date for ${ctx.studentName}'s ${ctx.monthLabel} fee (Rs. ${pending.toFixed(2)}) has passed. Please pay it as soon as possible to avoid any inconvenience.`,
-        })
-      );
+      emailRecords.push(record);
       // Portal notification — branch feed me overdue dikhe.
       portalNotificationService.create({
         schoolId: record.schoolId, senderName: "Fee System",
@@ -1022,7 +1080,13 @@ class FeeService {
       remindersSent++;
       notifiedIds.push(record.id);
     }
-    if (dispatch.length) await Promise.allSettled(dispatch);
+    // Batched: ek parent ko sirf ek email (sare bachon ka combined).
+    if (emailRecords.length) {
+      await this._sendBatchedFeeReminders(emailRecords, {
+        title: "Fee Overdue",
+        withStatus: false,
+      });
+    }
     if (notifiedIds.length) {
       await feeRepository.markReminderSent(notifiedIds);
     }
@@ -1043,7 +1107,7 @@ class FeeService {
     const records = await feeRepository.listRecordsNeedingPreDueReminder(dayStart, dayEnd);
     let sent = 0;
     const notifiedIds = [];
-    const dispatch = [];
+    const emailRecords = [];
     for (const record of records) {
       const student = record.student;
       if (!student || student.status !== "ACTIVE") continue;
@@ -1052,16 +1116,17 @@ class FeeService {
 
       const ctx = this._reminderContext(record);
       record._pending = pending;
-      dispatch.push(
-        this._sendFeeReminder(record, ctx, {
-          title: `Fee Due Soon — ${ctx.monthLabel}`,
-          message: `Dear Parent, this is a friendly reminder that ${ctx.studentName}'s ${ctx.monthLabel} fee (Rs. ${pending.toFixed(2)}) is due on ${ctx.dueStr}. Please clear it before the due date to avoid any inconvenience.`,
-        })
-      );
+      emailRecords.push(record);
       sent++;
       notifiedIds.push(record.id);
     }
-    if (dispatch.length) await Promise.allSettled(dispatch);
+    // Batched: ek parent ko sirf ek email.
+    if (emailRecords.length) {
+      await this._sendBatchedFeeReminders(emailRecords, {
+        title: "Fee Due Soon",
+        withStatus: false,
+      });
+    }
     if (notifiedIds.length) {
       await feeRepository.markPreDueReminderSent(notifiedIds);
     }
@@ -1109,7 +1174,7 @@ class FeeService {
       }
     }
     let sent = 0;
-    const dispatch = [];
+    const emailRecords = [];
     for (const record of records) {
       if (onlyOverdue && record.status !== "OVERDUE") continue;
       const student = record.student;
@@ -1124,19 +1189,17 @@ class FeeService {
       if (paidByKey.has(`${student.id}:${rYear}:${rMonth}`)) continue;
 
       const pending = Number(record.totalAmount) - Number(record.paidAmount) + Number(record.dueCharges || 0);
-      const ctx = this._reminderContext(record);
       record._pending = pending;
-      const chargesInfo = Number(record.dueCharges || 0) > 0 ? ` Late charges: Rs. ${Number(record.dueCharges).toFixed(2)}.` : "";
-      dispatch.push(
-        this._sendFeeReminder(record, ctx, {
-          title: `Fee Due Reminder — ${ctx.monthLabel}`,
-          withStatus: true,
-          message: `Dear Parent, this is a reminder for ${ctx.studentName}'s ${ctx.monthLabel} fee. Pending amount: Rs. ${pending.toFixed(2)}.${chargesInfo} Please clear it before the due date to avoid any inconvenience.`,
-        })
-      );
+      emailRecords.push(record);
       sent++;
     }
-    if (dispatch.length) await Promise.allSettled(dispatch);
+    // Batched: ek parent ko sirf ek email (sare bachon ka combined).
+    if (emailRecords.length) {
+      await this._sendBatchedFeeReminders(emailRecords, {
+        title: "Fee Due Reminder",
+        withStatus: true,
+      });
+    }
     return { remindersSent: sent };
   }
 

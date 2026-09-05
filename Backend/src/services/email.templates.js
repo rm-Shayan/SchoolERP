@@ -442,3 +442,20 @@ export function moderationNoticeEmail({ name, entityName, entityType, action, re
     html: wrapEmail("Account Status Update", body, { logoUrl, orgName: entityName, themeColor }),
   };
 }
+
+/**
+ * Platform Announcement email — super admin se saare branch admins ko.
+ */
+export function announcementEmail({ name, title, message, logoUrl, themeColor }) {
+  const body = `
+    <p>Hello ${name || "Admin"},</p>
+    <p><b>${title}</b></p>
+    <p style="white-space:pre-line;">${(message || "").replace(/</g, "&lt;")}</p>
+    <p style="margin-bottom:0;color:#666;font-size:12px;">This is an automated announcement from the platform administrator.</p>
+  `;
+  return {
+    subject: `📢 ${title}`,
+    text: `Hello ${name || "Admin"},\n\n${title}\n\n${message || ""}\n\nThis is an automated announcement.`,
+    html: wrapEmail("Platform Announcement", body, { logoUrl, themeColor }),
+  };
+}

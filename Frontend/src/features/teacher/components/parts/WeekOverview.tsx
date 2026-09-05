@@ -2,7 +2,6 @@
 
 import { memo, useMemo } from 'react';
 import type { TimetableSlot } from '@/lib/api/timetableService';
-import { Card, CardContent } from '@/features/shared/components';
 import { cn } from '@/lib/utils';
 import { getSubjectColor } from '@/lib/utils/subjectColors';
 
@@ -22,11 +21,11 @@ function groupByDay(slots: TimetableSlot[]) {
   for (const s of slots) {
     const arr = map.get(s.dayOfWeek);
     if (!arr) continue;
-    const key = `${s.startTime}|${s.endTime}|${s.subjectId}`;
     const secLabel = s.section ? `${s.section.class?.name ?? ''} ${s.section.name}`.trim() : '';
-    const existing = arr.find((r) => `${r.startTime}|${r.endTime}|${r.subjectName}` === `${s.startTime}|${s.endTime}|${s.subject?.name ?? ''}`);
+    const subjectName = s.subject?.name ?? '—';
+    const existing = arr.find((r) => r.subjectName === subjectName && r.startTime === s.startTime && r.endTime === s.endTime);
     if (existing && secLabel) existing.sections.push(secLabel);
-    else arr.push({ subjectName: s.subject?.name ?? '—', startTime: s.startTime, endTime: s.endTime, sections: secLabel ? [secLabel] : [] });
+    else if (!existing) arr.push({ subjectName, startTime: s.startTime, endTime: s.endTime, sections: secLabel ? [secLabel] : [] });
   }
   map.forEach((arr) => arr.sort((a, b) => a.startTime.localeCompare(b.startTime)));
   return map;

@@ -1,0 +1,30 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "accessToken",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4ODk3YzExMC0wOTZhLTRkOTYtODYxZS1iNzMzZjJhMjI2ZTkiLCJyb2xlIjoiVEVBQ0hFUiIsInNjaG9vbElkIjoiNjI2ZTg3ZDUtMTU4MS00MjE4LTg5MmMtNmMxYmRmZWFmZjI2Iiwib3JnYW5pemF0aW9uSWQiOiI2MWM0ZWZhYy1hMmNhLTRlOTEtYTdhMC03NWU2NDcxNmE0YWMiLCJ0b2tlblR5cGUiOiJzdGFmZiIsImlhdCI6MTc4ODM2ODc1MywiZXhwIjoxNzg4MzcyMzUzfQ.nbi-YkTUxpG1z1w6kmC3N1xFQkvsIASRU03NWDoPUNs"
+        },
+        {
+          "name": "school",
+          "value": "{\"id\":\"626e87d5-1581-4218-892c-6c1bdfeaff26\",\"name\":\"Falcon Academy — Gulshan Campus\",\"code\":\"GULSHAN-01\",\"status\":\"ACTIVE\",\"logoUrl\":null,\"themeColor\":null,\"attendanceStartTime\":\"07:45\",\"attendanceCutoffTime\":\"08:30\",\"attendanceAbsentTime\":\"10:00\",\"attendanceAlertTime\":\"09:30\"}"
+        },
+        {
+          "name": "refreshToken",
+          "value": "20853cb8149d6ab78938b3c3ad27cf4f3ebdbcf47d8c90a20a85f2ac054bb84c6a6e01a61e941bff261989fd772825494f0e21a213373928df1c8ca281ef0bd0"
+        },
+        {
+          "name": "user",
+          "value": "{\"id\":\"8897c110-096a-4d96-861e-b733f2a226e9\",\"name\":\"Uzma Jabeen\",\"username\":\"STF-1001\",\"email\":\"teacher@falconacademy.com\",\"phone\":\"0301-7654321\",\"avatarUrl\":null,\"role\":\"TEACHER\",\"isActive\":true,\"schoolId\":\"626e87d5-1581-4218-892c-6c1bdfeaff26\",\"organizationId\":\"61c4efac-a2ca-4e91-a7a0-75e64716a4ac\",\"createdAt\":\"2026-09-02T06:00:18.431Z\",\"branchAccess\":[],\"blockedReason\":null,\"blockedAt\":null,\"blockedByName\":null,\"school\":{\"id\":\"626e87d5-1581-4218-892c-6c1bdfeaff26\",\"name\":\"Falcon Academy — Gulshan Campus\",\"code\":\"GULSHAN-01\",\"status\":\"ACTIVE\",\"logoUrl\":null,\"themeColor\":null,\"attendanceStartTime\":\"07:45\",\"attendanceCutoffTime\":\"08:30\",\"attendanceAbsentTime\":\"10:00\",\"attendanceAlertTime\":\"09:30\"},\"organization\":{\"id\":\"61c4efac-a2ca-4e91-a7a0-75e64716a4ac\",\"name\":\"Falcon Academy Systems\",\"code\":\"FALCON-HQ\",\"slug\":\"falcon-hq\",\"status\":\"ACTIVE\",\"themeColor\":null,\"logoUrl\":null},\"schools\":[{\"id\":\"626e87d5-1581-4218-892c-6c1bdfeaff26\",\"name\":\"Falcon Academy — Gulshan Campus\",\"code\":\"GULSHAN-01\",\"status\":\"ACTIVE\"}]}"
+        },
+        {
+          "name": "organization",
+          "value": "{\"id\":\"61c4efac-a2ca-4e91-a7a0-75e64716a4ac\",\"name\":\"Falcon Academy Systems\",\"code\":\"FALCON-HQ\",\"slug\":\"falcon-hq\",\"status\":\"ACTIVE\",\"themeColor\":null,\"logoUrl\":null}"
+        }
+      ]
+    }
+  ]
+}

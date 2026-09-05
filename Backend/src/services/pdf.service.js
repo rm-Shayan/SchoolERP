@@ -329,19 +329,17 @@ class PdfService {
   // ADMISSION FEE SLIP  (A4) — premium two-column layout with prominent fee
   // section, applicant details, and payment instructions.
   // ═══════════════════════════════════════════════════════════════════════════
-  async admissionSlip({ schoolName, applicant, refNo, amount, dueDate, themeColor, logoUrl }) {
+  async admissionSlip({ schoolName, applicant, refNo, amount, dueDate, themeColor, logoUrl, title: slipTitle }) {
     const logo  = await imageToBuffer(logoUrl);
     const qr    = await qrBuffer(refNo);
     const theme = themeColor || C.primary;
-    // Keep every entry point consistent: older callers passed a name string,
-    // while the polished slip needs structured applicant metadata.
     const rawApplicant = applicant && typeof applicant === "object" ? applicant : { firstName: applicant };
     applicant = {
       firstName: rawApplicant.firstName || rawApplicant.name || "Applicant",
       lastName: rawApplicant.lastName || "",
-      className: rawApplicant.className || rawApplicant.class?.name || "Not assigned",
-      parentName: rawApplicant.parentName || rawApplicant.fatherName || rawApplicant.guardianName || "Not provided",
-      parentWhatsappNo: rawApplicant.parentWhatsappNo || rawApplicant.parentPhone || rawApplicant.phone || "Not provided",
+      className: rawApplicant.className ?? rawApplicant.class?.name ?? "Not assigned",
+      parentName: rawApplicant.parentName ?? rawApplicant.fatherName ?? rawApplicant.guardianName ?? "Not provided",
+      parentWhatsappNo: rawApplicant.parentWhatsappNo ?? rawApplicant.parentPhone ?? rawApplicant.phone ?? "Not provided",
       status: rawApplicant.status || "APPROVED",
     };
     const cardW = 440, cardX = (A4.width - cardW) / 2;
@@ -377,7 +375,7 @@ class PdfService {
       doc.font(FONT.bold).fontSize(15).fillColor(C.white)
          .text(schoolName || "School", cardX + 80, cardTop + 14, { width: cardW - 100 });
       doc.font(FONT.regular).fontSize(8).fillColor(C.surfaceHighest)
-         .text("ADMISSION FEE SLIP", cardX + 80, cardTop + 34, { width: cardW - 100, characterSpacing: 1.5 });
+         .text(slipTitle || "ADMISSION SLIP", cardX + 80, cardTop + 34, { width: cardW - 100, characterSpacing: 1.5 });
 
       let y = cardTop + headH + 24;
 
@@ -395,14 +393,14 @@ class PdfService {
       const colW = (cardW - 48 - 16) / 2;
       const lx = cardX + 24, rx = cardX + 24 + colW + 16;
       const leftRows = [
-        ["CLASS",     applicant.className || "N/A"],
-        ["PARENT",    applicant.parentName || "—"],
-        ["CONTACT",   applicant.parentWhatsappNo || applicant.parentPhone || "—"],
+        { label: "CLASS",     value: applicant.className || "N/A" },
+        { label: "PARENT",    value: applicant.parentName || "—" },
+        { label: "CONTACT",   value: applicant.parentWhatsappNo || applicant.parentPhone || "—" },
       ];
       const rightRows = [
-        ["REFERENCE", refNo || "—"],
-        ["STATUS",    String(applicant.status || "APPROVED").replace(/_/g, " ")],
-        ["PAYABLE BY", dueDate ? dateStr(dueDate) : "Immediately"],
+        { label: "REFERENCE", value: refNo || "—" },
+        { label: "STATUS",    value: String(applicant.status || "APPROVED").replace(/_/g, " ") },
+        ...(dueDate ? [{ label: "PAYABLE BY", value: dateStr(dueDate) }] : []),
       ];
       const rowH = 30;
       const drawInfo = (r, ix, iy, isStatus) => {

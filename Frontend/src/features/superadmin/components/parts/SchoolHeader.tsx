@@ -30,9 +30,7 @@ export default function SchoolHeader({ org, school, deleting, blocking, onEdit, 
 
   return (
     <div className="bg-white rounded-2xl border border-primary-100 shadow-[0_18px_50px_rgba(76,29,149,0.12)] overflow-hidden sa-fade-in">
-      <div className="relative h-32 sm:h-40 bg-gradient-to-r from-primary-950 via-primary-700 to-primary-500">
-        <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.55),transparent_60%)]" />
-      </div>
+      <div className="relative h-32 sm:h-40" style={{ backgroundColor: '#6d28d9' }} />
       <div className="px-4 sm:px-7 pb-6 -mt-12 relative">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex items-end gap-4 min-w-0">

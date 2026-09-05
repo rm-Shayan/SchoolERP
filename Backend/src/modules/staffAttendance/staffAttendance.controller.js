@@ -101,6 +101,7 @@ class StaffAttendanceController {
       const buffer = await staffAttendanceService.exportAttendance(schoolId, {
         startDate: req.query.startDate,
         endDate: req.query.endDate,
+        staffId: req.query.staffId,
         format,
       });
       const ext = format === "csv" ? "csv" : "xlsx";

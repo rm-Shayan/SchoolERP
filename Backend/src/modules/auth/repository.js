@@ -202,9 +202,10 @@ class AuthRepository {
    * Filters: search (name/email/username/org/branch), role, isActive,
    * hasBlockReason — server-side, taake frontend ko 500-record cap na chahiye.
    */
-  async findAllUsersPlatform({ page = 1, pageSize = 50, search, role, isActive, hasBlockReason, organizationId } = {}) {
+  async findAllUsersPlatform({ page = 1, pageSize = 50, search, role, isActive, hasBlockReason, organizationId, schoolId } = {}) {
     const where = {};
     if (organizationId) where.organizationId = organizationId;
+    if (schoolId) where.schoolId = schoolId;
     if (role) where.role = role;
     if (isActive !== undefined) where.isActive = isActive;
     if (hasBlockReason !== undefined) where.blockedReason = hasBlockReason ? { not: null } : null;
@@ -245,6 +246,118 @@ class AuthRepository {
       prisma.user.groupBy({ by: ["organizationId"], where: { organizationId: { not: null } } }),
     ]);
     return { total, active, inactive: total - active, orgs: orgGroups.length };
+  }
+
+  /**
+   * Unified platform directory — users (staff) + students combined.
+   * type filter: 'all' | 'staff' | 'student'
+   */
+  async listPlatformDirectory({ type = "all", search, organizationId, schoolId, role, status, classId, sectionId, page = 1, pageSize = 50 } = {}) {
+    const wantStaff = type === "all" || type === "staff";
+    const wantStudent = type === "all" || type === "student";
+
+    const buildUserWhere = () => {
+      const w = {};
+      if (organizationId) w.organizationId = organizationId;
+      if (schoolId) w.schoolId = schoolId;
+      if (role) w.role = role;
+      if (status === "ACTIVE") w.isActive = true;
+      else if (status === "INACTIVE") w.isActive = false;
+      if (search) {
+        w.OR = [
+          { name: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+          { username: { contains: search, mode: "insensitive" } },
+          { organization: { name: { contains: search, mode: "insensitive" } } },
+          { school: { name: { contains: search, mode: "insensitive" } } },
+        ];
+      }
+      return w;
+    };
+
+    const buildStudentWhere = () => {
+      const w = {};
+      if (schoolId) w.schoolId = schoolId;
+      if (organizationId) w.school = { organizationId };
+      if (sectionId) w.sectionId = sectionId;
+      else if (classId) w.section = { classId };
+      if (status) w.status = status;
+      if (search) {
+        w.OR = [
+          { firstName: { contains: search, mode: "insensitive" } },
+          { lastName: { contains: search, mode: "insensitive" } },
+          { rollNumber: { contains: search, mode: "insensitive" } },
+        ];
+      }
+      return w;
+    };
+
+    let userItems = [], userTotal = 0, studentItems = [], studentTotal = 0;
+
+    // DB-level pagination: for "all" type, split pageSize across both queries
+    // so we don't load 5000 rows into memory.
+    const staffPageSize = type === "all" ? Math.ceil(pageSize * 0.6) : pageSize;
+    const studentPageSize = type === "all" ? pageSize - staffPageSize : pageSize;
+    const staffOffset = (page - 1) * staffPageSize;
+    const studentOffset = (page - 1) * studentPageSize;
+
+    if (wantStaff) {
+      const [items, total] = await Promise.all([
+        prisma.user.findMany({
+          where: buildUserWhere(),
+          select: {
+            id: true, name: true, email: true, username: true, role: true, isActive: true, createdAt: true, avatarUrl: true,
+            school: { select: { id: true, name: true, code: true, logoUrl: true } },
+            organization: { select: { id: true, name: true, logoUrl: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          skip: staffOffset,
+          take: staffPageSize,
+        }),
+        prisma.user.count({ where: buildUserWhere() }),
+      ]);
+      userItems = items.map((u) => ({
+        id: u.id, type: "staff", name: u.name, email: u.email,
+        subtitle: u.role, status: u.isActive ? "ACTIVE" : "BLOCKED",
+        avatarUrl: u.avatarUrl || null,
+        organization: u.organization, branch: u.school,
+        createdAt: u.createdAt,
+      }));
+      userTotal = total;
+    }
+
+    if (wantStudent) {
+      const [items, total] = await Promise.all([
+        prisma.student.findMany({
+          where: buildStudentWhere(),
+          select: {
+            id: true, firstName: true, lastName: true, rollNumber: true, status: true, createdAt: true,
+            school: { select: { id: true, name: true, code: true, logoUrl: true, organization: { select: { id: true, name: true, logoUrl: true } } } },
+            section: { select: { id: true, name: true, class: { select: { name: true } } } },
+          },
+          orderBy: { createdAt: "desc" },
+          skip: studentOffset,
+          take: studentPageSize,
+        }),
+        prisma.student.count({ where: buildStudentWhere() }),
+      ]);
+      studentItems = items.map((s) => ({
+        id: s.id, type: "student", name: `${s.firstName} ${s.lastName}`, email: null,
+        subtitle: s.section ? `${s.section.class?.name} — ${s.section.name}` : null,
+        status: s.status,
+        organization: s.school?.organization ?? null,
+        branch: s.school ? { id: s.school.id, name: s.school.name, code: s.school.code, logoUrl: s.school.logoUrl || null } : null,
+        createdAt: s.createdAt,
+      }));
+      studentTotal = total;
+    }
+
+    // Merge + sort by createdAt desc (small arrays now — at most pageSize items)
+    const all = [...userItems, ...studentItems].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const total = userTotal + studentTotal;
+    const items = all.slice(0, pageSize);
+
+    return { items, total, userTotal, studentTotal, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   }
 
   /**
@@ -457,7 +570,7 @@ class AuthRepository {
                 status: true,
                 portalPassword: true,
                 organizationId: true,
-                organization: { select: { id: true, status: true } },
+                organization: { select: { id: true, status: true, themeColor: true, logoUrl: true, slug: true } },
               },
             },
           },
@@ -476,7 +589,7 @@ class AuthRepository {
         students: {
           include: {
             section: { include: { class: true } },
-            school: { select: { id: true, name: true } },
+            school: { select: { id: true, name: true, organization: { select: { themeColor: true, logoUrl: true, slug: true } } } },
           },
         },
       },
@@ -504,7 +617,7 @@ class AuthRepository {
             status: true,
             portalPassword: true,
             organizationId: true,
-            organization: { select: { id: true, status: true } },
+            organization: { select: { id: true, status: true, slug: true } },
           },
         },
       },
@@ -530,7 +643,7 @@ class AuthRepository {
             status: true,
             portalPassword: true,
             organizationId: true,
-            organization: { select: { id: true, status: true } },
+            organization: { select: { id: true, status: true, themeColor: true, logoUrl: true, slug: true } },
           },
         },
       },
@@ -552,7 +665,7 @@ class AuthRepository {
             name: true,
             status: true,
             organizationId: true,
-            organization: { select: { id: true, status: true } },
+            organization: { select: { id: true, status: true, themeColor: true, logoUrl: true, slug: true } },
           },
         },
       },

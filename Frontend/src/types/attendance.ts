@@ -19,6 +19,7 @@ export interface DailyAttendanceSummary {
   late: number;
   absent: number;
   leave: number;
+  halfDay: number;
   manualOverride: number;
 }
 
@@ -35,6 +36,8 @@ export interface DailyAttendanceReport {
   offDays?: OffDay[];
   /** which weekdays are off — [0..6] (0=Sun .. 6=Sat). Default [0,6]. */
   weeklyOff?: number[];
+  /** Har section me enrolled ACTIVE students (unmarked sections ke counts dikhane ke liye). */
+  sectionStats?: { sectionId: string; totalStudents: number; marked: number }[];
 }
 
 /** Archived yearly attendance rollup — AttendanceYearSummary (365 din purani
@@ -79,6 +82,7 @@ export interface SectionAttendanceSummary {
     late: number;
     absent: number;
     leave: number;
+    halfDay: number;
     manualOverride: number;
     totalRecords: number;
   };
@@ -102,6 +106,7 @@ export interface MonthlyAttendanceReport {
     late: number;
     absent: number;
     leave: number;
+    halfDay: number;
     manualOverride: number;
     totalWorkingDays: number;
   };

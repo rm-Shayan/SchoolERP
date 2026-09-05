@@ -106,6 +106,24 @@ class PortalController {
       );
     } catch (e) { next(e); }
   };
+
+  updateProfile = async (req, res, next) => {
+    try {
+      const data = await portalService.updateProfile(req.portal, req.body);
+      res.json(ApiResponse.ok("Profile updated", data));
+    } catch (e) { next(e); }
+  };
+
+  /**
+   * POST /api/v1/portal/me/avatar
+   * Upload / replace the parent's profile photo (multer single "file").
+   */
+  uploadAvatar = async (req, res, next) => {
+    try {
+      const data = await portalService.uploadAvatar(req.portal, req.file?.buffer);
+      res.json(ApiResponse.ok("Profile picture updated", data));
+    } catch (e) { next(e); }
+  };
 }
 
 export default new PortalController();

@@ -51,10 +51,10 @@ export default function PlatformStatus() {
         ) : (
           <>
             <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <StatBox label="Total" value={summary.total} iconBg="sa-icon-violet" />
-              <StatBox label="Sent" value={summary.sent} iconBg="sa-icon-sky" />
-              <StatBox label="Delivered" value={summary.delivered} iconBg="sa-icon-emerald" />
-              <StatBox label="Failed" value={summary.failed} iconBg="sa-icon-rose" />
+              <StatBox label="Total" value={summary.total} />
+              <StatBox label="Sent" value={summary.sent} />
+              <StatBox label="Delivered" value={summary.delivered} />
+              <StatBox label="Failed" value={summary.failed} />
             </div>
             <div>
               <p className="text-sm text-gray-500 mb-2.5 font-semibold">By Channel</p>
@@ -80,7 +80,7 @@ export default function PlatformStatus() {
   );
 }
 
-function StatBox({ label, value, iconBg }: { label: string; value: number; iconBg: string }) {
+function StatBox({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-2xl border border-gray-200/60 p-4 text-center bg-gradient-to-br from-gray-50/50 to-transparent hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
       <p className="text-2xl font-extrabold tabular-nums text-gray-900 sa-count-up">{value}</p>

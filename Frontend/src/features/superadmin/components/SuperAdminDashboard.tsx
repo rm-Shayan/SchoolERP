@@ -32,11 +32,17 @@ export default function SuperAdminDashboard() {
     setLastUpdated(new Date());
   }, []);
 
+  // Wrap load so callers never crash on failure
+  const safeLoad = useCallback(async () => {
+    try { await load(); } catch (err) { console.error('Dashboard load failed:', err); }
+  }, [load]);
+
   const handleRetry = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       await load();
+      setError(null);
     } catch (err) {
       setError('Failed to load platform overview');
       console.error('Failed to reload dashboard data:', err);
@@ -49,13 +55,8 @@ export default function SuperAdminDashboard() {
     let cancelled = false;
     (async () => {
       try {
-        const data = await orgService.getOverview();
-        setCachedOverview(data);
-        if (!cancelled) {
-          setOverview(data);
-          setLastUpdated(new Date());
-          setError(null);
-        }
+        await safeLoad();
+        if (!cancelled) setError(null);
       } catch (err) {
         if (!cancelled) setError('Failed to load platform overview');
         console.error('Failed to load dashboard data:', err);
@@ -63,27 +64,25 @@ export default function SuperAdminDashboard() {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return () => { cancelled = true; };
+  }, [safeLoad]);
 
   const debounceRef = useRef<number | null>(null);
   const attachedRef = useRef(false);
   useEffect(() => {
     const handleUpdate = () => {
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
-      debounceRef.current = window.setTimeout(async () => {
-        setRefreshing(true);
-        try {
-          await load();
-          setError(null);
-        } catch (err) {
-          console.error('Live dashboard refresh failed:', err);
-        } finally {
-          setRefreshing(false);
-        }
-      }, 250);
+    debounceRef.current = window.setTimeout(async () => {
+      setRefreshing(true);
+      try {
+        await safeLoad();
+        setError(null);
+      } catch (err) {
+        console.error('Live dashboard refresh failed:', err);
+      } finally {
+        setRefreshing(false);
+      }
+    }, 250);
     };
 
     const attach = () => {
@@ -97,6 +96,7 @@ export default function SuperAdminDashboard() {
 
     const onConnect = () => attach();
     if (!attach()) getSocket()?.once('connect', onConnect);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
 
     return () => {
       const socket = getSocket();

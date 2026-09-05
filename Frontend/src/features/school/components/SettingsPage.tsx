@@ -29,7 +29,7 @@ const BASE_TABS: { key: TabKey; label: string; icon: string }[] = [
 ];
 
 export default function SettingsPage() {
-  const { school } = useAppSelector((s) => s.auth);
+  const { school, organization } = useAppSelector((s) => s.auth);
   const user = useAppSelector((s) => s.auth.user);
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const isAdminLevel = isSuperAdmin || user?.role === 'ADMIN';
@@ -38,7 +38,8 @@ export default function SettingsPage() {
   const router = useRouter();
   const handleLogout = async () => {
     await dispatch(logoutAction());
-    router.push('/login');
+    // Whole app: logout par org slug ke saath unified login par le jao
+    router.push(organization?.slug ? `/login?org=${organization.slug}` : '/login');
   };
   const tabs = BASE_TABS.filter(
     (t) =>

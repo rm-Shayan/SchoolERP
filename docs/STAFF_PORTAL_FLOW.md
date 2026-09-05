@@ -58,7 +58,7 @@ Agar individual password match nahi hota, portal password try hota hai. Agar wo 
 
 `TeacherLayout.tsx` → `DashboardLayout links={teacherLinks}`
 
-**Sidebar:** Dashboard • Section Attendance • Homework • Conduct Remarks • My Timetable • Exams • Announcements • My Leave
+**Sidebar:** Dashboard • Section Attendance • Homework • Study Materials • Conduct Remarks • My Timetable • Exams • Announcements • My Leave
 
 ### 3.2 Section Attendance
 
@@ -77,7 +77,18 @@ New Homework → Modal (section + title + content) → POST /homework
    → Card grid list
 ```
 
-### 3.4 Conduct Remarks
+### 3.4 Study Materials
+
+```
+New Material → Modal (title, type, description, URL, section) → POST /study-material
+   → Teachers can only upload for their sections
+   → Teachers can only edit/delete their own materials
+   → Card grid list with type badges (DOCUMENT/VIDEO/IMAGE/LINK)
+```
+
+**Access:** ACADEMIC group (SUPER_ADMIN, ADMIN, TEACHER) — RECEPTIONIST excluded.
+
+### 3.5 Conduct Remarks
 
 ```
 Form: Section → Student → Type (POSITIVE/NEGATIVE/NEUTRAL) → Comment
@@ -294,7 +305,7 @@ Staff leave request karta hai, admin approve/reject karta hai. Real-time updates
 |---|---|---|
 | `ALL_STAFF` | SUPER_ADMIN, ADMIN, TEACHER, GATE_STAFF, ACCOUNTANT, RECEPTIONIST | Read operations |
 | `MANAGEMENT` | SUPER_ADMIN, ADMIN | Staff CRUD, settings, imports |
-| `ACADEMIC` | SUPER_ADMIN, ADMIN, TEACHER | Homework, conduct, timetable |
+| `ACADEMIC` | SUPER_ADMIN, ADMIN, TEACHER | Homework, study materials, conduct, timetable |
 | `FINANCE` | SUPER_ADMIN, ADMIN, ACCOUNTANT | Fee structures/records/collection |
 | `ADMISSIONS` | SUPER_ADMIN, ADMIN, RECEPTIONIST | Admission pipeline |
 | `ATTENDANCE` | SUPER_ADMIN, ADMIN, GATE_STAFF, TEACHER | Attendance marking |

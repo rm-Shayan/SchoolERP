@@ -1,20 +1,12 @@
 import { Badge } from '@/features/shared/components';
+import Logo from '@/features/shared/components/Logo';
+import UserAvatar from '@/features/shared/components/UserAvatar';
 import { cn, formatDate, getRoleLabel } from '@/lib/utils';
 import type { OrgStaffRow } from '@/types';
 
 const roleBadge: Record<string, 'default' | 'success' | 'warning' | 'danger' | 'info'> = {
   ADMIN: 'warning', RECEPTIONIST: 'default', TEACHER: 'success', SUPER_ADMIN: 'info',
 };
-
-const avatarTint: Record<string, string> = {
-  ADMIN: 'from-amber-500 to-orange-500',
-  RECEPTIONIST: 'from-slate-500 to-slate-600',
-  TEACHER: 'from-emerald-500 to-teal-500',
-  SUPER_ADMIN: 'from-violet-500 to-purple-500',
-};
-
-const initials = (name: string) =>
-  name.split(' ').filter(Boolean).slice(0, 2).map((word) => word[0]?.toUpperCase()).join('');
 
 function Detail({ label, value }: { label: string; value: string }) {
   return (
@@ -35,12 +27,13 @@ export default function StaffMobileCards({ staff }: { staff: OrgStaffRow[] }) {
       {staff.map((member) => (
         <article key={member.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="flex min-w-0 items-center gap-3 p-4">
-            <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-xs font-bold text-white', avatarTint[member.role] || avatarTint.RECEPTIONIST)}>
-              {initials(member.name)}
-            </div>
+            <UserAvatar src={member.avatarUrl} orgLogoUrl={member.schoolLogoUrl} name={member.name} size="md" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-slate-900">{member.name}</p>
-              <p className="mt-0.5 truncate text-xs text-slate-500">{member.schoolName ?? 'No branch assigned'}</p>
+              <span className="mt-0.5 truncate text-xs text-slate-500 flex items-center gap-1.5">
+                <Logo src={member.schoolLogoUrl} name={member.schoolName ?? ''} size="sm" />
+                {member.schoolName ?? 'No branch assigned'}
+              </span>
             </div>
             <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', member.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500')} />
           </div>

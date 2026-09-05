@@ -25,7 +25,7 @@ interface StaffScanCheckinProps {
   staffId?: string;
 }
 
-export default function StaffScanCheckinPage({ embedded, staffId }: StaffScanCheckinProps) {
+export default function StaffScanCheckinPage({ embedded }: StaffScanCheckinProps) {
   const [results, setResults] = useState<ScanResult[]>([]);
   const [manual, setManual] = useState('');
   const [busy, setBusy] = useState(false);

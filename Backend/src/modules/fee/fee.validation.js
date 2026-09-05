@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+const parseBool = z
+  .enum(["true", "false"])
+  .transform((v) => v === "true")
+  .or(z.boolean());
+
 const idParam = {
   params: z.object({ id: z.string().uuid("Invalid id") }),
 };
@@ -18,7 +23,7 @@ export const createFeeStructureSchema = z.object({
     lineItems: z.array(z.object({
       title: z.string().min(1, "Line item title required"),
       amount: z.coerce.number().nonnegative("Amount must be >= 0"),
-      isLateFee: z.coerce.boolean().optional().default(false),
+      isLateFee: parseBool.optional().default(false),
       lateFeeDays: z.coerce.number().int().nonnegative().optional().default(0),
     })).min(1, "At least one line item required").refine((items) => items.length > 0),
   }).refine((b) => Boolean(b.classId || b.classIds?.length), "Select at least one class"),
@@ -67,7 +72,7 @@ export const recordPaymentSchema = z.object({
     amount: z.coerce.number().positive("Payment amount must be positive"),
     method: z.enum(["CASH", "BANK_TRANSFER", "ONLINE", "OTHER"]).default("CASH"),
     reference: z.string().optional(),
-    allocateOpenRecords: z.coerce.boolean().optional().default(false),
+    allocateOpenRecords: parseBool.optional().default(false),
     periodMonths: z.array(z.object({ year: z.number(), month: z.number() })).optional(),
     recordIds: z.array(z.string().uuid()).optional(),
     allocations: z.array(z.object({ recordId: z.string().uuid(), amount: z.coerce.number().positive() })).optional(),
@@ -87,7 +92,7 @@ export const updateFeeStructureSchema = z.object({
     lineItems: z.array(z.object({
       title: z.string().min(1, "Line item title required"),
       amount: z.coerce.number().nonnegative("Amount must be >= 0"),
-      isLateFee: z.coerce.boolean().optional().default(false),
+      isLateFee: parseBool.optional().default(false),
       lateFeeDays: z.coerce.number().int().nonnegative().optional().default(0),
     })).min(1, "At least one line item required").optional(),
   }),

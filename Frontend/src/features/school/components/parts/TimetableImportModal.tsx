@@ -1,12 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAppSelector } from '@/store/hooks';
 import { timetableService } from '@/lib/api';
-import { Modal, Button, Select } from '@/features/shared/components';
+import { Modal, Button } from '@/features/shared/components';
 import toast from 'react-hot-toast';
 import { getSocket } from '@/lib/socket';
-import useSectionOptions from './useSectionOptions';
 
 interface Props { open: boolean; sectionId: string; onClose: () => void; onImported: () => void; }
 interface ImportResult { successCount: number; failedCount: number; errors: { row: number; error: string }[]; }
@@ -14,9 +12,6 @@ const SINGLE_COLS = ['Day', 'Subject', 'Teacher', 'Start Time', 'End Time'];
 const MULTI_COLS = ['Day', 'Subject', 'Teacher', 'Start Time', 'End Time', 'Section'];
 
 export default function TimetableImportModal({ open, sectionId, onClose, onImported }: Props) {
-  const { user, school } = useAppSelector((s) => s.auth);
-  const schoolId = school?.id ?? user?.schoolId;
-  const sections = useSectionOptions(schoolId);
   const jobIdRef = useRef<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [multiSection, setMultiSection] = useState(false);

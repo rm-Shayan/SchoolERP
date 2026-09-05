@@ -1,7 +1,5 @@
 'use client';
 
-import { Button } from '@/features/shared/components';
-
 interface WeekNavProps {
   weekLabel: string;
   weekOffset: number;

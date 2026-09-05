@@ -1,6 +1,6 @@
 export const ROW_H = 56;
 
-export const CHIPS = ['ALL', 'PRESENT', 'LATE', 'ABSENT', 'LEAVE', 'MANUAL_OVERRIDE'] as const;
+export const CHIPS = ['ALL', 'PRESENT', 'LATE', 'ABSENT', 'LEAVE', 'HALF_DAY', 'MANUAL_OVERRIDE'] as const;
 export type Chip = (typeof CHIPS)[number];
 
 export const BADGE: Record<string, string> = {
@@ -8,6 +8,7 @@ export const BADGE: Record<string, string> = {
   LATE: 'bg-amber-50 text-amber-700 border-amber-200',
   ABSENT: 'bg-red-50 text-red-700 border-red-200',
   LEAVE: 'bg-blue-50 text-blue-700 border-blue-200',
+  HALF_DAY: 'bg-cyan-50 text-cyan-700 border-cyan-200',
   MANUAL_OVERRIDE: 'bg-purple-50 text-purple-700 border-purple-200',
 };
 
@@ -16,6 +17,7 @@ export const DOT: Record<string, string> = {
   LATE: 'bg-amber-400',
   ABSENT: 'bg-red-400',
   LEAVE: 'bg-blue-400',
+  HALF_DAY: 'bg-cyan-400',
   MANUAL_OVERRIDE: 'bg-purple-400',
 };
 

@@ -13,7 +13,7 @@ interface StudentTableProps {
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
   onView: (student: Student) => void;
-  onEdit: (student: Student) => void;
+  onEdit?: (student: Student) => void;
   onDelete?: (student: Student) => void;
   onPassedOut?: (student: Student) => void;
 }

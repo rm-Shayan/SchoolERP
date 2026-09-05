@@ -46,7 +46,7 @@ export default function OrgHeader({
 
   return (
     <div className="bg-white rounded-2xl border border-primary-100 shadow-[0_18px_50px_rgba(76,29,149,0.12)] overflow-hidden sa-fade-in">
-      <div className="h-32 bg-primary-700 sm:h-40" />
+      <div className="h-32 sm:h-40" style={{ backgroundColor: '#6d28d9' }} />
       <div className="px-4 sm:px-7 pb-6 -mt-12 relative">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex items-end gap-4 min-w-0">

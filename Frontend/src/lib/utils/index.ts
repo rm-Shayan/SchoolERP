@@ -87,11 +87,10 @@ export function getUserType(role?: string): UserType | null {
   }
 }
 
-// Mirrors the backend storage rules (spec §4): backend caps uploads at
-// MAX_IMAGE_UPLOAD_SIZE_MB (default 5MB) and accepts JPG/PNG/WebP plus
-// HEIC/HEIF (iPhone photos, converted server-side). Keep the client limit
-// in sync with storage.service.js so valid uploads aren't blocked twice.
-export const MAX_IMAGE_UPLOAD_SIZE_MB = 5;
+// Mirrors backend storage rules: MAX_IMAGE_UPLOAD_SIZE_MB (default 5MB),
+// JPG/PNG/WebP + HEIC (iPhone, converted server-side). Keep in sync with storage.service.js.
+// Frontend allows 10MB — compression handles the rest.
+export const MAX_IMAGE_UPLOAD_SIZE_MB = 10;
 const ALLOWED_IMAGE_TYPES = new Set([
   'image/jpeg',
   'image/png',
@@ -118,6 +117,8 @@ export function validateImageUpload(file: File, maxSizeMB = MAX_IMAGE_UPLOAD_SIZ
 
   return '';
 }
+
+export { validateDocumentUpload } from './docValidation';
 
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);

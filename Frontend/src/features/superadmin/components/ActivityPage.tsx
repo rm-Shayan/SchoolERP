@@ -14,39 +14,32 @@ export default function ActivityPage() {
   const [data, setData] = useState<AuditLogsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState('');
   const [action, setAction] = useState('');
   const [entityType, setEntityType] = useState('');
   const [page, setPage] = useState(1);
 
-  const load = useCallback(
-    async (isRefresh = false) => {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setLoadError(false);
-      try {
-        const res = await auditLogService.list({
-          search: search || undefined,
-          action: action || undefined,
-          entityType: entityType || undefined,
-          page,
-          pageSize: PAGE_SIZE,
-        });
-        setData(res);
-      } catch (err) {
-        console.error('Failed to load activity log:', err);
-        setLoadError(true);
-      } finally {
-        setRefreshing(false);
-        setLoading(false);
-      }
-    },
-    [search, action, entityType, page]
-  );
+  const load = useCallback(async (isRefresh = false) => {
+    isRefresh ? setRefreshing(true) : setLoading(true);
+    setLoadError(false);
+    try {
+      const res = await auditLogService.list({
+        search: search || undefined,
+        action: action || undefined,
+        entityType: entityType || undefined,
+        page, pageSize: PAGE_SIZE,
+      });
+      setData(res);
+    } catch (err) {
+      console.error('Failed to load activity log:', err);
+      setLoadError(true);
+    } finally {
+      setRefreshing(false);
+      setLoading(false);
+    }
+  }, [search, action, entityType, page]);
 
   useEffect(() => {
     load();
@@ -57,24 +50,29 @@ export default function ActivityPage() {
     [data]
   );
 
-  const handleSearchChange = useCallback((value: string) => {
-    setSearch(value);
-    setPage(1);
-  }, []);
-
-  const handleActionChange = useCallback((value: string) => {
-    setAction(value);
-    setPage(1);
-  }, []);
-
-  const handleEntityTypeChange = useCallback((value: string) => {
-    setEntityType(value);
-    setPage(1);
-  }, []);
+  const resetPage = useCallback(() => setPage(1), []);
+  const handleSearchChange = useCallback((v: string) => { setSearch(v); setPage(1); }, []);
+  const handleActionChange = useCallback((v: string) => { setAction(v); setPage(1); }, []);
+  const handleEntityTypeChange = useCallback((v: string) => { setEntityType(v); setPage(1); }, []);
 
   const handlePageChange = useCallback((next: number) => {
     setPage(next);
   }, []);
+
+  const handleExportCsv = useCallback(async () => {
+    setExporting(true);
+    try {
+      await auditLogService.exportCsv({
+        search: search || undefined,
+        action: action || undefined,
+        entityType: entityType || undefined,
+      });
+    } catch (err) {
+      console.error('CSV export failed:', err);
+    } finally {
+      setExporting(false);
+    }
+  }, [search, action, entityType]);
 
   const showPagination = data !== null && data.items.length > 0;
   const isFiltered = !!search || !!action || !!entityType;
@@ -85,12 +83,20 @@ export default function ActivityPage() {
         title="Activity Log"
         description="Logins, block/unblock actions, and organization/branch/staff changes across the platform."
         actions={
-          <Button variant="outline" size="sm" onClick={() => load(true)} loading={refreshing}>
-            <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => load(true)} loading={refreshing}>
+              <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+            </Button>
+            <Button variant="outline" size="sm" loading={exporting} onClick={handleExportCsv}>
+              <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export CSV
+            </Button>
+          </div>
         }
       />
 

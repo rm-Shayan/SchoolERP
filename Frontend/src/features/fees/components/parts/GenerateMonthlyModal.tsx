@@ -11,7 +11,6 @@ interface GenerateMonthlyModalProps {
 }
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 export default function GenerateMonthlyModal({ open, month, year, dueDay, onClose, onGenerate }: GenerateMonthlyModalProps) {
   const { values, errors, isSubmitting, handleChange, handleBlur, handleSubmit } = useForm({

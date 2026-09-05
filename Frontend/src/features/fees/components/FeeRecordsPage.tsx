@@ -24,8 +24,8 @@ export default function FeeRecordsPage() {
   const [showBulk, setShowBulk] = useState(false);
   const [editDueDay, setEditDueDay] = useState(false);
   const [dueDay, setDueDay] = useState(school?.monthlyFeeDueDay ?? 10);
-  const [month, setMonth] = useState(String(new Date().getMonth() + 1));
-  const [year, setYear] = useState(String(new Date().getFullYear()));
+  const month = String(new Date().getMonth() + 1);
+  const year = String(new Date().getFullYear());
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
   const [bulkBusy, setBulkBusy] = useState(false);
 

@@ -48,9 +48,10 @@ Prisma schema (`Backend/prisma/schema.prisma`) ke mutabiq:
 | `SUPER_ADMIN` | **Platform owner — SIRF 1** (aap) | Poori platform: saari orgs, branches, users |
 | `ADMIN` | Branch Head = Principal | **Har org ka admin — org create par 1 assign hota hai** |
 | `TEACHER` | Class Teacher | Teachers |
-| `GATE_STAFF` | Gate Watchman / Card Scanner Operator | Gate par QR scan |
-| `ACCOUNTANT` | Fee & Finance Staff | Fees manage |
-| `RECEPTIONIST` | Front Desk / Inquiry Staff | Admissions/enquiry |
+| `RECEPTIONIST` | Front Desk — admissions + gate + student records | Reception/Inquiry staff |
+
+> `GATE_STAFF` aur `ACCOUNTANT` roles ab **remove ho chuke hain** (`src/constants.js` mein sirf 4
+> roles hain). Gate scanning aur fees dono ab branch `ADMIN` + `RECEPTIONIST` handle karte hain.
 
 ### ⚠️ SUPER_ADMIN — sirf aap
 
@@ -139,19 +140,38 @@ DB se fetch hoti hai. `/o/{slug}` URL branded login kholta hai (school naam/logo
   - Naye credentials email se jate hain
 - Response hamesha generic hota hai (email enumeration prevent)
 
-### 4.1.2 Parent/Student Portal Password (shared)
+### 4.1.2 Parent/Student Portal Login — 2 Tarike
 
-- Har branch ka **ek shared password** hota hai jo parents/students apne phone/roll ke saath
-  use karte hain:
-  - Default = **school code** (jab tak admin ne custom set nahi kiya)
-  - Custom = branch admin **Settings → Portal Access** se set kare (`PUT /schools/:id/portal-password`,
-    bcrypt hashed `School.portalPassword`) ya reset-to-default kare (`DELETE`)
-- `verifyPortalPassword()` dono flows mein use hota hai: `POST /auth/parent/login`,
-  `POST /auth/student/login`
-- **Staff login bhi portal password accept karta hai** — `verifyPortalPassword()` ab staff login flow
-  mein bhi call hota hai (`auth.service.js`). Staff login check order: (1) individual bcrypt password,
-  (2) portal password (singleton), (3) school code fallback.
-- OTP flows (`request-otp`/`verify-otp`) bhi maujood hain dono portals ke liye
+Har branch ka **ek shared password** hota hai jo parents/students apne phone/roll ke saath use karte hain:
+- Default = **school code** (jab tak admin ne custom set nahi kiya)
+- Custom = branch admin **Settings → Portal Access** se set kare (`PUT /schools/:id/portal-password`) ya reset-to-default kare (`DELETE`)
+
+**Tarika 1 — Direct Login (zero OTP):**
+| Portal | Endpoint | Formula |
+|--------|----------|---------|
+| Parent | `POST /auth/parent/login` | schoolCode + phone + portalPassword → parent JWT (30 days) |
+| Student | `POST /auth/student/login` | schoolCode + rollNumber + portalPassword → student JWT (30 days) |
+
+**Tarika 2 — OTP Flow:**
+| Portal | Step 1 | Step 2 |
+|--------|--------|--------|
+| Parent | `POST /auth/parent/request-otp` (WhatsApp number) | `POST /auth/parent/verify-otp` → parent JWT |
+| Student | `POST /auth/student/request-otp` (card ID → OTP to parent WhatsApp) | `POST /auth/student/verify-otp` → student JWT |
+
+- `verifyPortalPassword()` dono direct-login flows mein use hota hai
+- **Staff login bhi portal password accept karta hai** — staff login check order: (1) individual bcrypt password, (2) portal password (singleton), (3) school code fallback
+- Parent JWT mein: `id`, `type: "parent"`, `schoolId`, `studentIds`, `sectionIds`, `name`
+- Student JWT mein: `id`, `type: "student"`, `schoolId`, `sectionIds`, `name`
+- Login page (`/parent/login`) — dono tabs (Parent Phone / Student Roll No) ek hi page par hain
+- `GET /auth/parent/me` → parent profile + linked children (siblings)
+- `GET /auth/student/me` → student profile (read-only)
+
+### 4.1.3 Portal Shared Password Management
+
+Branch admin **Settings → Portal Access** se portal password manage karta hai:
+- `GET /schools/:id/portal-password` → status (custom/default)
+- `PUT /schools/:id/portal-password` → set/update custom hashed password
+- `DELETE /schools/:id/portal-password` → reset to default (school code)
 
 ### 4.2 Login par check order (sequence matter karta hai)
 
@@ -181,8 +201,7 @@ DB se fetch hoti hai. `/o/{slug}` URL branded login kholta hai (school naam/logo
 | SUPER_ADMIN (platform, org null) | `/admin/dashboard` |
 | ADMIN (branch principal) | `/branch/dashboard` |
 | TEACHER | `/teacher/dashboard` |
-| GATE_STAFF | `/gate` |
-| ACCOUNTANT / RECEPTIONIST | `/branch/dashboard` |
+| RECEPTIONIST | `/branch/dashboard` |
 
 ---
 
@@ -375,11 +394,13 @@ school ka **naam + logo DB se load** kare (generic `/admin/login` nahi).
   role/status/block-reason filters, profile modal, export CSV, block/unblock,
   **Create User** button + modal (branch selector + role + creds → `POST /auth/users`)
 - **Import Data** (`/admin/import`) — org bulk import (.xlsx template download ke saath)
-- **Activity Log** (`/admin/activity`) — audit trail (`GET /audit-logs`; kaun kya kiya, kab)
+- **Activity Log** (`/admin/activity`) — audit trail (`GET /audit-logs`; kaun kya kiya, kab) + **Export CSV**
 - **Notifications** (`/admin/notifications`) — delivery logs table (recipient/branch/channel/status/
   message) + channel/status filters + pagination (`GET /notifications/logs`)
 - **Settings** (`/admin/settings`) — Profile / Change Password / **Platform tab** (notification
   delivery summary: total/sent/delivered/failed + by-channel, `GET /notifications/status`)
+- **Branch Settings** (`/admin/branch-settings`) — SMTP/Cloudinary config per branch
+  (org name immutable + branch dropdown selector)
 - **Login** (`/admin/login`) — direct email+password (platform super admin)
 
 > **Super Admin se user create:** jab platform admin (`organizationId: null`) `POST /auth/users`
@@ -397,11 +418,101 @@ school ka **naam + logo DB se load** kare (generic `/admin/login` nahi).
 - **Navbar: Portal Status Pill + Notification bell** (Branch Switcher remove ho chuka hai)
 - **Notification bell** — `GET /notifications/logs` se logs (channel/status badges, realtime WS)
 
+### Receptionist Portal — Front Desk (Detailed)
+
+**Role:** `RECEPTIONIST` — branch ka front desk / gate / admission staff. Backend enforcement
+`src/constants.js` ke role groups se hota hai. `branch` portal aapko allow karta hai
+(`['ADMIN', 'RECEPTIONIST', 'SUPER_ADMIN']`), lekin **content-level permissions role groups se
+enforce** hoti hain — receptionist ko poora admin control nahi milta.
+
+**Receptionist CAN Kya Karta Hai:**
+
+| Area | Ability | Backend route grants |
+|---|---|---|
+| **Student records** | Create, edit, photo upload, status change | `POST /students/schools/:schoolId`, `PATCH /students/:id`, `POST /students/:id/photo`, `PATCH /students/:id/status` |
+| **Student read** | List + section/class/status filter + search | `GET /students` (`ALL_STAFF`) |
+| **Admissions** | Poore pipeline: inquiry → test → approve → advance fee → enroll → reject | `ADMISSIONS` group = SUPER_ADMIN + ADMIN + RECEPTIONIST |
+| **Student attendance** | Gate scan, offline sync, section bulk mark, daily/monthly report, manual override, record delete/update | `ATTENDANCE` group = SUPER_ADMIN + ADMIN + RECEPTIONIST + TEACHER |
+| **Staff attendance** | Bulk mark, daily, monthly, check-in/out, record delete/update, export | `staffAttendance` + RECEPTIONIST |
+| **Announcements / Notifications** | Circulars view + portal notifications | `ALL_STAFF` |
+
+**Receptionist CANNOT Kya Karta Hai (ADMIN-only):**
+
+| Area | Reason |
+|---|---|
+| Student delete / Excel import / ID reissue | Destructive + bulk ops sirf ADMIN |
+| Staff management (create/edit/delete users) | HR sirf ADMIN |
+| Academic setup (years/terms/classes/sections/subjects) | Structure changes ADMIN-only |
+| Fee structures + fee collection | Finance control ADMIN-only (read-only fee records dekh sakta hai) |
+| Teaching assignments + promotions | Academic decisions ADMIN-only |
+| Settings (SMTP/storage/branch/branding) | ADMIN-only |
+
+**Front-desk workflows:** (1) Admission at desk — inquiry → test → approve → advance fee → enroll →
+QR ID card + parent email; (2) Gate scan — QR/RFID/roll, live result + fee status, offline buffer
+sync; (3) Student record update — parent contact change; (4) Photo upload — ID photo session;
+(5) Bulk section attendance — poore section ko ek saath mark karna.
+
 ### Teacher Portal (`/o/{slug}/teacher/*`)
-- Dashboard, Section Attendance, Homework, Conduct Remarks, My Timetable, Exams
+- **Dashboard:** Stats (assignments, upcoming PTMs, homework count, timetable slots), today's timetable, upcoming PTMs, recent homework
+- **Section Attendance:** Calendar heatmap, daily tracking, monthly matrix comparison, student monthly comparison, day detail modal, undo toast
+- **Homework:** Post, track, recent homework cards
+- **Conduct Remarks:** Give remarks (POSITIVE/NEGATIVE/NEUTRAL), undo support, remarks history page
+- **My Timetable:** Desktop grid, mobile cards, weekly bar chart, year heatmap, section timetable overview
+- **Exams:** Schedule, stats (total/upcoming/completed), paper details
+- **PTM:** Upcoming sessions
+- **My Attendance:** Personal attendance view with calendar, log, report, stat cards, summary
+- **Study Materials:** View study materials
+- **Notifications:** Portal notifications inbox
+- **Settings:** Profile settings
 
 ### Parent Portal (`/parent/*`)
-- Login (phone + shared portal password) + dashboard (apne bachchon ka data)
+
+**Login (2 tarike):**
+1. **Direct login:** School Code + Phone + shared portal password → `POST /auth/parent/login`
+2. **OTP flow:** WhatsApp number → `POST /auth/parent/request-otp` → OTP verify → `POST /auth/parent/verify-otp`
+
+**Profile:** `GET /auth/parent/me` — returns parent info + linked children array (siblings supported).
+
+**Portal Dashboard tabs** (`/parent/dashboard`) — 14 tabs, all via `authenticateAnyPortal` middleware:
+
+| Tab | API Route | Description |
+|-----|-----------|-------------|
+| Overview | `GET /portal/overview` | Aggregated: attendance summary, fee summary, homework/circular/study material counts |
+| Attendance | `GET /portal/attendance?month=&year=` | Monthly attendance per child (present/late/absent/leave + percentage) |
+| Fees | `GET /portal/fees` | Fee records + summary (total charged, paid, outstanding, unpaid/partial/paid counts) |
+| Homework | `GET /portal/homework` | Recent homework broadcasts for child's section |
+| Materials | `GET /portal/study-material` | Study materials for child's section |
+| Notices | `GET /portal/circulars` | School circulars (PARENTS + ALL audience) |
+| Results | `GET /portal/results` | Exam results across all exams |
+| Exams | `GET /portal/exams` | Exam date sheets for child's classes |
+| Timetable | `GET /portal/timetable` | Weekly timetable slots for child's section |
+| Conduct | `GET /portal/conduct` | Conduct remarks from teachers |
+| PTM | `GET /portal/ptm` | Upcoming PTM sessions (scheduled, future) |
+| Leave | `GET /portal/leave` + `POST /portal/leave` | View + submit leave requests |
+| Alerts | `GET /notifications/portal` + unread count | Portal notifications (realtime via WS) |
+| Profile | `GET /auth/parent/me` | Parent profile + linked children |
+
+**Parent sees ALL linked children** — sibling selector switch karta hai active child. Portal socket `usePortalSocket(sectionIds, schoolId)` join karta hai section + school rooms.
+
+**PDF downloads available:**
+- `GET /portal/timetable/pdf` — timetable as PDF
+- `GET /portal/exams/:examId/date-sheet` — exam date sheet as PDF
+
+**Leave request:** `POST /portal/leave` (studentId, dateFrom, dateTo, reason) — validates student belongs to parent, checks overlapping approved leaves, notifies school admin via portal notification + WebSocket `leave_request_created`.
+
+**Staff portal password bhi accept hota hai** — `verifyPortalPassword()` ab staff login flow mein bhi call hota hai.
+
+### Student Portal (`/parent/*` — shared login page with parent tab)
+
+**Login (2 tarike):**
+1. **Direct login:** School Code + Roll Number + shared portal password → `POST /auth/student/login`
+2. **OTP flow:** Card ID → `POST /auth/student/request-otp` → OTP sent to parent's WhatsApp → `POST /auth/student/verify-otp`
+
+**Profile:** `GET /auth/student/me` — returns student profile (read-only). Token stored as `studentToken` in localStorage.
+
+**Student sees ONLY own data** — no sibling selector. Same 14 tabs as parent but scoped to own section/studentId only.
+
+**Key difference from parent:** Student portal uses `authenticateStudent` middleware for `/auth/student/me`, and `authenticateAnyPortal` for all `/portal/*` routes (same as parent).
 
 ### Public
 - `/` — landing page
@@ -475,6 +586,15 @@ email to phir bhi chalegi (SMTP direct), lekin imports/caching fail ho sakte hai
 | "Har org ka apna color kahan se?" | `Organization.themeColor` — org create/edit par color picker se set hota hai; branded login + public pages us color par |
 | "Admission slip / ID card / fee receipt email mein kahan?" | **PDF attach** hote hain — admission approve (`admission-slip`), enroll (`student-id`), fee payment (`fee-receipt`) |
 | "Notification logs kahan dekhen?" | Admin console `/admin/notifications` page + navbar bell (realtime WS) |
+| "Receptionist kya kar sakta hai?" | Students (create/edit/photo/status), admissions pipeline, gate scan + attendance (bulk/reports/override), staff attendance, view leave/announcements |
+| "Receptionist kya nahi kar sakta?" | Student delete/import/ID-reissue, staff mgmt, academic setup, fee structures/collection, promotions, settings — sab ADMIN-only |
+| "GATE_STAFF / ACCOUNTANT role kahan gaye?" | Remove ho chuke — ab sirf 4 roles hain (SUPER_ADMIN/ADMIN/TEACHER/RECEPTIONIST). Gate + fees ADMIN/RECEPTIONIST handle karte hain |
+| "Parent portal mein kitne bachche dikhenge?" | Saare linked children (siblings) — sibling selector se switch. Student portal mein sirf khud ka data |
+| "Portal login kaise hota hai?" | 2 tarike: (1) Direct — school code + phone/roll + portal password, (2) OTP — WhatsApp par OTP. Dono 30-day JWT dete hain |
+| "Portal ka shared password kya hai?" | Default = school code. Branch admin Settings → Portal Access se custom set kar sakta hai |
+| "Portal mein kaun kaun si cheezein dikhengi?" | 14 tabs: overview, attendance, fees, homework, materials, notices, results, exams, timetable, conduct, PTM, leave, notifications, profile |
+| "Portal routes kaise kaam karte hain?" | Saare `/portal/*` routes `authenticateAnyPortal` middleware use karte hain — parent ya student JWT dono accept hote hain |
+| "Staff/Principal ka photo nahi hai?" | Org logo dikhta hai as fallback (user photo → org logo → initials) |
 
 ---
 

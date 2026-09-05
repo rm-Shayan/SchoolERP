@@ -66,7 +66,7 @@ export default function AuthLayout({
             )}
           >
             <div className={cn('w-full', fullWidth ? 'max-w-2xl' : 'max-w-md')}>
-              <MobileHeader branded={branded} compact={compact} brandIcon={brandIcon} brandSub={brandSub} brandLabel={brandLabel} />
+              <MobileHeader branded={branded} compact={compact} brandIcon={brandIcon} brandSub={brandSub} brandLabel={brandLabel} themeColor={themeColor} />
               {children}
               {footerNote && <div className="mt-8 text-center text-sm">{footerNote}</div>}
             </div>
@@ -77,9 +77,10 @@ export default function AuthLayout({
   );
 }
 
-function MobileHeader({ branded, compact, brandIcon, brandSub, brandLabel }: {
+function MobileHeader({ branded, compact, brandIcon, brandSub, brandLabel, themeColor }: {
   branded: boolean; compact: boolean;
   brandIcon: ReactNode; brandSub: string; brandLabel: string;
+  themeColor?: string;
 }) {
   return (
     <motion.div initial={false} className={cn('text-center lg:hidden', compact ? 'mb-4' : 'mb-6')}>
@@ -88,6 +89,7 @@ function MobileHeader({ branded, compact, brandIcon, brandSub, brandLabel }: {
           <div className="mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white p-1.5 shadow-lg ring-1 ring-gray-200">{brandIcon}</div>
           <h2 className="mt-3 text-xl font-extrabold tracking-tight text-gray-900">{brandSub}</h2>
           <p className="mt-0.5 text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">{brandLabel}</p>
+          {themeColor && <div className="mx-auto mt-3 h-1 w-12 rounded-full" style={{ backgroundColor: themeColor }} />}
         </>
       ) : (
         <div className="mx-auto flex justify-center [&_img]:h-20 [&_img]:w-auto [&_img]:object-contain [&_img]:bg-transparent">{brandIcon}</div>

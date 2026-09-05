@@ -80,7 +80,6 @@ const YearHeatmap = memo(function YearHeatmap({ year }: YearHeatmapProps) {
       cells.push({ date: '', day: -1, status: null });
     }
 
-    const cols = cells.length / 7;
     const g: (typeof cells[0])[][] = [];
     for (let r = 0; r < 7; r++) {
       g.push(cells.filter((_, i) => i % 7 === r));

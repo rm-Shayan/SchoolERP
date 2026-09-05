@@ -195,8 +195,9 @@ class StaffAttendanceService {
   /**
    * Admin: Export staff attendance as Excel buffer
    */
-  async exportAttendance(schoolId, { startDate, endDate, format }) {
+  async exportAttendance(schoolId, { startDate, endDate, format, staffId }) {
     const where = { schoolId };
+    if (staffId) where.staffId = staffId;
     if (startDate || endDate) {
       where.date = {};
       if (startDate) where.date.gte = new Date(startDate);
@@ -249,7 +250,7 @@ class StaffAttendanceService {
       byName[s.name.toLowerCase()] = s;
     });
 
-    const VALID_STATUSES = ["PRESENT", "ABSENT", "LATE", "LEAVE"];
+    const VALID_STATUSES = ["PRESENT", "ABSENT", "LATE", "LEAVE", "HALF_DAY"];
     let succeeded = 0;
     let failed = 0;
     const errors = [];

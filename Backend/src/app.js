@@ -13,6 +13,7 @@ import "./services/storage.service.js"; // side-effect: ensures upload dirs exis
 import routes from "./routes/index.js";
 import { globalLimiter } from "./middlewares/rateLimit.middleware.js";
 import { timingMiddleware } from "./middlewares/timing.middleware.js";
+import { securityHeaders } from "./middlewares/security.middleware.js";
 import { corsOrigin } from "./config/cors.js";
 import { getSocketStatus, isDraining } from "./config/websocket.js";
 import { metricsHandler } from "./config/metrics.js";
@@ -56,6 +57,9 @@ app.use(
 // 4. Body Parsers — limit JSON body to 10MB (prevents memory abuse)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// 4b. Security response headers (nosniff, frame-deny, no-store cache, etc.)
+app.use(securityHeaders);
 
 // 5. Static files — locally uploaded student photos (Cloudinary fallback)
 // Cache static assets for 7 days (images don't change often)

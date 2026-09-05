@@ -7,8 +7,6 @@ import { cn } from '@/lib/utils';
 
 const DAY_NAMES = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_COLS = [1, 2, 3, 4, 5, 6, 7];
-const DAY_COLORS = ['bg-primary-500', 'bg-blue-500', 'bg-emerald-500', 'bg-violet-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500'];
-
 const SUBJECT_COLORS = [
   'bg-blue-100 text-blue-700 border-blue-200',
   'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -21,12 +19,6 @@ const SUBJECT_COLORS = [
 ];
 
 interface Props { slots: TimetableSlot[]; todayDow: number; }
-
-function formatTimeRange(slots: TimetableSlot[]) {
-  if (slots.length === 0) return '';
-  const sorted = slots.map((s) => s.startTime).sort();
-  return `${sorted[0]} – ${slots.map((s) => s.endTime).sort().pop()}`;
-}
 
 const TimetableStats = memo(function TimetableStats({ slots, todayDow }: Props) {
   const dayCounts = useMemo(() => {
@@ -60,7 +52,6 @@ const TimetableStats = memo(function TimetableStats({ slots, todayDow }: Props) 
   if (slots.length === 0) return null;
   const totalSlots = slots.length;
   const uniqueSubjects = subjectCounts.length;
-  const uniqueTeachers = teacherCounts.length;
   const maxDay = Math.max(...DAY_COLS.map((d) => dayCounts.get(d) ?? 0));
   const maxTeacher = Math.max(...teacherCounts.map((t) => t.count), 1);
   return (

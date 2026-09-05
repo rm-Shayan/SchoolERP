@@ -5,7 +5,6 @@ import { notificationService, schoolService, orgService } from '@/lib/api';
 import type { PortalNotification } from '@/lib/api/notificationService';
 import { useAppSelector } from '@/store/hooks';
 import { Card, PageHeader, Button, EmptyState, Select } from '@/features/shared/components';
-import { cn } from '@/lib/utils';
 import { getSocket } from '@/lib/socket';
 import SendNotificationForm from './SendNotificationForm';
 

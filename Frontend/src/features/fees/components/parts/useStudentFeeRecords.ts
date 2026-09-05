@@ -21,8 +21,6 @@ export interface StudentFeeGroup {
   openMonths: number;
 }
 
-const ALL_UNPAID = 'UNPAID,PARTIAL,OVERDUE';
-
 export function useStudentFeeRecords(classId?: string) {
   const { user, school } = useAppSelector((s) => s.auth);
   const schoolId = school?.id ?? user?.schoolId;

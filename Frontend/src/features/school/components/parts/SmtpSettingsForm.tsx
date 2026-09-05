@@ -20,6 +20,11 @@ interface SmtpSettingsFormProps {
   testing: boolean;
   onTestSend: () => void;
   onRemove: () => void;
+  orgName?: string;
+  branchName?: string;
+  branches?: { id: string; name: string }[];
+  selectedBranch?: string | null;
+  onBranchChange?: (id: string | null) => void;
 }
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
@@ -34,18 +39,32 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 export default function SmtpSettingsForm({
   values, errors, isSubmitting, handleChange, handleBlur, handleSubmit,
   scope, setScope, tier, setTier, lockedBranch, existing, testing, onTestSend, onRemove,
+  orgName, branchName, branches, selectedBranch, onBranchChange,
 }: SmtpSettingsFormProps) {
   const v = values as Record<string, string>;
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Group title="Scope">
-        <div className={`grid grid-cols-1 gap-4 ${lockedBranch ? '' : 'md:grid-cols-2'}`}>
-          {!lockedBranch && (
+        <div className="space-y-3">
+          <Input label="Organization" value={orgName ?? ''} readOnly className="bg-gray-50 cursor-not-allowed" />
+          {!lockedBranch && branches && onBranchChange && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Branch</label>
+              <select value={selectedBranch ?? ''} onChange={(e) => onBranchChange(e.target.value || null)} className="w-full sm:w-64 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+                <option value="">All branches (org default)</option>
+                {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+          )}
+          {lockedBranch && branchName && (
+            <Input label="Branch" value={branchName} readOnly className="bg-gray-50 cursor-not-allowed" />
+          )}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Select label="Apply To" value={scope} onChange={(e) => setScope(e.target.value as Scope)}
               options={[{ value: 'organization', label: 'Organization Default' }, { value: 'branch', label: 'This Branch Only' }]} />
-          )}
-          <Select label="Tier" value={tier} onChange={(e) => setTier(e.target.value as Tier)}
-            options={[{ value: 'PRIMARY', label: 'Primary' }, { value: 'SECONDARY', label: 'Secondary (Failover)' }]} />
+            <Select label="Tier" value={tier} onChange={(e) => setTier(e.target.value as Tier)}
+              options={[{ value: 'PRIMARY', label: 'Primary' }, { value: 'SECONDARY', label: 'Secondary (Failover)' }]} />
+          </div>
         </div>
       </Group>
 

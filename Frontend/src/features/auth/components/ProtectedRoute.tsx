@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loadUser } from '@/store/slices/authSlice';
 import { getRoleHomePath } from '@/lib/utils';
@@ -19,7 +19,6 @@ const BrandIcon = () => (
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const pathname = usePathname();
   const { isAuthenticated, loading, user, organization } = useAppSelector((s) => s.auth);
   const [mounted, setMounted] = useState(false);
 

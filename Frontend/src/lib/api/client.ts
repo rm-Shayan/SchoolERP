@@ -2,8 +2,7 @@
 import axios from 'axios';
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import type { ApiResponse, AuthResponse } from '@/types';
-import { buildKey, cacheGet, cacheSet, inflightGet, inflightSet, inflightDelete, clearAll } from './requestCache';
-import { clearServiceCache } from './serviceCache';
+
 
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1`;
 const api = axios.create({ baseURL: API_BASE_URL, headers: { 'Content-Type': 'application/json' } });
@@ -33,7 +32,7 @@ export function getRefreshToken() {
 }
 
 export function clearAuth() {
-  accessToken = null; refreshToken = null; clearAll(); clearServiceCache();
+  accessToken = null; refreshToken = null;
   if (typeof window !== 'undefined') {
     localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken');
     localStorage.removeItem('user'); localStorage.removeItem('organization'); localStorage.removeItem('school');
@@ -64,7 +63,7 @@ function normalizeError(error: AxiosError) {
 
 // ─── Response interceptor ──────────────────────────────────────────
 api.interceptors.response.use(
-  (res) => { const k = buildDedupeKey(res.config as InternalAxiosRequestConfig); if (k) cacheSet(k, res.data); return res; },
+  (res) => res,
   async (error: AxiosError) => {
     const req = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     const url = req?.url ?? '';
@@ -103,22 +102,4 @@ api.interceptors.response.use(
   },
 );
 
-// ─── Smart GET: dedup in-flight + short cache ──────────────────────
-function buildDedupeKey(config: InternalAxiosRequestConfig): string | null {
-  if (config.method && config.method.toUpperCase() !== 'GET') return null;
-  const p = config.params ? JSON.stringify(config.params, Object.keys(config.params).sort()) : '';
-  return `${config.url ?? ''}::${p}`;
-}
-const originalGet = api.get.bind(api);
-api.get = async function dedupedGet(url: string, config?: any) {
-  if ((config?.method ?? 'get').toUpperCase() !== 'GET') return originalGet(url, config);
-  const key = buildKey(url, config?.params);
-  const cached = cacheGet(key);
-  if (cached !== undefined) return cached as any;
-  const existing = inflightGet(key);
-  if (existing) return existing as Promise<any>;
-  const promise = originalGet(url, config).then((res) => { cacheSet(key, res.data); return res; }).finally(() => inflightDelete(key));
-  inflightSet(key, promise);
-  return promise;
-};
 export default api;

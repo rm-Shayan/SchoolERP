@@ -242,20 +242,24 @@ class ExamService {
       return acc;
     }, {});
 
-    // Build individualized messages per parent + filter active students + dedup
-    const emailed = new Set();
-    const recipients = [];
+    // Build individualized messages per parent + filter active students.
+    // Siblings (2 bachay, 1 parent email) → EK email me dono ke results.
+    const byEmail = new Map();
     for (const { student, results: studentResults } of Object.values(byStudent)) {
       if (!student.parent || student.status !== "ACTIVE") continue;
       const email = student.parent.email?.trim().toLowerCase();
-      if (!email || emailed.has(email)) continue;
-      emailed.add(email);
+      if (!email) continue;
+      if (!byEmail.has(email)) byEmail.set(email, []);
       const lines = studentResults.map(
         (r) => `- ${r.subject.name}: ${Number(r.marksObtained)}/${Number(r.maxMarks)}${r.remarks ? ` (${r.remarks})` : ""}`
       );
-      const message = `Results for ${student.firstName} ${student.lastName} (${student.section?.class?.name || ""} ${student.section?.name || ""}) — ${exam.name}:\n\n${lines.join("\n")}`;
-      recipients.push({ email, message });
+      const block = `Results for ${student.firstName} ${student.lastName} (${student.section?.class?.name || ""} ${student.section?.name || ""}) — ${exam.name}:\n\n${lines.join("\n")}`;
+      byEmail.get(email).push(block);
     }
+    const recipients = [...byEmail.entries()].map(([email, blocks]) => ({
+      email,
+      message: blocks.join("\n\n"),
+    }));
 
     const result = await notificationService.sendBulkIndividualEmails(exam.schoolId, `Results Published — ${exam.name}`, recipients);
 

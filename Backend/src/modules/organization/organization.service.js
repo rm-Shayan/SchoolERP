@@ -108,12 +108,43 @@ class OrganizationService {
       // Non-blocking cache error
     }
 
-    // Auto-create the branch Principal (ADMIN) for the default branch when an
-    // email is provided. In the Pakistani school model the person who receives
-    // credentials at org-creation time is the Branch Head / Principal of the
-    // first campus, not an org-level SUPER_ADMIN.
+    // Super admin ko notification — org create ka confirmation
+    portalNotificationService.create({
+      organizationId: org.id,
+      senderId: requester?.id, senderName: requester?.name || "Super Admin",
+      title: "ORG_CREATED",
+      body: `Organization "${org.name}" (${org.code}) has been created successfully.`,
+      category: "GENERAL",
+    });
+
+    // Auto-assign or create the branch Principal (ADMIN) for the default branch.
+    // Two modes:
+    // 1. existingAdminEmail → assign an existing unassigned admin to this branch
+    // 2. adminEmail (new) → create a new admin account with credentials
     let adminCredentials = null;
-    if (data.adminEmail) {
+    if (data.existingAdminEmail) {
+      // Mode 1: Assign existing admin
+      const cleanEmail = String(data.existingAdminEmail).trim().toLowerCase();
+      const existingAdmin = await prisma.user.findFirst({
+        where: { email: cleanEmail, role: "ADMIN", isActive: true },
+        select: { id: true, name: true, email: true },
+      });
+      if (existingAdmin) {
+        // Validate no duplicate admin in the target branch
+        const branchAdmin = await prisma.user.findFirst({
+          where: { role: "ADMIN", schoolId: defaultBranch.id, isActive: true, id: { not: existingAdmin.id } },
+          select: { id: true },
+        });
+        if (!branchAdmin) {
+          await prisma.user.update({
+            where: { id: existingAdmin.id },
+            data: { schoolId: defaultBranch.id, organizationId: org.id },
+          });
+          adminCredentials = null; // No new credentials — existing account
+        }
+      }
+    } else if (data.adminEmail) {
+      // Mode 2: Create new admin account
       const generatedPassword = data.adminPassword || crypto.randomBytes(4).toString("hex") + "A1!";
       const hashedPassword = await bcrypt.hash(generatedPassword, 12);
 
@@ -134,11 +165,7 @@ class OrganizationService {
       };
 
       // Don't email the platform super admin who is creating the org and
-      // designated their OWN email as the admin — they already have the
-      // system and typed the credentials themselves.
-      // Don't email the platform super admin who is creating the org and
-      // designated their OWN email as the admin — they already have the
-      // system and typed the credentials themselves.
+      // designated their OWN email as the admin.
       const selfDesignation =
         requester?.email &&
         String(requester.email).trim().toLowerCase() ===
@@ -156,8 +183,6 @@ class OrganizationService {
           logoUrl: org.logoUrl || null,
           themeColor: org.themeColor || null,
         });
-        // Tenant-first: abhi provision ki hui is org ki SMTP settings se jayegi
-        // (env sirf fallback).
         await queueEmail({
           to: branchAdminUser.email,
           ...mail,
@@ -172,6 +197,16 @@ class OrganizationService {
     emitToRoom("super_admins", "organization_created", { orgId: org.id, name: org.name });
     emitToRoom("super_admins", "overview_updated", {});
 
+    // Find unassigned admins (created without a branch) in this org —
+    // lets the UI offer assigning them to the default branch.
+    let unassignedAdmins = [];
+    try {
+      unassignedAdmins = await prisma.user.findMany({
+        where: { role: "ADMIN", organizationId: org.id, isActive: true, schoolId: null },
+        select: { id: true, name: true, email: true },
+      });
+    } catch (_) {}
+
     return {
       organization: org,
       defaultBranch,
@@ -179,9 +214,7 @@ class OrganizationService {
       smtpSetting,
       smtpSecondary,
       storageSetting,
-      // Lets the UI warn when credentials are shown on screen but SMTP is
-      // not configured (missing creds OR placeholder host like "google"),
-      // so the email will never actually be delivered.
+      unassignedAdmins,
       emailConfigured: Boolean(
         process.env.SMTP_USER &&
           process.env.SMTP_PASS &&
@@ -202,14 +235,14 @@ class OrganizationService {
    *  - already-managed URL (cloudinary / /uploads) → wahi wapas, re-upload nahi.
    * Failure par best-effort: purani value hi store (redirected render).
    */
-  async _persistDataUrlLogo(logoUrl) {
+  async _persistDataUrlLogo(logoUrl, organizationId) {
     if (!logoUrl || typeof logoUrl !== "string") return logoUrl;
     if (logoUrl.startsWith("data:")) {
       try {
         const comma = logoUrl.indexOf(",");
         if (comma === -1) return logoUrl;
         const buffer = Buffer.from(logoUrl.slice(comma + 1), "base64");
-        const { url } = await storageService.uploadImage({ buffer, folder: "org-logos" });
+        const { url } = await storageService.uploadImage({ buffer, folder: "org-logos", organizationId });
         return url || logoUrl;
       } catch (err) {
         return logoUrl; // best-effort — upload fail ho to purani value store
@@ -224,7 +257,7 @@ class OrganizationService {
     if (/^https?:\/\//i.test(logoUrl)) {
       try {
         const buffer = await this._downloadImage(logoUrl);
-        const { url } = await storageService.uploadImage({ buffer, folder: "org-logos" });
+        const { url } = await storageService.uploadImage({ buffer, folder: "org-logos", organizationId });
         return url || logoUrl;
       } catch (err) {
         return logoUrl; // best-effort — upload fail ho to purani value store
@@ -269,7 +302,7 @@ class OrganizationService {
       const org = await this.getOrganizationById(organizationId);
       existingUrl = org.logoUrl || null;
     }
-    const { url } = await storageService.uploadImage({ buffer, folder: "org-logos", existingUrl });
+    const { url } = await storageService.uploadImage({ buffer, folder: "org-logos", existingUrl, organizationId });
     return { url };
   }
 
@@ -294,7 +327,7 @@ class OrganizationService {
     const shaped = orgs.map((org) => ({
       ...org,
       status: this._effectiveOrgStatus(org),
-      blockedBranchCount: (org.branches ?? []).filter((b) => b.status === "BLOCKED").length,
+      blockedBranchCount: org.blockedBranchCount || 0,
     }));
 
     try {
@@ -392,7 +425,7 @@ class OrganizationService {
 
     // data: URL logo → storage upload (email-safe URL), phir store.
     if (orgData.logoUrl !== undefined) {
-      orgData.logoUrl = await this._persistDataUrlLogo(orgData.logoUrl);
+      orgData.logoUrl = await this._persistDataUrlLogo(orgData.logoUrl, id);
     }
 
     // Rule 5: when the org image is replaced (or cleared), delete the old file
@@ -743,7 +776,7 @@ class OrganizationService {
       code: org.code,
       slug: org.slug,
       logoUrl: org.logoUrl || null,
-      themeColor: org.themeColor || "#2563eb",
+      themeColor: org.themeColor || null,
       phone: org.phone || null,
       email: org.email || null,
       website: org.website || null,
@@ -753,6 +786,13 @@ class OrganizationService {
       youtubeUrl: org.youtubeUrl || null,
       branches: org.branches ?? [],
     };
+  }
+
+  /**
+   * School health audit — blocked branches, missing admins, zero-staff, empty orgs.
+   */
+  async getSchoolHealth() {
+    return organizationRepository.schoolHealth();
   }
 }
 

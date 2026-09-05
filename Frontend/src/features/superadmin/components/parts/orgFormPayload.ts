@@ -11,6 +11,7 @@ export interface CreateOrgPayload {
   adminUsername?: string;
   adminPassword?: string;
   adminPhone?: string;
+  existingAdminEmail?: string;
   smtp?: { host: string; port: number; secure: boolean; username: string; password: string };
   bankName?: string;
   bankAccountTitle?: string;

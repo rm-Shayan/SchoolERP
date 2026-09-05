@@ -19,9 +19,11 @@ interface LoginCardProps {
   subheading?: string;
   /** Header parent component khud render kare (LoginHub hub-style headers). */
   hideHeading?: boolean;
+  school?: string;
+  branch?: string;
 }
 
-export default function LoginCard({ branding, onBrandingChange, heading, subheading, hideHeading }: LoginCardProps) {
+export default function LoginCard({ branding, onBrandingChange, heading, subheading, hideHeading, school, branch }: LoginCardProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { loading, error } = useAppSelector((s) => s.auth);
@@ -30,8 +32,11 @@ export default function LoginCard({ branding, onBrandingChange, heading, subhead
   const codeTimer = useRef<number | undefined>(undefined);
 
   useEffect(() => {
+    // Priority: branch > school > branding.code
+    if (branch && !schoolCode.trim()) setSchoolCode(branch);
+    if (school && !schoolCode.trim()) setSchoolCode(school);
     if (branding?.code && !schoolCode.trim()) setSchoolCode(branding.code);
-  }, [branding, schoolCode]);
+  }, [branding, school, branch, schoolCode]);
 
   const { values, errors, isSubmitting, handleChange, handleBlur, handleSubmit } = useForm({
     initialValues: { identifier: '', password: '' },

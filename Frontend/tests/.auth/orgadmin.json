@@ -1,0 +1,22 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "accessToken",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmNDAwMjg0MS0xN2MyLTRkOWItYTVjMy04NWI2YjgzYWE0MGIiLCJyb2xlIjoiQURNSU4iLCJzY2hvb2xJZCI6IjYyNmU4N2Q1LTE1ODEtNDIxOC04OTJjLTZjMWJkZmVhZmYyNiIsIm9yZ2FuaXphdGlvbklkIjoiNjFjNGVmYWMtYTJjYS00ZTkxLWE3YTAtNzVlNjQ3MTZhNGFjIiwidG9rZW5UeXBlIjoic3RhZmYiLCJpYXQiOjE3ODgzNjg3MzcsImV4cCI6MTc4ODM3MjMzN30.241A-R-M3Uk9vgfDYbnWDCa1-SK5aNvJr9HuJHuENyI"
+        },
+        {
+          "name": "user",
+          "value": "{\"id\":\"f4002841-17c2-4d9b-a5c3-85b6b83aa40b\",\"name\":\"Falcon Branch Principal\",\"username\":\"FALCON-ADMIN\",\"email\":\"admin@falconacademy.com\",\"phone\":\"0300-1234567\",\"avatarUrl\":null,\"role\":\"ADMIN\",\"isActive\":true,\"schoolId\":\"626e87d5-1581-4218-892c-6c1bdfeaff26\",\"organizationId\":\"61c4efac-a2ca-4e91-a7a0-75e64716a4ac\",\"createdAt\":\"2026-09-02T06:00:17.671Z\",\"branchAccess\":[],\"blockedReason\":null,\"blockedAt\":null,\"blockedByName\":null,\"school\":{\"id\":\"626e87d5-1581-4218-892c-6c1bdfeaff26\",\"name\":\"Falcon Academy — Gulshan Campus\",\"code\":\"GULSHAN-01\",\"status\":\"ACTIVE\",\"logoUrl\":null,\"themeColor\":null,\"attendanceStartTime\":\"07:45\",\"attendanceCutoffTime\":\"08:30\",\"attendanceAbsentTime\":\"10:00\",\"attendanceAlertTime\":\"09:30\"},\"organization\":{\"id\":\"61c4efac-a2ca-4e91-a7a0-75e64716a4ac\",\"name\":\"Falcon Academy Systems\",\"code\":\"FALCON-HQ\",\"slug\":\"falcon-hq\",\"status\":\"ACTIVE\",\"themeColor\":null,\"logoUrl\":null},\"schools\":[{\"id\":\"626e87d5-1581-4218-892c-6c1bdfeaff26\",\"name\":\"Falcon Academy — Gulshan Campus\",\"code\":\"GULSHAN-01\",\"status\":\"ACTIVE\"}]}"
+        },
+        {
+          "name": "refreshToken",
+          "value": "ad226d8cef2a343491ac8e73d608f15ba28c67e0b189775498077e7fc35b21e4e1a465ac763383f634bf1918365da2f47e55982a22c0b6fc5832f2ebe2bccb96"
+        }
+      ]
+    }
+  ]
+}

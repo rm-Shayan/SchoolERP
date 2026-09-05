@@ -5,7 +5,7 @@ import { useAppSelector } from '@/store/hooks';
 import { staffService } from '@/lib/api';
 import type { User } from '@/types';
 import { Modal, Input, Select, Button } from '@/features/shared/components';
-import { getRoleLabel, useForm, composeValidators, required, isPhonePK } from '@/lib/utils';
+import { getRoleLabel, useForm, required, isPhonePK } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import StaffAssignmentManager from './StaffAssignmentManager';
 import StaffPasswordReset from './parts/StaffPasswordReset';
@@ -20,18 +20,17 @@ interface StaffEditModalProps {
 }
 
 export default function StaffEditModal({ open, member, onClose, onUpdated }: StaffEditModalProps) {
-  const { user, school } = useAppSelector((s) => s.auth);
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
-  const schoolId = school?.id ?? user?.schoolId;
+  const schoolId = useAppSelector((s) => s.auth.school?.id ?? s.auth.user?.schoolId);
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const { values, errors, isSubmitting, handleChange, handleBlur, handleSubmit } = useForm({
-    initialValues: { name: member.name, phone: member.phone ?? '', role: member.role },
+    initialValues: { name: member.name, phone: member.phone ?? '', role: member.role, email: member.email },
     validators: {
       name: required('Full name is required'),
       phone: isPhonePK(),
       role: required('Role is required'),
+      email: required('Email is required'),
     },
     onSubmit: async (v) => {
       try {
@@ -39,6 +38,7 @@ export default function StaffEditModal({ open, member, onClose, onUpdated }: Sta
           name: (v.name as string).trim(),
           phone: (v.phone as string).trim() || undefined,
           role: v.role as string,
+          email: (v.email as string).trim(),
         });
         toast.success('Staff member updated');
         onUpdated();
@@ -92,9 +92,16 @@ export default function StaffEditModal({ open, member, onClose, onUpdated }: Sta
           options={ROLES.map((r) => ({ value: r, label: getRoleLabel(r) }))}
           value={values.role as string}
           onChange={handleChange}
-          disabled={!isSuperAdmin}
         />
-        <Input label="Email" value={member.email} disabled />
+        <Input
+          label="Email"
+          name="email"
+          type="email"
+          value={(values.email as string) ?? member.email}
+          onChange={handleChange}
+          onBlur={() => handleBlur('email')}
+          error={errors.email}
+        />
 
         {(values.role as string) === 'TEACHER' && schoolId && (
           <StaffAssignmentManager teacherId={member.id} schoolId={schoolId} />

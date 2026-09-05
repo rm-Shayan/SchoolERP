@@ -11,11 +11,12 @@ interface BranchCardProps {
   school: School;
   deleting: boolean;
   onDelete: (school: School) => void;
+  onEdit: (school: School) => void;
   onBlock: (school: School) => void;
   onUnblock: (school: School) => void;
 }
 
-function BranchCardBase({ school, deleting, onDelete, onBlock, onUnblock }: BranchCardProps) {
+function BranchCardBase({ school, deleting, onDelete, onEdit, onBlock, onUnblock }: BranchCardProps) {
   const blocked = school.status === 'BLOCKED';
   return (
     <Link href={`/admin/organizations/${school.organizationId}/schools/${school.id}`} className="group/card">
@@ -26,7 +27,7 @@ function BranchCardBase({ school, deleting, onDelete, onBlock, onUnblock }: Bran
             <div className="flex items-center gap-3 min-w-0">
               <div className="group-hover/card:scale-105 transition-transform duration-300">
                 <Logo
-                  src={school.organization?.logoUrl}
+                  src={school.logoUrl || school.organization?.logoUrl}
                   name={school.organization?.name ?? school.name}
                   size="sm"
                   className="shrink-0"
@@ -47,21 +48,37 @@ function BranchCardBase({ school, deleting, onDelete, onBlock, onUnblock }: Bran
                 )}
               </div>
             </div>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onDelete(school);
-              }}
-              disabled={deleting}
-              className="rounded-xl p-1.5 text-white/55 transition-all hover:bg-white/10 hover:text-white disabled:opacity-50"
-              title="Delete Branch"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onEdit(school);
+                }}
+                className="rounded-xl p-1.5 text-white/55 transition-all hover:bg-white/10 hover:text-white"
+                title="Edit Branch"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDelete(school);
+                }}
+                disabled={deleting}
+                className="rounded-xl p-1.5 text-white/55 transition-all hover:bg-white/10 hover:text-white disabled:opacity-50"
+                title="Delete Branch"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div className="mt-4 grid grid-cols-3 gap-2 text-center">

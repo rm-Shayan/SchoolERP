@@ -31,7 +31,11 @@ const TITLE_MAP = {
   STAFF_LEAVE: "Staff Leave Request",
   STAFF_ATTENDANCE: "Staff Attendance",
   ADMISSION: "Admission Update",
+  SCHOOL_CREATED: "Branch Created",
+  SCHOOL_DELETED: "Branch Deleted",
   SCHOOL_MODERATION: "Branch Status Changed",
+  ORG_CREATED: "Organization Created",
+  ORG_DELETED: "Organization Deleted",
   ORG_MODERATION: "Organization Status Changed",
   GENERAL: "Notification",
 };
@@ -127,7 +131,11 @@ class PortalNotificationService {
           { schoolId: user.schoolId },
         ];
       } else {
-        where.OR = [{ recipientId: user.id }, { recipientId: null, schoolId: user.schoolId }];
+        where.OR = [
+          { recipientId: user.id },
+          { recipientId: null, schoolId: user.schoolId },
+          { recipientId: null, schoolId: null, organizationId: user.organizationId || null },
+        ];
       }
     } else if (schoolId) {
       where.schoolId = schoolId;
@@ -159,7 +167,7 @@ class PortalNotificationService {
     if (user.role === "SUPER_ADMIN") {
       if (schoolId) where.schoolId = schoolId;
       else if (organizationId) where.organizationId = organizationId;
-      where.senderId = { not: user.id };
+      // Super admin apne khud ke actions ke notifications bhi dekh sakta hai
     } else if (user.role === "ADMIN") {
       where.OR = [
         { recipientId: user.id },

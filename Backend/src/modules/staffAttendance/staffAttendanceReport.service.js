@@ -30,6 +30,7 @@ export const getDailyReport = async (schoolId, dateStr) => {
     late: records.filter((r) => r.status === "LATE").length,
     absent: records.filter((r) => r.status === "ABSENT").length,
     leave: records.filter((r) => r.status === "LEAVE").length,
+    halfDay: records.filter((r) => r.status === "HALF_DAY").length,
     unmarked: allStaff.length - records.length,
   };
 
@@ -56,7 +57,7 @@ export const getMonthlyReport = async (schoolId, year, month) => {
     if (!byStaff[r.staffId]) {
       byStaff[r.staffId] = {
         staff: r.staff,
-        days: { PRESENT: 0, LATE: 0, ABSENT: 0, LEAVE: 0, MANUAL_OVERRIDE: 0 },
+        days: { PRESENT: 0, LATE: 0, ABSENT: 0, LEAVE: 0, HALF_DAY: 0, MANUAL_OVERRIDE: 0 },
         total: 0,
       };
     }

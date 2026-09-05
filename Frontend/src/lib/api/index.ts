@@ -33,3 +33,4 @@ export { storageSettingsService } from './storageSettingsService';
 export { leaveService } from './leaveService';
 export { staffLeaveService } from './staffLeaveService';
 export { staffAttendanceService } from './staffAttendanceService';
+export { studyMaterialService } from './studyMaterialService';

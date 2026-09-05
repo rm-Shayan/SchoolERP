@@ -36,7 +36,7 @@ export const manualOverrideSchema = z.object({
   body: z.object({
     studentId: z.string().uuid("Invalid student ID"),
     date: z.string().min(1, "Date is required (YYYY-MM-DD)"),
-    status: z.enum(["PRESENT", "LATE", "ABSENT", "LEAVE", "MANUAL_OVERRIDE"]),
+    status: z.enum(["PRESENT", "LATE", "ABSENT", "LEAVE", "HALF_DAY", "MANUAL_OVERRIDE"]),
     remarks: z.string().optional(),
   }),
 });
@@ -48,7 +48,7 @@ export const bulkSectionAttendanceSchema = z.object({
     records: z.array(
       z.object({
         studentId: z.string().uuid("Invalid student ID"),
-        status: z.enum(["PRESENT", "LATE", "ABSENT", "LEAVE"]),
+        status: z.enum(["PRESENT", "LATE", "ABSENT", "LEAVE", "HALF_DAY"]),
         remarks: z.string().optional(),
       })
     ).min(1, "At least one student record is required"),
@@ -57,7 +57,7 @@ export const bulkSectionAttendanceSchema = z.object({
 
 export const updateAttendanceRecordSchema = z.object({
   body: z.object({
-    status: z.enum(["PRESENT", "LATE", "ABSENT", "LEAVE", "MANUAL_OVERRIDE"]).optional(),
+    status: z.enum(["PRESENT", "LATE", "ABSENT", "LEAVE", "HALF_DAY", "MANUAL_OVERRIDE"]).optional(),
     remarks: z.string().optional(),
   }),
 });
@@ -68,7 +68,7 @@ export const markStaffAttendanceSchema = z.object({
     records: z.array(
       z.object({
         userId: z.string().uuid("Invalid user/staff ID"),
-        status: z.enum(["PRESENT", "LATE", "ABSENT", "LEAVE"]),
+        status: z.enum(["PRESENT", "LATE", "ABSENT", "LEAVE", "HALF_DAY"]),
         remarks: z.string().optional(),
       })
     ).min(1, "At least one staff record is required"),

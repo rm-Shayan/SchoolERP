@@ -100,6 +100,7 @@ karte hain — parent apne bachon ke liye, student khud.
 | `/portal/attendance?month=&year=` | GET | daily records + month summary (P/L/A/L count, %) | studentIds |
 | `/portal/fees` | GET | fee records + year summary (totalCharged/Paid/outstanding) | studentIds |
 | `/portal/homework` | GET | recent homework (limit 20, teacher-grouped) | sectionIds |
+| `/portal/study-material` | GET | study materials for child's sections (limit 50) | sectionIds |
 | `/portal/circulars` | GET | school circulars (audience PARENTS/ALL) | schoolId |
 | `/portal/results` | GET | published exam results (marksObtained/maxMarks) | studentIds |
 | `/portal/timetable` | GET | weekly timetable slots (day + time + subject + teacher) | sectionIds |
@@ -160,6 +161,7 @@ ParentPortalPage (client component)
 | Attendance | `AttendanceTab` | `/portal/attendance` | Calendar heat-strip + month stats + live feed |
 | Fees | `FeesTab` | `/portal/fees` | Fee records (expandable cards) + payment history + summary cards |
 | Homework | `HomeworkTab` | `/portal/homework` | Teacher-grouped cards + socket events |
+| Materials | `StudyMaterialsTab` | `/portal/study-material` | Study materials list with type badges |
 | Notices | `NoticesTab` | `/portal/circulars` | Circular cards + socket events |
 | Results | `ResultsTab` | `/portal/results` | Exam-wise marks table |
 | Timetable | `TimetableTab` | `/portal/timetable` | Weekly grid (day → slots) |

@@ -9,6 +9,7 @@ import { PageHeader, Button, Card, CardContent, EmptyState, Badge } from '@/feat
 import { ListSkeleton } from '@/features/shared/components';
 import toast from 'react-hot-toast';
 import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import PTMForm from './parts/PTMForm';
 import PTMSessionCard from './parts/PTMSessionCard';
 import PTMFilterBar from './parts/PTMFilterBar';
@@ -17,6 +18,7 @@ type Tab = 'upcoming' | 'past';
 
 export default function PTMSessionsPage() {
   const { user, school } = useAppSelector((s) => s.auth);
+  const { isReadOnly } = useRoleAccess();
   const schoolId = school?.id ?? user?.schoolId;
   const [sessions, setSessions] = useState<PTMEvent[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
@@ -74,7 +76,7 @@ export default function PTMSessionsPage() {
       <PageHeader
         title="Parent-Teacher Meetings"
         description="Schedule PTM sessions — parents will be notified automatically."
-        actions={<Button size="sm" className="shadow-lg shadow-primary-500/20" onClick={() => { setEditing(null); setShowForm(true); }}>Schedule PTM</Button>}
+        actions={!isReadOnly && <Button size="sm" className="shadow-lg shadow-primary-500/20" onClick={() => { setEditing(null); setShowForm(true); }}>Schedule PTM</Button>}
       />
       <PTMForm key={editing?.id ?? 'new'} open={showForm} schoolId={schoolId ?? ''} school={school} classes={classes} session={editing}
         onClose={() => { setShowForm(false); setEditing(null); }}
@@ -104,7 +106,7 @@ export default function PTMSessionsPage() {
           description={tab === 'upcoming' ? 'Schedule a new PTM session to notify parents.' : 'Previously conducted PTM sessions will appear here.'} /></CardContent></Card>
       ) : (
         <div className="space-y-3">
-          {active.map((s) => <PTMSessionCard key={s.id} session={s} onEdit={(sess) => { setEditing(sess); setShowForm(true); }} onDelete={remove} />)}
+          {active.map((s) => <PTMSessionCard key={s.id} session={s} onEdit={isReadOnly ? undefined : (sess) => { setEditing(sess); setShowForm(true); }} onDelete={isReadOnly ? undefined : remove} />)}
         </div>
       )}
     </div>

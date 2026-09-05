@@ -56,6 +56,13 @@ router.get(
   organizationController.overview
 );
 
+// ─── HEALTH AUDIT (must be before /:id to avoid route conflict) ─────────
+router.get(
+  "/health",
+  ...adminOnly,
+  organizationController.health
+);
+
 // ─── EXPORT (must be before /:id to avoid route conflict) ────────────────
 router.get(
   "/export",

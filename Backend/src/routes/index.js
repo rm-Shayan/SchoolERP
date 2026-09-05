@@ -26,6 +26,7 @@ import storageSettingsRoutes from "../modules/storageSettings/storageSettings.ro
 import staffLeaveRoutes from "../modules/staffLeave/staffLeave.routes.js";
 import staffAttendanceRoutes from "../modules/staffAttendance/staffAttendance.routes.js";
 import documentsRoutes from "../modules/documents/documents.routes.js";
+import studyMaterialRoutes from "../modules/studyMaterial/studyMaterial.routes.js";
 
 const router = Router();
 
@@ -56,5 +57,6 @@ router.use("/storage", storageSettingsRoutes);
 router.use("/staff-leave", staffLeaveRoutes);
 router.use("/staff-attendance", staffAttendanceRoutes);
 router.use("/documents", documentsRoutes);
+router.use("/study-material", studyMaterialRoutes);
 
 export default router;

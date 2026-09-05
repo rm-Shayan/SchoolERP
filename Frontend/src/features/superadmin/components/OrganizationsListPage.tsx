@@ -1,93 +1,86 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { PageHeader, Button, ConfirmDialog, StatsCard, Pagination } from '@/features/shared/components';
+import { PageHeader, ConfirmDialog, Pagination, Button } from '@/features/shared/components';
 import Skeleton from './parts/Skeleton';
 import Breadcrumbs from './parts/Breadcrumbs';
-import StatusFilterChips from './parts/StatusFilterChips';
-import OrgsSearch from './parts/OrgsSearch';
 import OrgsGrid from './parts/OrgsGrid';
 import OrganizationsTable from './parts/OrganizationsTable';
 import BlockReasonDialog from './parts/BlockReasonDialog';
 import CreateOrganization from './CreateOrganization';
-import OrgsToolbar from './parts/OrgsToolbar';
+import OrgsStatsBar from './parts/OrgsStatsBar';
+import OrgsBottomSection from './parts/OrgsBottomSection';
 import { useOrganizationsPage, ORGS_PAGE_SIZE, type OrgViewMode } from './parts/useOrganizationsPage';
 
 export default function OrganizationsListPage() {
   const {
-    overview,
-    loading,
-    search,
-    setSearch,
-    statusFilter,
-    setStatusFilter,
-    view,
-    setView,
-    filtered,
-    pageItems,
-    totalPages,
-    page,
-    setPage,
-    chipOptions,
-    exporting,
-    handleExport,
-    blockTarget,
-    setBlockTarget,
-    unblockTarget,
-    setUnblockTarget,
-    busy,
-    confirmBlock,
-    confirmUnblock,
-    reload,
+    overview, loading, search, setSearch,
+    view, setView, filtered, pageItems, totalPages, page, setPage,
+    exporting, handleExport, blockTarget, setBlockTarget,
+    unblockTarget, setUnblockTarget, busy, confirmBlock, confirmUnblock, reload,
   } = useOrganizationsPage();
   const [createOpen, setCreateOpen] = useState(false);
 
-  const setMode = useCallback(
-    (mode: OrgViewMode) => setView(mode),
-    [setView]
-  );
+  const setMode = useCallback((mode: OrgViewMode) => setView(mode), [setView]);
   if (loading) return <Skeleton />;
-  const stats = overview?.stats;
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-5">
       <Breadcrumbs items={[{ label: 'Dashboard', to: '/admin/dashboard' }, { label: 'Organizations' }]} />
-      <PageHeader
-        title="Organizations"
-        description="Manage all tenant organizations and their branches."
-        actions={
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-            <div className="grid grid-cols-2 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-              {(['grid', 'table'] as OrgViewMode[]).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setMode(mode)}
-                  className={`rounded-lg px-4 py-2 text-xs font-semibold capitalize transition-colors ${
-                    view === mode ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-500 hover:bg-primary-50 hover:text-primary-700'
-                  }`}
-                >
-                  {mode}
-                </button>
-              ))}
+
+      {/* Hero header */}
+      <div className="rounded-2xl border border-gray-200/60 bg-white shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-violet-600 via-primary-600 to-indigo-600 px-5 py-5 sm:px-8 sm:py-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-white sm:text-2xl">Organizations</h1>
+              <p className="mt-1 text-sm text-violet-100">Manage all tenant organizations and their branches.</p>
             </div>
-            <OrgsToolbar exporting={exporting} onExport={handleExport} onCreate={() => setCreateOpen(true)} />
+            <div className="flex items-center gap-2">
+              <div className="grid grid-cols-2 rounded-lg bg-white/15 p-0.5 backdrop-blur-sm">
+                {(['grid', 'table'] as OrgViewMode[]).map((mode) => (
+                  <button key={mode} type="button" onClick={() => setMode(mode)}
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold capitalize transition-all ${view === mode ? 'bg-white text-violet-700 shadow-sm' : 'text-white/80 hover:text-white hover:bg-white/10'}`}>
+                    {mode === 'grid' ? (
+                      <svg className="w-3.5 h-3.5 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                    ) : (
+                      <svg className="w-3.5 h-3.5 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                    )}
+                    {mode}
+                  </button>
+                ))}
+              </div>
+              <Button variant="outline" size="sm" onClick={handleExport} loading={exporting}
+                className="bg-white/15 border-white/20 text-white hover:bg-white/25 hover:text-white backdrop-blur-sm">
+                <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                Export
+              </Button>
+              <Button size="sm" onClick={() => setCreateOpen(true)}
+                className="bg-white text-violet-700 hover:bg-violet-50 border-0 shadow-sm">
+                <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                New Org
+              </Button>
+            </div>
           </div>
-        }
-      />
+        </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatsCard title="Organizations" value={stats?.totalOrganizations ?? 0} icon={OrgIcon} tint="bg-primary-50 text-primary-700" />
-        <StatsCard title="Branches" value={stats?.totalSchools ?? 0} icon={BranchIcon} tint="bg-sky-50 text-sky-700" />
-        <StatsCard title="Students" value={stats?.totalStudents ?? 0} icon={StudentIcon} tint="bg-emerald-50 text-emerald-700" />
-        <StatsCard title="Total Revenue" value={fmtRev(stats?.totalRevenue ?? 0)} icon={RevenueIcon} tint="bg-amber-50 text-amber-700" />
+        {/* Stats row */}
+        <OrgsStatsBar stats={overview?.stats} />
+
+        {/* Search */}
+        <div className="px-5 py-3 sm:px-8 border-t border-gray-100">
+          <div className="relative max-w-sm">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" placeholder="Search organizations…" value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2 pl-9 pr-4 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 transition-all" />
+          </div>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-        <StatusFilterChips options={chipOptions} value={statusFilter} onChange={setStatusFilter} />
-        <OrgsSearch value={search} onChange={setSearch} />
-      </div>
-
+      {/* Main content */}
       {view === 'grid' ? (
         <OrgsGrid orgs={pageItems} search={search} blocking={busy} onBlock={setBlockTarget} onUnblock={setUnblockTarget} />
       ) : (
@@ -96,47 +89,16 @@ export default function OrganizationsListPage() {
 
       <Pagination page={page} totalPages={totalPages} total={filtered.length} pageSize={ORGS_PAGE_SIZE} onPageChange={setPage} />
 
-      <BlockReasonDialog
-        open={blockTarget !== null}
-        title="Block organization"
+      {/* Bottom section */}
+      <OrgsBottomSection overview={overview} />
+
+      <BlockReasonDialog open={blockTarget !== null} title="Block organization"
         message={blockTarget ? `Blocking ${blockTarget.name} will lock out every branch, admin, staff, student, and parent.` : ''}
-        loading={busy}
-        onConfirm={confirmBlock}
-        onCancel={() => setBlockTarget(null)}
-      />
-      <ConfirmDialog
-        open={unblockTarget !== null}
-        title="Unblock organization"
+        loading={busy} onConfirm={confirmBlock} onCancel={() => setBlockTarget(null)} />
+      <ConfirmDialog open={unblockTarget !== null} title="Unblock organization"
         message={unblockTarget ? `Restore access for ${unblockTarget.name} and all its branches?` : ''}
-        confirmLabel="Unblock"
-        variant="primary"
-        loading={busy}
-        onConfirm={confirmUnblock}
-        onCancel={() => setUnblockTarget(null)}
-      />
+        confirmLabel="Unblock" variant="primary" loading={busy} onConfirm={confirmUnblock} onCancel={() => setUnblockTarget(null)} />
       <CreateOrganization open={createOpen} onClose={() => setCreateOpen(false)} onCreated={reload} />
     </div>
   );
 }
-
-const OrgIcon = (
-  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-  </svg>
-);
-const BranchIcon = (
-  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-  </svg>
-);
-const StudentIcon = (
-  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-  </svg>
-);
-const RevenueIcon = (
-  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
-const fmtRev = (n: number) => `Rs ${Number(n ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;

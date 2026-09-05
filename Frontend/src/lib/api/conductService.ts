@@ -25,7 +25,7 @@ export interface ConductRemarkListResponse {
 }
 
 export const conductService = {
-  // POST /conduct/remarks — ACADEMIC
+  // POST /conduct/remarks — ACADEMIC (ADMIN optional teacherId = on-behalf author)
   create: async (data: {
     studentId: string;
     type: RemarkType;
@@ -33,6 +33,7 @@ export const conductService = {
     comment?: string;
     description?: string;
     date?: string;
+    teacherId?: string;
   }): Promise<ConductRemark> => {
     const res = await api.post<ApiResponse<ConductRemark>>('/conduct/remarks', {
       ...data,

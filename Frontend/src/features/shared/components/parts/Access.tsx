@@ -21,8 +21,8 @@ export default function Access() {
           <Link href="/login" className="inline-flex items-center justify-center rounded-full bg-white px-7 py-3.5 text-base font-bold text-primary-800 shadow-xl shadow-black/10 transition-all duration-200 hover:shadow-2xl hover:brightness-105">
             School &amp; staff sign in
           </Link>
-          <Link href="/parent/login" className="inline-flex items-center justify-center rounded-full border-2 border-white/30 px-7 py-3.5 text-base font-bold text-white backdrop-blur-sm transition-all duration-200 hover:border-white/50 hover:bg-white/10">
-            Parent sign in
+          <Link href="/login" className="inline-flex items-center justify-center rounded-full border-2 border-white/30 px-7 py-3.5 text-base font-bold text-white backdrop-blur-sm transition-all duration-200 hover:border-white/50 hover:bg-white/10">
+            Parent &amp; student sign in
           </Link>
         </div>
         <p className="mt-6 text-sm text-primary-200/80">

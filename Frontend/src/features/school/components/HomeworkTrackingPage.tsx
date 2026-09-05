@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
-import { academicService, homeworkService } from '@/lib/api';
+import { homeworkService } from '@/lib/api';
 import type { Homework } from '@/lib/api/homeworkService';
 import {
   PageHeader, Card, EmptyState, Select, Button, CardGridSkeleton, ConfirmDialog,

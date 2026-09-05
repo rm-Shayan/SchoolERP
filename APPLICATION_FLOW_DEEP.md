@@ -62,9 +62,7 @@ Express Backend (port 3000, ESM)
 | `SUPER_ADMIN` | **Sirf AAP — platform owner.** `organizationId = null`, seed se banta hai, ek hi hoga | Seed script (`superadmin@schoolerp.com`) |
 | `ADMIN` | Branch Head / Principal — jis branch ko aap system dete hain uska "owner" | Org create par (default branch ka), ya branch create par "naya principal" (har branch ka apna) |
 | `TEACHER` | Class Teacher | Staff create / import |
-| `GATE_STAFF` | Gate / QR Scanner | Staff create / import |
-| `ACCOUNTANT` | Fee & Finance | Staff create / import |
-| `RECEPTIONIST` | Front Desk / Admissions | Staff create / import |
+| `RECEPTIONIST` | Front Desk — admissions + gate + student records | Staff create / import |
 
 > **✅ Ye wala org-level concept ab REMOVE ho chuka hai:** pehle ek "Wahi admin manage
 > kare" mode tha jo ek Principal ko promotion de kar saari branches ka access deta tha
@@ -73,20 +71,20 @@ Express Backend (port 3000, ESM)
 
 **Role groups (RBAC guards in routes):**
 ```
-ALL_STAFF      = SUPER_ADMIN, ADMIN, TEACHER, GATE_STAFF, ACCOUNTANT, RECEPTIONIST   (read sab)
+ALL_STAFF      = SUPER_ADMIN, ADMIN, TEACHER, RECEPTIONIST                    (read sab)
 MANAGEMENT     = SUPER_ADMIN, ADMIN                 (branch admin kaam: create/update/delete)
 ORG_LEVEL      = SUPER_ADMIN                        (sirf platform owner)
 USER_MANAGERS  = SUPER_ADMIN, ADMIN                 (staff accounts)
-FINANCE        = SUPER_ADMIN, ADMIN, ACCOUNTANT     (fees)
+FINANCE        = SUPER_ADMIN, ADMIN                 (fees)
 ACADEMIC       = SUPER_ADMIN, ADMIN, TEACHER        (homework, exams, conduct, timetable)
-ATTENDANCE     = SUPER_ADMIN, ADMIN, GATE_STAFF, TEACHER
+ATTENDANCE     = SUPER_ADMIN, ADMIN, RECEPTIONIST, TEACHER
 ADMISSIONS     = SUPER_ADMIN, ADMIN, RECEPTIONIST
-BRANCH_STAFF   = ADMIN, TEACHER, GATE_STAFF, ACCOUNTANT, RECEPTIONIST
+BRANCH_STAFF   = ADMIN, TEACHER, RECEPTIONIST
 ```
 
 **Admin bana kya kar sakta hai (`CREATABLE_ROLES_BY` in auth.service.js):**
-- Aap (SUPER_ADMIN, platform) → ADMIN, TEACHER, GATE_STAFF, ACCOUNTANT, RECEPTIONIST bana sakte hain
-- School ka ADMIN (Principal) → sirf TEACHER, GATE_STAFF, ACCOUNTANT, RECEPTIONIST (apni branch mein)
+- Aap (SUPER_ADMIN, platform) → ADMIN, TEACHER, RECEPTIONIST bana sakte hain
+- School ka ADMIN (Principal) → sirf TEACHER, RECEPTIONIST (apni branch mein)
 
 ---
 
@@ -144,9 +142,8 @@ else if (email)                → findByEmail(email)          // platform admin
 
 ```js
 SUPER_ADMIN (aap, org null)   → /admin/dashboard    ← platform console
-ADMIN / ACCOUNTANT / RECEPTIONIST → /branch/dashboard
+ADMIN / RECEPTIONIST            → /branch/dashboard
 TEACHER                       → /teacher/dashboard
-GATE_STAFF                    → /gate
 ```
 
 ### 3.5 `/auth/me` — profile data
@@ -594,11 +591,16 @@ gate live view, import progress sab live update hote hain.
 | "2nd branch par naya admin kaise?" | Branch create par **"Naya Principal banao"** (default/recommended) — naya ADMIN + uski apni credentials email |
 | "2nd branch wahi admin manage kare?" | Ab **ye option nahi hai** — "Wahi admin manage kare" (org-level handover) REMOVE ho chuka hai. Har branch ka apna ADMIN (Principal) hota hai. Agar pehla principal nayi branch bhi manage kare, to usse wahan naye principal ke roop mein re-assign karein |
 | "Staff login par password kya hota hai?" | Diya gaya password; **imported staff jinka password set nahi** → school code hi default password (case-insensitive fallback). **Ab portal password bhi accept hota hai** — individual bcrypt → portal password → school code |
+| "Parent portal mein kitne bachche dikhenge?" | Saare linked children (siblings) — sibling selector se switch. Student portal mein sirf khud ka data |
+| "Portal login kaise hota hai?" | 2 tarike: (1) Direct — school code + phone/roll + portal password, (2) OTP — WhatsApp par OTP. Dono 30-day JWT dete hain |
+| "Portal ka shared password kya hai?" | Default = school code. Branch admin Settings → Portal Access se custom set kar sakta hai |
+| "Portal mein kaun kaun si cheezein dikhengi?" | 14 tabs: overview, attendance, fees, homework, materials, notices, results, exams, timetable, conduct, PTM, leave, notifications, profile |
+| "Portal routes kaise kaam karte hain?" | Saare `/portal/*` routes `authenticateAnyPortal` middleware use karte hain — parent ya student JWT dono accept hote hain |
 | "Org 'Not delivered' kab 'Delivered'?" | **Pehli baar Principal ke login karne par** (SETUP_PENDING → ACTIVE, `markDeliveredOnLogin`). Blocked rehne tak kabhi nahi |
 | "Branch block par kya hota hai?" | Us branch ke users lock + org PARTIALLY_BLOCKED + us branch ke sessions revoke |
 | "Org block par?" | Poori school (saari branches) cascade BLOCKED + sab roles lock + poore org ke sessions revoke — matlab "system band" |
 | "Blocked user ko kya dikhta hai?" | Standard message (har jagah same): "Admin deactivated your portal. Please contact admin of this system." |
-| "Branch admin (Principal) kise block kar sakta hai?" | Apni branch ke TEACHER/GATE_STAFF/ACCOUNTANT/RECEPTIONIST. **Kisi doosre ADMIN ko nahi, SUPER_ADMIN (aap) ko nahi, khud ko nahi** |
+| "Branch admin (Principal) kise block kar sakta hai?" | Apni branch ke TEACHER/RECEPTIONIST. **Kisi doosre ADMIN ko nahi, SUPER_ADMIN (aap) ko nahi, khud ko nahi** |
 | "Org delete par admin account?" | **Aapka (platform SUPER_ADMIN) account kabhi delete nahi hota** — detach hokar bach jata hai (organizationId null). Baaki sab (Principal included) cascade delete |
 | "Email kyun nahi jati jab khud banata hun?" | Self-designation rule — apni hi email par credentials email skip |
 | "Ek hi login se 2 branches kaise?" | Ab possible nahi — koi org-level admin nahi hai. Har branch ka apna ADMIN (Principal) hota hai, apna login/apna access. Branch switcher frontend se bhi hata diya gaya hai |
@@ -608,13 +610,16 @@ gate live view, import progress sab live update hote hain.
 
 ## 14. Quick References
 
-**API surface (164 routes)** — `API_ROUTES.md` mein full table. Key groups:
-- Auth (24): login, refresh, me, logout(-all), change-password, users CRUD, parent/student OTP + direct login
-- Organizations (11), Schools (11) — SUPER_ADMIN / MANAGEMENT (incl. export, branding, logo)
-- Academic (22) — years/terms/classes/sections/subjects
-- Students (8), Admissions (9), Fees (11), Attendance (9), Homework (4), Exams (7),
-  Conduct (4), Circulars (4), PTM (5), Timetable (6), Activities (5), Notifications (2),
-  Moderation (10), Audit (1), Promotions (7), Substitutes (4)
+**API surface (312 routes)** — `API_ROUTES.md` mein full table. Key groups:
+- Auth (34): login, refresh, me, logout(-all), change-password, users CRUD, parent/student OTP + direct login, switch-branch, assign-branch
+- Organizations (13), Schools (15) — SUPER_ADMIN / MANAGEMENT (incl. export, branding, logo, portal-password)
+- Academic (26) — years/terms/classes/sections/subjects
+- Students (11), Admissions (16), Fees (27), Attendance (18), Homework (5), Exams (10),
+  Conduct (8), Circulars (4), PTM (5), Timetable (12), Activities (5), Notifications (8),
+  Moderation (10), Audit (2), Promotions (7), Leave (7), Teaching Assignments (5)
+- **Portal (15)** — parent/student dashboard routes (overview, attendance, fees, homework, materials, notices, results, exams, timetable, conduct, PTM, leave, study-material, timetable-pdf, exam-date-sheet)
+- SMTP (4), Storage (3), Staff Leave (8), Staff Attendance (11), Documents (5), Study Material (5)
+- Infra (3): `/health`, `/ready`, `/metrics`
 
 **Admin console pages (current):** Dashboard, Organizations (+ create/detail), Branches,
 Users (**+ Create User**), Import Data, Activity Log, **Notifications** (delivery logs),

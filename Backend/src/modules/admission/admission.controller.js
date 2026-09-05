@@ -163,6 +163,15 @@ class AdmissionController {
   });
 
   /**
+   * POST /api/v1/admissions/:id/send-slip
+   * Regenerate the admission slip PDF and send it to the parent.
+   */
+  sendSlip = asyncHandler(async (req, res) => {
+    const result = await admissionService.sendSlip(req.user, req.params.id);
+    return res.status(200).json(ApiResponse.ok("Slip sent to parent", result));
+  });
+
+  /**
    * GET /api/v1/admissions/:id
    * Get single applicant.
    */

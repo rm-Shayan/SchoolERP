@@ -9,9 +9,11 @@ import { AUDIENCE_ICON } from './parts/audienceMeta';
 import CircularFormModal from './parts/CircularFormModal';
 import CircularItem from './parts/CircularItem';
 import toast from 'react-hot-toast';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 
 export default function CircularsPage() {
   const { user, school } = useAppSelector((s) => s.auth);
+  const { isReadOnly } = useRoleAccess();
   const schoolId = school?.id ?? user?.schoolId;
   const [circulars, setCirculars] = useState<Circular[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,7 +69,7 @@ export default function CircularsPage() {
       <PageHeader
         title="Circulars"
         description="Create announcements for parents, teachers, or the whole school."
-        actions={<Button onClick={() => setShowCreate(true)}>+ New Circular</Button>}
+        actions={!isReadOnly && <Button onClick={() => setShowCreate(true)}>+ New Circular</Button>}
       />
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
@@ -85,12 +87,12 @@ export default function CircularsPage() {
               icon={AUDIENCE_ICON.ALL}
               title="No circulars yet"
               description="Publish your first announcement — parents and teachers will see it instantly."
-              action={<Button onClick={() => setShowCreate(true)}>+ New Circular</Button>}
+              action={!isReadOnly && <Button onClick={() => setShowCreate(true)}>+ New Circular</Button>}
             />
           ) : (
             <ul className="space-y-3">
               {circulars.map((c) => (
-                <CircularItem key={c.id} circular={c} deleting={deletingId === c.id} onDelete={setDeleting} />
+                <CircularItem key={c.id} circular={c} deleting={deletingId === c.id} onDelete={isReadOnly ? undefined : setDeleting} />
               ))}
             </ul>
           )}

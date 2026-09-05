@@ -22,45 +22,45 @@ router.post(
   staffAttendanceController.scanCheckIn
 );
 
-// Admin: bulk mark attendance
+// Admin/branch staff: bulk mark attendance (AttendanceHub Staff tab)
 router.post(
   "/bulk",
-  authorize("ADMIN", "SUPER_ADMIN"),
+  authorize("ADMIN", "SUPER_ADMIN", "RECEPTIONIST"),
   staffAttendanceController.bulkMark
 );
 
-// Admin: daily report
+// Admin/branch staff: daily report
 router.get(
   "/daily",
-  authorize("ADMIN", "SUPER_ADMIN"),
+  authorize("ADMIN", "SUPER_ADMIN", "RECEPTIONIST"),
   staffAttendanceController.getDailyReport
 );
 
-// Admin: monthly report
+// Admin/branch staff: monthly report
 router.get(
   "/monthly",
-  authorize("ADMIN", "SUPER_ADMIN"),
+  authorize("ADMIN", "SUPER_ADMIN", "RECEPTIONIST"),
   staffAttendanceController.getMonthlyReport
 );
 
-// Admin: delete attendance record
+// Admin/branch staff: delete attendance record
 router.delete(
   "/:id",
-  authorize("ADMIN", "SUPER_ADMIN"),
+  authorize("ADMIN", "SUPER_ADMIN", "RECEPTIONIST"),
   staffAttendanceController.deleteAttendance
 );
 
-// Admin: update attendance record
+// Admin/branch staff: update attendance record
 router.put(
   "/:id",
-  authorize("ADMIN", "SUPER_ADMIN"),
+  authorize("ADMIN", "SUPER_ADMIN", "RECEPTIONIST"),
   staffAttendanceController.updateAttendance
 );
 
-// Admin: export attendance as Excel/CSV
+// Admin/branch staff: export attendance as Excel/CSV
 router.get(
   "/export",
-  authorize("ADMIN", "SUPER_ADMIN"),
+  authorize("ADMIN", "SUPER_ADMIN", "RECEPTIONIST"),
   staffAttendanceController.exportAttendance
 );
 

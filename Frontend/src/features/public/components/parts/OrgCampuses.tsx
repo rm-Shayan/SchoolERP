@@ -38,7 +38,7 @@ export default function OrgCampuses({ org, theme }: OrgCampusesProps) {
                 <div className="relative">
                   <div className="flex items-center gap-4">
                     <div className="rounded-2xl bg-gray-100 p-2.5 transition-transform duration-300 group-hover:scale-110">
-                      <Logo src={b.logoUrl} name={b.name} size="md" />
+                      <Logo src={b.logoUrl || org.logoUrl} name={b.name} size="md" />
                     </div>
                     <div className="min-w-0">
                       <h3 className="truncate font-bold text-gray-900">{b.name}</h3>

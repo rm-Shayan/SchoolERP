@@ -1,5 +1,4 @@
 import api from './client';
-import { cached, invalidate } from './serviceCache';
 import type { ApiResponse } from '@/types';
 
 export type PTMScope = 'WHOLE_SCHOOL' | 'CLASS_RANGE' | 'SECTIONS' | 'STUDENT';
@@ -31,20 +30,15 @@ function toBody(d: PTMPayload): Record<string, unknown> {
   };
 }
 
-const CACHE_TTL = 10_000;
-
 export const ptmService = {
   create: async (schoolId: string, data: PTMPayload): Promise<PTMEvent> => {
     const res = await api.post<ApiResponse<{ session: PTMEvent }>>(`/ptm/schools/${schoolId}`, toBody(data));
-    invalidate(`ptm:${schoolId}`);
     return res.data.data.session;
   },
 
   getBySchool: async (schoolId: string): Promise<PTMEvent[]> => {
-    return cached(`ptm:${schoolId}`, CACHE_TTL, async () => {
-      const res = await api.get<ApiResponse<{ items: PTMEvent[] }>>(`/ptm/schools/${schoolId}`);
-      return res.data.data.items;
-    });
+    const res = await api.get<ApiResponse<{ items: PTMEvent[] }>>(`/ptm/schools/${schoolId}`);
+    return res.data.data.items;
   },
 
   getById: async (id: string): Promise<PTMEvent> => {
@@ -55,12 +49,10 @@ export const ptmService = {
   update: async (id: string, data: Partial<PTMPayload> & { status?: PTMEvent['status'] }): Promise<PTMEvent> => {
     const body = { ...toBody(data as PTMPayload), status: data.status };
     const res = await api.patch<ApiResponse<PTMEvent>>(`/ptm/${id}`, body);
-    invalidate('ptm:');
     return res.data.data;
   },
 
   remove: async (id: string): Promise<void> => {
     await api.delete(`/ptm/${id}`);
-    invalidate('ptm:');
   },
 };

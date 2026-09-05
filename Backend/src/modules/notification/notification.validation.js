@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+const parseBool = z
+  .enum(["true", "false"])
+  .transform((v) => v === "true")
+  .or(z.boolean());
+
 export const getDeliveryStatusSchema = z.object({
   query: z.object({
     schoolId: z.string().uuid("Invalid schoolId").optional(),
@@ -23,7 +28,7 @@ export const listPortalSchema = z.object({
     schoolId: z.string().uuid().optional(),
     organizationId: z.string().uuid().optional(),
     category: z.string().optional(),
-    unreadOnly: z.coerce.boolean().optional(),
+    unreadOnly: parseBool.optional(),
     page: z.coerce.number().int().positive().optional(),
     pageSize: z.coerce.number().int().positive().max(100).optional(),
   }),

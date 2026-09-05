@@ -32,9 +32,9 @@ const portals = [
     ),
   },
   {
-    href: '/parent/login',
-    title: 'Parent Portal',
-    description: 'Parents sign in with School Code + school password to track attendance, fees, homework & notices.',
+    href: '/login',
+    title: 'Parent & Student Portal',
+    description: 'Parents & students sign in on the unified login with School Code + school password to track attendance, fees, homework & notices.',
     badge: 'School Password',
     iconBox: 'bg-amber-100 text-amber-700 group-hover:bg-amber-500 group-hover:text-white',
     border: 'hover:border-amber-300',

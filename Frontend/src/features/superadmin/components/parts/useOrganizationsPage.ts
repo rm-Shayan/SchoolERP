@@ -5,6 +5,7 @@ import { orgService, moderationService } from '@/lib/api';
 import type { OrganizationOverviewItem, PlatformOverview } from '@/types';
 import { downloadBlob } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { getSocket } from '@/lib/socket';
 
 const errMsg = (err: any, fallback: string) => err?.response?.data?.message || err?.message || fallback;
 
@@ -36,6 +37,17 @@ export function useOrganizationsPage() {
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  // Realtime: org created / delivered on login / blocked / unblocked / imported —
+  // overview_updated aata hai → list live refresh (Delivered pill update ho).
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+    const onUpdate = () => load();
+    socket.on('overview_updated', onUpdate);
+    socket.on('import_completed', onUpdate);
+    return () => { socket.off('overview_updated', onUpdate); socket.off('import_completed', onUpdate); };
   }, [load]);
 
   const allOrgs = useMemo(() => overview?.organizations ?? [], [overview]);
@@ -87,23 +99,17 @@ export function useOrganizationsPage() {
     }
   }, []);
 
-  const confirmBlock = useCallback(
-    async (reason: string) => {
-      if (!blockTarget) return;
-      setBusy(true);
-      try {
-        await moderationService.blockOrganization(blockTarget.id, reason);
-        toast.success(`${blockTarget.name} blocked`);
-        setBlockTarget(null);
-        await load();
-      } catch (err: any) {
-        toast.error(errMsg(err, 'Failed to block organization'));
-      } finally {
-        setBusy(false);
-      }
-    },
-    [blockTarget, load]
-  );
+  const confirmBlock = useCallback(async (reason: string) => {
+    if (!blockTarget) return;
+    setBusy(true);
+    try {
+      await moderationService.blockOrganization(blockTarget.id, reason);
+      toast.success(`${blockTarget.name} blocked`);
+      setBlockTarget(null);
+      await load();
+    } catch (err: any) { toast.error(errMsg(err, 'Failed to block organization')); }
+    finally { setBusy(false); }
+  }, [blockTarget, load]);
 
   const confirmUnblock = useCallback(async () => {
     if (!unblockTarget) return;
@@ -113,37 +119,14 @@ export function useOrganizationsPage() {
       toast.success(`${unblockTarget.name} unblocked`);
       setUnblockTarget(null);
       await load();
-    } catch (err: any) {
-      toast.error(errMsg(err, 'Failed to unblock organization'));
-    } finally {
-      setBusy(false);
-    }
+    } catch (err: any) { toast.error(errMsg(err, 'Failed to unblock organization')); }
+    finally { setBusy(false); }
   }, [unblockTarget, load]);
 
   return {
-    overview,
-    loading,
-    search,
-    setSearch,
-    statusFilter,
-    setStatusFilter,
-    page,
-    setPage,
-    totalPages,
-    pageItems,
-    view,
-    setView,
-    filtered,
-    chipOptions,
-    exporting,
-    handleExport,
-    blockTarget,
-    setBlockTarget,
-    unblockTarget,
-    setUnblockTarget,
-    busy,
-    confirmBlock,
-    confirmUnblock,
-    reload: load,
+    overview, loading, search, setSearch, statusFilter, setStatusFilter,
+    page, setPage, totalPages, pageItems, view, setView, filtered, chipOptions,
+    exporting, handleExport, blockTarget, setBlockTarget, unblockTarget, setUnblockTarget,
+    busy, confirmBlock, confirmUnblock, reload: load,
   };
 }

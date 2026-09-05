@@ -1,6 +1,5 @@
 import api from './client';
 import type { ApiResponse, AcademicYear } from '@/types';
-import { cached, invalidate } from './academicCache';
 export interface Term {
   id: string;
   academicYearId: string;
@@ -39,7 +38,6 @@ export interface SectionTemplate {
 export const academicService = {
   createYear: async (schoolId: string, data: { name: string; startDate: string; endDate: string }) => {
     const res = await api.post<ApiResponse<AcademicYear>>(`/academic/schools/${schoolId}/academic-years`, data);
-    invalidate(`years:${schoolId}`);
     return res.data.data;
   },
   getYear: async (id: string) => {
@@ -47,23 +45,18 @@ export const academicService = {
     return res.data.data;
   },
   getYearsBySchool: async (schoolId: string) => {
-    return cached(`years:${schoolId}`, async () => {
-      const res = await api.get<ApiResponse<AcademicYear[]>>(`/academic/schools/${schoolId}/academic-years`);
-      return res.data.data;
-    });
+    const res = await api.get<ApiResponse<AcademicYear[]>>(`/academic/schools/${schoolId}/academic-years`);
+    return res.data.data;
   },
   updateYear: async (id: string, data: Partial<{ name: string; startDate: string; endDate: string; isCurrent: boolean }>) => {
     const res = await api.patch<ApiResponse<AcademicYear>>(`/academic/academic-years/${id}`, data);
-    invalidate('years:');
     return res.data.data;
   },
   deleteYear: async (id: string) => {
     await api.delete(`/academic/academic-years/${id}`);
-    invalidate('years:');
   },
   createTerm: async (academicYearId: string, data: { name: string; startDate: string; endDate: string }) => {
     const res = await api.post<ApiResponse<Term>>(`/academic/academic-years/${academicYearId}/terms`, data);
-    invalidate('years:');
     return res.data.data;
   },
   getTerms: async (academicYearId: string) => {
@@ -72,13 +65,11 @@ export const academicService = {
   },
   updateTerm: async (id: string, data: Partial<{ name: string; startDate: string; endDate: string }>) => {
     const res = await api.patch<ApiResponse<Term>>(`/academic/terms/${id}`, data);
-    invalidate('years:');
     return res.data.data;
   },
-  deleteTerm: async (id: string) => { await api.delete(`/academic/terms/${id}`); invalidate('years:'); },
+  deleteTerm: async (id: string) => { await api.delete(`/academic/terms/${id}`); },
   createClass: async (schoolId: string, data: { name: string; code?: string; order: number }) => {
     const res = await api.post<ApiResponse<Class>>(`/academic/schools/${schoolId}/classes`, data);
-    invalidate(`classes:${schoolId}`);
     return res.data.data;
   },
   getClass: async (id: string) => {
@@ -86,20 +77,16 @@ export const academicService = {
     return res.data.data;
   },
   getClassesBySchool: async (schoolId: string) => {
-    return cached(`classes:${schoolId}`, async () => {
-      const res = await api.get<ApiResponse<Class[]>>(`/academic/schools/${schoolId}/classes`);
-      return res.data.data;
-    });
+    const res = await api.get<ApiResponse<Class[]>>(`/academic/schools/${schoolId}/classes`);
+    return res.data.data;
   },
   updateClass: async (id: string, data: Partial<{ name: string; code: string; order: number }>) => {
     const res = await api.patch<ApiResponse<Class>>(`/academic/classes/${id}`, data);
-    invalidate('classes:');
     return res.data.data;
   },
-  deleteClass: async (id: string) => { await api.delete(`/academic/classes/${id}`); invalidate('classes:'); },
+  deleteClass: async (id: string) => { await api.delete(`/academic/classes/${id}`); },
   createSection: async (classId: string, data: { name: string; capacity?: number; roomNumber?: string }) => {
     const res = await api.post<ApiResponse<Section>>(`/academic/classes/${classId}/sections`, data);
-    invalidate('classes:');
     return res.data.data;
   },
   getSectionsByClass: async (classId: string) => {
@@ -108,33 +95,27 @@ export const academicService = {
   },
   updateSection: async (id: string, data: Partial<{ name: string; capacity: number; roomNumber: string }>) => {
     const res = await api.patch<ApiResponse<Section>>(`/academic/sections/${id}`, data);
-    invalidate('classes:');
     return res.data.data;
   },
-  deleteSection: async (id: string) => { await api.delete(`/academic/sections/${id}`); invalidate('classes:'); },
+  deleteSection: async (id: string) => { await api.delete(`/academic/sections/${id}`); },
   getSectionTemplates: async (schoolId: string): Promise<SectionTemplate[]> => {
-    return cached(`templates:${schoolId}`, async () => {
-      const res = await api.get<ApiResponse<SectionTemplate[]>>(`/academic/schools/${schoolId}/section-templates`);
-      return res.data.data;
-    });
+    const res = await api.get<ApiResponse<SectionTemplate[]>>(`/academic/schools/${schoolId}/section-templates`);
+    return res.data.data;
   },
   createSectionTemplate: async (schoolId: string, data: { name: string }): Promise<SectionTemplate> => {
     const res = await api.post<ApiResponse<SectionTemplate>>(`/academic/schools/${schoolId}/section-templates`, data);
-    invalidate(`templates:${schoolId}`);
     return res.data.data;
   },
   updateSectionTemplate: async (id: string, data: Partial<{ name: string }>): Promise<SectionTemplate> => {
     const res = await api.patch<ApiResponse<SectionTemplate>>(`/academic/section-templates/${id}`, data);
-    invalidate('templates:');
     return res.data.data;
   },
   deleteSectionTemplate: async (id: string): Promise<void> => {
-    await api.delete(`/academic/section-templates/${id}`); invalidate('templates:');
+    await api.delete(`/academic/section-templates/${id}`);
   },
 
   createSubject: async (classId: string, data: { name: string; code?: string }) => {
     const res = await api.post<ApiResponse<Subject>>(`/academic/classes/${classId}/subjects`, data);
-    invalidate('classes:');
     return res.data.data;
   },
   getSubjectsByClass: async (classId: string) => {
@@ -143,8 +124,7 @@ export const academicService = {
   },
   updateSubject: async (id: string, data: Partial<{ name: string; code: string }>) => {
     const res = await api.patch<ApiResponse<Subject>>(`/academic/subjects/${id}`, data);
-    invalidate('classes:');
     return res.data.data;
   },
-  deleteSubject: async (id: string) => { await api.delete(`/academic/subjects/${id}`); invalidate('classes:'); },
+  deleteSubject: async (id: string) => { await api.delete(`/academic/subjects/${id}`); },
 };

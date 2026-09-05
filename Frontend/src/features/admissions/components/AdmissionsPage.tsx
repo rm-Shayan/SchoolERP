@@ -80,7 +80,6 @@ export default function AdmissionsPage() {
   const refresh = useCallback(async () => { await load(); setSelected(null); setEditing(null); }, [load]);
   const handleChanged = (updated: Applicant) => { setApplicants((prev) => prev.map((a) => (a.id === updated.id ? updated : a))); setSelected(updated); };
   const handleRemoved = async (id: string) => { setApplicants((prev) => prev.filter((a) => a.id !== id)); setSelected(null); await load(); };
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -113,6 +112,7 @@ export default function AdmissionsPage() {
           onView={setSelected}
           onEdit={setEditing}
           onAdd={() => setShowInquiry(true)}
+          onRefresh={refresh}
           pageSize={pageSize}
           onPageSizeChange={(size) => { setPage(1); setPageSize(size); }}
         />

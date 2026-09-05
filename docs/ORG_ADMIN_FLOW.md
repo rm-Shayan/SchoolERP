@@ -123,7 +123,7 @@ server-component wrappers + client feature components):
 | Navbar | **Branch ka naam** heading mein (org title subtitle) | `frontend/nextjs/src/layouts/Navbar.tsx` |
 | Dashboard header | Org name (small) + **branch name (bada heading)** | `features/school/components/AdminDashboard.tsx` |
 | Data scope | `lib/scope.js` — branch-scoped queries (har user apni branch par locked) | `Backend/src/lib/scope.js` |
-| Pages | dashboard, students, admissions, academic, staff (+ password reset), teaching-assignments, fees, attendance, exams, ptm, promotions, announcements, settings | `frontend/nextjs/src/features/school/*`, route wrappers `src/app/o/[slug]/branch/*` |
+| Pages | dashboard, students, admissions, academic, staff (+ password reset), teaching-assignments, fees, attendance, exams, ptm, promotions, study-material, announcements, settings | `frontend/nextjs/src/features/school/*`, route wrappers `src/app/o/[slug]/branch/*` |
 
 **Branch kahan se aata hai:** `/auth/me` → nested `school` (apni branch) → `pickActiveSchool`
 active branch. Ab koi branch switcher nahi — har staff user apni branch par locked hai.

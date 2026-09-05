@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { staffAttendanceService } from '@/lib/api';
 import type { StaffDailyReport } from '@/lib/api/staffAttendanceService';
-import { Card, CardContent, Badge } from '@/features/shared/components';
+import { Card, CardContent } from '@/features/shared/components';
 import { getStatusColor } from '@/lib/utils';
 
 interface Props {

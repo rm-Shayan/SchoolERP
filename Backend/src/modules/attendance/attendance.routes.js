@@ -64,7 +64,7 @@ router.get(
  */
 router.post(
   "/section-bulk",
-  authorize(["SUPER_ADMIN", "ADMIN", "TEACHER"]),
+  authorize(["SUPER_ADMIN", "ADMIN", "TEACHER", "RECEPTIONIST"]),
   validate(bulkSectionAttendanceSchema),
   attendanceController.markSectionBulkAttendance
 );
@@ -75,7 +75,7 @@ router.post(
  */
 router.get(
   "/staff",
-  authorize(["SUPER_ADMIN", "ADMIN"]),
+  authorize(["SUPER_ADMIN", "ADMIN", "RECEPTIONIST"]),
   attendanceController.listStaff
 );
 
@@ -130,7 +130,7 @@ router.put(
  */
 router.post(
   "/override",
-  authorize(["SUPER_ADMIN", "ADMIN", "TEACHER"]),
+  authorize(["SUPER_ADMIN", "ADMIN", "TEACHER", "RECEPTIONIST"]),
   validate(manualOverrideSchema),
   attendanceController.override
 );
@@ -151,7 +151,7 @@ router.get(
  */
 router.get(
   "/monthly",
-  authorize(["SUPER_ADMIN", "ADMIN"]),
+  authorize(["SUPER_ADMIN", "ADMIN", "RECEPTIONIST"]),
   attendanceController.getMonthlyReport
 );
 
@@ -177,15 +177,36 @@ router.get(
 
 router.put(
   "/:id",
-  authorize(["SUPER_ADMIN", "ADMIN", "TEACHER"]),
+  authorize(["SUPER_ADMIN", "ADMIN", "TEACHER", "RECEPTIONIST"]),
   validate(updateAttendanceRecordSchema),
   attendanceController.updateRecord
 );
 
 router.delete(
   "/:id",
-  authorize(["SUPER_ADMIN", "ADMIN"]),
+  authorize(["SUPER_ADMIN", "ADMIN", "RECEPTIONIST"]),
   attendanceController.deleteRecord
+);
+
+// ─── ARCHIVE ────────────────────────────────────────────────────────────────
+/**
+ * POST /api/v1/attendance/archive
+ * Archive attendance for a school + date range (summarize + delete raw).
+ */
+router.post(
+  "/archive",
+  authorize(["SUPER_ADMIN", "ADMIN"]),
+  attendanceController.archiveAttendance
+);
+
+/**
+ * POST /api/v1/attendance/archive/auto
+ * Auto-archive old records across all active schools.
+ */
+router.post(
+  "/archive/auto",
+  authorize(["SUPER_ADMIN"]),
+  attendanceController.autoArchive
 );
 
 export default router;

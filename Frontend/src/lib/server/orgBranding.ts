@@ -21,10 +21,23 @@ export async function getServerOrgBranding(slug?: string, code?: string): Promis
   }
 }
 
-export async function getServerOrgBrandingState(slug?: string, code?: string) {
-  const value = (slug || code || '').trim();
-  if (!value) return { status: 'empty' as const, data: null };
-  const params = new URLSearchParams(slug ? { slug: value } : { code: value });
+/**
+ * Server-side branding resolution for the login page.
+ *
+ * - `slug`/`code`: organization slug (preferred) or code — used as the
+ *   `organization` param so a `school` value is resolved strictly within it.
+ * - `school`: optional school/branch code OR name to resolve (scoped to org).
+ */
+export async function getServerOrgBrandingState(slug?: string, code?: string, school?: string) {
+  const orgValue = (slug || code || '').trim();
+  const schoolValue = (school || '').trim();
+
+  if (!orgValue) return { status: 'empty' as const, data: null };
+
+  const params = new URLSearchParams();
+  params.set('organization', orgValue);
+  if (schoolValue) params.set('school', schoolValue);
+
   try {
     const response = await fetch(`${API_BASE_URL}/api/v1/schools/branding?${params.toString()}`, {
       next: { revalidate: 30 },

@@ -6,8 +6,8 @@ import { imageUpload, fileUpload } from "../../lib/upload.js";
 class SchoolController {
   branding = async (req, res, next) => {
     try {
-      const { code, slug } = req.query;
-      const result = await schoolService.getBranding({ code, slug });
+      const { code, slug, organization, school } = req.query;
+      const result = await schoolService.getBranding({ code, slug, organization, school });
       return res.status(200).json(ApiResponse.ok("School branding fetched successfully", result));
     } catch (error) {
       return next(error);
@@ -136,7 +136,9 @@ class SchoolController {
   list = async (req, res, next) => {
     try {
       const orgId = req.query.organizationId || req.user?.organizationId;
-      const schools = await schoolService.list(orgId);
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize) || 100));
+      const schools = await schoolService.list(orgId, { page, pageSize });
       return res.status(200).json(ApiResponse.ok("Schools fetched successfully", schools));
     } catch (error) {
       return next(error);
@@ -148,6 +150,15 @@ class SchoolController {
     try {
       const school = await schoolService.getById(req.params.id);
       return res.status(200).json(ApiResponse.ok("School fetched successfully", school));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  analytics = async (req, res, next) => {
+    try {
+      const data = await schoolService.getAnalytics(req.params.id);
+      return res.status(200).json(ApiResponse.ok("Branch analytics fetched", data));
     } catch (error) {
       return next(error);
     }

@@ -37,7 +37,9 @@ class CircularService {
       const notified = new Set();
       const dispatch = [];
       for (const student of students) {
-        const parentEmail = student.parent?.email;
+        // Normalize taake siblings / case-variants se duplicate email na jaye
+        // (2 bachay → parent ko announcement ki EK email).
+        const parentEmail = student.parent?.email?.trim().toLowerCase();
         if (!parentEmail || notified.has(parentEmail)) continue;
         notified.add(parentEmail);
         // Fire-and-forget: broadcast response ke liye email dispatch ka wait

@@ -25,7 +25,7 @@ const baseConfig = {
 export const loginLimiter = rateLimit({
   ...baseConfig,
   windowMs: 15 * 60 * 1000,
-  limit: 20,
+  limit: 50,
 });
 
 /**

@@ -16,8 +16,6 @@ import {
   type PortalCircularEvent,
   type PortalNotificationEvent,
 } from '@/store/slices/portalSocketSlice';
-import type { PortalNotification } from '@/lib/api/notificationService';
-
 /**
  * Connects a socket for portal (parent/student) users.
  * Joins section:{id} rooms for the child's sections and school:{id} room.

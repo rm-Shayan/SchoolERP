@@ -1,7 +1,6 @@
 'use client';
 
-import { memo, useMemo } from 'react';
-import { Card } from '@/features/shared/components';
+import { memo } from 'react';
 import { cn } from '@/lib/utils';
 
 interface Props {

@@ -2,103 +2,115 @@
 
 import { icon, I } from './navIcons';
 import type { NavLink, NavGroup, SidebarNavItem } from './navLinks.types';
+import type { Role } from '@/types';
 
 export type { NavLink, NavGroup, SidebarNavItem } from './navLinks.types';
 
 export const isNavGroup = (item: SidebarNavItem): item is NavGroup =>
   'title' in item && 'links' in item;
 
+export function filterLinksByRole(links: SidebarNavItem[], role?: Role | null): SidebarNavItem[] {
+  if (!role) return links;
+  return links
+    .map((item) => {
+      if (!isNavGroup(item)) {
+        return item.roles && !item.roles.includes(role) ? null : item;
+      }
+      const filtered = item.links.filter((l) => !l.roles || l.roles.includes(role));
+      if (filtered.length === 0) return null;
+      return { ...item, links: filtered };
+    })
+    .filter(Boolean) as SidebarNavItem[];
+}
+
 export const superAdminLinks: NavLink[] = [
-  { label: 'Dashboard', path: '/admin/dashboard', icon: icon(I.dashboard) },
-  { label: 'Organizations', path: '/admin/organizations', icon: icon(I.branches) },
-  { label: 'Branches', path: '/admin/branches', icon: icon(I.branches) },
-  { label: 'Users', path: '/admin/users', icon: icon(I.staff) },
+  { label: 'Dashboard', path: '/admin/dashboard', icon: icon(I.home) },
+  { label: 'Organizations', path: '/admin/organizations', icon: icon(I.buildingOffice2) },
+  { label: 'Branches', path: '/admin/branches', icon: icon(I.buildingLibrary) },
+  { label: 'Users', path: '/admin/users', icon: icon(I.usersTwo) },
+  { label: 'School Health', path: '/admin/health', icon: icon(I.heart) },
   { label: 'Import Data', path: '/admin/import', icon: icon(I.upload) },
-  { label: 'Activity Log', path: '/admin/activity', icon: icon(I.activity) },
-  { label: 'Notifications', path: '/admin/notifications', icon: icon(I.gate) },
-  { label: 'Settings', path: '/admin/settings', icon: icon(I.settings) },
+  { label: 'Activity Log', path: '/admin/activity', icon: icon(I.clock) },
+  { label: 'Notifications', path: '/admin/notifications', icon: icon(I.bell) },
+  { label: 'Settings', path: '/admin/settings', icon: icon(I.gear) },
 ];
 
 export const schoolAdminLinks: SidebarNavItem[] = [
-  { label: 'Dashboard', path: '/branch/dashboard', icon: icon(I.dashboard) },
+  { label: 'Dashboard', path: '/branch/dashboard', icon: icon(I.home) },
   {
     title: 'People',
-    icon: icon(I.students),
     links: [
-      { label: 'Students', path: '/branch/students', icon: icon(I.students) },
-      { label: 'Admissions', path: '/branch/admissions', icon: icon(I.admissions) },
-      { label: 'Staff', path: '/branch/staff', icon: icon(I.staff) },
+      { label: 'Students', path: '/branch/students', icon: icon(I.academicCap) },
+      { label: 'Admissions', path: '/branch/admissions', icon: icon(I.userPlus) },
+      { label: 'Staff', path: '/branch/staff', icon: icon(I.briefcase), roles: ['ADMIN', 'SUPER_ADMIN'] },
     ],
   },
   {
     title: 'Academics',
-    icon: icon(I.academic),
     links: [
-      { label: 'Academic Setup', path: '/branch/academic', icon: icon(I.academic) },
-      { label: 'Teaching Assignments', path: '/branch/teaching-assignments', icon: icon(I.staff) },
-      { label: 'Promotions', path: '/branch/promotions', icon: icon(I.promote) },
-      { label: 'Homework', path: '/branch/homework', icon: icon(I.homework) },
-      { label: 'Timetable', path: '/branch/timetable', icon: icon(I.timetable) },
-      { label: 'PTM', path: '/branch/ptm', icon: icon(I.ptm) },
-      { label: 'Conduct Remarks', path: '/branch/conduct', icon: icon(I.conduct) },
+      { label: 'Academic Setup', path: '/branch/academic', icon: icon(I.wrench), roles: ['ADMIN', 'SUPER_ADMIN'] },
+      { label: 'Teaching Assignments', path: '/branch/teaching-assignments', icon: icon(I.clipboardList), roles: ['ADMIN', 'SUPER_ADMIN'] },
+      { label: 'Promotions', path: '/branch/promotions', icon: icon(I.trendUp), roles: ['ADMIN', 'SUPER_ADMIN'] },
+      { label: 'Homework', path: '/branch/homework', icon: icon(I.pencilSquare), roles: ['ADMIN', 'SUPER_ADMIN'] },
+      { label: 'Study Materials', path: '/branch/study-material', icon: icon(I.folderOpen) },
+      { label: 'Timetable', path: '/branch/timetable', icon: icon(I.calendar), roles: ['ADMIN', 'SUPER_ADMIN'] },
+      { label: 'PTM', path: '/branch/ptm', icon: icon(I.chatBubble) },
+      { label: 'Conduct Remarks', path: '/branch/conduct', icon: icon(I.shieldCheck), roles: ['ADMIN', 'SUPER_ADMIN'] },
     ],
   },
   {
     title: 'Attendance & Leave',
-    icon: icon(I.gate),
     links: [
-      { label: 'Gate Scanner', path: '/branch/attendance/gate', icon: icon(I.gate) },
-      { label: 'Live Attendance', path: '/branch/attendance/live', icon: icon(I.roster) },
-      { label: 'Attendance Records', path: '/branch/attendance/records', icon: icon(I.records) },
-      { label: 'Leave', path: '/branch/leave', icon: icon(I.leave) },
+      { label: 'Gate Scanner', path: '/branch/attendance/gate', icon: icon(I.qr) },
+      { label: 'Live Attendance', path: '/branch/attendance/live', icon: icon(I.checkCircle) },
+      { label: 'Attendance Records', path: '/branch/attendance/records', icon: icon(I.documentCheck) },
+      { label: 'Leave', path: '/branch/leave', icon: icon(I.paperPlane), roles: ['ADMIN', 'SUPER_ADMIN'] },
     ],
   },
   {
     title: 'Finance',
-    icon: icon(I.fees),
     links: [
-      { label: 'Fee Structures', path: '/branch/fees/structures', icon: icon(I.structures) },
-      { label: 'Fee Records', path: '/branch/fees/records', icon: icon(I.records) },
-      { label: 'Fee Collection', path: '/branch/fees/collection', icon: icon(I.collect) },
+      { label: 'Fee Structures', path: '/branch/fees/structures', icon: icon(I.tag), roles: ['ADMIN', 'SUPER_ADMIN'] },
+      { label: 'Fee Records', path: '/branch/fees/records', icon: icon(I.banknotes), roles: ['ADMIN', 'SUPER_ADMIN'] },
+      { label: 'Fee Collection', path: '/branch/fees/collection', icon: icon(I.wallet) },
     ],
   },
   {
     title: 'Exams',
-    icon: icon(I.exam),
     links: [
-      { label: 'Exam Schedule', path: '/branch/exams', icon: icon(I.exam) },
-      { label: 'Exam Results', path: '/branch/exams/results', icon: icon(I.exam) },
+      { label: 'Exam Schedule', path: '/branch/exams', icon: icon(I.listBullet), roles: ['ADMIN', 'SUPER_ADMIN'] },
+      { label: 'Exam Results', path: '/branch/exams/results', icon: icon(I.chartBarSquare), roles: ['ADMIN', 'SUPER_ADMIN'] },
     ],
   },
   {
     title: 'Communication',
-    icon: icon(I.circular),
     links: [
-      { label: 'Announcements', path: '/branch/announcements/circulars', icon: icon(I.circular) },
-      { label: 'Notifications', path: '/branch/notifications', icon: icon(I.activity) },
+      { label: 'Announcements', path: '/branch/announcements/circulars', icon: icon(I.megaphone) },
+      { label: 'Notifications', path: '/branch/notifications', icon: icon(I.bell) },
     ],
   },
   {
     title: 'Administration',
-    icon: icon(I.settings),
     links: [
-      { label: 'Import Guide', path: '/branch/import-guide', icon: icon(I.upload) },
-      { label: 'Settings', path: '/branch/settings', icon: icon(I.settings) },
+      { label: 'Import Guide', path: '/branch/import-guide', icon: icon(I.upload), roles: ['ADMIN', 'SUPER_ADMIN'] },
+      { label: 'Settings', path: '/branch/settings', icon: icon(I.sliders), roles: ['ADMIN', 'SUPER_ADMIN'] },
     ],
   },
 ];
 
 export const teacherLinks: NavLink[] = [
-  { label: 'Dashboard', path: '/teacher/dashboard', icon: icon(I.dashboard) },
-  { label: 'Section Attendance', path: '/teacher/attendance', icon: icon(I.roster) },
-  { label: 'My Attendance', path: '/teacher/my-attendance', icon: icon(I.gate) },
-  { label: 'My Timetable', path: '/teacher/timetable', icon: icon(I.timetable) },
-  { label: 'My PTM', path: '/teacher/ptm', icon: icon(I.ptm) },
-  { label: 'Homework', path: '/teacher/homework', icon: icon(I.homework) },
-  { label: 'Give Remark', path: '/teacher/conduct', icon: icon(I.conduct) },
-  { label: 'Remarks History', path: '/teacher/remarks-history', icon: icon(I.conduct) },
-  { label: 'My Leave', path: '/teacher/leave', icon: icon(I.leave) },
-  { label: 'Exams', path: '/teacher/exams', icon: icon(I.exam) },
-  { label: 'Announcements', path: '/teacher/announcements', icon: icon(I.circular) },
-  { label: 'Notifications', path: '/teacher/notifications', icon: icon(I.activity) },
+  { label: 'Dashboard', path: '/teacher/dashboard', icon: icon(I.home) },
+  { label: 'My Students', path: '/teacher/students', icon: icon(I.academicCap) },
+  { label: 'Section Attendance', path: '/teacher/attendance', icon: icon(I.clipboardCheck) },
+  { label: 'My Attendance', path: '/teacher/my-attendance', icon: icon(I.clock) },
+  { label: 'My Timetable', path: '/teacher/timetable', icon: icon(I.calendar) },
+  { label: 'My PTM', path: '/teacher/ptm', icon: icon(I.chatBubble) },
+  { label: 'Homework', path: '/teacher/homework', icon: icon(I.pencilSquare) },
+  { label: 'Study Materials', path: '/teacher/study-material', icon: icon(I.folderOpen) },
+  { label: 'Give Remark', path: '/teacher/conduct', icon: icon(I.shieldCheck) },
+  { label: 'My Leave', path: '/teacher/leave', icon: icon(I.paperPlane) },
+  { label: 'Exams', path: '/teacher/exams', icon: icon(I.documentText) },
+  { label: 'Announcements', path: '/teacher/announcements', icon: icon(I.megaphone) },
+  { label: 'Notifications', path: '/teacher/notifications', icon: icon(I.bell) },
+  { label: 'Settings', path: '/teacher/settings', icon: icon(I.gear) },
 ];

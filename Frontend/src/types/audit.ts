@@ -60,6 +60,8 @@ export interface OrgStaffRow {
   blockedReason?: string;
   schoolId?: string;
   schoolName?: string;
+  schoolLogoUrl?: string | null;
+  avatarUrl?: string | null;
   joinedAt: string;
 }
 
@@ -75,5 +77,8 @@ export interface OrgDashboard {
   };
   branches: OrgBranchStat[];
   revenue: OrgDashboardRevenue;
+  enrollment?: { monthly: { key: string; label: string; count: number }[] };
+  attendance?: { monthly: { key: string; label: string; rate: number }[] };
+  fees?: { totalDue: number; totalPaid: number; totalPending: number };
   staff: OrgStaffRow[];
 }

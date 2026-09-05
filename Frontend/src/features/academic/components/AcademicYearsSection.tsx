@@ -1,4 +1,4 @@
-import { Card, CardContent, Button, EmptyState, GridCardsSkeleton } from '@/features/shared/components';
+import { Button, EmptyState, GridCardsSkeleton } from '@/features/shared/components';
 import YearForm from './parts/YearForm';
 import YearCard from './parts/YearCard';
 import { useAcademicYears, toDateInput } from './parts/useAcademicYears';

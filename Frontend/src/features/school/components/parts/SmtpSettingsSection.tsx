@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm, composeValidators, required, isEmail, positiveNumber } from '@/lib/utils';
-import { smtpSettingsService } from '@/lib/api';
+import { smtpSettingsService, schoolService, orgService } from '@/lib/api';
 import { useAppSelector } from '@/store/hooks';
 import { Card } from '@/features/shared/components';
 import type { SmtpSettingsStatus, SmtpSettingInfo } from '@/types';
@@ -23,6 +23,10 @@ export default function SmtpSettingsSection({ organizationId: orgProp, schoolId:
   const branchId = schoolProp ?? user?.schoolId ?? school?.id ?? null;
   const lockedBranch = Boolean(schoolProp);
   const [open, setOpen] = useState(false);
+  const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(schoolProp ?? null);
+  const [orgName, setOrgName] = useState('');
+  const [branchName, setBranchName] = useState('');
 
   const [status, setStatus] = useState<SmtpSettingsStatus | null>(null);
   const [scope, setScope] = useState<Scope>(lockedBranch ? 'branch' : 'organization');
@@ -35,6 +39,12 @@ export default function SmtpSettingsSection({ organizationId: orgProp, schoolId:
     catch (err: any) { toast.error(err?.response?.data?.message ?? 'SMTP settings load failed'); }
   }, [orgId, branchId]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!orgId) return;
+    orgService.getById(orgId).then((o) => setOrgName(o.name)).catch(() => {});
+    if (lockedBranch && branchId) schoolService.getById(branchId).then((s) => setBranchName(s.name)).catch(() => {});
+    if (!lockedBranch) schoolService.getAll(orgId).then((s) => setBranches(s.map((b) => ({ id: b.id, name: b.name })))).catch(() => {});
+  }, [orgId, lockedBranch, branchId]);
   const existingRef = useRef<SmtpSettingInfo | null>(null);
   existingRef.current = pickExisting(status, scope, tier);
 
@@ -48,36 +58,26 @@ export default function SmtpSettingsSection({ organizationId: orgProp, schoolId:
     },
     onSubmit: async (v) => {
       try {
-        await smtpSettingsService.save({
-          organizationId: orgId || undefined,
-          schoolId: scope === 'branch' ? branchId : null,
-          tier,
-          host: v.host as string,
-          port: Number(v.port),
-          secure: v.secure === 'true',
-          username: v.username as string,
+        await smtpSettingsService.save({ organizationId: orgId || undefined, schoolId: effectiveBranchId, tier,
+          host: v.host as string, port: Number(v.port), secure: v.secure === 'true', username: v.username as string,
           ...(String(v.password).trim() ? { password: v.password as string } : {}),
-          fromName: String(v.fromName || '').trim() || undefined,
-          dailyLimit: Number(v.dailyLimit) || 500,
-        });
-        toast.success('SMTP settings saved & verified');
-        reset();
-        await load();
-      } catch (err: any) {
-        toast.error(err?.response?.data?.message ?? 'Failed to save SMTP settings');
-      }
+          fromName: String(v.fromName || '').trim() || undefined, dailyLimit: Number(v.dailyLimit) || 500 });
+        toast.success('SMTP settings saved & verified'); reset(); await load();
+      } catch (err: any) { toast.error(err?.response?.data?.message ?? 'Failed to save SMTP settings'); }
     },
   });
+  const effectiveBranchId = lockedBranch ? branchId : (scope === 'branch' ? selectedBranch : null);
+
   const onTestSend = async () => {
     setTesting(true);
     try {
-      const r = await smtpSettingsService.sendTestEmail(orgId, branchId);
+      const r = await smtpSettingsService.sendTestEmail(orgId, effectiveBranchId);
       toast.success(`Test email sent to ${r.sentTo}`);
     } catch (err: any) { toast.error(err?.response?.data?.message ?? 'Test email failed'); } finally { setTesting(false); }
   };
   const onRemove = async () => {
     try {
-      await smtpSettingsService.remove(orgId, scope === 'branch' ? branchId : null, tier);
+      await smtpSettingsService.remove(orgId, effectiveBranchId, tier);
       toast.success('SMTP settings removed');
       await load();
     } catch (err: any) { toast.error(err?.response?.data?.message ?? 'Remove failed'); }
@@ -106,11 +106,18 @@ export default function SmtpSettingsSection({ organizationId: orgProp, schoolId:
       </button>
       {open && (
         <div className="space-y-6 border-t border-slate-200 bg-slate-50/70 px-4 py-5 sm:px-6 sm:py-6">
-          <div className="rounded-xl border border-primary-200 bg-white p-3 shadow-sm sm:p-4">
-            <p className="text-xs text-primary-700 font-medium">
-              Tip: Google Account → Security → turn on 2-Step Verification → open &quot;App Passwords&quot; → select Mail and copy the 16-character code, then paste it below.
-            </p>
+          <div className="rounded-xl border border-primary-200 bg-white p-3 shadow-sm">
+            <p className="text-xs text-primary-700 font-medium">Tip: Google Account → Security → 2-Step Verification → App Passwords → Mail → copy 16-char code below.</p>
           </div>
+          {!lockedBranch && scope === 'branch' && (
+            <div className="mb-2">
+              <label className="block text-xs font-medium text-gray-500 mb-1">Select Branch</label>
+              <select value={selectedBranch ?? ''} onChange={(e) => setSelectedBranch(e.target.value || null)} className="w-full sm:w-64 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+                <option value="">Choose a branch…</option>
+                {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+          )}
           <SmtpSettingsForm
             values={values}
             errors={errors}
@@ -127,6 +134,11 @@ export default function SmtpSettingsSection({ organizationId: orgProp, schoolId:
             testing={testing}
             onTestSend={onTestSend}
             onRemove={onRemove}
+            orgName={orgName}
+            branchName={branchName}
+            branches={branches}
+            selectedBranch={selectedBranch}
+            onBranchChange={setSelectedBranch}
           />
         </div>
       )}

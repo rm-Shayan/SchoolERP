@@ -8,6 +8,7 @@ export const SYMBOL: Record<string, string> = {
   LATE: 'L',
   ABSENT: 'A',
   LEAVE: 'LV',
+  HALF_DAY: 'HD',
   MANUAL_OVERRIDE: 'MO',
 };
 
@@ -16,6 +17,7 @@ export const CELL_STYLE: Record<string, string> = {
   LATE: 'bg-amber-100 text-amber-700',
   ABSENT: 'bg-red-100 text-red-600',
   LEAVE: 'bg-blue-100 text-blue-600',
+  HALF_DAY: 'bg-cyan-100 text-cyan-700',
   MANUAL_OVERRIDE: 'bg-purple-100 text-purple-600',
 };
 

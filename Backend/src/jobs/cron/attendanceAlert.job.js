@@ -39,8 +39,8 @@ function isOffDay(school, today) {
 export async function runAttendanceAlertJob() {
   logger.logger.info("[AttAlert] Starting attendance alert sweep...");
   const now = new Date();
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
+  // DATE column UTC-midnight convention (see lateMark.job.js)
+  const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
   const dateKey = today.toISOString().split("T")[0];
   const nowMin = now.getHours() * 60 + now.getMinutes();
   let totalAlerts = 0;
@@ -56,7 +56,6 @@ export async function runAttendanceAlertJob() {
 
       const alertMin = minutesOf(school.attendanceAlertTime || "09:30");
       if (nowMin < alertMin) continue;
-      if (nowMin > alertMin + 45) continue;
 
       const sentKey = `att_alert:${school.id}:${dateKey}`;
       try {
@@ -82,6 +81,10 @@ export async function runAttendanceAlertJob() {
       const byStudent = new Map();
       for (const r of records) byStudent.set(r.studentId, r.status);
 
+      // Siblings ek hi parent/email par aate hain — absent emails ko parent
+      // email se group karo taake 2 bachay hon to EK mail me dono ka zikr ho.
+      const absentByEmail = new Map();
+
       for (const student of activeStudents) {
         const name = `${student.firstName} ${student.lastName}`;
         const className = `${student.section?.class?.name || ""} ${student.section?.name || ""}`.trim();
@@ -90,48 +93,52 @@ export async function runAttendanceAlertJob() {
         const isAbsent = status === "ABSENT";
         if (!isLate && !isAbsent) continue;
 
-        const alertType = isLate ? "Late" : "Absent";
-        const message = isLate
-          ? `Dear ${student.parent?.name || "Parent"}, your child ${name} (${className}) arrived after the attendance cutoff today.`
-          : `Dear ${student.parent?.name || "Parent"}, your child ${name} (${className}) has no attendance check-in recorded today. If this is unexpected, please contact the school office.`;
-
         if (isLate) {
+          const message = `Dear ${student.parent?.name || "Parent"}, your child ${name} (${className}) arrived after the attendance cutoff today.`;
           notificationService.notifyParentPortal({
             schoolId: school.id,
             message,
-            title: `Attendance Alert — ${alertType}`,
+            title: `Attendance Alert — Late`,
             details: [
               ["Student", name],
               ["Class", className || "—"],
-              ["Status", alertType],
+              ["Status", "Late"],
             ],
           }).catch(() => {});
         } else if (student.parent?.email) {
-          notificationService.notifyParent({
-            schoolId: school.id,
-            parentEmail: student.parent.email,
-            parentPhone: student.parent.phone,
-            message,
-            title: `Attendance Alert — ${alertType}`,
-            details: [
-              ["Student", name],
-              ["Class", className || "—"],
-              ["Status", alertType],
-            ],
-          }).catch(() => {});
+          const key = student.parent.email.trim().toLowerCase();
+          if (!absentByEmail.has(key)) {
+            absentByEmail.set(key, { parentName: student.parent.name, parentPhone: student.parent.phone, kids: [] });
+          }
+          absentByEmail.get(key).kids.push({ name, className });
         }
-        // Portal notification — branch feed me alert dikhe.
+        // Portal notification — branch feed me alert dikhe (har bachche ke liye).
         portalNotificationService.create({
           schoolId: school.id,
           senderName: "Attendance Alert",
-          title: alertType === "Late" ? "ATTENDANCE_LATE" : "ATTENDANCE_ABSENT",
-          body: `${name}${className ? ` (${className})` : ""} is ${alertType === "Late" ? "LATE" : "ABSENT"} today.`,
+          title: isAbsent ? "ATTENDANCE_ABSENT" : "ATTENDANCE_LATE",
+          body: `${name}${className ? ` (${className})` : ""} is ${isAbsent ? "ABSENT" : "LATE"} today.`,
           category: "STUDENT",
           refType: "ATTENDANCE",
           refId: student.id,
           link: "/attendance",
         }).catch(() => {});
         totalAlerts++;
+      }
+
+      // Har parent email ko EK combined email — saare absent bachay list karke.
+      for (const [email, group] of absentByEmail) {
+        const kids = group.kids.map((k) => `${k.name} (${k.className || "—"})`).join(", ");
+        const plural = group.kids.length > 1;
+        const message = `Dear ${group.parentName || "Parent"}, ${plural ? "your children" : "your child"} ${kids} ${plural ? "have" : "has"} no attendance check-in recorded today. If this is unexpected, please contact the school office.`;
+        notificationService.notifyParent({
+          schoolId: school.id,
+          parentEmail: email,
+          parentPhone: group.parentPhone,
+          message,
+          title: `Attendance Alert — Absent`,
+          details: group.kids.map((k) => ["Student", k.name]),
+        }).catch(() => {});
       }
 
       try { await redis.setEx(sentKey, 86400, "sent"); } catch (_) {}

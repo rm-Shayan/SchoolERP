@@ -4,6 +4,7 @@ import axios from 'axios';
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import type { ApiResponse } from '@/types';
 import type { PortalNotification } from './notificationService';
+import { portalLoginRedirect } from '@/lib/utils/orgTheme';
 
 const API = '/api/v1';
 
@@ -23,7 +24,7 @@ function createPortalAxios(tokenKey: string) {
       if (err.response?.status === 401) {
         localStorage.removeItem(tokenKey);
         localStorage.removeItem(tokenKey === 'parentToken' ? 'parentProfile' : 'studentProfile');
-        window.location.href = '/parent/login';
+        window.location.href = portalLoginRedirect();
       }
       return Promise.reject(err);
     },

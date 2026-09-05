@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/features/shared/components';
 import { portalDataService } from '@/lib/api/portalDataService';
 import type { PortalOverview } from '@/types/portal';
-import { formatDate } from '@/lib/utils';
-import { getOrgThemeColor, hexToRgb } from '@/lib/utils/orgTheme';
+import { getOrgThemeColor } from '@/lib/utils/orgTheme';
 import { OverviewSkeleton } from './PortalSkeletonsA';
 import { LiveBadge, RecentEvents } from './OverviewLiveEvents';
 
@@ -27,7 +26,7 @@ export default function OverviewTab() {
         <AttendanceRing percentage={data.attendance.percentage} summary={data.attendance} />
         <FeeStatusCard summary={data.fees} />
       </div>
-      <QuickStats homeworkCount={data.homeworkCount} circularCount={data.circularCount} outstanding={data.fees.outstanding} />
+      <QuickStats homeworkCount={data.homeworkCount} circularCount={data.circularCount} studyMaterialCount={data.studyMaterialCount} outstanding={data.fees.outstanding} />
       <RecentEvents />
     </div>
   );
@@ -115,16 +114,17 @@ function FeeStatusCard({ summary }: { summary: PortalOverview['fees'] }) {
   );
 }
 
-function QuickStats({ homeworkCount, circularCount, outstanding }: { homeworkCount: number; circularCount: number; outstanding: string }) {
+function QuickStats({ homeworkCount, circularCount, studyMaterialCount, outstanding }: { homeworkCount: number; circularCount: number; studyMaterialCount: number; outstanding: string }) {
   const theme = getOrgThemeColor();
   const items = [
     { label: 'Homework', value: homeworkCount, icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+    { label: 'Materials', value: studyMaterialCount, icon: 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
     { label: 'Notices', value: circularCount, icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
     { label: 'Dues', value: Number(outstanding) > 0 ? '!' : '✓', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', isAlert: Number(outstanding) > 0 },
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       {items.map((s) => (
         <Card key={s.label} className="p-4 text-center hover:shadow-md transition-shadow">
           <div className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center" style={{ background: s.isAlert ? '#fef2f2' : theme ? `${theme}12` : '#eff6ff' }}>

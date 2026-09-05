@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, EmptyState } from '@/features/shared/components';
 import { portalDataService } from '@/lib/api/portalDataService';
 import type { PortalPTMSession } from '@/types/portal';
-import { cn, formatDate } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { PTMSkeleton } from './PortalSkeletonsB';
 
 export default function PTMTab() {

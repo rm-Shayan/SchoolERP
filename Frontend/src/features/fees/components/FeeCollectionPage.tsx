@@ -5,6 +5,7 @@ import { useAppSelector } from '@/store/hooks';
 import { studentService, feeService } from '@/lib/api';
 import type { Student, FeeRecord } from '@/types';
 import { PageHeader, Input, Card, EmptyState } from '@/features/shared/components';
+import { useDebouncedValue } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import PaymentModal from './PaymentModal';
 import StudentFeeCard from './parts/StudentFeeCard';
@@ -30,6 +31,7 @@ export default function FeeCollectionPage() {
   const { user, school } = useAppSelector((s) => s.auth);
   const schoolId = school?.id ?? user?.schoolId;
   const [query, setQuery] = useState('');
+  const debouncedQuery = useDebouncedValue(query, 250);
   const [results, setResults] = useState<Student[]>([]);
   const [recsByStudent, setRecsByStudent] = useState<Record<string, FeeRecord[]>>({});
   const [searching, setSearching] = useState(false);
@@ -42,7 +44,6 @@ export default function FeeCollectionPage() {
     try {
       const students = await studentService.getAll({ schoolId, status: 'ACTIVE', search: q, pageSize: 100 });
       setResults(students);
-      // Bulk fetch — single query instead of N individual calls (N+1 eliminate)
       if (students.length > 0) {
         const bulkMap = await feeService.getBulkRecords({
           schoolId: schoolId!,
@@ -54,7 +55,7 @@ export default function FeeCollectionPage() {
     finally { setSearching(false); }
   };
 
-  useEffect(() => { const t = setTimeout(() => runSearch(query.trim()), 200); return () => clearTimeout(t); }, [query]);
+  useEffect(() => { runSearch(debouncedQuery.trim()); }, [debouncedQuery]);
 
   // Auto-refresh fee data when payments are recorded elsewhere
   useRealtimeRefresh(['fee_payment_recorded', 'fees_generated'], () => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname, useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loadUser } from '@/store/slices/authSlice';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -15,9 +15,6 @@ interface BranchLayoutProps {
 export default function BranchLayout({ children }: BranchLayoutProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const pathname = usePathname();
-  const params = useParams();
-  const slug = params?.slug as string | undefined;
   const { isAuthenticated, loading, user } = useAppSelector((s) => s.auth);
   const [mounted, setMounted] = useState(false);
 

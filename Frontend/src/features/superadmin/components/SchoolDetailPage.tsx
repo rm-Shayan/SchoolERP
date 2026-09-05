@@ -7,6 +7,7 @@ import type { SchoolAdminAssignResult } from '@/lib/api/schoolService';
 import type { Organization, School } from '@/types';
 import { ConfirmDialog, SectionHeader, SectionSkeleton, Reveal } from '@/features/shared/components';
 import SmtpSettingsSection from '@/features/school/components/parts/SmtpSettingsSection';
+import StorageSettingsSection from '@/features/school/components/parts/StorageSettingsSection';
 import Breadcrumbs from './parts/Breadcrumbs';
 import SchoolHeader from './parts/SchoolHeader';
 import SchoolStats from './parts/SchoolStats';
@@ -16,6 +17,7 @@ import BranchAdminCard from './parts/BranchAdminCard';
 import CredentialsBanner from './parts/CredentialsBanner';
 import BranchLogoCard from './parts/BranchLogoCard';
 import BranchDetailsCard from './parts/BranchDetailsCard';
+import BranchAnalyticsSection from './parts/BranchAnalyticsSection';
 import BlockReasonDialog from './parts/BlockReasonDialog';
 import { useBranchModeration } from './parts/useBranchModeration';
 
@@ -113,12 +115,21 @@ export default function SchoolDetailPage() {
       </Reveal>
       <div className="sa-section-marker" aria-hidden="true">
         <span className="h-px flex-1 bg-gray-200" />
+        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Analytics</span>
+        <span className="h-px flex-1 bg-gray-200" />
+      </div>
+      <Reveal delay={0.16}><BranchAnalyticsSection schoolId={school.id} /></Reveal>
+      <div className="sa-section-marker" aria-hidden="true">
+        <span className="h-px flex-1 bg-gray-200" />
         <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Configuration</span>
         <span className="h-px flex-1 bg-gray-200" />
       </div>
       <AssignAdminModal key={`admin-${showAdminModal}`} open={showAdminModal} schoolId={school.id} onClose={() => setShowAdminModal(false)} onAssigned={handleAdminAssigned} />
       <div className="sa-detail-band">
         <Reveal delay={0.18}><SmtpSettingsSection organizationId={org.id} schoolId={school.id} /></Reveal>
+      </div>
+      <div className="sa-detail-band">
+        <Reveal delay={0.2}><StorageSettingsSection organizationId={org.id} /></Reveal>
       </div>
       <BlockReasonDialog open={blockOpen} title="Block branch" message={`Blocking ${school.name} will lock out its admin, staff, students and parents immediately.`} loading={blocking} onConfirm={confirmBlock} onCancel={() => setBlockOpen(false)} />
       <ConfirmDialog open={confirmDelete} title="Delete branch" message={<>This permanently removes <span className="font-medium">{school.name}</span> and all its data (students, fees, attendance, etc.). This action cannot be undone.</>} confirmLabel="Delete" loading={deleting} onConfirm={handleDeleteBranch} onCancel={() => setConfirmDelete(false)} />

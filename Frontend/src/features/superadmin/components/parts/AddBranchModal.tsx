@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Button, Input, Modal } from '@/features/shared/components';
+import { useEffect, useState } from 'react';
+import { Button, Input, Modal, Select } from '@/features/shared/components';
 import { cn, composeValidators, isEmail, isOrgCode, isPhonePK, required, useForm } from '@/lib/utils';
+import { orgService } from '@/lib/api';
 import type { BranchFormValues } from './branchForm';
 import OrgAdminPicker from './OrgAdminPicker';
 import BranchSecretsFields from './BranchSecretsFields';
@@ -8,46 +9,45 @@ import BranchSecretsFields from './BranchSecretsFields';
 interface AddBranchModalProps {
   open: boolean;
   onClose: () => void;
-  organizationId: string;
-  onCreate: (values: BranchFormValues) => Promise<boolean>;
+  organizationId?: string;
+  onCreate: (values: BranchFormValues & { organizationId: string }) => Promise<boolean>;
 }
 
 type AdminMode = 'new' | 'existing';
 
-const INITIAL_VALUES: BranchFormValues = {
-  name: '',
-  code: '',
-  address: '',
-  phone: '',
-  adminEmail: '',
-  adminName: '',
-  adminPassword: '',
-  existingAdminEmail: '',
-  smtpUsername: '',
-  smtpPassword: '',
-  cloudName: '',
-  cloudApiKey: '',
-  cloudApiSecret: '',
-};
-
 export default function AddBranchModal({ open, onClose, organizationId, onCreate }: AddBranchModalProps) {
   const [mode, setMode] = useState<AdminMode>('new');
-  const { values, errors, isSubmitting, setValue, setErrors, handleChange, handleSubmit, reset } = useForm<BranchFormValues>({
-    initialValues: INITIAL_VALUES,
+  const [orgOpts, setOrgOpts] = useState<{ value: string; label: string }[]>([]);
+  const [orgsLoading, setOrgsLoading] = useState(false);
+
+  const { values, errors, isSubmitting, setValue, setErrors, handleChange, handleSubmit, reset } = useForm<BranchFormValues & { organizationId: string }>({
+    initialValues: {
+      organizationId: organizationId ?? '',
+      name: '',
+      code: '',
+      address: '',
+      phone: '',
+      adminEmail: '',
+      adminName: '',
+      adminPassword: '',
+      existingAdminEmail: '',
+      smtpUsername: '',
+      smtpPassword: '',
+      cloudName: '',
+      cloudApiKey: '',
+      cloudApiSecret: '',
+    },
     validators: {
+      ...(organizationId ? {} : { organizationId: required('Select an organization') }),
       name: required('Branch name is required'),
       code: composeValidators(required('Branch code is required'), isOrgCode()),
       phone: isPhonePK(),
       adminEmail: mode === 'new' ? composeValidators(required('Admin email is required'), isEmail()) : undefined,
-      existingAdminEmail: mode === 'existing' ? composeValidators(required('Existing admin email is required'), isEmail()) : undefined,
-      smtpUsername: mode === 'new' ? required('Gmail is required for new admin') : undefined,
-      smtpPassword: mode === 'new' ? required('App password is required for new admin') : undefined,
-      cloudName: mode === 'new' ? required('Cloud name is required for new admin') : undefined,
-      cloudApiKey: mode === 'new' ? required('API key is required for new admin') : undefined,
-      cloudApiSecret: mode === 'new' ? required('API secret is required for new admin') : undefined,
+      existingAdminEmail: mode === 'existing' ? composeValidators(required('Email is required'), isEmail()) : undefined,
+      ...(mode === 'new' ? { smtpUsername: required('Gmail is required'), smtpPassword: required('App password is required'), cloudName: required('Cloud name is required'), cloudApiKey: required('API key is required'), cloudApiSecret: required('API secret is required') } : {}),
     },
     onSubmit: async (v) => {
-      const ok = await onCreate(v);
+      const ok = await onCreate({ ...v, organizationId: effectiveOrgId });
       if (ok) {
         reset();
         setMode('new');
@@ -56,10 +56,19 @@ export default function AddBranchModal({ open, onClose, organizationId, onCreate
     },
   });
 
+  const effectiveOrgId = organizationId ?? (values as any).organizationId ?? '';
+
+  useEffect(() => {
+    if (!open || organizationId) return;
+    setOrgsLoading(true);
+    orgService
+      .getAll()            .then((orgs: any[]) => setOrgOpts(orgs.map((o) => ({ value: o.id, label: o.name }))))
+            .catch(() => setOrgOpts([]))
+      .finally(() => setOrgsLoading(false));
+  }, [open, organizationId]);
+
   const toggle = (m: AdminMode) => {
     setMode(m);
-    // Form VALUES persist karo (user ka entered data na ghute) — sirf uss
-    // mode ke irrelevant errors clear hote hain.
     setErrors((prev) => {
       const next = { ...prev };
       const clear = m === 'new'
@@ -73,6 +82,18 @@ export default function AddBranchModal({ open, onClose, organizationId, onCreate
   return (
     <Modal open={open} onClose={onClose} title="Add New Branch">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {!organizationId && (
+          <Select
+            label="Organization"
+            name="organizationId"
+            placeholder={orgsLoading ? 'Loading…' : 'Select organization'}
+            options={orgOpts}
+            value={(values as any).organizationId}
+            onChange={handleChange}
+            error={(errors as any).organizationId}
+            required
+          />
+        )}
         <Input label="Branch Name" name="name" placeholder="e.g. Gulshan Campus" value={values.name} onChange={handleChange} error={errors.name} required />
         <Input label="Branch Code" name="code" placeholder="e.g. GULSHAN-01" value={values.code} onChange={handleChange} error={errors.code} required />
         <Input label="Address (optional)" name="address" placeholder="Full address" value={values.address} onChange={handleChange} />
@@ -106,17 +127,8 @@ export default function AddBranchModal({ open, onClose, organizationId, onCreate
             </>
           ) : (
             <>
-              <OrgAdminPicker organizationId={organizationId} value={values.existingAdminEmail} onSelect={(e) => setValue('existingAdminEmail', e)} />
-              <Input
-                label="Existing Admin Email (same organization)"
-                name="existingAdminEmail"
-                type="email"
-                placeholder="admin@yourorg.com"
-                value={values.existingAdminEmail}
-                onChange={handleChange}
-                error={errors.existingAdminEmail}
-                required
-              />
+              <OrgAdminPicker organizationId={effectiveOrgId} value={values.existingAdminEmail} onSelect={(e) => setValue('existingAdminEmail', e)} />
+              <Input label="Existing Admin Email" name="existingAdminEmail" type="email" placeholder="admin@yourorg.com" value={values.existingAdminEmail} onChange={handleChange} error={errors.existingAdminEmail} required />
               <p className="text-xs text-gray-500">No new credentials — wahi email/password/username use hoga, bas Settings → My Branches se is branch par switch karega.</p>
             </>
           )}

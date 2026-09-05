@@ -14,6 +14,7 @@ import {
   deleteDocumentSchema,
   importApplicantsSchema,
   approveSchema,
+  sendSlipSchema,
   enrollSchema,
   recordAdvanceFeeSchema,
   listApplicantsSchema,
@@ -215,6 +216,17 @@ router.get(
   authorize(ROLE_GROUPS.ADMISSIONS),
   validate(getApplicantSchema),
   admissionController.getSlip
+);
+
+/**
+ * POST /api/v1/admissions/:id/send-slip
+ * Regenerate the admission slip PDF and send it to the parent.
+ */
+router.post(
+  "/:id/send-slip",
+  authorize(ROLE_GROUPS.ADMISSIONS),
+  validate(sendSlipSchema),
+  admissionController.sendSlip
 );
 
 export default router;

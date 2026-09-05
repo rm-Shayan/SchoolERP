@@ -1,0 +1,18 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "parentToken",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwYXJlbnRJZCI6ImYzZTQ2YWQyLWJlODctNDE2MC1hY2E3LTk4ZDUwYzM1MDg2NyIsIndoYXRzYXBwTm8iOiIwMzE3LTc3Nzc3NzciLCJ0b2tlblR5cGUiOiJwYXJlbnQiLCJpYXQiOjE3ODgzNjg3ODAsImV4cCI6MTc5MDk2MDc4MH0.3O11qzvm1lO5ol4rGdm7iD9-iLeu80dM0ZWYZ43wPvQ"
+        },
+        {
+          "name": "parentProfile",
+          "value": "{\"id\":\"f3e46ad2-be87-4160-aca7-98d50c350867\",\"name\":\"Faisal Ahmed\",\"whatsappNo\":\"0317-7777777\",\"phone\":\"0317-7777777\",\"email\":\"faisal.ahmed@example.com\",\"createdAt\":\"2026-09-02T06:01:06.570Z\",\"children\":[{\"id\":\"8e41ab73-8f79-46af-9e1b-6a529e2207e7\",\"firstName\":\"Hassan\",\"lastName\":\"Ahmed\",\"rollNumber\":\"101\",\"gender\":\"MALE\",\"status\":\"ACTIVE\",\"isActive\":true,\"school\":{\"id\":\"626e87d5-1581-4218-892c-6c1bdfeaff26\",\"name\":\"Falcon Academy — Gulshan Campus\"},\"class\":{\"id\":\"0e8c7a11-9ec9-4fc0-95c5-603d6cc9c2b6\",\"name\":\"Class 1\"},\"section\":{\"id\":\"fcce0ec8-b38d-4b52-8858-96c9d6bbf0a6\",\"name\":\"A\"}}]}"
+        }
+      ]
+    }
+  ]
+}

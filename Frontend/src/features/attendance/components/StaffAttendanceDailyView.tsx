@@ -17,8 +17,17 @@ const SBTN = [
   { v: 'LATE', l: 'L', f: 'Late', r: 'ring-amber-400', bg: 'bg-amber-50 text-amber-700 hover:bg-amber-100', on: 'bg-amber-500 text-white shadow-sm' },
   { v: 'ABSENT', l: 'A', f: 'Absent', r: 'ring-red-400', bg: 'bg-red-50 text-red-600 hover:bg-red-100', on: 'bg-red-500 text-white shadow-sm' },
   { v: 'LEAVE', l: 'Lv', f: 'Leave', r: 'ring-blue-400', bg: 'bg-blue-50 text-blue-600 hover:bg-blue-100', on: 'bg-blue-500 text-white shadow-sm' },
+  { v: 'HALF_DAY', l: 'HD', f: 'Half Day', r: 'ring-cyan-400', bg: 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100', on: 'bg-cyan-500 text-white shadow-sm' },
 ];
-const STAT_DEFS = [['Total Staff', 'bg-gray-400'], ['Present', 'bg-emerald-500'], ['Late', 'bg-amber-500'], ['Absent', 'bg-red-500'], ['Unmarked', 'bg-gray-300']] as const;
+const STAT_DEFS = [
+  { key: 'totalStaff', l: 'Total Staff', a: 'bg-gray-400' },
+  { key: 'present', l: 'Present', a: 'bg-emerald-500' },
+  { key: 'late', l: 'Late', a: 'bg-amber-500' },
+  { key: 'absent', l: 'Absent', a: 'bg-red-500' },
+  { key: 'leave', l: 'Leave', a: 'bg-blue-500' },
+  { key: 'halfDay', l: 'Half Day', a: 'bg-cyan-500' },
+  { key: 'unmarked', l: 'Unmarked', a: 'bg-gray-300' },
+];
 
 export default function StaffAttendanceDailyView() {
   const { user, school } = useAppSelector((s) => s.auth);
@@ -93,11 +102,11 @@ export default function StaffAttendanceDailyView() {
           <Button size="sm" loading={saving} onClick={handleSaveAll} disabled={!Object.keys(attendance).length}>Save All</Button>
         </div>
       </div>
-      {summary && <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        {STAT_DEFS.map(([l, a]) => (
-          <div key={l} className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+      {summary && <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+        {STAT_DEFS.map(({ key, l, a }) => (
+          <div key={key} className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
             <div className={cn('absolute top-0 right-0 w-16 h-16 rounded-bl-[3rem] opacity-10', a)} />
-            <p className="text-3xl font-extrabold tabular-nums text-gray-900">{summary[l === 'Total Staff' ? 'totalStaff' : l === 'Present' ? 'present' : l === 'Late' ? 'late' : l === 'Absent' ? 'absent' : 'unmarked']}</p>
+            <p className="text-3xl font-extrabold tabular-nums text-gray-900">{summary[key as keyof typeof summary]}</p>
             <p className="text-xs font-medium text-gray-400 mt-1">{l}</p>
           </div>
         ))}

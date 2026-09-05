@@ -1,11 +1,11 @@
 import { Suspense } from 'react';
-import BranchConductRemarksPage from '@/features/school/components/BranchConductRemarksPage';
+import StaffConductRemarksPage from '@/features/staff/components/StaffConductRemarksPage';
 import PageLoader from '@/components/PageLoader';
 
 export default function BranchConductPage() {
   return (
     <Suspense fallback={<PageLoader />}>
-      <BranchConductRemarksPage />
+      <StaffConductRemarksPage />
     </Suspense>
   );
 }

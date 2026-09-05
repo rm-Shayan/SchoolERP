@@ -41,6 +41,16 @@ router.use(authenticate);
 // ==========================================
 
 /**
+ * GET /api/v1/students/platform
+ * Platform-wide student directory (SUPER_ADMIN only).
+ */
+router.get(
+  "/platform",
+  authorize(["SUPER_ADMIN"]),
+  studentController.listAllStudentsPlatform
+);
+
+/**
  * POST /api/v1/students/schools/:schoolId/import
  * Bulk student import via Excel — queued, async progress via WebSocket.
  */
@@ -55,10 +65,11 @@ router.post(
 /**
  * POST /api/v1/students/schools/:schoolId
  * Create a new student (parent upserted by WhatsApp number).
+ * Receptionist (front desk) ko limited CRUD diya jata hai — enrollment entry.
  */
 router.post(
   "/schools/:schoolId",
-  authorize(ROLE_GROUPS.MANAGEMENT),
+  authorize(ROLE_GROUPS.MANAGEMENT.concat("RECEPTIONIST")),
   assertSameSchool,
   validate(createStudentSchema),
   studentController.createStudent
@@ -100,11 +111,11 @@ router.get(
 
 /**
  * PATCH /api/v1/students/:id
- * Update student and/or parent details.
+ * Update student and/or parent details. (limited CRUD — receptionist).
  */
 router.patch(
   "/:id",
-  authorize(ROLE_GROUPS.MANAGEMENT),
+  authorize(ROLE_GROUPS.MANAGEMENT.concat("RECEPTIONIST")),
   validate(updateStudentSchema),
   studentController.updateStudent
 );
@@ -129,7 +140,7 @@ router.delete(
  */
 router.post(
   "/:id/photo",
-  authorize(ROLE_GROUPS.MANAGEMENT),
+  authorize(ROLE_GROUPS.MANAGEMENT.concat("RECEPTIONIST")),
   imageUpload.single("file"),
   studentController.uploadPhoto
 );
@@ -137,10 +148,11 @@ router.post(
 /**
  * PATCH /api/v1/students/:id/status
  * Graduate / dropout / transfer / reactivate (PRD §9 — archive, never delete).
+ * Receptionist ko status change diya jata hai (front-desk archive op).
  */
 router.patch(
   "/:id/status",
-  authorize(ROLE_GROUPS.MANAGEMENT),
+  authorize(ROLE_GROUPS.MANAGEMENT.concat("RECEPTIONIST")),
   validate(changeStatusSchema),
   studentController.changeStatus
 );

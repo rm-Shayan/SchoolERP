@@ -1,11 +1,23 @@
 'use client';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, Badge } from '@/features/shared/components';
+import { useEffect, useState } from 'react';
+import { Card, CardContent, Badge } from '@/features/shared/components';
 import { getOrgThemeColor } from '@/lib/utils/orgTheme';
+import AvatarPlaceholder from '@/features/shared/components/AvatarPlaceholder';
 
 export const PortalBrandIcon = () => (
   <img src="/screen.png" alt="Logo" className="h-6 w-6 object-contain" />
 );
+
+/** Shared avatar tile — photo available ho to dikhati hai (load fail ho to bhi), warna generic placeholder. */
+export function PortalAvatar({ src, name, color, className = '' }: { src?: string | null; name: string; color?: string; className?: string }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  useEffect(() => setImgFailed(false), [src]);
+  if (src && !imgFailed) {
+    return <img src={src} alt={name} onError={() => setImgFailed(true)} className={`${className} object-cover`} />;
+  }
+  return <AvatarPlaceholder className={className} style={color ? { boxShadow: `0 0 0 2px ${color}30` } : undefined} />;
+}
 
 interface PortalHeaderProps {
   title: string;
@@ -40,6 +52,7 @@ export function PortalHeader({ title, subtitle, onLogout }: PortalHeaderProps) {
 interface ChildSummaryProps {
   firstName: string;
   lastName: string;
+  imageUrl?: string | null;
   schoolName?: string | null;
   className?: string | null;
   sectionName?: string | null;
@@ -48,20 +61,14 @@ interface ChildSummaryProps {
   isActive: boolean;
 }
 
-export function ChildSummaryCard({ firstName, lastName, schoolName, className, sectionName, rollNumber, status, isActive }: ChildSummaryProps) {
+export function ChildSummaryCard({ firstName, lastName, imageUrl, schoolName, className, sectionName, rollNumber, status, isActive }: ChildSummaryProps) {
   const color = getOrgThemeColor();
-  const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   return (
     <Card className="overflow-hidden border-0 shadow-md">
       <div className="h-1.5" style={{ background: color || undefined }} />
       <CardContent className="p-4">
         <div className="flex items-center gap-3 mb-4">
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold text-white shrink-0 shadow-sm"
-            style={{ background: color || undefined }}
-          >
-            {color ? initials : <span className="bg-primary-600 w-full h-full flex items-center justify-center rounded-xl">{initials}</span>}
-          </div>
+          <PortalAvatar src={imageUrl} name={`${firstName} ${lastName}`} color={color || undefined} className="w-12 h-12 rounded-xl shrink-0 shadow-sm" />
           <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-gray-900 truncate">{firstName} {lastName}</h2>
             <p className="text-xs text-gray-500 truncate">

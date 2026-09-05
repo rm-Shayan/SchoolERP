@@ -31,6 +31,7 @@ export interface StaffDailyReport {
     late: number;
     absent: number;
     leave: number;
+    halfDay: number;
     unmarked: number;
   };
   staff: StaffMember[];
@@ -96,7 +97,7 @@ export const staffAttendanceService = {
   },
 
   /** Admin: export attendance as Excel/CSV */
-  exportAttendance(params?: { startDate?: string; endDate?: string; format?: 'xlsx' | 'csv' }) {
+  exportAttendance(params?: { startDate?: string; endDate?: string; format?: 'xlsx' | 'csv'; staffId?: string }) {
     return client.get('/staff-attendance/export', {
       params,
       responseType: 'blob',

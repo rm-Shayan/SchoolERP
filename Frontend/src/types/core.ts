@@ -14,7 +14,7 @@ export type AdmissionStatus =
   | 'FEE_PENDING'
   | 'ENROLLED'
   | 'REJECTED';
-export type AttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'MANUAL_OVERRIDE';
+export type AttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'HALF_DAY' | 'MANUAL_OVERRIDE';
 export type PaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'ONLINE' | 'OTHER';
 export type RemarkType = 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE';
 export type DeliveryStatus = 'NOT_DELIVERED' | 'DELIVERING' | 'DELIVERED' | 'FAILED';
@@ -67,6 +67,8 @@ export interface SchoolBranding {
   orgName?: string | null;
   logoUrl?: string | null;
   themeColor: string;
+  /** Resolved school/branch when the login URL scoped branding to a school. */
+  school?: { code: string; name: string; logoUrl?: string | null } | null;
 }
 
 export interface AuthResponse {

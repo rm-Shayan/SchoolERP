@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import AuthLayout from '@/features/shared/components/AuthLayout';
@@ -12,6 +12,7 @@ import ParentLoginForms from '@/features/parent/components/ParentLoginForms';
 import StudentLoginForm from '@/features/parent/components/StudentLoginForm';
 import AdminLoginForm from '@/features/auth/components/parts/AdminLoginForm';
 import { useOrgBranding } from '@/hooks/useOrgBranding';
+import { applyOrgThemeToRoot, clearOrgThemeFromRoot } from '@/lib/theme';
 import type { SchoolBranding } from '@/types';
 
 interface LoginHubPageProps {
@@ -24,30 +25,49 @@ export default function LoginHubPage({ orgSlug, code, initialBranding }: LoginHu
   const { branding, setBranding } = useOrgBranding({ code, slug: orgSlug, initialBranding });
   const [group, setGroup] = useState<LoginGroup>('staff');
 
+  // Displayed org name comes from the resolved branding (never raw query params).
+  const label = branding?.orgName || branding?.name || 'School Management System';
+  // brandSub is the RESOLVED school/branch name — only present when a valid
+  // school was found within the org. Stays empty for org-only or invalid school.
+  const brandSubValue = branding?.school?.name ?? '';
+  // Logo priority: school logo → organization logo → default. The backend
+  // already collapses school→org into logoUrl, so we use branding.logoUrl.
   const themeColor = branding?.themeColor || undefined;
+
+  // DB se aayi theme (query param org/school/code → branding) ko poore hub UI
+  // par laga do — root CSS vars override se har primary-* element (buttons,
+  // links, focus rings, chips, background blobs) org ka color use karta hai,
+  // sirf left panel/tab nahi. Branding na ho to default violet (clear).
+  useEffect(() => {
+    if (themeColor) applyOrgThemeToRoot(themeColor);
+    else clearOrgThemeFromRoot();
+    return () => { if (themeColor) clearOrgThemeFromRoot(); };
+  }, [themeColor]);
+
   const role = ROLES.find((r) => r.key === group) ?? ROLES[0];
+  const resolvedSlug = branding?.slug || orgSlug;
 
   return (
     <AuthLayout
       themeColor={themeColor}
       brandIcon={
-        branding ? (
+        branding?.logoUrl ? (
           <BrandVisual name={branding.name} logoUrl={branding.logoUrl} />
         ) : (
           <img src="/screen.png" alt="SchoolERP" className="h-full w-full object-contain" />
         )
       }
-      brandLabel={branding?.orgName ?? 'School Management System'}
-      brandSub={branding?.name ?? 'SchoolERP'}
+      brandLabel={label}
+      brandSub={brandSubValue}
       badge={role.panel.badge}
       heading={role.panel.heading}
       description={role.panel.description}
       features={role.panel.features}
       footerNote={
         <div className="space-y-2">
-          {orgSlug && (
+          {resolvedSlug && (
             <Link
-              href={`/o/${encodeURIComponent(orgSlug)}`}
+              href={`/o/${encodeURIComponent(resolvedSlug)}`}
               className="block text-sm font-semibold transition hover:opacity-80"
               style={themeColor ? { color: themeColor } : undefined}
             >
@@ -67,7 +87,7 @@ export default function LoginHubPage({ orgSlug, code, initialBranding }: LoginHu
         transition={{ duration: 0.25, ease: 'easeOut' }}
       >
         {group === 'staff' && (
-          <StaffLoginSection branding={branding} onBrandingChange={setBranding} />
+          <StaffLoginSection branding={branding} onBrandingChange={setBranding} branch={branding?.code} />
         )}
         {group === 'parent' && <ParentLoginForms themeColor={themeColor} />}
         {group === 'student' && <StudentLoginForm themeColor={themeColor} />}

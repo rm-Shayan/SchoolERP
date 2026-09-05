@@ -70,6 +70,15 @@ class StudentController {
   });
 
   /**
+   * GET /api/v1/students/platform
+   * Platform-wide student directory (SUPER_ADMIN only).
+   */
+  listAllStudentsPlatform = asyncHandler(async (req, res) => {
+    const result = await studentService.listAllStudentsPlatform(req.user, req.query);
+    return res.status(200).json(ApiResponse.ok("Platform student directory fetched successfully", result));
+  });
+
+  /**
    * POST /api/v1/students/:id/reissue-id
    * Generate a new identifier code (invalidates the old QR) + printable ID slip.
    */

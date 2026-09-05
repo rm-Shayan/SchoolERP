@@ -42,13 +42,14 @@ export default function MonthlyMatrixTable({ students, records, offDays, weeklyO
   }, [records, offDays, weeklyOff, year, month]);
 
   const rowCounts = useMemo(() => {
-    const counts = new Map<string, { P: number; L: number; A: number; LV: number }>();
+    const counts = new Map<string, { P: number; L: number; A: number; LV: number; HD: number }>();
     for (const r of records) {
-      const c = counts.get(r.studentId) ?? { P: 0, L: 0, A: 0, LV: 0 };
+      const c = counts.get(r.studentId) ?? { P: 0, L: 0, A: 0, LV: 0, HD: 0 };
       if (r.status === 'PRESENT') c.P++;
       else if (r.status === 'LATE') c.L++;
       else if (r.status === 'ABSENT') c.A++;
       else if (r.status === 'LEAVE') c.LV++;
+      else if (r.status === 'HALF_DAY') c.HD++;
       counts.set(r.studentId, c);
     }
     return counts;
@@ -116,7 +117,7 @@ export default function MonthlyMatrixTable({ students, records, offDays, weeklyO
           </thead>
           <tbody>
             {students.map((stu) => {
-              const cnt = rowCounts.get(stu.id) ?? { P: 0, L: 0, A: 0, LV: 0 };
+              const cnt = rowCounts.get(stu.id) ?? { P: 0, L: 0, A: 0, LV: 0, HD: 0 };
               return (
                 <tr key={stu.id} className="border-b border-gray-50 transition-colors hover:bg-gray-50/40">
                   <td className="sticky left-0 z-10 bg-white py-1.5 px-3">
@@ -130,7 +131,7 @@ export default function MonthlyMatrixTable({ students, records, offDays, weeklyO
                   ))}
                   <td className="border-l border-gray-50 py-1.5 px-3 text-center">
                     <span className="text-[10px] font-semibold tabular-nums text-gray-400">
-                      <b className="text-emerald-600">{cnt.P}</b> · <b className="text-amber-600">{cnt.L}</b> · <b className="text-red-500">{cnt.A}</b>
+                      <b className="text-emerald-600">{cnt.P}</b> · <b className="text-amber-600">{cnt.L}</b> · <b className="text-red-500">{cnt.A}</b> · <b className="text-cyan-600">{cnt.HD}</b>
                     </span>
                   </td>
                 </tr>

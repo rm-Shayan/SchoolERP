@@ -28,7 +28,8 @@ export default function Navbar({ title, onMenuClick }: NavbarProps) {
 
   const handleLogout = async () => {
     await dispatch(logoutAction());
-    router.push('/login');
+    // Whole app: logout par org slug ke saath unified login par le jao
+    router.push(organization?.slug ? `/login?org=${organization.slug}` : '/login');
   };
 
   return (
@@ -71,7 +72,7 @@ export default function Navbar({ title, onMenuClick }: NavbarProps) {
         </div>
 
         <div className="flex shrink-0 items-center gap-1 md:gap-2">
-          <NotificationMenu isSuperAdmin={isSuperAdmin} />
+          <NotificationMenu />
           <div className="mx-1.5 hidden h-6 w-px bg-slate-200 sm:block" />
 
           <div className="relative">

@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import type { User } from '@/types';
 import { Badge, Button } from '@/features/shared/components';
+import AvatarPlaceholder from '@/features/shared/components/AvatarPlaceholder';
 import { getRoleLabel, formatDate } from '@/lib/utils';
 import { documentsApi } from '@/lib/api/documents';
 
@@ -19,9 +20,11 @@ function StaffRow({ member, onBlock, onUnblock, onEdit, onSelect }: StaffRowProp
     <tr className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => onSelect?.(member)}>
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
-            <span className="text-sm font-bold text-primary-700">{member.name.charAt(0)}</span>
-          </div>
+          {member.avatarUrl ? (
+            <img src={member.avatarUrl} alt={member.name} className="w-9 h-9 rounded-full object-cover shrink-0" />
+          ) : (
+            <AvatarPlaceholder className="w-9 h-9 shrink-0" />
+          )}
           <div className="min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">{member.name}</p>
             {member.phone && <p className="text-xs text-gray-500 truncate">{member.phone}</p>}

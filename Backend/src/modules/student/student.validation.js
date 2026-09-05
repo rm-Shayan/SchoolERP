@@ -9,7 +9,7 @@ export const createStudentSchema = z.object({
     schoolId: z.string().uuid("Invalid schoolId"),
   }),
   body: z.object({
-    sectionId: z.string().uuid("Invalid sectionId"),
+    sectionId: z.string().uuid("Invalid sectionId").optional(),
     rollNumber: z.string().min(1, "Roll number is required"),
     firstName: z.string().min(1, "First name is required"),
     lastName: z.string().min(1, "Last name is required"),

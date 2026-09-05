@@ -4,57 +4,96 @@ import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
-  setPortalNotifications, removePortalNotification,
-  markAllPortalRead, markPortalRead,
+  setPortalNotifications, removePortalNotification, setPortalUnread,
+  markAllPortalRead, markPortalRead, addPortalNotification,
 } from '@/store/slices/notificationsSlice';
-import { notificationService } from '@/lib/api';
+import {
+  usePortalNotificationsQuery,
+  useUnreadCountQuery,
+  useMarkReadMutation,
+  useMarkAllReadMutation,
+  useDeleteNotificationMutation,
+} from '@/store/api';
 import { cn } from '@/lib/utils';
 import { getSocket } from '@/lib/socket';
 import NotificationItem from './NotificationItem';
 
-export default function NotificationMenu({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
+export default function NotificationMenu() {
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const { school } = useAppSelector((s) => s.auth);
+  const user = useAppSelector((s) => s.auth.user);
   const { portalItems, portalUnread } = useAppSelector((s) => s.notifications);
   const dispatch = useAppDispatch();
   const schoolId = school?.id;
+  const organizationId = user?.organizationId;
 
-  const fetchNotifications = useCallback(async () => {
-    if (!schoolId) return;
-    setLoading(true);
-    try {
-      const portal = await notificationService.getPortal({ schoolId, pageSize: 20 });
-      dispatch(setPortalNotifications(portal.items));
-    } catch { /* noop */ }
-    setLoading(false);
-  }, [schoolId, dispatch]);
+  // True unread count from server — always in sync (accurate on refresh, 0 when none).
+  const { data: unread, refetch: refetchUnread } = useUnreadCountQuery(
+    { schoolId, organizationId },
+    { skip: !user },
+  );
 
-  const handleMarkAllRead = useCallback(async () => {
+  useEffect(() => {
+    if (typeof unread === 'number') dispatch(setPortalUnread(unread));
+  }, [unread, dispatch]);
+
+  // Dropdown items — fetch list only when opened.
+  // Super admins don't have schoolId — pass empty params, backend scopes by JWT.
+  const canFetch = !!open;
+  const { data: portalData } = usePortalNotificationsQuery(
+    { ...(schoolId && { schoolId }), ...(organizationId && { organizationId }), pageSize: 20 },
+    { skip: !canFetch },
+  );
+
+  useEffect(() => {
+    if (portalData) dispatch(setPortalNotifications(portalData.items));
+  }, [portalData, dispatch]);
+
+  const [markReadApi] = useMarkReadMutation();
+  const [markAllReadApi] = useMarkAllReadMutation();
+  const [deleteApi] = useDeleteNotificationMutation();
+
+  const handleMarkAllRead = useCallback(() => {
     dispatch(markAllPortalRead());
-    await notificationService.markAllRead(schoolId).catch(() => {});
-  }, [schoolId, dispatch]);
+    markAllReadApi(schoolId || undefined).catch(() => {});
+  }, [schoolId, dispatch, markAllReadApi]);
 
-  const handleMarkRead = useCallback(async (id: string) => {
+  const handleMarkRead = useCallback((id: string) => {
     dispatch(markPortalRead([id]));
-    await notificationService.markRead([id]).catch(() => {});
-  }, [dispatch]);
+    markReadApi([id]).catch(() => {});
+  }, [dispatch, markReadApi]);
 
-  const handleDelete = useCallback(async (id: string) => {
+  const handleDelete = useCallback((id: string) => {
     dispatch(removePortalNotification(id));
-    await notificationService.remove([id]).catch(() => {});
-  }, [dispatch]);
+    deleteApi([id]).catch(() => {});
+  }, [dispatch, deleteApi]);
 
-  const toggle = () => { const next = !open; setOpen(next); if (next) fetchNotifications(); };
+  const toggle = useCallback(() => setOpen((o) => !o), []);
 
-  // Socket: real-time badge + list updates
+  useEffect(() => {
+    if (!open) return;
+    handleMarkAllRead();
+  }, [open, handleMarkAllRead]);
+
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
-    const onCreated = (n: any) => dispatch({ type: 'notifications/addPortalNotification', payload: n });
-    const onDeleted = ({ ids }: { ids: string[] }) => ids.forEach((id: string) => dispatch(removePortalNotification(id)));
-    const onRead = ({ ids }: { ids: string[] }) => dispatch(markPortalRead(ids));
-    const onAllRead = () => dispatch(markAllPortalRead());
+    const onCreated = (n: any) => {
+      dispatch(addPortalNotification(n));
+      refetchUnread();
+    };
+    const onDeleted = ({ ids }: { ids: string[] }) => {
+      ids.forEach((id: string) => dispatch(removePortalNotification(id)));
+      refetchUnread();
+    };
+    const onRead = ({ ids }: { ids: string[] }) => {
+      dispatch(markPortalRead(ids));
+      refetchUnread();
+    };
+    const onAllRead = () => {
+      dispatch(markAllPortalRead());
+      refetchUnread();
+    };
     socket.on('portal_notification_created', onCreated);
     socket.on('portal_notifications_deleted', onDeleted);
     socket.on('portal_notifications_read', onRead);
@@ -65,7 +104,7 @@ export default function NotificationMenu({ isSuperAdmin = false }: { isSuperAdmi
       socket.off('portal_notifications_read', onRead);
       socket.off('portal_all_read', onAllRead);
     };
-  }, [dispatch]);
+  }, [dispatch, refetchUnread]);
 
   return (
     <div className="relative">
@@ -81,13 +120,12 @@ export default function NotificationMenu({ isSuperAdmin = false }: { isSuperAdmi
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <p className="text-sm font-semibold text-gray-900">Notifications</p>
             <div className="flex items-center gap-3">
-              {portalUnread > 0 && !isSuperAdmin && <button onClick={handleMarkAllRead} className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800">Mark all read</button>}
+              {portalUnread > 0 && <button onClick={handleMarkAllRead} className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800">Mark all read</button>}
               <Link href="/notifications" onClick={() => setOpen(false)} className="text-[11px] text-gray-500 hover:text-gray-700">View all →</Link>
             </div>
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {loading && portalItems.length === 0 ? <div className="px-4 py-8 text-center text-sm text-gray-400">Loading...</div>
-              : portalItems.length === 0 ? <div className="px-4 py-10 text-center"><p className="text-sm text-gray-500">No notifications yet.</p></div>
+            {portalItems.length === 0 ? <div className="px-4 py-10 text-center"><p className="text-sm text-gray-500">No notifications yet.</p></div>
               : portalItems.map((n) => <NotificationItem key={n.id} n={n} onRead={handleMarkRead} onDelete={handleDelete} />)}
           </div>
         </div>

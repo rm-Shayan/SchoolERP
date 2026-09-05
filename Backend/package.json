@@ -9,9 +9,7 @@
     "start": "node --env-file=.env src/index.js",
     "test": "node --test",
     "seed": "node --env-file=.env scripts/seed-data.js",
-    "clean-org-data": "node --env-file=.env scripts/clean-org-data.js",
-    "cleanup:orphans": "node --env-file=.env src/scripts/cleanupOrphanedImages.js",
-    "cleanup:orphans:apply": "node --env-file=.env src/scripts/cleanupOrphanedImages.js --apply"
+    "clean": "node --env-file=.env scripts/clean-org-data.js"
   },
   "keywords": [],
   "author": "rm-shayan",

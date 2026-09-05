@@ -78,7 +78,10 @@ class StorageSettingsService {
       if (!plainSecret) throw ApiError.badRequestError("Stored API secret could not be decrypted — enter a new one");
     }
 
-    const check = await this.verifyConnection({ cloudName, apiKey, apiSecret: plainSecret });
+    const skipVerification = process.env.SKIP_CREDENTIAL_VERIFICATION === 'true';
+    const check = skipVerification
+      ? { ok: true }
+      : await this.verifyConnection({ cloudName, apiKey, apiSecret: plainSecret });
     if (!check.ok) {
       logger.logger.warn(`Cloudinary verify failed [${schoolId ? "branch" : "org"}:${organizationId}]: ${check.error}`);
       throw ApiError.badRequestError(`Cloudinary verification failed: ${check.error}`);
@@ -96,7 +99,7 @@ class StorageSettingsService {
       : await prisma.orgSecrets.create({ data: { organizationId, schoolId: schoolId || null, category: "CLOUDINARY", data, isVerified: true, lastVerifiedAt: new Date() } });
 
     invalidateOrgStorageCache(organizationId, schoolId);
-    logger.logger.info(`Storage settings saved [${schoolId ? "branch" : "org"}:${organizationId}] -> ${data.cloudName}`);
+    logger.logger.info(`Storage settings saved [${schoolId ? "branch" : "org"}:${organizationId}] -> ${data.cloudName}${skipVerification ? ' (verification skipped)' : ''}`);
     return this._mask(setting);
   }
 
@@ -114,7 +117,11 @@ class StorageSettingsService {
     if (!cloudinary || !cloudinary.cloudName || !cloudinary.apiKey) return null;
     const apiSecret = String(cloudinary.apiSecret || "");
     if (!apiSecret) throw ApiError.badRequestError("'apiSecret' is required when Cloudinary cloudName/apiKey is provided");
-    const check = await this.verifyConnection({ cloudName: cloudinary.cloudName, apiKey: cloudinary.apiKey, apiSecret });
+
+    const skipVerification = process.env.SKIP_CREDENTIAL_VERIFICATION === 'true';
+    const check = skipVerification
+      ? { ok: true }
+      : await this.verifyConnection({ cloudName: cloudinary.cloudName, apiKey: cloudinary.apiKey, apiSecret });
     if (!check.ok) throw ApiError.badRequestError(`Cloudinary verification failed: ${check.error}`);
 
     const data = {
@@ -124,10 +131,10 @@ class StorageSettingsService {
       apiSecretEnc: encryptSecret(apiSecret),
     };
     const setting = await prisma.orgSecrets.create({
-      data: { organizationId, schoolId: schoolId || null, category: "CLOUDINARY", data, isVerified: true, lastVerifiedAt: new Date() },
+      data: { organizationId, schoolId: schoolId || null, category: "CLOUDINARY", data, isVerified: skipVerification, lastVerifiedAt: skipVerification ? new Date() : null, lastError: skipVerification ? null : check.error },
     });
     invalidateOrgStorageCache(organizationId, schoolId);
-    logger.logger.info(`Storage provisioned [${schoolId ? "branch" : "org"}:${organizationId}] -> ${data.cloudName}`);
+    logger.logger.info(`Storage provisioned [${schoolId ? "branch" : "org"}:${organizationId}] -> ${data.cloudName}${skipVerification ? ' (verification skipped)' : ''}`);
     return this._mask(setting);
   }
 }

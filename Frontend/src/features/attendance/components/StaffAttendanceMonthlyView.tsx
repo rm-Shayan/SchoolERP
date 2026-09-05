@@ -3,19 +3,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import { staffAttendanceService } from '@/lib/api';
 import type { StaffMonthlyReport } from '@/lib/api/staffAttendanceService';
-import { Card, EmptyState } from '@/features/shared/components';
-import { cn } from '@/lib/utils';
+import { Button, Card, EmptyState } from '@/features/shared/components';
+import { cn, downloadBlob } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 const DAY_COLORS: Record<number, string> = {
-  0: 'bg-red-50 text-red-600',
+  0: 'bg-gray-50 text-gray-400',
   1: 'bg-emerald-50 text-emerald-700',
   2: 'bg-amber-50 text-amber-700',
-  3: 'bg-blue-50 text-blue-600',
-  4: 'bg-gray-50 text-gray-500',
+  3: 'bg-red-50 text-red-600',
+  4: 'bg-blue-50 text-blue-600',
+  5: 'bg-cyan-50 text-cyan-700',
 };
 
-const DAY_LABELS: Record<number, string> = { 0: '—', 1: 'P', 2: 'L', 3: 'A', 4: 'Lv' };
+const DAY_LABELS: Record<number, string> = { 0: '—', 1: 'P', 2: 'L', 3: 'A', 4: 'Lv', 5: 'HD' };
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month, 0).getDate();
@@ -27,6 +28,7 @@ export default function StaffAttendanceMonthlyView() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [report, setReport] = useState<StaffMonthlyReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [staffId, setStaffId] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -42,32 +44,48 @@ export default function StaffAttendanceMonthlyView() {
   const daysInMonth = getDaysInMonth(year, month);
   const monthLabel = new Date(year, month - 1).toLocaleString('en-PK', { month: 'long', year: 'numeric' });
 
-  const statusMap: Record<string, number> = { PRESENT: 1, LATE: 2, ABSENT: 3, LEAVE: 4 };
+  const statusMap: Record<string, number> = { PRESENT: 1, LATE: 2, ABSENT: 3, LEAVE: 4, HALF_DAY: 5 };
+  const pad2 = (n: number) => (n < 10 ? `0${n}` : String(n));
+  const handleCsv = async () => {
+    try {
+      const startDate = `${year}-${pad2(month)}-01`;
+      const endDate = `${year}-${pad2(month)}-${pad2(daysInMonth)}`;
+      const chosen = report?.records.find((r) => r.staff.id === staffId)?.staff;
+      const res = await staffAttendanceService.exportAttendance({ startDate, endDate, format: 'csv', staffId: staffId || undefined });
+      const file = chosen ? `${chosen.name.replace(/\s+/g, '-')}-` : '';
+      downloadBlob(res.data, `${file}staff-attendance-${year}-${pad2(month)}.csv`);
+      toast.success(chosen ? `Exported ${chosen.name}'s monthly CSV` : 'Monthly CSV exported');
+    } catch { toast.error('Export failed'); }
+  };
   const weeklyOffSet = new Set(report?.weeklyOff ?? [0, 6]);
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end gap-3 p-4 rounded-2xl border border-gray-100 bg-white shadow-sm">
         <div>
-          <label className="block text-[11px] font-semibold text-gray-500 mb-1">Month</label>
-          <select value={month} onChange={(e) => setMonth(Number(e.target.value))}
-            className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-primary-500 outline-none">
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('en-PK', { month: 'long' })}</option>
-            ))}
+          <label className="mb-1 block text-[11px] font-semibold text-gray-500">Month</label>
+          <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none focus:border-primary-500">
+            {Array.from({ length: 12 }, (_, i) => <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('en-PK', { month: 'long' })}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-[11px] font-semibold text-gray-500 mb-1">Year</label>
-          <select value={year} onChange={(e) => setYear(Number(e.target.value))}
-            className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-primary-500 outline-none">
+          <label className="mb-1 block text-[11px] font-semibold text-gray-500">Year</label>
+          <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none focus:border-primary-500">
             {[year - 1, year, year + 1].map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
-        <div className="flex gap-2 ml-auto text-[10px] font-medium">
-          {Object.entries(DAY_LABELS).map(([k, v]) => (
-            <span key={k} className={cn('px-2 py-1 rounded-md', DAY_COLORS[Number(k)])}>{v}</span>
-          ))}
+        <div>
+          <label className="mb-1 block text-[11px] font-semibold text-gray-500">Staff</label>
+          <select value={staffId} onChange={(e) => setStaffId(e.target.value)} disabled={loading} className="h-9 max-w-[190px] rounded-lg border border-gray-200 bg-white px-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-300 disabled:opacity-40">
+            <option value="">All staff</option>
+            {(report?.records ?? []).map((r) => <option key={r.staff.id} value={r.staff.id}>{r.staff.name}</option>)}
+          </select>
+        </div>
+        <div className="flex items-center gap-2 ml-auto">
+          <div className="flex gap-2 text-[10px] font-medium">
+            {Object.entries(DAY_LABELS).map(([k, v]) => <span key={k} className={cn('px-2 py-1 rounded-md', DAY_COLORS[Number(k)])}>{v}</span>)}
+          </div>
+          <Button size="sm" variant="outline" onClick={handleCsv}>Export CSV</Button>
         </div>
       </div>
 
@@ -102,7 +120,6 @@ export default function StaffAttendanceMonthlyView() {
                     </td>
                     {Array.from({ length: daysInMonth }, (_, i) => {
                       const day = i + 1;
-                      const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                       let val = 0;
                       if (r.days.PRESENT && day <= r.days.PRESENT + (r.days.LATE || 0) + (r.days.ABSENT || 0) + (r.days.LEAVE || 0)) {
                         const dayStatuses: string[] = [];

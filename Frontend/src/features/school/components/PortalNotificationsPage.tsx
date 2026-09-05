@@ -67,11 +67,6 @@ export default function PortalNotificationsPage() {
     await notificationService.markRead([id]).catch(() => load());
   };
 
-  const handleDeleteSelected = async (ids: string[]) => {
-    setItems((prev) => prev.filter((n) => !ids.includes(n.id)));
-    await notificationService.remove(ids).catch(() => load());
-  };
-
   const handleMarkAllRead = async () => {
     setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
     await notificationService.markAllRead(school?.id).catch(() => {});

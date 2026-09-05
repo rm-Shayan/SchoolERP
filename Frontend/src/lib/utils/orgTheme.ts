@@ -14,6 +14,25 @@ export function getOrgThemeColor(): string | undefined {
   }
 }
 
+/** Org slug from saved branding (logout/login redirect ke liye). */
+export function getOrgSlug(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const orgStr = localStorage.getItem('organization');
+    if (!orgStr) return undefined;
+    const org = JSON.parse(orgStr);
+    return org?.slug || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Unified login redirect — org slug ho to `login?org=slug`, warna plain login. */
+export function portalLoginRedirect(): string {
+  const slug = getOrgSlug();
+  return slug ? `/login?org=${encodeURIComponent(slug)}` : '/login';
+}
+
 /** Convert hex to RGB triplet (no #). */
 export function hexToRgb(hex: string): string {
   const h = hex.replace('#', '');

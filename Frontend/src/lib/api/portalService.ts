@@ -3,6 +3,7 @@
 import axios from 'axios';
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import type { ApiResponse } from '@/types';
+import { portalLoginRedirect } from '@/lib/utils/orgTheme';
 
 const API_BASE_URL = '/api/v1';
 
@@ -11,9 +12,10 @@ export interface PortalStudentProfile {
   firstName: string;
   lastName: string;
   rollNumber: string;
+  imageUrl?: string | null;
   status: string;
   isActive: boolean;
-  school: { id: string; name: string } | null;
+  school: { id: string; name: string; slug?: string | null; themeColor?: string; logoUrl?: string } | null;
   class: { id: string; name: string } | null;
   section: { id: string; name: string } | null;
   parentWhatsapp?: string | null;
@@ -33,7 +35,7 @@ portalApi.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('studentToken');
       localStorage.removeItem('studentProfile');
-      window.location.href = '/parent/login';
+      window.location.href = portalLoginRedirect();
     }
     return Promise.reject(error);
   }

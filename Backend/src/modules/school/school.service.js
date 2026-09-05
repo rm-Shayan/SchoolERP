@@ -17,8 +17,7 @@ import { resolveBranchLogoReplace } from "./logoSync.js";
 import auditService from "../audit/audit.service.js";
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../audit/actions.js";
 
-// Default accent color applied to the branded login UI until per-org theming is added.
-const BRAND_THEME_COLOR = "#2563eb";
+
 
 const SCHOOL_CACHE_TTL = 300; // 5 minutes
 const OVERVIEW_CACHE_KEY = "superadmin:overview";
@@ -43,25 +42,39 @@ class SchoolService {
    * Accepts a school `code` (GULSHAN-01) OR an organization `slug` (gulshan).
    * Prioritizes branch logo → falls back to organization logo.
    */
-  async getBranding({ code, slug }) {
-    let school = null;
+  async getBranding({ code, slug, organization, school }) {
+    let branch = null;
     if (code) {
-      school = await schoolRepository.findByCodeWithOrg(code.trim());
+      branch = await schoolRepository.findByCodeWithOrg(code.trim());
     } else if (slug) {
-      school = await schoolRepository.findByOrgSlug(slug.trim());
+      branch = await schoolRepository.findByOrgSlug(slug.trim());
+    } else if (organization) {
+      // Org-scoped resolution: `organization` = org slug OR code, optional
+      // `school` = branch code/name resolved strictly within that org.
+      const org = await prisma.organization.findFirst({
+        where: { OR: [{ slug: organization.trim() }, { code: organization.trim().toUpperCase() }] },
+        select: { id: true },
+      });
+      if (org) {
+        branch = school
+          ? await schoolRepository.findInOrgByCodeOrName(org.id, school)
+          : await schoolRepository.findByOrgId(org.id);
+      }
     }
 
-    if (!school) {
+    if (!branch) {
       throw ApiError.notFoundError("School not found");
     }
 
     return {
-      code: school.code,
-      name: school.name,
-      slug: school.organization?.slug || null,
-      orgName: school.organization?.name || null,
-      logoUrl: school.logoUrl || school.organization?.logoUrl || null,
-      themeColor: school.themeColor || school.organization?.themeColor || BRAND_THEME_COLOR,
+      code: branch.code,
+      name: branch.name,
+      slug: branch.organization?.slug || null,
+      orgName: branch.organization?.name || null,
+      logoUrl: branch.logoUrl || branch.organization?.logoUrl || null,
+      // Sirf DB wala theme — koi hardcoded fallback nahi. Theme na ho to null
+      // (frontend apna default palette use karta hai, blue force nahi hota).
+      themeColor: branch.themeColor || branch.organization?.themeColor || null,
     };
   }
 
@@ -239,6 +252,10 @@ class SchoolService {
     return shaped;
   }
 
+  async getAnalytics(schoolId) {
+    return schoolRepository.branchAnalytics(schoolId, 12);
+  }
+
   /**
    * Re-assign a branch's admin.
    * `adminEmail`   → create a fresh ADMIN (Principal) + email credentials; the
@@ -337,8 +354,8 @@ class SchoolService {
     emitToRoom("super_admins", "overview_updated", {});
   }
 
-  async list(organizationId) {
-    const cacheKey = organizationId ? `schools:org:${organizationId}` : "schools:all";
+  async list(organizationId, { page = 1, pageSize = 100 } = {}) {
+    const cacheKey = organizationId ? `schools:org:${organizationId}:p${page}` : `schools:all:p${page}`;
     try {
       const cached = await redis.get(cacheKey);
       if (cached) return JSON.parse(cached);
@@ -346,17 +363,17 @@ class SchoolService {
       // Fall back to DB
     }
 
-    const schools = organizationId
-      ? await schoolRepository.listByOrganization(organizationId)
-      : await schoolRepository.listAll();
+    const result = organizationId
+      ? await schoolRepository.listByOrganization(organizationId, { page, pageSize })
+      : await schoolRepository.listAll({ page, pageSize });
 
     try {
-      await redis.setEx(cacheKey, SCHOOL_CACHE_TTL, JSON.stringify(schools));
+      await redis.setEx(cacheKey, SCHOOL_CACHE_TTL, JSON.stringify(result));
     } catch (err) {
       // Non-blocking
     }
 
-    return schools;
+    return result;
   }
 
   async update(id, data, requester = null, req = null) {

@@ -4,30 +4,38 @@ import { memo, useMemo, useState } from 'react';
 import type { TimetableSlot } from '@/lib/api/timetableService';
 import { Card, CardContent } from '@/features/shared/components';
 import { cn } from '@/lib/utils';
+import { getSubjectColor } from '@/lib/utils/subjectColors';
 import WeekOverview from './WeekOverview';
-import DayTimeline, { type GroupedSlot } from './DayTimeline';
+import DayNav from './DayNav';
 
 const DAY_NAMES = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const DAY_ABBR = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const DAY_COLS = [1, 2, 3, 4, 5, 6, 7];
 
-function groupSlots(slots: TimetableSlot[]): GroupedSlot[] {
-  const map = new Map<string, GroupedSlot>();
+interface TimeSlot { time: string; sections: string[]; }
+interface SubjectGroup { subjectName: string; slots: TimeSlot[]; }
+
+function groupBySubject(slots: TimetableSlot[]): SubjectGroup[] {
+  const map = new Map<string, Map<string, Set<string>>>();
   for (const s of slots) {
-    const key = `${s.startTime}|${s.endTime}|${s.subjectId}`;
-    const secLabel = s.section ? `${s.section.class?.name ?? ''} ${s.section.name}`.trim() : '—';
-    const existing = map.get(key);
-    if (existing) existing.sections.push({ id: s.sectionId, label: secLabel });
-    else map.set(key, { id: s.id, subjectName: s.subject?.name ?? '—', startTime: s.startTime, endTime: s.endTime, sections: [{ id: s.sectionId, label: secLabel }] });
+    const name = s.subject?.name ?? '—';
+    const timeKey = `${s.startTime}|${s.endTime}`;
+    const sec = s.section?.class?.name ? `${s.section.class.name}${s.section.name ? ' ' + s.section.name : ''}` : s.section?.name ?? '';
+    if (!map.has(name)) map.set(name, new Map());
+    const tm = map.get(name)!;
+    if (!tm.has(timeKey)) tm.set(timeKey, new Set());
+    if (sec) tm.get(timeKey)!.add(sec);
   }
-  return [...map.values()].sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const groups: SubjectGroup[] = [];
+  for (const [subjectName, tm] of map) {
+    const slots: TimeSlot[] = [];
+    for (const [tk, secs] of tm) {
+      const [s, e] = tk.split('|');
+      slots.push({ time: `${s}–${e}`, sections: [...secs] });
+    }
+    groups.push({ subjectName, slots: slots.sort((a, b) => a.time.localeCompare(b.time)) });
+  }
+  return groups.sort((a, b) => a.slots[0]?.time.localeCompare(b.slots[0]?.time) ?? 0);
 }
 
-function countByDay(slots: TimetableSlot[]) {
-  const counts = new Map<number, number>();
-  for (const s of slots) counts.set(s.dayOfWeek, (counts.get(s.dayOfWeek) ?? 0) + 1);
-  return counts;
-}
 
 interface Props { slots: TimetableSlot[]; }
 
@@ -35,7 +43,6 @@ const TodayTimetable = memo(function TodayTimetable({ slots }: Props) {
   const now = useMemo(() => new Date(), []);
   const [dayOffset, setDayOffset] = useState(0);
   const [weekView, setWeekView] = useState(false);
-  const slotCounts = useMemo(() => countByDay(slots), [slots]);
   const todayDow = now.getDay() === 0 ? 7 : now.getDay();
 
   const targetDay = useMemo(() => {
@@ -46,60 +53,84 @@ const TodayTimetable = memo(function TodayTimetable({ slots }: Props) {
 
   const isToday = dayOffset === 0;
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  const dayRawSlots = useMemo(() => slots.filter((s) => s.dayOfWeek === targetDay.dow).sort((a, b) => a.startTime.localeCompare(b.startTime)), [slots, targetDay.dow]);
-  const grouped = useMemo(() => groupSlots(dayRawSlots), [dayRawSlots]);
-  const currentIdx = isToday ? grouped.findIndex((g) => g.startTime <= currentTime && currentTime <= g.endTime) : -1;
-  const nextSlot = isToday ? grouped.find((g) => g.startTime > currentTime) : null;
+  const dayRawSlots = useMemo(
+    () => slots.filter((s) => s.dayOfWeek === targetDay.dow).sort((a, b) => a.startTime.localeCompare(b.startTime)),
+    [slots, targetDay.dow],
+  );
+  const grouped = useMemo(() => groupBySubject(dayRawSlots), [dayRawSlots]);
+
+  const currentGroupIdx = useMemo(() => {
+    if (!isToday) return -1;
+    return grouped.findIndex((g) => g.slots.some((s) => {
+      const [start, end] = s.time.split('–');
+      return start <= currentTime && currentTime <= end;
+    }));
+  }, [grouped, isToday, currentTime]);
+
+  const nextGroup = isToday ? grouped.find((g) => g.slots[0]?.time.split('–')[0] > currentTime) : null;
   const jumpToDay = (dow: number) => setDayOffset(dow - todayDow);
 
   return (
     <Card>
       <CardContent className="p-4 sm:p-5">
-        <div className="flex items-center justify-between mb-3">
-          <button onClick={() => setDayOffset((o) => o - 1)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-          </button>
-          <div className="text-center min-w-0">
-            <h3 className="text-sm font-semibold text-gray-900 truncate">{targetDay.label}</h3>
-            {isToday ? <span className="text-[10px] font-bold text-primary-500">TODAY</span> : (
-              <button onClick={() => setDayOffset(0)} className="text-[10px] text-primary-600 hover:text-primary-700 font-medium">← Back to today</button>
-            )}
-          </div>
-          <button onClick={() => setDayOffset((o) => o + 1)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-          </button>
-        </div>
+        <DayNav targetDow={targetDay.dow} label={targetDay.label} isToday={isToday}
+          onPrev={() => setDayOffset((o) => o - 1)}
+          onNext={() => setDayOffset((o) => o + 1)} onJump={(d) => { setWeekView(false); jumpToDay(d); }}
+          onBackToToday={() => setDayOffset(0)} />
 
-        <div className="flex items-center justify-between mb-3 gap-2">
-          <div className="flex gap-1">
-            {DAY_COLS.map((d) => {
-              const count = slotCounts.get(d) ?? 0;
-              const active = d === targetDay.dow && !weekView;
-              return (
-                <button key={d} onClick={() => { setWeekView(false); jumpToDay(d); }}
-                  className={cn('px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all', active ? 'bg-primary-600 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200')}>
-                  <span className="hidden sm:inline">{DAY_NAMES[d].slice(0, 3)}</span>
-                  <span className="sm:hidden">{DAY_ABBR[d]}</span>
-                  {count > 0 && <span className={cn('ml-0.5 text-[8px] px-1 rounded-full font-bold', active ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-500')}>{count}</span>}
-                </button>
-              );
-            })}
-          </div>
+        <div className="flex justify-end mb-2">
           <button onClick={() => setWeekView((v) => !v)}
-            className={cn('px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all shrink-0', weekView ? 'bg-primary-600 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200')}>
+            className={cn('px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all', weekView ? 'bg-primary-600 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200')}>
             {weekView ? '📅 Day' : '📋 Week'}
           </button>
         </div>
 
         {weekView ? (
           <WeekOverview slots={slots} todayDow={todayDow} onDayClick={(dow) => { setWeekView(false); jumpToDay(dow); }} />
+        ) : grouped.length === 0 ? (
+          <div className="py-8 text-center">
+            <p className="text-2xl mb-1">📚</p>
+            <p className="text-sm text-gray-500">{isToday ? `Enjoy your ${DAY_NAMES[targetDay.dow]}!` : `No classes on ${DAY_NAMES[targetDay.dow]}.`}</p>
+          </div>
         ) : (
-          <DayTimeline grouped={grouped} isToday={isToday} currentIdx={currentIdx} emptyMsg={isToday ? `Enjoy your ${DAY_NAMES[targetDay.dow]}!` : `No classes on ${DAY_NAMES[targetDay.dow]}.`} />
+          <div className="space-y-1.5">
+            {grouped.map((g, idx) => {
+              const isCurrent = idx === currentGroupIdx;
+              const isPast = idx < currentGroupIdx || (currentGroupIdx === -1 && isToday && g.slots[0]?.time.split('–')[1] < currentTime);
+              const sc = getSubjectColor(g.subjectName);
+              const timesText = g.slots.map((s) => s.time).join(', ');
+              const sectionsText = g.slots.flatMap((s) => s.sections).join(', ');
+              return (
+                <div key={g.subjectName} className={cn('flex items-start gap-2.5 rounded-xl border px-3 py-2 transition-all',
+                  isCurrent && 'bg-primary-50 ring-1 ring-primary-200/60 shadow-sm border-primary-200',
+                  isPast && !isCurrent && cn('opacity-50', sc.bg, sc.border),
+                  !isPast && !isCurrent && cn(sc.bg, sc.border))}>
+                  <span className={cn('text-[10px] font-bold w-4 text-center shrink-0 mt-0.5', isCurrent ? 'text-primary-500' : 'text-gray-400')}>
+                    {isCurrent ? '▶' : idx + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={cn('text-sm font-bold truncate', isCurrent ? 'text-primary-700' : isPast ? cn(sc.text, 'line-through') : sc.text)}>
+                        {g.subjectName}
+                      </span>
+                      {isCurrent && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary-100 text-[9px] font-bold text-primary-700 shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />NOW
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-gray-500 mt-0.5">{timesText}</p>
+                    {sectionsText && <p className="text-[10px] text-gray-400 mt-0.5 truncate">{sectionsText}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
 
-        {!weekView && nextSlot && (
+        {!weekView && nextGroup && (
           <p className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-400">
-            Next: <span className="font-medium text-gray-600">{nextSlot.subjectName}</span> at {nextSlot.startTime}
+            Next: <span className="font-medium text-gray-600">{nextGroup.subjectName}</span> at {nextGroup.slots[0]?.time.split('–')[0]}
           </p>
         )}
       </CardContent>

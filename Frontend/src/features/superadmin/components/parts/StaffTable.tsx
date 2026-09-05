@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { Card, Badge, Input, Select } from '@/features/shared/components';
+import Logo from '@/features/shared/components/Logo';
+import UserAvatar from '@/features/shared/components/UserAvatar';
 import { cn, formatDate, getRoleLabel } from '@/lib/utils';
 import type { OrgStaffRow } from '@/types';
 import { ROLES } from './helpers';
@@ -19,16 +21,6 @@ const roleBadge: Record<string, 'default' | 'success' | 'warning' | 'danger' | '
   TEACHER: 'success',
   SUPER_ADMIN: 'info',
 };
-
-const avatarTint: Record<string, string> = {
-  ADMIN: 'from-amber-500 to-orange-500',
-  RECEPTIONIST: 'from-slate-500 to-slate-600',
-  TEACHER: 'from-emerald-500 to-teal-500',
-  SUPER_ADMIN: 'from-violet-500 to-purple-500',
-};
-
-const initials = (name: string) =>
-  name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('');
 
 export default function StaffTable({ staff }: StaffTableProps) {
   const [search, setSearch] = useState('');
@@ -96,14 +88,17 @@ export default function StaffTable({ staff }: StaffTableProps) {
               <tr key={s.id} className={cn('border-b border-gray-50 transition-colors hover:bg-violet-50/40', i % 2 ? 'bg-gray-50/30' : 'bg-white')}>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-3">
-                    <div className={cn('w-9 h-9 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0', avatarTint[s.role] || 'from-slate-500 to-slate-600')}>
-                      {initials(s.name)}
-                    </div>
+                    <UserAvatar src={s.avatarUrl} orgLogoUrl={s.schoolLogoUrl} name={s.name} size="sm" />
                     <span className="font-semibold text-gray-900">{s.name}</span>
                   </div>
                 </td>
                 <td className="py-3 px-4"><Badge variant={roleBadge[s.role] || 'default'}>{getRoleLabel(s.role)}</Badge></td>
-                <td className="py-3 px-4 text-gray-600">{s.schoolName ?? '—'}</td>
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-2">
+                    <Logo src={s.schoolLogoUrl} name={s.schoolName ?? ''} size="sm" />
+                    <span className="text-gray-600 truncate">{s.schoolName ?? '—'}</span>
+                  </div>
+                </td>
                 <td className="py-3 px-4"><span className="inline-flex items-center gap-1.5"><span className={cn('w-2 h-2 rounded-full', s.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500')} /><Badge variant={s.status === 'ACTIVE' ? 'success' : 'danger'}>{s.status === 'ACTIVE' ? 'Active' : 'Blocked'}</Badge></span></td>
                 <td className="py-3 px-4 text-gray-500 max-w-[240px]">
                   <span className="line-clamp-2" title={s.blockedReason ?? ''}>{s.blockedReason ?? '—'}</span>

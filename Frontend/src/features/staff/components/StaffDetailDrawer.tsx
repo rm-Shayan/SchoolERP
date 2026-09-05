@@ -5,6 +5,7 @@ import type { User } from '@/types';
 import { staffLeaveService } from '@/lib/api';
 import { documentsApi } from '@/lib/api/documents';
 import { Badge, Button, Card, CardContent } from '@/features/shared/components';
+import AvatarPlaceholder from '@/features/shared/components/AvatarPlaceholder';
 import { getRoleLabel, formatDate, cn } from '@/lib/utils';
 import StaffAttendanceSummary from '@/features/staff/components/parts/StaffAttendanceSummary';
 import type { StaffLeaveRequest } from '@/lib/api/staffLeaveService';
@@ -62,9 +63,11 @@ export default function StaffDetailDrawer({ member, onClose, onEdit, onBlock, on
         <div className="bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 p-5 text-white">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-xl font-bold shadow-lg">
-                {member.name.charAt(0).toUpperCase()}
-              </div>
+              {member.avatarUrl ? (
+                <img src={member.avatarUrl} alt={member.name} className="w-14 h-14 rounded-2xl object-cover shadow-lg" />
+              ) : (
+                <AvatarPlaceholder className="w-14 h-14 rounded-2xl shadow-lg" />
+              )}
               <div className="min-w-0">
                 <h2 className="text-lg font-bold truncate">{member.name}</h2>
                 <p className="text-sm text-white/70 truncate">{member.email}</p>

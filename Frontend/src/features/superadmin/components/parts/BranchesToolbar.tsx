@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Input } from '@/features/shared/components';
+import { useDebouncedValue } from '@/lib/utils/useDebouncedValue';
 
 interface BranchesToolbarProps {
   search: string;
@@ -10,11 +11,11 @@ interface BranchesToolbarProps {
 
 export default function BranchesToolbar({ search, onSearchChange }: BranchesToolbarProps) {
   const [value, setValue] = useState(search);
+  const debouncedValue = useDebouncedValue(value, 250);
 
   useEffect(() => {
-    const timer = setTimeout(() => onSearchChange(value), 200);
-    return () => clearTimeout(timer);
-  }, [value, onSearchChange]);
+    onSearchChange(debouncedValue);
+  }, [debouncedValue, onSearchChange]);
 
   return (
     <div className="max-w-sm">

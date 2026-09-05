@@ -2,6 +2,7 @@ import portalRepository from "./repository.js";
 import ApiError from "../../lib/utils/ApiError.js";
 import prisma from "../../config/db.js";
 import notificationService from "../../services/notification.service.js";
+import storageService from "../../services/storage.service.js";
 import { emitToRoom } from "../../config/websocket.js";
 
 class PortalService {
@@ -126,6 +127,76 @@ class PortalService {
     // Student portal: look up parentId from the student record
     const student = await prisma.student.findUnique({ where: { id: portal.id }, select: { parentId: true } });
     return student?.parentId || null;
+  }
+
+  async updateProfile(portal, data) {
+    if (portal.type !== "parent") {
+      throw ApiError.badRequestError("Student profiles are managed by the school.");
+    }
+    const updatable = {};
+    if (data.name !== undefined) updatable.name = data.name;
+    if (data.phone !== undefined) updatable.phone = data.phone;
+    if (data.email !== undefined) updatable.email = data.email;
+    if (Object.keys(updatable).length === 0) {
+      throw ApiError.badRequestError("Nothing to update");
+    }
+    return prisma.parent.update({
+      where: { id: portal.id },
+      data: updatable,
+      select: { id: true, name: true, whatsappNo: true, phone: true, email: true, imageUrl: true },
+    });
+  }
+
+  /**
+   * Upload / replace the parent's profile photo (multer single "file").
+   * Old avatar is cleaned up once the new one is saved.
+   */
+  async uploadAvatar(portal, buffer) {
+    if (portal.type !== "parent") {
+      throw ApiError.badRequestError("Student profiles are managed by the school.");
+    }
+    if (!buffer || buffer.length === 0) {
+      throw ApiError.badRequestError("Please attach an image file");
+    }
+
+    const parent = await prisma.parent.findUnique({
+      where: { id: portal.id },
+      select: { id: true, imageUrl: true },
+    });
+    if (!parent) throw ApiError.notFoundError("Parent account not found");
+
+    // Storage context (organization + branch) parent ke school se resolve karo.
+    let schoolId = portal.schoolId || null;
+    if (!schoolId) {
+      const student = await prisma.student.findFirst({
+        where: { parentId: parent.id, status: "ACTIVE" },
+        select: { schoolId: true },
+      });
+      schoolId = student?.schoolId || null;
+    }
+    const school = schoolId
+      ? await prisma.school.findUnique({ where: { id: schoolId }, select: { id: true, organizationId: true } })
+      : null;
+
+    const { url, overwritten } = await storageService.uploadImage({
+      buffer,
+      folder: "avatars",
+      existingUrl: parent.imageUrl,
+      organizationId: school?.organizationId || null,
+      schoolId: school?.id || null,
+    });
+
+    if (!overwritten && parent.imageUrl) {
+      await storageService
+        .deleteImage({ url: parent.imageUrl, organizationId: school?.organizationId || null, schoolId: school?.id || null })
+        .catch(() => {});
+    }
+
+    return prisma.parent.update({
+      where: { id: parent.id },
+      data: { imageUrl: url },
+      select: { id: true, name: true, whatsappNo: true, phone: true, email: true, imageUrl: true },
+    });
   }
 }
 

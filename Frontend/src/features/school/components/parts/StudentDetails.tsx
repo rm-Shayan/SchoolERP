@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { Badge, Button, Modal } from '@/features/shared/components';
+import AvatarPlaceholder from '@/features/shared/components/AvatarPlaceholder';
 import { documentsApi } from '@/lib/api/documents';
 import type { Student } from '@/types';
 import { studentService } from '@/lib/api';
@@ -78,9 +79,7 @@ export function StudentDetails({ student, lastClassIds, onClose, onUpdated, onEd
                 className="h-20 w-20 rounded-2xl object-cover ring-2 ring-white shadow-sm shrink-0"
               />
             ) : (
-              <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-2xl font-bold text-white shrink-0">
-                {student.firstName.charAt(0)}{student.lastName.charAt(0)}
-              </div>
+              <AvatarPlaceholder className="h-20 w-20 rounded-2xl shrink-0" />
             )}
             <div className="min-w-0 flex-1">
               <p className="text-lg font-bold leading-tight text-gray-900">

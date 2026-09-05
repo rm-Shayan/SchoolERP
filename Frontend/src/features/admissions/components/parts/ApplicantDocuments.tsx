@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { admissionService } from '@/lib/api';
 import type { Applicant, ApplicantDocumentType } from '@/types';
 import { Button, Select } from '@/features/shared/components';
-import { formatDate } from '@/lib/utils';
+import { formatDate, validateDocumentUpload } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface ApplicantDocumentsProps {
@@ -26,6 +26,8 @@ export function ApplicantDocuments({ applicant, onChanged }: ApplicantDocumentsP
 
   const handleUpload = async (file: File | undefined) => {
     if (!file) return;
+    const err = validateDocumentUpload(file);
+    if (err) { toast.error(err); return; }
     setBusy(true);
     try {
       const doc = await admissionService.uploadDocument(applicant.id, file, type);

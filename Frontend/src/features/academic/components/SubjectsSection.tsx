@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { academicService } from '@/lib/api';
-import { Card, CardContent, Button, EmptyState, TableSkeleton } from '@/features/shared/components';
+import { Card, Button, EmptyState, TableSkeleton } from '@/features/shared/components';
 import SubjectLinkForm from './parts/SubjectLinkForm';
 import ClassSubjectsCard from './parts/ClassSubjectsCard';
 import toast from 'react-hot-toast';

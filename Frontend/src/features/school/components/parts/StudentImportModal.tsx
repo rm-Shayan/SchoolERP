@@ -1,7 +1,6 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { useAppSelector } from '@/store/hooks';
 import { studentService } from '@/lib/api';
 import { Modal, Button } from '@/features/shared/components';
 import toast from 'react-hot-toast';

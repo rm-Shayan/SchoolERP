@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EmptyState, Button } from '@/features/shared/components';
+import Logo from '@/features/shared/components/Logo';
 import { formatDate } from '@/lib/utils';
 import type { OrganizationOverviewItem } from '@/types';
 import { OrgStatusBadge } from './StatusBadge';
@@ -73,11 +74,11 @@ export default function OrganizationsTable({ orgs, search, blocking, onBlock, on
       <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[860px]">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50 text-left text-slate-500">
+            <tr className="border-b border-slate-200 bg-slate-50/80 text-left text-slate-500">
               {COLUMNS.map((col) => (
                 <th
                   key={col.key}
-                  className="cursor-pointer select-none whitespace-nowrap px-4 py-3 text-[11px] font-bold uppercase tracking-wider transition-colors hover:text-primary-600"
+                  className="cursor-pointer select-none whitespace-nowrap px-4 py-3 text-[10px] font-bold uppercase tracking-wider transition-colors hover:text-primary-600"
                   onClick={() => toggleSort(col.key)}
                 >
                   <span className="inline-flex items-center gap-1">
@@ -90,7 +91,7 @@ export default function OrganizationsTable({ orgs, search, blocking, onBlock, on
                   </span>
                 </th>
               ))}
-              <th className="py-3.5 px-4 font-medium text-right">Status / Actions</th>
+              <th className="py-3.5 px-4 text-[10px] font-bold uppercase tracking-wider text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -99,35 +100,41 @@ export default function OrganizationsTable({ orgs, search, blocking, onBlock, on
               return (
                 <tr
                   key={org.id}
-                  className="cursor-pointer border-b border-slate-100 transition-colors hover:bg-primary-50/30"
+                  className="cursor-pointer border-b border-slate-100 transition-all duration-200 hover:bg-primary-50/30 hover:shadow-sm"
                   onClick={() => router.push(`/admin/organizations/${org.id}`)}
                   onMouseEnter={() => prefetchOrganizationDetail(org.id)}
                 >
                   <td className="py-3.5 px-4">
-                    <p className="font-semibold text-gray-900">{org.name}</p>
-                    <p className="text-[11px] text-gray-400">{org.slug}</p>
+                    <div className="flex items-center gap-3">
+                      <Logo src={org.logoUrl} name={org.name} size="sm" />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-900">{org.name}</p>
+                        <p className="text-[11px] text-gray-400 font-mono">{org.slug}</p>
+                      </div>
+                    </div>
                   </td>
-                  <td className="py-3.5 px-4 text-gray-600">{org.code}</td>
-                  <td className="py-3.5 px-4 tabular-nums font-medium">{org.schoolCount}</td>
-                  <td className="py-3.5 px-4 tabular-nums font-medium">{org.userCount}</td>
-                  <td className="py-3.5 px-4 tabular-nums font-medium">{org.studentCount}</td>
-                  <td className="py-3.5 px-4 tabular-nums text-primary-700 font-semibold">
+                  <td className="py-3.5 px-4 text-gray-600 font-mono text-xs">{org.code}</td>
+                  <td className="py-3.5 px-4 text-center">
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-sky-50 text-sky-700 text-xs font-bold tabular-nums">{org.schoolCount}</span>
+                  </td>
+                  <td className="py-3.5 px-4 text-center">
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-violet-50 text-violet-700 text-xs font-bold tabular-nums">{org.userCount}</span>
+                  </td>
+                  <td className="py-3.5 px-4 text-center">
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold tabular-nums">{org.studentCount}</span>
+                  </td>
+                  <td className="py-3.5 px-4 tabular-nums text-primary-700 font-semibold text-xs">
                     {Number(org.revenue ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </td>
-                  <td className="py-3.5 px-4 text-gray-500 whitespace-nowrap">{formatDate(org.createdAt)}</td>
+                  <td className="py-3.5 px-4 text-gray-500 whitespace-nowrap text-xs">{formatDate(org.createdAt)}</td>
                   <td className="py-3.5 px-4">
                     <div className="flex items-center justify-end gap-2">
                       <OrgStatusBadge status={org.status} />
-                      <PublicPageButton slug={org.slug} label="View Page" />
-                      {blocked ? (
-                        <Button size="sm" variant="secondary" loading={blocking} onClick={(e) => { e.stopPropagation(); onUnblock(org); }}>
-                          Unblock
-                        </Button>
-                      ) : (
-                        <Button size="sm" variant="outline" loading={blocking} onClick={(e) => { e.stopPropagation(); onBlock(org); }}>
-                          Block
-                        </Button>
-                      )}
+                      <PublicPageButton slug={org.slug} label="Page" />
+                      <Button size="sm" variant={blocked ? 'secondary' : 'outline'} loading={blocking}
+                        onClick={(e) => { e.stopPropagation(); blocked ? onUnblock(org) : onBlock(org); }}>
+                        {blocked ? 'Unblock' : 'Block'}
+                      </Button>
                     </div>
                   </td>
                 </tr>

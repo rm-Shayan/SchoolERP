@@ -7,6 +7,7 @@ import type { MonthlyAttendanceReport } from '@/types';
 import { TableSkeleton } from '@/features/shared/components';
 import AttendanceOverrideModal from './AttendanceOverrideModal';
 import MonthlyMatrixTable from './MonthlyMatrixTable';
+import SectionMonthExportBar from './SectionMonthExportBar';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -50,8 +51,9 @@ export default function SectionMonthPanel({ sectionId }: Props) {
     const l = records.filter((r) => r.status === 'LATE').length;
     const a = records.filter((r) => r.status === 'ABSENT').length;
     const lv = records.filter((r) => r.status === 'LEAVE').length;
+    const hd = records.filter((r) => r.status === 'HALF_DAY').length;
     const t = records.length;
-    return { present: p, late: l, absent: a, leave: lv, pct: t > 0 ? Math.round(((p + l) / t) * 100) : 0 };
+    return { present: p, late: l, absent: a, leave: lv, halfDay: hd, pct: t > 0 ? Math.round(((p + l) / t) * 100) : 0 };
   }, [records]);
 
   const years = useMemo(() => Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i), []);
@@ -81,6 +83,7 @@ export default function SectionMonthPanel({ sectionId }: Props) {
           { k: 'late', l: 'Late', c: 'text-amber-600' },
           { k: 'absent', l: 'Absent', c: 'text-red-500' },
           { k: 'leave', l: 'Leave', c: 'text-blue-600' },
+          { k: 'halfDay', l: 'Half', c: 'text-cyan-600' },
         ].map((it) => (
           <div key={it.k} className="flex items-center gap-1.5">
             <span className={cn('text-lg font-extrabold tabular-nums', it.c)}>{stats[it.k as keyof typeof stats] as number}</span>
@@ -94,6 +97,17 @@ export default function SectionMonthPanel({ sectionId }: Props) {
         </div>
         <div className="h-6 w-px bg-gray-200" />
         <span className="flex items-center text-[11px] font-semibold text-gray-500">{students.length} students</span>
+        <div className="ml-auto">
+          <SectionMonthExportBar
+            sectionLabel={`${section?.className ?? 'Class'} ${section?.sectionName ?? ''}`.trim()}
+            students={students}
+            records={records}
+            offDays={data?.offDays ?? []}
+            weeklyOff={data?.weeklyOff ?? [0, 6]}
+            year={year}
+            month={month}
+          />
+        </div>
       </div>
 
       {loading ? <TableSkeleton rows={8} cols={5} /> : (

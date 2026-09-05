@@ -59,12 +59,34 @@ const ACTION_STYLE: Partial<Record<AuditAction, BadgeStyle>> = {
 
 const DEFAULT_STYLE: BadgeStyle = { dot: 'bg-gray-400', badge: 'bg-gray-100 text-gray-600 shadow-sm shadow-gray-200/50' };
 
-export function ActionBadge({ action }: { action: AuditAction }) {
+const ROLE_LOGIN_LABELS: Record<string, string> = {
+  SUPER_ADMIN: 'Super Admin login',
+  ADMIN: 'Admin login',
+  TEACHER: 'Teacher login',
+  RECEPTIONIST: 'Receptionist login',
+  PARENT: 'Parent login',
+  STUDENT: 'Student login',
+};
+
+const ROLE_LOGOUT_LABELS: Record<string, string> = {
+  SUPER_ADMIN: 'Super Admin logout',
+  ADMIN: 'Admin logout',
+  TEACHER: 'Teacher logout',
+  RECEPTIONIST: 'Receptionist logout',
+};
+
+function getActionLabel(action: AuditAction, actorRole?: string | null): string {
+  if (action === 'LOGIN' && actorRole) return ROLE_LOGIN_LABELS[actorRole.toUpperCase()] ?? ACTION_LABELS[action];
+  if (action === 'LOGOUT' && actorRole) return ROLE_LOGOUT_LABELS[actorRole.toUpperCase()] ?? ACTION_LABELS[action];
+  return ACTION_LABELS[action] ?? action;
+}
+
+export function ActionBadge({ action, actorRole }: { action: AuditAction; actorRole?: string | null }) {
   const s = ACTION_STYLE[action] ?? DEFAULT_STYLE;
   return (
     <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide transition-all duration-200', s.badge)}>
       <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', s.dot)} />
-      {ACTION_LABELS[action] ?? action}
+      {getActionLabel(action, actorRole)}
     </span>
   );
 }
@@ -92,6 +114,29 @@ export function EntityBadge({ entityType }: { entityType: AuditEntityType }) {
     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide bg-gray-100 text-gray-600 shadow-sm shadow-gray-200/50 transition-all duration-200">
       <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', ENTITY_DOT[entityType] ?? 'bg-gray-400')} />
       {ENTITY_LABELS[entityType] ?? entityType}
+    </span>
+  );
+}
+
+type RoleKey = 'SUPER_ADMIN' | 'ADMIN' | 'TEACHER' | 'RECEPTIONIST' | 'PARENT' | 'STUDENT';
+
+const ROLE_STYLES: Record<RoleKey, { label: string; cls: string }> = {
+  SUPER_ADMIN: { label: 'Super Admin', cls: 'bg-violet-100 text-violet-700 ring-1 ring-violet-200/60' },
+  ADMIN: { label: 'Admin', cls: 'bg-sky-100 text-sky-700 ring-1 ring-sky-200/60' },
+  TEACHER: { label: 'Teacher', cls: 'bg-amber-100 text-amber-700 ring-1 ring-amber-200/60' },
+  RECEPTIONIST: { label: 'Receptionist', cls: 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200/60' },
+  PARENT: { label: 'Parent', cls: 'bg-rose-100 text-rose-700 ring-1 ring-rose-200/60' },
+  STUDENT: { label: 'Student', cls: 'bg-orange-100 text-orange-700 ring-1 ring-orange-200/60' },
+};
+
+export function RoleBadge({ role }: { role?: string | null }) {
+  if (!role) return <span className="text-xs text-gray-400">System</span>;
+  const key = role.toUpperCase() as RoleKey;
+  const r = ROLE_STYLES[key];
+  if (!r) return <span className="text-xs text-gray-500">{role}</span>;
+  return (
+    <span className={cn('inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold tracking-wide', r.cls)}>
+      {r.label}
     </span>
   );
 }

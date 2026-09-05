@@ -1,12 +1,12 @@
+import "dotenv/config";
 import http from "http";
 import app from "./app.js";
-import dotenv from "dotenv";
 import prisma from "./config/db.js";
 import { initWebSocket, closeWebSocket, setDraining } from "./config/websocket.js";
 import schedulerService from "./services/scheduler.service.js";
 import { markReady } from "./config/readiness.js";
 
-dotenv.config();
+// dotenv loaded via import "dotenv/config" at top
 
 // ── Startup timing ──────────────────────────────────────────────────────
 // performance.timeOrigin = process boot timestamp.

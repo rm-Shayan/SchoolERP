@@ -8,11 +8,12 @@ import { listAuditLogsSchema } from "./audit.validation.js";
 const router = Router();
 router.use(authenticate);
 
-/**
- * GET /api/v1/audit-logs
- * Activity log — every privileged action across the platform.
- * SUPER_ADMIN sees everything, ADMIN sees their own branch.
- */
+router.get(
+  "/export",
+  authorize(ROLE_GROUPS.MANAGEMENT),
+  auditController.exportCsv
+);
+
 router.get(
   "/",
   authorize(ROLE_GROUPS.MANAGEMENT),

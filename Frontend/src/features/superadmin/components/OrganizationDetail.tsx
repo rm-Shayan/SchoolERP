@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ConfirmDialog, SectionSkeleton, Reveal } from '@/features/shared/components';
 import SmtpSettingsSection from '@/features/school/components/parts/SmtpSettingsSection';
+import StorageSettingsSection from '@/features/school/components/parts/StorageSettingsSection';
 import Breadcrumbs from './parts/Breadcrumbs';
 import OrgHeader from './parts/OrgHeader';
 import OrgStats from './parts/OrgStats';
@@ -95,6 +96,9 @@ export default function OrganizationDetail() {
       </div>
       <div className="sa-detail-band">
         <Reveal delay={0.18}><SmtpSettingsSection organizationId={org.id} /></Reveal>
+      </div>
+      <div className="sa-detail-band">
+        <Reveal delay={0.2}><StorageSettingsSection organizationId={org.id} /></Reveal>
       </div>
       <Reveal delay={0.22}>
         <div className="sa-detail-band">

@@ -106,13 +106,13 @@ export default function AdmissionActions({
       )}
 
       {applicant.status === 'FORM_SUBMITTED' && (
-        <Button size="sm" loading={busy} onClick={onApprove} className="w-full">Approve &amp; Generate Slip</Button>
+        <Button size="sm" loading={busy} onClick={onApprove} className="w-full">Approve Admission</Button>
       )}
 
       {applicant.status === 'APPROVED' && (
         <div className="space-y-2">
           <Input label="Advance Fee Amount (PKR)" type="number" value={amount} onChange={(e) => { setAmount(e.target.value); setAmountError(''); }} placeholder="e.g. 20000" error={amountError} />
-          <Button size="sm" loading={busy} onClick={handleSlip} className="w-full">Record Fee &amp; Download Slip</Button>
+          <Button size="sm" loading={busy} onClick={handleSlip} className="w-full">Record Fee &amp; Generate Receipt</Button>
         </div>
       )}
 

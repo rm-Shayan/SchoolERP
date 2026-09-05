@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { PageHeader, Button, Card, EmptyState } from '@/features/shared/components';
-import { leaveService, type LeaveRequest } from '@/lib/api/leaveService';
-import { staffLeaveService, type StaffLeaveRequest } from '@/lib/api/staffLeaveService';
+import { leaveService } from '@/lib/api/leaveService';
+import { staffLeaveService } from '@/lib/api/staffLeaveService';
 import LeaveTable from './parts/LeaveTable';
 import LeaveFormModal from './parts/LeaveFormModal';
 import LeaveReviewModal from './parts/LeaveReviewModal';

@@ -45,7 +45,7 @@ export default function SuperAdminNavbar({ title, onMenuClick }: SuperAdminNavba
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          <NotificationMenu isSuperAdmin />
+          <NotificationMenu />
           <div className="hidden sm:block w-px h-6 bg-gray-200/60 mx-1" aria-hidden="true" />
           <div className="relative">
             <button

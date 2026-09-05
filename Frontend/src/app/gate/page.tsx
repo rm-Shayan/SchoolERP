@@ -9,7 +9,7 @@ import PageLoader from '@/components/PageLoader';
 
 export default function GatePage() {
   const router = useRouter();
-  const { isAuthenticated, user, organization } = useAppSelector((s) => s.auth);
+  const { organization } = useAppSelector((s) => s.auth);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

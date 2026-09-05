@@ -59,9 +59,8 @@ class AuditService {
    * - ADMIN       → own school branch only
    * - others      → forbidden
    */
-  async listLogs(user, { action, entityType, search, fromDate, toDate, page = 1, pageSize = 50 }) {
+  _buildWhere(user, { action, entityType, search, fromDate, toDate }) {
     const where = {};
-
     if (user.role === "ADMIN") {
       where.schoolId = user.schoolId;
     } else if (user.role !== "SUPER_ADMIN") {
@@ -69,7 +68,6 @@ class AuditService {
         "You do not have permission to view the activity log."
       );
     }
-
     if (action) where.action = action;
     if (entityType) where.entityType = entityType;
     if (search) {
@@ -84,12 +82,21 @@ class AuditService {
       if (fromDate) where.createdAt.gte = new Date(fromDate);
       if (toDate) where.createdAt.lte = new Date(toDate);
     }
+    return where;
+  }
 
+  async listLogs(user, { action, entityType, search, fromDate, toDate, page = 1, pageSize = 50 }) {
+    const where = this._buildWhere(user, { action, entityType, search, fromDate, toDate });
     return auditRepository.list({
       where,
       page: Math.max(1, parseInt(page, 10) || 1),
       pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50)),
     });
+  }
+
+  async exportCsv(user, params) {
+    const where = this._buildWhere(user, params);
+    return auditRepository.exportCsv({ where, limit: 5000 });
   }
 }
 

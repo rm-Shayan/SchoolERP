@@ -431,7 +431,7 @@ export const authenticateAnyPortal = async (req, res, next) => {
       // Resolve child sectionIds for scoped queries
       const children = await prisma.student.findMany({
         where: { parentId: parent.id, status: "ACTIVE" },
-        select: { id: true, sectionId: true, schoolId: true, firstName: true, lastName: true },
+        select: { id: true, sectionId: true, schoolId: true, firstName: true, lastName: true, school: { select: { organizationId: true } } },
       });
       if (!children.length) return next(ApiError.unauthorizedError("No active children linked."));
 
@@ -441,9 +441,28 @@ export const authenticateAnyPortal = async (req, res, next) => {
         name: parent.name,
         children,
         schoolId: children[0].schoolId,
-        sectionIds: [...new Set(children.map((c) => c.sectionId))],
+        organizationId: children[0].school?.organizationId ?? null,
+        // Section na ho to null entries Prisma queries ko 500 karte hain — sirf valid ids.
+        sectionIds: [...new Set(children.map((c) => c.sectionId).filter(Boolean))],
         studentIds: children.map((c) => c.id),
       };
+
+      // Parent portal child switcher: ?studentId= de to sirf us child ka data
+      // scope karo (attendance/fees/results — saare tabs per-child ho jate hain).
+      // GET only — leave POST apne body ke studentId par khud validate hota hai.
+      const scopedStudentId = req.method === "GET" ? req.query?.studentId : undefined;
+      if (scopedStudentId) {
+        const match = children.find((c) => c.id === scopedStudentId);
+        if (!match) {
+          return next(ApiError.forbiddenError("Student is not linked to your account."));
+        }
+        req.portal = {
+          ...req.portal,
+          children: [match],
+          studentIds: [match.id],
+          sectionIds: match.sectionId ? [match.sectionId] : [],
+        };
+      }
       return next();
     }
 
@@ -454,7 +473,7 @@ export const authenticateAnyPortal = async (req, res, next) => {
           select: {
             id: true, firstName: true, lastName: true,
             schoolId: true, sectionId: true, status: true, isBlocked: true,
-            school: { select: { status: true, organization: { select: { status: true } } } },
+            school: { select: { status: true, organization: { select: { id: true, status: true } } } },
           },
         })
       );
@@ -469,7 +488,8 @@ export const authenticateAnyPortal = async (req, res, next) => {
         id: student.id,
         name: `${student.firstName} ${student.lastName}`,
         schoolId: student.schoolId,
-        sectionIds: [student.sectionId],
+        organizationId: student.school?.organization?.id ?? null,
+        sectionIds: student.sectionId ? [student.sectionId] : [],
         studentIds: [student.id],
       };
       return next();

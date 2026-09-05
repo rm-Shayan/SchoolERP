@@ -32,6 +32,7 @@ export interface SchoolCreateResult {
   adminCredentials?: { email: string; password: string } | null;
   smtpSetting?: unknown;
   cloudinarySetting?: unknown;
+  warnings?: string[];
 }
 
 export interface SchoolAdminAssignPayload {
@@ -51,8 +52,9 @@ export const schoolService = {
   // GET /schools — MANAGEMENT
   getAll: async (organizationId?: string): Promise<School[]> => {
     const params = organizationId ? { organizationId } : {};
-    const res = await api.get<ApiResponse<School[]>>('/schools', { params });
-    return res.data.data;
+    const res = await api.get('/schools', { params });
+    const d = res.data.data;
+    return Array.isArray(d) ? d : d.items ?? [];
   },
 
   // POST /schools/import-excel — SUPER_ADMIN (branch bulk import)
@@ -141,6 +143,12 @@ export const schoolService = {
   // DELETE /schools/:id/portal-password — back to default (school code)
   resetPortalPassword: async (id: string): Promise<boolean> => {
     const res = await api.delete<ApiResponse<boolean>>(`/schools/${id}/portal-password`);
+    return res.data.data;
+  },
+
+  // GET /schools/:id/analytics — branch analytics (enrollment, attendance, fees)
+  getAnalytics: async (id: string) => {
+    const res = await api.get<ApiResponse<any>>(`/schools/${id}/analytics`);
     return res.data.data;
   },
 };

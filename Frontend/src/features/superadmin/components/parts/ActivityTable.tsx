@@ -47,7 +47,7 @@ const ActivityTable = memo(function ActivityTable({ loading, data, isFiltered = 
     <>
       <ActivityCardList logs={data.items} />
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-sm min-w-[820px]">
+        <table className="w-full text-sm min-w-[900px]">
           <thead>
             <tr className="text-left text-gray-500 border-b border-gray-100/80 bg-gradient-to-r from-gray-50/60 to-transparent">
               <th className="py-3.5 px-4 font-medium">Actor</th>
@@ -55,6 +55,7 @@ const ActivityTable = memo(function ActivityTable({ loading, data, isFiltered = 
               <th className="py-3.5 px-4 font-medium">Entity</th>
               <th className="py-3.5 px-4 font-medium">Name</th>
               <th className="py-3.5 px-4 font-medium">Reason</th>
+              <th className="py-3.5 px-4 font-medium">IP</th>
               <th className="py-3.5 px-4 font-medium">Date</th>
             </tr>
           </thead>

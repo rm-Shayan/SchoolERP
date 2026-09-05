@@ -45,7 +45,6 @@ export const createInquirySchema = z.object({
     parentWhatsappNo: z.string().min(1, "Parent WhatsApp number required"),
     parentEmail: z.string().email("Invalid parent email").optional(),
     parentAddress: z.string().optional(),
-    advanceFeeAmount: z.coerce.number().nonnegative().optional(),
   }),
 });
 
@@ -76,7 +75,6 @@ export const updateApplicantDetailsSchema = z.object({
     parentWhatsappNo: z.string().min(1, "Parent WhatsApp number required").optional(),
     parentEmail: z.string().email("Invalid parent email").optional(),
     parentAddress: z.string().optional(),
-    advanceFeeAmount: z.coerce.number().nonnegative().optional(),
   }),
 });
 
@@ -103,6 +101,8 @@ export const deleteDocumentSchema = z.object({
 });
 
 export const approveSchema = z.object(idParam);
+
+export const sendSlipSchema = z.object(idParam);
 
 export const enrollSchema = z.object({
   params: idParam.params,

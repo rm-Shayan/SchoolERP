@@ -18,6 +18,7 @@ const ST: Record<string, { bg: string; text: string; dot: string }> = {
   LATE: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
   ABSENT: { bg: 'bg-red-50', text: 'text-red-600', dot: 'bg-red-500' },
   LEAVE: { bg: 'bg-blue-50', text: 'text-blue-600', dot: 'bg-blue-500' },
+  HALF_DAY: { bg: 'bg-cyan-50', text: 'text-cyan-700', dot: 'bg-cyan-500' },
 };
 
 function readDateFromUrl(): string {
@@ -52,8 +53,8 @@ export default function SectionDetailDaily({ sectionId }: Props) {
   const s = useMemo(() => {
     const t = rows.length, p = rows.filter((r) => r.status === 'PRESENT').length;
     const l = rows.filter((r) => r.status === 'LATE').length, a = rows.filter((r) => r.status === 'ABSENT').length;
-    const lv = rows.filter((r) => r.status === 'LEAVE').length;
-    return { total: t, present: p, late: l, absent: a, leave: lv, pct: t > 0 ? Math.round(((p + l) / t) * 100) : 0 };
+    const lv = rows.filter((r) => r.status === 'LEAVE').length, hd = rows.filter((r) => r.status === 'HALF_DAY').length;
+    return { total: t, present: p, late: l, absent: a, leave: lv, halfDay: hd, pct: t > 0 ? Math.round(((p + l) / t) * 100) : 0 };
   }, [rows]);
 
   const dayLabel = new Date(date + 'T00:00:00').toLocaleDateString('en-PK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -104,6 +105,7 @@ export default function SectionDetailDaily({ sectionId }: Props) {
             { label: 'Late', value: s.late, accent: 'bg-amber-500' },
             { label: 'Absent', value: s.absent, accent: 'bg-red-500' },
             { label: 'Leave', value: s.leave, accent: 'bg-blue-500' },
+            ...(s.halfDay > 0 ? [{ label: 'Half Day', value: s.halfDay, accent: 'bg-cyan-500' }] : []),
           ]} />
           <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
             <table className="w-full text-sm">

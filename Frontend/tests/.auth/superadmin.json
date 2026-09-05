@@ -1,0 +1,22 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "accessToken",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ZWY5ZGM1OS00MmUwLTQ1MjktYjJjMi1mODEyMzE3OThhZTkiLCJyb2xlIjoiU1VQRVJfQURNSU4iLCJzY2hvb2xJZCI6bnVsbCwib3JnYW5pemF0aW9uSWQiOm51bGwsInRva2VuVHlwZSI6InN0YWZmIiwiaWF0IjoxNzg4MzY4NzI1LCJleHAiOjE3ODgzNzIzMjV9.vKFoDQnx1WCOsnEG5hHPyYuY_sYy_72DK_RvfCa1Yss"
+        },
+        {
+          "name": "user",
+          "value": "{\"id\":\"5ef9dc59-42e0-4529-b2c2-f81231798ae9\",\"name\":\"Super Admin\",\"username\":\"superadmin\",\"email\":\"superadmin@schoolerp.com\",\"phone\":null,\"avatarUrl\":\"https://res.cloudinary.com/dfqk1mldk/image/upload/v1788244410/school-erp/avatars/xqb17zoublzkzcmnjhqv.jpg\",\"role\":\"SUPER_ADMIN\",\"isActive\":true,\"schoolId\":null,\"organizationId\":null,\"createdAt\":\"2026-08-14T13:44:45.358Z\",\"branchAccess\":[],\"blockedReason\":null,\"blockedAt\":null,\"blockedByName\":null,\"schools\":[]}"
+        },
+        {
+          "name": "refreshToken",
+          "value": "9aeef42e1bc0daebf292c7efd0c7dc7d7ad92a5f96fb1b0765e72b85bdb668ff499124ff06376a6dbee4e7f24f91992fddbd5f06b3cef59a47e19327179998aa"
+        }
+      ]
+    }
+  ]
+}

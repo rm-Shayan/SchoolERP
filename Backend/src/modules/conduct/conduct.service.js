@@ -1,7 +1,6 @@
 import conductRepository from "./repository.js";
 import ApiError from "../../lib/utils/ApiError.js";
 import { assertOwnSchool, assertSchoolAccess } from "../../lib/scope.js";
-import notificationService from "../../services/notification.service.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import { emitToRoom } from "../../config/websocket.js";
 
@@ -11,30 +10,33 @@ class ConductService {
     if (!student) throw ApiError.notFoundError("Student not found");
     assertOwnSchool(user, student.schoolId);
 
+    // Author: khud (default) ya ADMIN/SUPER_ADMIN kisi teacher ke naam par.
+    let author = { id: user.id, name: user.name };
+    if (data.teacherId && data.teacherId !== user.id) {
+      if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+        throw ApiError.forbiddenError("You can only post remarks on your own behalf");
+      }
+      const staff = await conductRepository.findStaffForRemark(data.teacherId, student.schoolId);
+      if (!staff) throw ApiError.badRequestError("Selected teacher is not active in this branch");
+      author = { id: staff.id, name: staff.name };
+    }
+
     const academicYear = await conductRepository.findCurrentAcademicYear(student.schoolId);
 
     const remark = await conductRepository.createRemark({
       studentId: data.studentId,
-      teacherId: user.id,
+      teacherId: author.id,
       academicYearId: academicYear?.id || null,
       type: data.type || "NEUTRAL",
       comment: data.comment,
     });
 
+    // In-app portal notification — email nahi bhejte (remark critical action nahi).
     const studentName = `${student.firstName} ${student.lastName}`;
     const className = `${student.section?.class?.name || ""} ${student.section?.name || ""}`.trim();
-    const emoji = data.type === "POSITIVE" ? "Great news!" : data.type === "NEGATIVE" ? "Important update" : "Update";
-
-    notificationService.notifyParent({
-      schoolId: student.schoolId,
-      parentEmail: student.parent?.email,
-      parentPhone: student.parent?.phone,
-      message: `${emoji} A remark has been recorded for ${studentName} (${student.section?.class?.name || ""} ${student.section?.name || ""}).\n\n"${data.comment}"`,
-      title: `Student Remark — ${data.type || "NEUTRAL"}`,
-    }).catch(() => {});
 
     portalNotificationService.create({
-      schoolId: student.schoolId, senderId: user.id, senderName: user.name,
+      schoolId: student.schoolId, senderId: author.id, senderName: author.name,
       title: "CONDUCT_REMARK",
       body: `${data.type || "NEUTRAL"} remark recorded for ${studentName}${className ? ` (${className})` : ""}: "${data.comment}".`,
       category: "STUDENT",
@@ -53,7 +55,7 @@ class ConductService {
         id: student.id, firstName: student.firstName, lastName: student.lastName,
         rollNumber: student.rollNumber, school: student.school, section: student.section,
       },
-      teacher: { id: user.id, name: user.name },
+      teacher: author,
     };
   }
 

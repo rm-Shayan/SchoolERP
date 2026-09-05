@@ -68,6 +68,7 @@ class AttendanceRepository {
             rollNumber: true,
             identifierCode: true,
             imageUrl: true,
+            sectionId: true,
             section: { include: { class: true } },
           },
         },

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { admissionService } from '@/lib/api';
 import type { AdmissionStatus } from '@/types';
-import { Input, Select, Card, Button } from '@/features/shared/components';
+import { Input, Select, Button } from '@/features/shared/components';
 import toast from 'react-hot-toast';
 
 interface AdmissionsToolbarProps {
@@ -52,6 +52,8 @@ export function AdmissionsToolbar({
   total,
 }: AdmissionsToolbarProps) {
   const [exporting, setExporting] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const hasFilters = statusFilter || classFilter || from || to;
 
   const handleExport = async () => {
     if (!schoolId) return;
@@ -73,64 +75,55 @@ export function AdmissionsToolbar({
     }
   };
 
+  const clearAll = () => {
+    onStatusChange('');
+    onClassChange('');
+    onFromChange('');
+    onToChange('');
+  };
+
   return (
-    <Card className="p-3">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col lg:flex-row gap-3">
-          <div className="flex-1">
-            <Input
-              placeholder="Search by student or parent name, phone…"
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="h-11"
-              icon={
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              }
-              rightIcon={
-                search ? (
-                  <button
-                    type="button"
-                    onClick={() => onSearchChange('')}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                    aria-label="Clear search"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                ) : undefined
-              }
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3 lg:w-96">
-            <Select
-              placeholder="All statuses"
-              value={statusFilter}
-              onChange={(e) => onStatusChange((e.target.value || '') as AdmissionStatus | '')}
-              options={STATUS_OPTIONS}
-            />
-            <Select
-              placeholder="All classes"
-              value={classFilter}
-              onChange={(e) => onClassChange(e.target.value)}
-              options={classes.map((c) => ({ value: c.id, label: c.name }))}
-              loading={classesLoading}
-            />
-          </div>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <Input
+            placeholder="Search students, parents, phone…"
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            icon={
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            }
+            rightIcon={search ? (
+              <button type="button" onClick={() => onSearchChange('')} className="p-1 rounded text-gray-400 hover:text-gray-600" aria-label="Clear">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            ) : undefined}
+          />
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 items-end">
-          <div className="flex items-center gap-2">
-            <Input type="date" label="From" value={from} onChange={(e) => onFromChange(e.target.value)} />
-            <Input type="date" label="To" value={to} onChange={(e) => onToChange(e.target.value)} />
-          </div>
-          <div className="flex items-center gap-3 ml-auto">
-            <span className="text-sm text-gray-500">{total} applicant{total === 1 ? '' : 's'}</span>
-            <Button size="sm" variant="outline" loading={exporting} onClick={handleExport}>Export CSV</Button>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => setShowFilters(!showFilters)}
+          className={`shrink-0 p-2.5 rounded-xl border transition-colors ${showFilters || hasFilters ? 'border-primary-300 bg-primary-50 text-primary-600' : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'}`}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+        </button>
+        <Button size="sm" variant="outline" loading={exporting} onClick={handleExport}>Export</Button>
       </div>
-    </Card>
+
+      {showFilters && (
+        <div className="flex flex-wrap items-end gap-2 p-3 rounded-xl border border-gray-200 bg-gray-50">
+          <Select placeholder="All statuses" value={statusFilter} onChange={(e) => onStatusChange((e.target.value || '') as AdmissionStatus | '')} options={STATUS_OPTIONS} className="w-full sm:w-40" />
+          <Select placeholder="All classes" value={classFilter} onChange={(e) => onClassChange(e.target.value)} options={classes.map((c) => ({ value: c.id, label: c.name }))} loading={classesLoading} className="w-full sm:w-40" />
+          <Input type="date" label="From" value={from} onChange={(e) => onFromChange(e.target.value)} className="w-full sm:w-36" />
+          <Input type="date" label="To" value={to} onChange={(e) => onToChange(e.target.value)} className="w-full sm:w-36" />
+          {hasFilters && (
+            <button type="button" onClick={clearAll} className="text-xs font-medium text-primary-600 hover:text-primary-700 whitespace-nowrap">Clear all</button>
+          )}
+          <span className="ml-auto text-xs text-gray-500 tabular-nums">{total} applicant{total === 1 ? '' : 's'}</span>
+        </div>
+      )}
+    </div>
   );
 }

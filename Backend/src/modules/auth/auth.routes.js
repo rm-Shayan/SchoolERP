@@ -211,6 +211,17 @@ router.get(
 );
 
 /**
+ * GET /api/v1/auth/users/directory
+ * Unified platform directory — staff + students combined (SUPER_ADMIN).
+ */
+router.get(
+  "/users/directory",
+  authenticate,
+  authorize(["SUPER_ADMIN"]),
+  authController.listDirectory
+);
+
+/**
  * GET /api/v1/auth/users/all
  * Platform-wide user directory (SUPER_ADMIN only).
  * Must be declared before /users/:id to avoid route conflict.
@@ -232,6 +243,18 @@ router.get(
   authenticate,
   authorize(["SUPER_ADMIN"]),
   authController.exportAllUsers
+);
+
+/**
+ * GET /api/v1/auth/users/unassigned-admins
+ * List admin users not assigned to any branch (SUPER_ADMIN only).
+ * Registered BEFORE /users/:id so Express doesn't treat "unassigned-admins" as an :id param.
+ */
+router.get(
+  "/users/unassigned-admins",
+  authenticate,
+  authorize(["SUPER_ADMIN"]),
+  authController.listUnassignedAdmins
 );
 
 /**
@@ -292,6 +315,21 @@ router.post(
   authorize(ROLE_GROUPS.USER_MANAGERS),
   validate(adminResetPasswordSchema),
   authController.adminResetPassword
+);
+
+// ==========================================
+// ADMIN ASSIGNMENT — SUPER_ADMIN only
+// ==========================================
+
+/**
+ * POST /api/v1/auth/users/:id/assign-branch
+ * Assign an unassigned admin to a branch (SUPER_ADMIN only).
+ */
+router.post(
+  "/users/:id/assign-branch",
+  authenticate,
+  authorize(["SUPER_ADMIN"]),
+  authController.assignAdminToBranch
 );
 
 // ==========================================

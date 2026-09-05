@@ -181,8 +181,10 @@ class StorageService {
     if (this._cloudinary && tenantOpts) {
       return this._uploadToCloudinary(processed, folder, outputFormat, width, height, existingUrl, tenantOpts);
     }
-    if (this._cloudinary && this._useCloudinary && !organizationId) {
-      // Super admin operation — no org context → platform Cloudinary
+    // Agar org context hai lekin tenant creds nahi → local disk (platform env use mat karo).
+    // Platform Cloudinary sirf tab use ho jab koi organizationId na ho (super admin actions).
+    const hasOrgContext = !!(organizationId || getRequestOrganizationId());
+    if (!hasOrgContext && this._cloudinary && this._useCloudinary) {
       return this._uploadToCloudinary(processed, folder, outputFormat, width, height, existingUrl, null);
     }
     return this._uploadToDisk(processed, folder, outputFormat);
@@ -398,7 +400,8 @@ class StorageService {
     if (this._cloudinary && tenantOpts) {
       return this._uploadDocumentToCloudinary(buffer, folder, filename, tenantOpts);
     }
-    if (this._cloudinary && this._useCloudinary && !organizationId) {
+    const hasOrgContext = !!(organizationId || getRequestOrganizationId());
+    if (!hasOrgContext && this._cloudinary && this._useCloudinary) {
       return this._uploadDocumentToCloudinary(buffer, folder, filename, null);
     }
     return this._uploadDocumentToDisk(buffer, folder, filename);

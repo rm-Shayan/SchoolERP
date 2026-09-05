@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Fragment, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
 interface Crumb {
   label: string;

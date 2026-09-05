@@ -56,7 +56,8 @@ class AdmissionService {
       parentEmail: data.parentEmail || null,
       parentAddress: data.parentAddress || null,
       status: "INQUIRY",
-      advanceFeeAmount: data.advanceFeeAmount ? Number(data.advanceFeeAmount) : null,
+      // Approve pehle, fee baad — INQUIRY par advance fee amount nahi set hota.
+      advanceFeeAmount: null,
     });
 
     emitToRoom(`school:${targetSchoolId}`, "admission_created", { id: applicant.id, status: applicant.status });
@@ -146,7 +147,7 @@ class AdmissionService {
     if (data.parentWhatsappNo !== undefined) patch.parentWhatsappNo = data.parentWhatsappNo;
     if (data.parentEmail !== undefined) patch.parentEmail = data.parentEmail || null;
     if (data.parentAddress !== undefined) patch.parentAddress = data.parentAddress || null;
-    if (data.advanceFeeAmount !== undefined) patch.advanceFeeAmount = Number(data.advanceFeeAmount);
+    // Approve pehle, fee baad — advance fee sirf recordAdvanceFee se set hoti hai (APPROVED ke baad).
 
     const updated = await admissionRepository.updateApplicant(id, patch);
     emitToRoom(`school:${applicant.schoolId}`, "admission_updated", { id, status: updated.status });
@@ -314,12 +315,13 @@ class AdmissionService {
 
     const updated = await admissionRepository.updateApplicant(id, { status: "APPROVED" });
 
+    // Approval letter — fee amount abhi set nahi hota (fee baad record hogi).
     const slip = await pdfService.admissionSlip({
       schoolName: applicant.school.name,
-      applicant: { ...applicant, className: applicant.class?.name },
+      applicant: { ...applicant, className: applicant.class?.name ?? "Not assigned" },
       refNo: `ADM-${applicant.id.slice(0, 8)}`,
-      amount: applicant.advanceFeeAmount,
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      amount: null,
+      dueDate: null,
       themeColor: applicant.school?.organization?.themeColor || "#2563eb",
       logoUrl: applicant.school?.organization?.logoUrl || null,
     });
@@ -498,8 +500,67 @@ class AdmissionService {
       status: applicant.status === "APPROVED" ? "FEE_PENDING" : applicant.status,
     });
 
+    // Approve pehle, fee baad — advance fee jama hone par hi receipt/slip parent ko jati hai.
+    if (applicant.status === "APPROVED") {
+      await this._notifyAdvanceFee({ ...applicant, ...updated });
+    }
+
     emitToRoom(`school:${applicant.schoolId}`, "admission_fee_recorded", { id, status: updated.status });
     return updated;
+  }
+
+  /**
+   * Slip ko dobara generate karke parent ko bhejo (manual re-send).
+   * WhatsApp API budget nahi hai → notifyParent Email channel par jati hai;
+   * attachment (PDF slip) ke saath. Honest result return hota hai taake UI
+   * bata sake ke deliver hui ya kyun nahi.
+   */
+  async sendSlip(user, id) {
+    const applicant = await this._getApplicantInScope(user, id);
+
+    const slip = await pdfService.admissionSlip({
+      schoolName: applicant.school.name,
+      applicant: { ...applicant, className: applicant.class?.name ?? "Not assigned" },
+      refNo: `ADM-${applicant.id.slice(0, 8)}`,
+      amount: applicant.advanceFeeAmount,
+      dueDate: null,
+      themeColor: applicant.school?.organization?.themeColor || "#2563eb",
+      logoUrl: applicant.school?.organization?.logoUrl || null,
+      title: applicant.advanceFeeAmount ? "ADVANCE FEE RECEIPT" : "ADMISSION SLIP",
+    });
+
+    const studentName = `${applicant.firstName} ${applicant.lastName}`;
+    const amountText = applicant.advanceFeeAmount
+      ? ` of Rs. ${Number(applicant.advanceFeeAmount).toFixed(2)}`
+      : "";
+
+    const result = await notificationService
+      .notifyParent({
+        schoolId: applicant.schoolId,
+        parentEmail: applicant.parentEmail,
+        parentPhone: applicant.parentPhone,
+        message: `Admission slip${amountText} for ${studentName} (${applicant.school?.name || "our school"}). Please review the attached slip.`,
+        title: applicant.advanceFeeAmount ? "Advance Fee Receipt" : "Admission Slip",
+        details: [
+          ["Student", studentName],
+          ["Class", applicant.class?.name ?? "—"],
+          ["Reference", `ADM-${applicant.id.slice(0, 8)}`],
+          ...(applicant.advanceFeeAmount
+            ? [["Amount", `Rs. ${Number(applicant.advanceFeeAmount).toFixed(2)}`]]
+            : [["Status", String(applicant.status).replace(/_/g, " ")]]),
+        ],
+        attachments: slip
+          ? [{ filename: `admission-slip-${applicant.id.slice(0, 8)}.pdf`, content: slip }]
+          : undefined,
+      })
+      .catch((err) => ({ success: false, reason: err.message }));
+
+    return {
+      applicantId: id,
+      delivered: result?.success === true,
+      channel: result?.channel || "EMAIL",
+      reason: result?.reason || null,
+    };
   }
 
   async listApplicants(user, { schoolId, status, classId, search, from, to, page = 1, pageSize = 50 }) {
@@ -685,27 +746,66 @@ class AdmissionService {
   }
 
   /**
-   * Fire the approval email to the parent with the admission slip PDF attached.
+   * Approve hone par admission confirmation letter parent ko jaye —
+   * fee ka zikr nahi (fee baad record hogi).
    */
   async _notifyApproved(applicant, slipPdf) {
     const studentName = `${applicant.firstName} ${applicant.lastName}`;
-    const amount = Number(applicant.advanceFeeAmount || 0).toFixed(2);
+    const refNo = `ADM-${applicant.id.slice(0, 8)}`;
 
     await notificationService.notifyParent({
       schoolId: applicant.schoolId,
       parentEmail: applicant.parentEmail,
       parentWhatsapp: applicant.parentWhatsappNo,
       parentPhone: applicant.parentPhone,
-      message: `Good news! ${studentName}'s admission has been APPROVED at ${applicant.school?.name || "our school"}. Please clear the advance fee at the office to complete enrollment.`,
-      title: "Admission Approved — Slip Ready",
+      message: `Good news! ${studentName}'s admission has been APPROVED at ${applicant.school?.name || "our school"}.\n\nPlease visit the school office to complete the admission process and pay the required fees.`,
+      title: "Admission Approved",
       details: [
         ["Student", studentName],
         ["Class", applicant.class?.name || "—"],
-        ["Advance Fee", `Rs. ${amount}`],
-        ["Slip Ref", `ADM-${applicant.id.slice(0, 8)}`],
+        ["Status", "APPROVED"],
+        ["Reference", refNo],
       ],
       attachments: slipPdf
-        ? [{ filename: `admission-slip-${applicant.id.slice(0, 8)}.pdf`, content: slipPdf }]
+        ? [{ filename: `admission-approval-${applicant.id.slice(0, 8)}.pdf`, content: slipPdf }]
+        : undefined,
+    }).catch(() => {});
+  }
+
+  /**
+   * Advance fee jama hone par fee receipt parent ko bhejo — approve ke BAAD.
+   */
+  async _notifyAdvanceFee(applicant) {
+    const studentName = `${applicant.firstName} ${applicant.lastName}`;
+    const amount = Number(applicant.advanceFeeAmount || 0).toFixed(2);
+    const refNo = `ADM-${applicant.id.slice(0, 8)}`;
+
+    const receiptPdf = await pdfService.admissionSlip({
+      schoolName: applicant.school?.name,
+      applicant: { ...applicant, className: applicant.class?.name ?? "Not assigned" },
+      refNo,
+      amount: applicant.advanceFeeAmount,
+      dueDate: null,
+      themeColor: applicant.school?.organization?.themeColor || "#2563eb",
+      logoUrl: applicant.school?.organization?.logoUrl || null,
+      title: "ADVANCE FEE RECEIPT",
+    });
+
+    await notificationService.notifyParent({
+      schoolId: applicant.schoolId,
+      parentEmail: applicant.parentEmail,
+      parentWhatsapp: applicant.parentWhatsappNo,
+      parentPhone: applicant.parentPhone,
+      message: `Advance fee of Rs. ${amount} received for ${studentName}. Your admission is now confirmed — please visit the office to complete enrollment.`,
+      title: "Advance Fee Receipt",
+      details: [
+        ["Student", studentName],
+        ["Class", applicant.class?.name ?? "—"],
+        ["Amount Received", `Rs. ${amount}`],
+        ["Reference", refNo],
+      ],
+      attachments: receiptPdf
+        ? [{ filename: `fee-receipt-${applicant.id.slice(0, 8)}.pdf`, content: receiptPdf }]
         : undefined,
     }).catch(() => {});
   }

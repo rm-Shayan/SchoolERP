@@ -1,6 +1,7 @@
 export async function buildMonthlyReport(repository, schoolId, year, month) {
-  const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0);
+  // DATE column UTC-midnight convention — range boundaries bhi UTC-day ke.
+  const startDate = new Date(Date.UTC(year, month - 1, 1));
+  const endDate = new Date(Date.UTC(year, month, 0));
   endDate.setHours(23, 59, 59, 999);
   const [records, allClasses, students, offDays, weeklyOff] = await Promise.all([
     repository.getMonthlySchoolAttendance(schoolId, startDate, endDate),
@@ -61,13 +62,14 @@ export async function buildMonthlyReport(repository, schoolId, year, month) {
 
   // Per-section summary + school-wide totals.
   const classMap = new Map();
-  const totals = { totalMarked: 0, present: 0, late: 0, absent: 0, leave: 0, manualOverride: 0 };
+  const totals = { totalMarked: 0, present: 0, late: 0, absent: 0, leave: 0, halfDay: 0, manualOverride: 0 };
 
   for (const node of sectionMap.values()) {
     const present = node.records.filter((r) => r.status === "PRESENT").length;
     const late = node.records.filter((r) => r.status === "LATE").length;
     const absent = node.records.filter((r) => r.status === "ABSENT").length;
     const leave = node.records.filter((r) => r.status === "LEAVE").length;
+    const halfDay = node.records.filter((r) => r.status === "HALF_DAY").length;
     const manualOverride = node.records.filter((r) => r.status === "MANUAL_OVERRIDE").length;
 
     node.summary = {
@@ -76,6 +78,7 @@ export async function buildMonthlyReport(repository, schoolId, year, month) {
       late,
       absent,
       leave,
+      halfDay,
       manualOverride,
       totalRecords: node.records.length,
     };
@@ -85,6 +88,7 @@ export async function buildMonthlyReport(repository, schoolId, year, month) {
     totals.late += late;
     totals.absent += absent;
     totals.leave += leave;
+    totals.halfDay += halfDay;
     totals.manualOverride += manualOverride;
 
     const classKey = node.classId || node.className;

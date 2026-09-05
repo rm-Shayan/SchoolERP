@@ -87,6 +87,7 @@ export class ParentPortalDTO {
     this.whatsappNo = parent.whatsappNo;
     this.phone = parent.phone || null;
     this.email = parent.email || null;
+    this.imageUrl = parent.imageUrl || null;
     this.createdAt = parent.createdAt;
 
     // Include linked children (read-only portal view)
@@ -96,11 +97,12 @@ export class ParentPortalDTO {
         firstName: s.firstName,
         lastName: s.lastName,
         rollNumber: s.rollNumber,
+        imageUrl: s.imageUrl || null,
         gender: s.gender || null,
         status: s.status || "ACTIVE",
         isActive: s.status === "ACTIVE",
         school: s.school
-          ? { id: s.school.id, name: s.school.name }
+          ? { id: s.school.id, name: s.school.name, slug: s.school.organization?.slug || null, themeColor: s.school.organization?.themeColor || null, logoUrl: s.school.organization?.logoUrl || null }
           : null,
         class: s.section?.class
           ? { id: s.section.class.id, name: s.section.class.name }
@@ -130,10 +132,11 @@ export class StudentPortalDTO {
     this.firstName = student.firstName;
     this.lastName = student.lastName;
     this.rollNumber = student.rollNumber;
+    this.imageUrl = student.imageUrl || null;
     this.status = student.status || "ACTIVE";
     this.isActive = student.status === "ACTIVE";
     this.school = student.school
-      ? { id: student.school.id, name: student.school.name }
+      ? { id: student.school.id, name: student.school.name, slug: student.school.organization?.slug || null, themeColor: student.school.organization?.themeColor || null, logoUrl: student.school.organization?.logoUrl || null }
       : null;
     this.class = student.section?.class
       ? { id: student.section.class.id, name: student.section.class.name }

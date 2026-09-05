@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, lazy, useState } from 'react';
+import { lazy, useState } from 'react';
 import { PageHeader } from '@/features/shared/components';
 import { cn } from '@/lib/utils';
 import SuspenseLoader from '@/components/SuspenseLoader';
@@ -59,7 +59,7 @@ export default function AcademicSetupPage() {
 
       {/* Tab bar — mobile */}
       <div className="flex sm:hidden gap-1 border-b border-gray-200 overflow-x-auto pb-px -mx-4 px-4 scrollbar-thin">
-        {TABS.map((t, i) => (
+        {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}

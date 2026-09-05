@@ -1,7 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import xlsx from "xlsx";
 import prisma from "../../config/db.js";
 import authRepository from "./repository.js";
 import { UserResponseDTO, ParentPortalDTO, StudentPortalDTO } from "./auth.dto.js";
@@ -11,14 +10,11 @@ import auditService from "../audit/audit.service.js";
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../audit/actions.js";
 import organizationService from "../organization/organization.service.js";
 import storageService from "../../services/storage.service.js";
-import { staffImportQueue } from "../../jobs/queues/staffImport.queue.js";
 import { sendEmail, sendOtpEmail } from "../../services/email.service.js";
-import { staffCredentialsEmail } from "../../services/email.templates.js";
 import portalNotificationService from "../notification/notification.portalService.js";
-import { buildCsv } from "../../lib/utils/csv.js";
-import { queueEmail } from "../../services/emailOutbox.js";
 import Logger from "../../lib/utils/logger.js";
 import redis from "../../config/redis.js";
+import userManagementService from "./userManagement.service.js";
 
 const logger = new Logger("auth-service");
 
@@ -184,7 +180,7 @@ class AuthService {
    * 1. SUPER_ADMIN: Email + Password
    * 2. BRANCH STAFF (Admin, Teacher, Receptionist, etc.): (School Code + Email/Phone/Username) OR Email + Password
    */
-  async login({ email, username, phone, schoolCode, password }) {
+  async login({ email, username, phone, schoolCode, password }, req) {
     let user = null;
     let sessionUser = null;
     const identifier = email || username || phone;
@@ -237,9 +233,15 @@ class AuthService {
       isMatch = await verifyPortalPassword(user.school, password);
     }
 
-    // Default fallback: If password matches School Code (for newly imported staff without custom password set)
-    if (!isMatch && schoolCode && password.trim().toUpperCase() === schoolCode.trim().toUpperCase()) {
-      isMatch = true;
+    // Default fallback: If password matches School Code (for newly imported staff
+    // without custom password set). When schoolCode is not in the request body
+    // (e.g. AdminLoginForm sends only email+password), still try the user's
+    // home branch code so the admin doesn't need to enter the school code.
+    if (!isMatch) {
+      const codeToCheck = schoolCode || user.school?.code || null;
+      if (codeToCheck && password.trim().toUpperCase() === codeToCheck.trim().toUpperCase()) {
+        isMatch = true;
+      }
     }
 
     if (!isMatch) {
@@ -280,6 +282,7 @@ class AuthService {
       organizationId: user.organizationId,
       schoolId: sessionUser.schoolId,
       details: JSON.stringify({ loginId: identifier || email }),
+      ipAddress: req?.ip || null,
     });
 
     await attachAccessibleBranches(sessionUser, user);
@@ -579,577 +582,22 @@ class AuthService {
     return true;
   }
 
-  /**
-   * Parse an uploaded Excel file for staff and queue a bulk import job.
-   */
-  async importStaffExcel(fileBuffer, requester) {
-    const workbook = xlsx.read(fileBuffer, { type: "buffer" });
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
 
-    const rawRows = xlsx.utils.sheet_to_json(sheet);
-    if (rawRows.length === 0) {
-      throw ApiError.badRequestError("Excel sheet is empty");
-    }
-
-    const staffMembers = rawRows
-      .map((row) => ({
-        name: row.Name || row.name || row["Staff Name"],
-        email: row.Email || row.email || row["Email Address"],
-        phone: row.Phone || row.phone || row["Phone Number"],
-        role: row.Role || row.role || row["Staff Role"],
-        schoolId: row.SchoolId || row.schoolId || row["School ID"],
-      }))
-      .filter((s) => s.name && s.email && s.role);
-
-    if (staffMembers.length === 0) {
-      throw ApiError.badRequestError(
-        "No valid staff rows found. Ensure columns 'Name', 'Email', and 'Role' exist."
-      );
-    }
-
-    const job = await staffImportQueue.add("import-staff", {
-      staffMembers,
-      organizationId: requester.organizationId,
-      requesterSchoolId: requester.schoolId,
-      requesterRole: requester.role,
-    });
-
-    return { jobId: job.id, totalRows: staffMembers.length };
-  }
-
-  /** .xlsx template matching the columns importStaffExcel expects. */
-  buildImportTemplate() {
-    const rows = [
-      { Name: "Mr. Ahmed Khan", Email: "ahmed@school.edu", Phone: "03001234567", Role: "TEACHER" },
-      { Name: "Miss Sana Malik", Email: "sana.malik@school.edu", Phone: "03011223344", Role: "RECEPTIONIST" },
-    ];
-    const sheet = xlsx.utils.json_to_sheet(rows);
-    const workbook = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(workbook, sheet, "Staff");
-    return xlsx.write(workbook, { type: "buffer", bookType: "xlsx" });
-  }
-
-  // ──────────────────────────────────────────
-  // USER MANAGEMENT (RBAC)
-  // ──────────────────────────────────────────
-
-  /**
-   * Create a new staff user.
-   *
-   * Rules:
-   * - SUPER_ADMIN can create any role (except SUPER_ADMIN) in their org
-   * - ADMIN can create branch-level staff only within their own school
-   */
-  async createUser(requester, data) {
-    const allowedRoles = CREATABLE_ROLES_BY[requester.role];
-    if (!allowedRoles) {
-      throw ApiError.forbiddenError(
-        "You do not have permission to create user accounts."
-      );
-    }
-
-    if (!allowedRoles.includes(data.role)) {
-      throw ApiError.forbiddenError(
-        `You cannot create a user with role '${data.role}'.`
-      );
-    }
-
-    // Check email uniqueness
-    const existing = await authRepository.findByEmailRaw(data.email);
-    if (existing) {
-      throw ApiError.badRequestError(
-        "A user with this email already exists."
-      );
-    }
-
-    // Scope assignment
-    let organizationId = null;
-    let schoolId = null;
-
-    if (requester.role === ROLES.SUPER_ADMIN) {
-      // Platform SUPER_ADMIN creates users; schoolId optional (branch staff)
-      schoolId = data.schoolId || null;
-
-      // Branch-level roles MUST have a schoolId
-      if (data.role !== ROLES.SUPER_ADMIN && !schoolId) {
-        throw ApiError.badRequestError(
-          "A school (branch) must be specified for branch-level staff."
-        );
-      }
-      if (schoolId) {
-        // Platform SUPER_ADMIN (organizationId null) → derive org from the branch,
-        // so the created user is correctly scoped to the school's organization.
-        const school = await prisma.school.findUnique({
-          where: { id: schoolId },
-          select: { organizationId: true },
-        });
-        if (!school) {
-          throw ApiError.notFoundError("School not found.");
-        }
-        organizationId = school.organizationId;
-      }
-    } else if (requester.role === ROLES.ADMIN) {
-      // ADMIN can only create users for their own school
-      organizationId = requester.organizationId;
-      schoolId = requester.schoolId;
-    }
-
-    // Shared school password: agar password nahi diya → school code hi password
-    // (sab staff/students/parents ka same password = school code).
-    let schoolCode = null;
-    let schoolLogoUrl = null;
-    let orgLogoUrl = null;
-    let emailOrgName = null;
-    let emailOrgSlug = null;
-    let emailThemeColor = null;
-    if (schoolId) {
-      const school = await prisma.school.findUnique({
-        where: { id: schoolId },
-        select: { code: true, logoUrl: true, themeColor: true, organizationId: true },
-      });
-      schoolCode = school?.code || null;
-      schoolLogoUrl = school?.logoUrl || null;
-      emailThemeColor = school?.themeColor || null;
-      if (school?.organizationId) {
-        const org = await prisma.organization.findUnique({
-          where: { id: school.organizationId },
-          select: { logoUrl: true, slug: true, name: true, themeColor: true },
-        });
-        orgLogoUrl = org?.logoUrl || null;
-        emailOrgName = org?.name || null;
-        emailOrgSlug = org?.slug || null;
-      }
-    } else if (organizationId) {
-      const org = await prisma.organization.findUnique({
-        where: { id: organizationId },
-        select: { logoUrl: true, slug: true, name: true, themeColor: true },
-      });
-      orgLogoUrl = org?.logoUrl || null;
-      emailOrgName = org?.name || null;
-      emailOrgSlug = org?.slug || null;
-      emailThemeColor = org?.themeColor || null;
-    }
-    const sharedPassword = data.password || schoolCode || "School@123";
-    const hashed = await bcrypt.hash(sharedPassword, 12);
-
-    // Auto-generate System Staff Username / ID if not provided (e.g. STF-8492)
-    const generatedUsername = data.username || `STF-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    const newUser = await authRepository.createUser({
-      name: data.name,
-      username: generatedUsername,
-      email: data.email,
-      password: hashed,
-      phone: data.phone || null,
-      role: data.role,
-      organizationId,
-      schoolId,
-    });
-
-    auditService.record({
-      actorId: requester.id,
-      actorName: requester.name,
-      actorRole: requester.role,
-      action: AUDIT_ACTIONS.CREATE_STAFF,
-      entityType: AUDIT_ENTITY_TYPES.USER,
-      entityId: newUser.id,
-      entityName: newUser.name,
-      organizationId,
-      schoolId,
-      details: JSON.stringify({ role: newUser.role, username: generatedUsername }),
-    });
-
-    // Portal notification — branch feed me staff creation dikhe.
-    portalNotificationService.create({
-      schoolId: schoolId || undefined,
-      organizationId: organizationId || undefined,
-      senderId: requester.id,
-      senderName: requester.name,
-      title: "STAFF_CREATED",
-      body: `New ${newUser.role} account created: ${newUser.name} (${generatedUsername}).`,
-      category: "STAFF",
-      refType: "STAFF_CREATED",
-      refId: newUser.id,
-      link: "/staff",
-    }).catch(() => {});
-
-    // Send Login Credentials Notification via BullMQ Queue (non-blocking).
-    // Slug-based branded links: /login?org={slug} + /o/{slug} root page.
-    const mail = staffCredentialsEmail({
-      name: newUser.name,
-      role: newUser.role,
-      username: generatedUsername,
-      email: data.email,
-      password: sharedPassword,
-      schoolCode,
-      orgName: emailOrgName,
-      orgSlug: emailOrgSlug,
-      logoUrl: schoolLogoUrl || orgLogoUrl,
-      themeColor: emailThemeColor,
-    });
-    await queueEmail({
-      to: data.email,
-      ...mail,
-      priority: "CRITICAL",
-      organizationId,
-      schoolId: schoolId || undefined,
-    });
-
-    return UserResponseDTO.toDTO(newUser);
-  }
-
-  /**
-   * Create demo/sample staff for a branch (normal school behaviour demo).
-   * Creates a few teachers + a receptionist with the shared school password
-   * and assigns the first teachers as class teachers of existing classes.
-   * Idempotent — existing emails are skipped.
-   */
-  async createSampleStaff(requester) {
-    const schoolId = requester.schoolId;
-    if (!schoolId) {
-      throw ApiError.badRequestError("Sample staff are created per branch.");
-    }
-    const school = await prisma.school.findUnique({
-      where: { id: schoolId },
-      select: { id: true, code: true, name: true },
-    });
-    if (!school) throw ApiError.notFoundError("School not found");
-
-    const sharedPassword = school.code || "School@123";
-    const hashed = await bcrypt.hash(sharedPassword, 12);
-
-    const sample = [
-      { name: "Miss Ayesha Khan", email: "ayesha.khan@school.edu", role: ROLES.TEACHER },
-      { name: "Mr. Bilal Ahmed", email: "bilal.ahmed@school.edu", role: ROLES.TEACHER },
-      { name: "Mrs. Sana Malik", email: "sana.malik@school.edu", role: ROLES.TEACHER },
-      { name: "Mr. Farhan Ali", email: "farhan.ali@school.edu", role: ROLES.RECEPTIONIST },
-    ];
-
-    const classes = await prisma.class.findMany({
-      where: { schoolId },
-      orderBy: { order: "asc" },
-      take: sample.length,
-      select: { id: true, name: true },
-    });
-
-    let created = 0;
-    const results = [];
-    for (let i = 0; i < sample.length; i++) {
-      const s = sample[i];
-      const existing = await prisma.user.findUnique({ where: { email: s.email } });
-      if (existing) continue;
-      const username = `STF-${Math.floor(1000 + Math.random() * 9000)}`;
-      const user = await prisma.user.create({
-        data: {
-          name: s.name,
-          username,
-          email: s.email,
-          password: hashed,
-          role: s.role,
-          organizationId: requester.organizationId,
-          schoolId,
-        },
-      });
-      created++;
-      const klass = classes[i];
-      let assignment = null;
-      if (s.role === ROLES.TEACHER && klass) {
-        assignment = await prisma.teacherAssignment.upsert({
-          where: {
-            teacherId_classId_subjectId_sectionId: {
-              teacherId: user.id,
-              classId: klass.id,
-              subjectId: null,
-              sectionId: null,
-            },
-          },
-          update: {},
-          create: {
-            teacherId: user.id,
-            classId: klass.id,
-            subjectId: null,
-            sectionId: null,
-          },
-        });
-      }
-      results.push({
-        name: user.name,
-        email: user.email,
-        username,
-        role: user.role,
-        classTeacher: assignment ? klass.name : null,
-      });
-    }
-
-    auditService.record({
-      actorId: requester.id,
-      actorName: requester.name,
-      actorRole: requester.role,
-      action: AUDIT_ACTIONS.CREATE_STAFF,
-      entityType: AUDIT_ENTITY_TYPES.USER,
-      entityId: schoolId,
-      entityName: school.name,
-      organizationId: requester.organizationId,
-      schoolId,
-      details: JSON.stringify({ mode: "sample", created }),
-    });
-
-    return { created, password: sharedPassword, items: results };
-  }
-
-  /**
-   * List users.
-   * - SUPER_ADMIN sees all users in the organization (all branches)
-   * - ADMIN sees only users in their school branch
-   */
-  async listUsers(requester, { page = 1, pageSize = 50 } = {}) {
-    let result;
-
-    if (requester.role === ROLES.SUPER_ADMIN) {
-      result = await authRepository.findUsersByOrganization(
-        requester.organizationId,
-        { page, pageSize }
-      );
-    } else if (requester.role === ROLES.ADMIN) {
-      result = await authRepository.findUsersBySchool(requester.schoolId, {
-        page,
-        pageSize,
-      });
-      // Branch admin (Principal) khud staff list mein nahi dikhta — org create
-      // ke waqt assign hua tha, wo "Staff" nahi hai. Sirf staff roles dikhao.
-      result.items = result.items.filter((u) => u.role !== ROLES.ADMIN);
-      result.total = result.items.length;
-    } else {
-      throw ApiError.forbiddenError(
-        "You do not have permission to view user accounts."
-      );
-    }
-
-    return {
-      items: result.items.map(UserResponseDTO.toDTO),
-      total: result.total,
-      page: result.page,
-      pageSize: result.pageSize,
-      totalPages: Math.ceil(result.total / result.pageSize),
-    };
-  }
-
-  /**
-   * Export staff as Excel (.xlsx) for download.
-   * SUPER_ADMIN → all org users; ADMIN → own branch staff.
-   */
-  async exportStaffExcel(requester) {
-    const userResult = requester.role === ROLES.SUPER_ADMIN
-      ? await authRepository.findUsersByOrganization(requester.organizationId, { pageSize: 10000 })
-      : await authRepository.findUsersBySchool(requester.schoolId, { pageSize: 10000 });
-    const users = userResult.items;
-
-    const rows = users
-      .filter((u) => u.role !== ROLES.SUPER_ADMIN)
-      .map((u) => ({
-        Name: u.name,
-        Email: u.email,
-        Phone: u.phone || "",
-        Role: u.role,
-        Username: u.username || "",
-        Status: u.isActive ? "Active" : "Inactive",
-        Branch: u.school?.name || "",
-        Created: u.createdAt ? new Date(u.createdAt).toISOString().slice(0, 10) : "",
-      }));
-
-    const wb = xlsx.utils.book_new();
-    const ws = xlsx.utils.json_to_sheet(rows);
-    xlsx.utils.book_append_sheet(wb, ws, "Staff");
-    return xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
-  }
-
-  /**
-   * Platform-wide user directory for the Super Admin console.
-   * Server-side filters + pagination; stats global counts hain (page-scoped nahi).
-   */
-  async listAllUsersPlatform(requester, { page = 1, pageSize = 50, search, role, isActive, hasBlockReason, organizationId } = {}) {
-    if (requester.role !== ROLES.SUPER_ADMIN) {
-      throw ApiError.forbiddenError(
-        "Only Super Admins can view the platform-wide user directory."
-      );
-    }
-
-    const [result, stats] = await Promise.all([
-      authRepository.findAllUsersPlatform({ page, pageSize, search, role, isActive, hasBlockReason, organizationId }),
-      authRepository.platformUserStats(),
-    ]);
-
-    return {
-      stats,
-      items: result.items.map(UserResponseDTO.toDTO),
-      total: result.total,
-      page: result.page,
-      pageSize: result.pageSize,
-      totalPages: Math.ceil(result.total / result.pageSize),
-    };
-  }
-
-  /**
-   * CSV export — current filters ke mutabiq saare platform users
-   * (frontend ka client-side export 1000+ rows pe UI freeze karta tha).
-   */
-  async exportAllUsersPlatform(requester, filters = {}) {
-    if (requester.role !== ROLES.SUPER_ADMIN) {
-      throw ApiError.forbiddenError("Only Super Admins can export the user directory.");
-    }
-
-    const { items } = await authRepository.findAllUsersPlatform({ ...filters, page: 1, pageSize: 10000 });
-
-    return buildCsv(
-      ["Name", "Email", "Role", "Organization", "Branch", "Status", "Block Reason", "Joined"],
-      items.map((u) => [
-        u.name, u.email, u.role,
-        u.organization?.name, u.school?.name,
-        u.isActive ? "Active" : "Blocked", u.blockedReason,
-        new Date(u.createdAt).toLocaleDateString("en-PK"),
-      ])
-    );
-  }
-
-  /**
-   * Get a single user by ID, with scope checks.
-   */
-  async getUserById(requester, targetId) {
-    const target = await authRepository.findById(targetId);
-    if (!target) throw ApiError.notFoundError("User not found");
-
-    this._assertCanAccessUser(requester, target);
-    return UserResponseDTO.toDTO(target);
-  }
-
-  /**
-   * Update a user (name, phone, role, isActive).
-   * Cannot change email or password here — separate endpoints for those.
-   */
-  async updateUser(requester, targetId, data) {
-    const target = await authRepository.findById(targetId);
-    if (!target) throw ApiError.notFoundError("User not found");
-
-    this._assertCanAccessUser(requester, target);
-
-    // If trying to change role, validate allowed roles
-    if (data.role) {
-      const allowedRoles = CREATABLE_ROLES_BY[requester.role];
-      if (!allowedRoles || !allowedRoles.includes(data.role)) {
-        throw ApiError.forbiddenError(
-          `You cannot assign role '${data.role}'.`
-        );
-      }
-    }
-
-    // Strip protected fields from update data
-    const { password, email, organizationId, schoolId, ...safeData } = data;
-
-    const updated = await authRepository.updateUser(targetId, safeData);
-
-    auditService.record({
-      actorId: requester.id,
-      actorName: requester.name,
-      actorRole: requester.role,
-      action: AUDIT_ACTIONS.UPDATE_STAFF,
-      entityType: AUDIT_ENTITY_TYPES.USER,
-      entityId: targetId,
-      entityName: target.name,
-      organizationId: target.organizationId,
-      schoolId: target.schoolId,
-      details: JSON.stringify(Object.keys(safeData)),
-    });
-
-    return UserResponseDTO.toDTO(updated);
-  }
-
-  /**
-   * Soft-delete (deactivate) a user.
-   */
-  async deactivateUser(requester, targetId, reason) {
-    const target = await authRepository.findById(targetId);
-    if (!target) throw ApiError.notFoundError("User not found");
-
-    this._assertCanAccessUser(requester, target);
-
-    if (targetId === requester.id) {
-      throw ApiError.badRequestError("You cannot deactivate your own account.");
-    }
-
-    await authRepository.revokeAllRefreshTokens(targetId);
-    const updated = await authRepository.updateUser(targetId, {
-      isActive: false,
-    });
-
-    auditService.record({
-      actorId: requester.id,
-      actorName: requester.name,
-      actorRole: requester.role,
-      action: AUDIT_ACTIONS.DEACTIVATE_STAFF,
-      entityType: AUDIT_ENTITY_TYPES.USER,
-      entityId: targetId,
-      entityName: target.name,
-      organizationId: target.organizationId,
-      schoolId: target.schoolId,
-      ...(reason ? { details: JSON.stringify({ reason }) } : {}),
-    });
-
-    return UserResponseDTO.toDTO(updated);
-  }
-
-  /**
-   * Reactivate a previously deactivated user.
-   */
-  async reactivateUser(requester, targetId) {
-    const target = await authRepository.findById(targetId);
-    if (!target) throw ApiError.notFoundError("User not found");
-    this._assertCanAccessUser(requester, target);
-    const updated = await authRepository.updateUser(targetId, {
-      isActive: true,
-    });
-
-    auditService.record({
-      actorId: requester.id,
-      actorName: requester.name,
-      actorRole: requester.role,
-      action: AUDIT_ACTIONS.REACTIVATE_STAFF,
-      entityType: AUDIT_ENTITY_TYPES.USER,
-      entityId: targetId,
-      entityName: target.name,
-      organizationId: target.organizationId,
-      schoolId: target.schoolId,
-    });
-
-    return UserResponseDTO.toDTO(updated);
-  }
-
-  /**
-   * Admin resets a user's password (generates a temp password, user must change on next login)
-   */
-  async adminResetPassword(requester, targetId, newPassword) {
-    const target = await authRepository.findById(targetId);
-    if (!target) throw ApiError.notFoundError("User not found");
-    this._assertCanAccessUser(requester, target);
-
-    const hashed = await bcrypt.hash(newPassword, 12);
-    await authRepository.updateUser(targetId, { password: hashed });
-    await authRepository.revokeAllRefreshTokens(targetId);
-
-    auditService.record({
-      actorId: requester.id,
-      actorName: requester.name,
-      actorRole: requester.role,
-      action: AUDIT_ACTIONS.RESET_STAFF_PASSWORD,
-      entityType: AUDIT_ENTITY_TYPES.USER,
-      entityId: targetId,
-      entityName: target.name,
-      organizationId: target.organizationId,
-      schoolId: target.schoolId,
-    });
-
-    return true;
-  }
+  // ─── User management delegated to userManagement.service.js ───
+  async importStaffExcel(fileBuffer, requester) { return userManagementService.importStaffExcel(fileBuffer, requester); }
+  buildImportTemplate() { return userManagementService.buildImportTemplate(); }
+  async createUser(requester, data) { return userManagementService.createUser(requester, data); }
+  async createSampleStaff(requester) { return userManagementService.createSampleStaff(requester); }
+  async listUsers(requester, opts) { return userManagementService.listUsers(requester, opts); }
+  async exportStaffExcel(requester) { return userManagementService.exportStaffExcel(requester); }
+  async listAllUsersPlatform(requester, opts) { return userManagementService.listAllUsersPlatform(requester, opts); }
+  async exportAllUsersPlatform(requester, filters) { return userManagementService.exportAllUsersPlatform(requester, filters); }
+  async getUserById(requester, targetId) { return userManagementService.getUserById(requester, targetId); }
+  async updateUser(requester, targetId, data) { return userManagementService.updateUser(requester, targetId, data); }
+  async deactivateUser(requester, targetId, reason) { return userManagementService.deactivateUser(requester, targetId, reason); }
+  async reactivateUser(requester, targetId) { return userManagementService.reactivateUser(requester, targetId); }
+  async adminResetPassword(requester, targetId, pw) { return userManagementService.adminResetPassword(requester, targetId, pw); }
+  _assertCanAccessUser(requester, target) { return userManagementService._assertCanAccessUser(requester, target); }
 
   /**
    * Self-service forgot password (staff accounts): email par temporary password
@@ -1264,7 +712,7 @@ class AuthService {
   /**
    * Step 2: Parent verifies OTP → gets portal JWT.
    */
-  async verifyParentOtp(whatsappNo, otp) {
+  async verifyParentOtp(whatsappNo, otp, req) {
     const parent = await authRepository.findParentByWhatsapp(whatsappNo);
     if (!parent) {
       throw ApiError.notFoundError("Parent account not found.");
@@ -1314,6 +762,7 @@ class AuthService {
       entityId: parent.id,
       entityName: parent.name,
       schoolId: parent.students?.[0]?.schoolId || null,
+      ipAddress: req?.ip || null,
     });
 
     return {
@@ -1327,7 +776,7 @@ class AuthService {
    * Parent enters School Code + WhatsApp/Phone number + shared school password.
    * Returns a parent portal JWT without any OTP dispatch.
    */
-  async parentLogin({ schoolCode, phone, password }) {
+  async parentLogin({ schoolCode, phone, password }, req) {
     const parent = await authRepository.findParentBySchoolAndPhone(schoolCode, phone);
 
     if (!parent) {
@@ -1368,6 +817,7 @@ class AuthService {
       entityId: parent.id,
       entityName: parent.name,
       schoolId: parent.students?.[0]?.schoolId || null,
+      ipAddress: req?.ip || null,
     });
 
     return {
@@ -1385,7 +835,7 @@ class AuthService {
    * Student enters: School Code + Roll Number
    * System verifies student record and returns Portal Token directly!
    */
-  async studentDirectLogin({ schoolCode, rollNumber, password }) {
+  async studentDirectLogin({ schoolCode, rollNumber, password }, req) {
     const student = await authRepository.findStudentByRollAndSchool(rollNumber, schoolCode);
 
     if (!student) {
@@ -1424,6 +874,7 @@ class AuthService {
       entityName: `${student.firstName} ${student.lastName}`.trim(),
       organizationId: student.school?.organizationId || null,
       schoolId: student.schoolId,
+      ipAddress: req?.ip || null,
     });
 
     return {
@@ -1505,7 +956,7 @@ class AuthService {
   /**
    * Step 2: Student verifies OTP using identifier + OTP.
    */
-  async verifyStudentOtp({ identifier, schoolCode, rollNumber, otp }) {
+  async verifyStudentOtp({ identifier, schoolCode, rollNumber, otp }, req) {
     let lookupKey = identifier;
     if (schoolCode && rollNumber) {
       lookupKey = `${schoolCode.toUpperCase()}:${rollNumber}`;
@@ -1564,6 +1015,7 @@ class AuthService {
       entityName: `${student.firstName} ${student.lastName}`.trim(),
       organizationId: student.school?.organizationId || null,
       schoolId: student.schoolId,
+      ipAddress: req?.ip || null,
     });
 
     return {

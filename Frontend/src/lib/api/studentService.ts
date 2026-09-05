@@ -58,6 +58,17 @@ interface StudentListEnvelope {
   summary?: StudentSummary;
 }
 
+export interface PlatformStudentListParams {
+  organizationId?: string;
+  schoolId?: string;
+  classId?: string;
+  sectionId?: string;
+  status?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
 export const studentService = {
   // GET /students — SCHOOL STAFF (filters: schoolId, sectionId, status, search, page)
   // Backend returns a paginated envelope — unwrap items.
@@ -146,6 +157,12 @@ export const studentService = {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2_000);
+  },
+
+  // GET /students/platform — SUPER_ADMIN (platform-wide student directory)
+  getPlatform: async (params?: PlatformStudentListParams): Promise<StudentListEnvelope> => {
+    const res = await api.get<ApiResponse<StudentListEnvelope>>('/students/platform', { params });
+    return res.data.data;
   },
 
   // Client-side CSV template for student import

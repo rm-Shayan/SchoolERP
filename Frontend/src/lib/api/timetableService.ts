@@ -1,5 +1,4 @@
 import api from './client';
-import { cached, invalidate } from './serviceCache';
 import { downloadPdf } from './downloadPdf';
 import type { ApiResponse } from '@/types';
 
@@ -16,35 +15,27 @@ export interface TimetableSlot {
   section?: { id: string; name: string; class?: { name: string } };
 }
 
-const CACHE_TTL = 10_000;
-
 export const timetableService = {
   createSlot: async (sectionId: string, data: {
     teacherId: string; subjectId: string; dayOfWeek: number;
     periodNumber?: number; startTime: string; endTime: string; roomNumber?: string;
   }): Promise<TimetableSlot> => {
     const res = await api.post<ApiResponse<TimetableSlot>>(`/timetable/sections/${sectionId}`, data);
-    invalidate('tt:');
     return res.data.data;
   },
 
   getBySection: async (sectionId: string): Promise<TimetableSlot[]> => {
-    return cached(`tt:sec:${sectionId}`, CACHE_TTL, async () => {
-      const res = await api.get<ApiResponse<TimetableSlot[]>>(`/timetable/sections/${sectionId}`);
-      return res.data.data.map((slot) => ({ ...slot, dayOfWeek: Number(slot.dayOfWeek) }));
-    });
+    const res = await api.get<ApiResponse<TimetableSlot[]>>(`/timetable/sections/${sectionId}`);
+    return res.data.data.map((slot) => ({ ...slot, dayOfWeek: Number(slot.dayOfWeek) }));
   },
 
   reorderSlots: async (sectionId: string, dayOfWeek: number, slotIds: string[]): Promise<void> => {
     await api.patch(`/timetable/sections/${sectionId}/reorder`, { dayOfWeek, slotIds });
-    invalidate('tt:');
   },
 
   getByTeacher: async (teacherId: string): Promise<TimetableSlot[]> => {
-    return cached(`tt:tch:${teacherId}`, CACHE_TTL, async () => {
-      const res = await api.get<ApiResponse<TimetableSlot[]>>(`/timetable/teachers/${teacherId}`);
-      return res.data.data.map((slot) => ({ ...slot, dayOfWeek: Number(slot.dayOfWeek) }));
-    });
+    const res = await api.get<ApiResponse<TimetableSlot[]>>(`/timetable/teachers/${teacherId}`);
+    return res.data.data.map((slot) => ({ ...slot, dayOfWeek: Number(slot.dayOfWeek) }));
   },
 
   getSlot: async (id: string): Promise<TimetableSlot> => {
@@ -54,19 +45,16 @@ export const timetableService = {
 
   updateSlot: async (id: string, data: Partial<TimetableSlot>): Promise<TimetableSlot> => {
     const res = await api.patch<ApiResponse<TimetableSlot>>(`/timetable/slots/${id}`, data);
-    invalidate('tt:');
     return res.data.data;
   },
 
   deleteSlot: async (id: string): Promise<void> => {
     await api.delete(`/timetable/slots/${id}`);
-    invalidate('tt:');
   },
 
   clearAllSlots: async (sectionId: string, dayOfWeek?: number): Promise<{ deletedCount: number }> => {
     const params = dayOfWeek !== undefined ? { dayOfWeek } : {};
     const res = await api.delete<ApiResponse<{ deletedCount: number }>>(`/timetable/sections/${sectionId}/slots`, { params });
-    invalidate('tt:');
     return res.data.data;
   },
 
@@ -74,7 +62,6 @@ export const timetableService = {
     const formData = new FormData();
     formData.append('file', file);
     const res = await api.post<ApiResponse<{ jobId: string; totalRows: number }>>(`/timetable/sections/${sectionId}/import`, formData);
-    invalidate('tt:');
     return res.data.data;
   },
 

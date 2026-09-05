@@ -24,15 +24,18 @@ class StudentService {
 
     await assertSchoolExists(targetSchoolId);
 
-    const section = await studentRepository.sectionExists(data.sectionId);
-    if (!section) throw ApiError.notFoundError("Section not found");
-    if (section.class.schoolId !== targetSchoolId) {
-      throw ApiError.badRequestError("Section does not belong to the given school");
+    let sectionId = data.sectionId || null;
+    if (sectionId) {
+      const section = await studentRepository.sectionExists(sectionId);
+      if (!section) throw ApiError.notFoundError("Section not found");
+      if (section.class.schoolId !== targetSchoolId) {
+        throw ApiError.badRequestError("Section does not belong to the given school");
+      }
     }
 
     // Capacity check + insert ek hi transaction me (row-lock — race-safe).
     const student = await prisma.$transaction(async (tx) => {
-      await assertSectionHasSeat(tx, data.sectionId);
+      if (sectionId) await assertSectionHasSeat(tx, sectionId);
 
       // Unique roll number within the school
       const existingRoll = await studentRepository.findRollNumberInSchool(
@@ -59,7 +62,7 @@ class StudentService {
       return studentRepository.createStudent(
         {
           schoolId: targetSchoolId,
-          sectionId: data.sectionId,
+          sectionId,
           parentId: parent.id,
           identifierCode: generateIdentifierCode(),
           rollNumber: data.rollNumber,
@@ -376,6 +379,27 @@ class StudentService {
 
   async _hydrated(id) {
     return studentRepository.findStudentById(id);
+  }
+
+  /**
+   * Platform-wide student listing (SUPER_ADMIN only).
+   */
+  async listAllStudentsPlatform(requester, filters = {}) {
+    if (requester.role !== "SUPER_ADMIN") {
+      throw ApiError.forbiddenError("Only Super Admins can view the platform-wide student directory.");
+    }
+    const p = Math.max(1, parseInt(filters.page, 10) || 1);
+    const ps = Math.min(100, Math.max(1, parseInt(filters.pageSize, 10) || 50));
+    return studentRepository.listAllStudentsPlatform({
+      organizationId: filters.organizationId,
+      schoolId: filters.schoolId,
+      classId: filters.classId,
+      sectionId: filters.sectionId,
+      status: filters.status,
+      search: filters.search,
+      page: p,
+      pageSize: ps,
+    });
   }
 }
 

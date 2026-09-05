@@ -2,6 +2,7 @@
 
 import api from './client';
 import { openPdf } from './pdfLinks';
+import { exportAdmissionsCsv } from './admissionExport';
 import type { ApiResponse, Applicant, ApplicantDocument, ApplicantDocumentType, AdmissionStatus } from '@/types';
 
 export interface AdmissionCreatePayload {
@@ -32,11 +33,6 @@ export interface PublicInquiryPayload {
   parentAddress?: string;
 }
 
-export interface ClassOption {
-  id: string;
-  name: string;
-}
-
 export interface AdmissionFunnelStats {
   INQUIRY: number;
   TEST_SCHEDULED: number;
@@ -56,6 +52,7 @@ export interface ApplicantListEnvelope {
   page: number;
   pageSize: number;
 }
+
 export interface AdmissionListParams {
   schoolId?: string;
   status?: AdmissionStatus;
@@ -68,8 +65,8 @@ export interface AdmissionListParams {
 }
 
 export const admissionService = {
-  getPublicClasses: async (schoolId: string): Promise<ClassOption[]> => {
-    const res = await api.get<ApiResponse<ClassOption[]>>('/admissions/public/classes', { params: { schoolId } });
+  getPublicClasses: async (schoolId: string): Promise<{ id: string; name: string }[]> => {
+    const res = await api.get<ApiResponse<{ id: string; name: string }[]>>('/admissions/public/classes', { params: { schoolId } });
     return res.data.data;
   },
   submitPublicInquiry: async (data: PublicInquiryPayload): Promise<{ id: string }> => {
@@ -123,16 +120,7 @@ export const admissionService = {
     const res = await api.delete<ApiResponse<{ id: string }>>(`/admissions/${id}/documents/${docId}`);
     return res.data.data;
   },
-  exportCsv: async (params: Omit<AdmissionListParams, 'page' | 'pageSize'>): Promise<void> => {
-    const res = await api.get<string>('/admissions/export', { params, responseType: 'text' });
-    const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `admissions-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  },
+  exportCsv: (params: Omit<AdmissionListParams, 'page' | 'pageSize'>) => exportAdmissionsCsv(params),
   approve: async (id: string): Promise<Applicant> => {
     const res = await api.post<ApiResponse<Applicant>>(`/admissions/${id}/approve`, {});
     return res.data.data;
@@ -153,5 +141,9 @@ export const admissionService = {
   getSlipPdf: async (id: string): Promise<void> => {
     await openPdf(`/admissions/${id}/slip`);
   },
-
+  // POST /admissions/:id/send-slip — regenerate slip PDF + send to parent
+  sendSlipToParent: async (id: string): Promise<{ delivered: boolean; channel?: string; reason?: string }> => {
+    const res = await api.post<ApiResponse<{ delivered: boolean; channel?: string; reason?: string }>>(`/admissions/${id}/send-slip`, {});
+    return res.data.data;
+  },
 };

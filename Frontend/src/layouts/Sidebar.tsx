@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
-import { cn, getInitials } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { useAppSelector } from '@/store/hooks';
 import { sidebarColors } from '@/lib/theme';
 import { isNavGroup, type SidebarNavItem } from '@/config/navLinks';

@@ -80,21 +80,43 @@ const staffRoleValues = [
   ROLES.RECEPTIONIST,
 ];
 
+const smtpSchema = z.object({
+  host: z.string().min(1, "SMTP host is required"),
+  port: z.number().int().positive(),
+  secure: z.boolean(),
+  username: z.string().email("Invalid SMTP email"),
+  password: z.string().min(1, "SMTP password is required"),
+}).optional();
+
+const cloudinarySchema = z.object({
+  cloudName: z.string().min(1, "Cloud Name is required"),
+  apiKey: z.string().min(1, "API Key is required"),
+  apiSecret: z.string().min(1, "API Secret is required"),
+}).optional();
+
 export const createUserSchema = z.object({
   body: z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Invalid email address"),
     password: z
       .string()
-      .min(8, "Password must be at least 8 characters")
+      .min(5, "Password must be at least 5 characters")
       .optional(),
     phone: z.string().optional(),
-    role: z.enum(staffRoleValues, {
+    role: z.enum([...staffRoleValues, "STUDENT"], {
       errorMap: () => ({
-        message: `Role must be one of: ${staffRoleValues.join(", ")}`,
+        message: `Role must be one of: ${[...staffRoleValues, "STUDENT"].join(", ")}`,
       }),
     }),
+    organizationId: z.string().uuid("Invalid organization ID").optional(),
     schoolId: z.string().uuid("Invalid school ID").optional(),
+    // Teacher assignment (required when role=TEACHER)
+    teacherClassId: z.string().uuid("Invalid class ID").optional(),
+    teacherSectionId: z.string().uuid("Invalid section ID").optional(),
+    teacherSubjectId: z.string().uuid("Invalid subject ID").optional(),
+    // Integration settings for ADMIN role
+    smtp: smtpSchema,
+    cloudinary: cloudinarySchema,
   }),
 });
 
@@ -105,6 +127,7 @@ export const updateUserSchema = z.object({
   body: z.object({
     name: z.string().min(2).optional(),
     phone: z.string().optional(),
+    email: z.string().email("Invalid email address").optional(),
     role: z
       .enum(staffRoleValues, {
         errorMap: () => ({

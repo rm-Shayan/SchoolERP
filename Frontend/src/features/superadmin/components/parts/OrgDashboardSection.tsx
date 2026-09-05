@@ -6,6 +6,9 @@ import type { OrgDashboard } from '@/types';
 import { Button, SectionHeader } from '@/features/shared/components';
 import StaffVsStudentsChart from './StaffVsStudentsChart';
 import RevenueChart from './RevenueChart';
+import EnrollmentChart from './EnrollmentChart';
+import AttendanceRateChart from './AttendanceRateChart';
+import FeeSummaryCard from './FeeSummaryCard';
 import StaffTable from './StaffTable';
 
 interface OrgDashboardSectionProps {
@@ -68,6 +71,13 @@ export default function OrgDashboardSection({ organizationId }: OrgDashboardSect
         <StaffVsStudentsChart branches={data.branches} />
         <RevenueChart revenue={data.revenue} />
       </div>
+      {data.enrollment && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <EnrollmentChart monthly={data.enrollment.monthly} />
+          {data.attendance && <AttendanceRateChart monthly={data.attendance.monthly} />}
+        </div>
+      )}
+      {data.fees && <FeeSummaryCard fees={data.fees} />}
       <StaffTable staff={data.staff} />
     </div>
   );

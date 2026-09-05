@@ -22,11 +22,12 @@ class PortalRepository {
       late: records.filter((r) => r.status === "LATE").length,
       absent: records.filter((r) => r.status === "ABSENT").length,
       leave: records.filter((r) => r.status === "LEAVE").length,
+      halfDay: records.filter((r) => r.status === "HALF_DAY").length,
     };
     const uniqueDates = new Set(records.map((r) => r.date.toISOString().split("T")[0]));
     summary.uniqueDays = uniqueDates.size;
     summary.percentage = summary.uniqueDays > 0
-      ? Math.round(((summary.present + summary.late) / summary.uniqueDays) * 100)
+      ? Math.round(((summary.present + summary.late + summary.halfDay * 0.5) / summary.uniqueDays) * 100)
       : 0;
 
     return { records, summary };
@@ -115,6 +116,7 @@ class PortalRepository {
       include: {
         exam: { select: { id: true, name: true, startDate: true, term: { select: { name: true } } } },
         subject: { select: { id: true, name: true } },
+        student: { select: { id: true, firstName: true, lastName: true } },
       },
       orderBy: { exam: { startDate: "desc" } },
     });
@@ -180,7 +182,10 @@ class PortalRepository {
   async getConductRemarks(studentIds, limit = 20) {
     return prisma.conductRemark.findMany({
       where: { studentId: { in: studentIds } },
-      include: { teacher: { select: { id: true, name: true } } },
+      include: {
+        teacher: { select: { id: true, name: true } },
+        student: { select: { id: true, firstName: true, lastName: true } },
+      },
       orderBy: { createdAt: "desc" },
       take: limit,
     });
@@ -252,11 +257,12 @@ class PortalRepository {
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
 
-    const [attendanceSummary, feeSummary, homeworkCount, circularCount] = await Promise.all([
+    const [attendanceSummary, feeSummary, homeworkCount, circularCount, studyMaterialCount] = await Promise.all([
       this.getAttendanceMonthSummary(studentIds, year, month),
       this.getFeeSummary(studentIds),
       prisma.homeworkBroadcast.count({ where: { sectionId: { in: sectionIds } } }),
       prisma.circular.count({ where: { schoolId, audience: { in: ["PARENTS", "ALL"] } } }),
+      prisma.studyMaterial.count({ where: { sectionId: { in: sectionIds } } }),
     ]);
 
     return {
@@ -264,6 +270,7 @@ class PortalRepository {
       fees: feeSummary,
       homeworkCount,
       circularCount,
+      studyMaterialCount,
     };
   }
 }

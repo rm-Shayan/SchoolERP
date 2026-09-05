@@ -1,4 +1,5 @@
 import attendanceService from "./attendance.service.js";
+import attendanceArchiveService from "./attendanceArchive.service.js";
 import ApiResponse from "../../lib/utils/ApiResponse.js";
 import ApiError from "../../lib/utils/ApiError.js";
 
@@ -290,6 +291,42 @@ class AttendanceController {
 
       const result = await attendanceService.deleteRecord(schoolId, req.params.id);
       return res.status(200).json(ApiResponse.ok("Record deleted", result));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * POST /api/v1/attendance/archive
+   * Archive attendance: summarize per student + delete raw records.
+   * SUPER_ADMIN or ADMIN only.
+   */
+  archiveAttendance = async (req, res, next) => {
+    try {
+      const { dateFrom, dateTo, yearLabel } = req.body;
+      const schoolId = req.user.schoolId || req.body.schoolId;
+      if (!schoolId) return next(ApiError.badRequestError("School ID is required"));
+      if (!dateFrom || !dateTo || !yearLabel) {
+        return next(ApiError.badRequestError("dateFrom, dateTo, and yearLabel are required"));
+      }
+      const result = await attendanceArchiveService.archiveByDateRange(
+        schoolId, new Date(dateFrom), new Date(dateTo), yearLabel
+      );
+      return res.status(200).json(ApiResponse.ok("Attendance archived successfully", result));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * POST /api/v1/attendance/archive/auto
+   * Auto-archive: find schools with old records and archive them.
+   * SUPER_ADMIN only.
+   */
+  autoArchive = async (req, res, next) => {
+    try {
+      const results = await attendanceArchiveService.autoArchiveAll();
+      return res.status(200).json(ApiResponse.ok("Auto-archive completed", { results }));
     } catch (error) {
       return next(error);
     }

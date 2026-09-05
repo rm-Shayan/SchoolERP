@@ -5,8 +5,8 @@ import { cn } from '@/lib/utils';
 
 interface PTMSessionCardProps {
   session: PTMEvent;
-  onEdit: (s: PTMEvent) => void;
-  onDelete: (id: string) => void;
+  onEdit?: (s: PTMEvent) => void;
+  onDelete?: (id: string) => void;
 }
 
 const CalendarIcon = () => (
@@ -70,8 +70,8 @@ export default function PTMSessionCard({ session, onEdit, onDelete }: PTMSession
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <Button size="sm" variant="outline" onClick={() => onEdit(session)}>Edit</Button>
-              <Button size="sm" variant="danger" onClick={() => onDelete(session.id)}>Delete</Button>
+              {onEdit && <Button size="sm" variant="outline" onClick={() => onEdit(session)}>Edit</Button>}
+              {onDelete && <Button size="sm" variant="danger" onClick={() => onDelete(session.id)}>Delete</Button>}
             </div>
           </div>
         </CardContent>

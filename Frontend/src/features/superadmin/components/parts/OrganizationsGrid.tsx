@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import Link from 'next/link';
 import { EmptyState, SectionHeader } from '@/features/shared/components';
+import Logo from '@/features/shared/components/Logo';
 import { formatDate } from '@/lib/utils';
 import type { OrganizationOverviewItem } from '@/types';
 import PublicPageButton from './PublicPageButton';
@@ -22,9 +23,7 @@ const OrgCard = memo(function OrgCard({ org }: { org: OrganizationOverviewItem }
         <div className="relative">
           <div className="flex items-start gap-4">
             <div className="group-hover/card:scale-105 transition-transform duration-300">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center text-lg font-bold text-primary-600 shadow-sm group-hover/card:shadow-md transition-shadow duration-300">
-                {org.name.charAt(0)}
-              </div>
+              <Logo src={org.logoUrl} name={org.name} size="lg" />
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="font-bold text-gray-900 truncate group-hover/card:text-primary-700 transition-colors">{org.name}</h3>

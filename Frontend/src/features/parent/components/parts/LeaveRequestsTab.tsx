@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, EmptyState, Button } from '@/features/shared/components';
 import { portalDataService } from '@/lib/api/portalDataService';
 import type { PortalLeaveRequest } from '@/types/portal';

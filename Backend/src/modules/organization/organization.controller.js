@@ -11,7 +11,7 @@ class OrganizationController {
    */
   create = async (req, res, next) => {
     try {
-      const { name, code, slug, logoUrl, adminEmail, adminName, adminUsername, adminPassword, adminPhone } = req.body;
+      const { name, code, slug, logoUrl, adminEmail, adminName, adminUsername, adminPassword, adminPhone, existingAdminEmail } = req.body;
 
       if (!name || !code) {
         return next(ApiError.badRequestError("'name' and 'code' are required"));
@@ -29,6 +29,7 @@ class OrganizationController {
           adminUsername,
           adminPassword,
           adminPhone,
+          existingAdminEmail,
           // Optional tenant SMTP creds at creation time:
           // { host, port, secure, username, password } — verified before save.
           smtp: req.body.smtp || null,
@@ -110,6 +111,19 @@ class OrganizationController {
     try {
       const overview = await organizationService.getOverview();
       return res.status(200).json(ApiResponse.ok("Platform overview fetched successfully", overview));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * GET /organizations/health
+   * School health audit — blocked branches, missing admins, zero-staff.
+   */
+  health = async (req, res, next) => {
+    try {
+      const data = await organizationService.getSchoolHealth();
+      return res.status(200).json(ApiResponse.ok("School health fetched successfully", data));
     } catch (error) {
       return next(error);
     }

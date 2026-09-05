@@ -6,7 +6,6 @@ const publicRoutes = [
   '/entry',
   '/login',
   '/admin/login',
-  '/parent/login',
   '/unauthorized',
 ];
 
@@ -14,14 +13,6 @@ const publicRoutes = [
 const isOrgRoute = (path: string) => /^\/o\/[^/]+(\/|$)/.test(path);
 
 // Routes that require SUPER_ADMIN role
-const isAdminRoute = (path: string) => path.startsWith('/admin') && !path.startsWith('/admin/login');
-
-// Routes that require branch admin roles
-const isBranchRoute = (path: string) => path.startsWith('/branch') || /^\/o\/[^/]+\/branch(\/|$)/.test(path);
-
-// Routes that require teacher role
-const isTeacherRoute = (path: string) => path.startsWith('/teacher') || /^\/o\/[^/]+\/teacher(\/|$)/.test(path);
-
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 

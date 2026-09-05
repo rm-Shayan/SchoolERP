@@ -38,7 +38,7 @@ export default function OrgFormFields({
           required
           error={errors.code}
         />
-        <Input label={slugLabel} name="slug" placeholder="e.g. falcon-academy" value={values.slug} onChange={onChange} error={errors.slug} />
+        <Input label={slugLabel} name="slug" placeholder="Auto-generated from name" value={values.slug} onChange={onChange} error={errors.slug} readOnly className="bg-gray-50" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>

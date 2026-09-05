@@ -9,7 +9,7 @@ import { AUDIENCE_BADGE, AUDIENCE_LABEL, AUDIENCE_ICON } from './audienceMeta';
 interface CircularItemProps {
   circular: Circular;
   deleting: boolean;
-  onDelete: (c: Circular) => void;
+  onDelete?: (c: Circular) => void;
 }
 
 export default function CircularItem({ circular: c, deleting, onDelete }: CircularItemProps) {
@@ -38,15 +38,17 @@ export default function CircularItem({ circular: c, deleting, onDelete }: Circul
         </p>
       </div>
 
-      <Button
-        size="sm"
-        variant="ghost"
-        className="shrink-0 self-start text-red-600 hover:bg-red-50"
-        loading={deleting}
-        onClick={() => onDelete(c)}
-      >
-        Delete
-      </Button>
+      {onDelete && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="shrink-0 self-start text-red-600 hover:bg-red-50"
+          loading={deleting}
+          onClick={() => onDelete(c)}
+        >
+          Delete
+        </Button>
+      )}
     </motion.li>
   );
 }

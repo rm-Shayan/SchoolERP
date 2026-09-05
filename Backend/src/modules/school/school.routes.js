@@ -49,6 +49,7 @@ router.post(
 );
 
 router.get("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), schoolController.getById);
+router.get("/:id/analytics", authenticate, authorize("SUPER_ADMIN", "ADMIN"), schoolController.analytics);
 router.patch("/:id", authenticate, authorize("SUPER_ADMIN", "ADMIN"), schoolController.update);
 
 // ─── Shared parent/student portal password (branch admin apni branch ka) ────

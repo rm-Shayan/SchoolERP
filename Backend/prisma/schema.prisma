@@ -22,6 +22,7 @@ enum AttendanceStatus {
   LATE
   ABSENT
   LEAVE
+  HALF_DAY // student/staff ne aadha din attend kiya (manual/bulk marking me option)
   MANUAL_OVERRIDE
   PENDING_LEAVE
   APPROVED_LEAVE
@@ -208,6 +209,8 @@ model Organization {
   branches  School[]
   users     User[]
   secrets   OrgSecrets[]
+
+  @@index([createdAt])
 }
 
 // Individual Branch / Campus (e.g., Gulshan Campus)
@@ -259,8 +262,10 @@ model School {
   leaveRequests   LeaveRequest[]
   staffAttendances   StaffAttendance[]
   orgSecrets       OrgSecrets[]
+  studyMaterials  StudyMaterial[]
 
   @@index([organizationId])
+  @@index([organizationId, name])
 }
 
 model AcademicYear {
@@ -324,6 +329,7 @@ model Section {
   homeworkBroadcasts HomeworkBroadcast[]
   teacherAssignments TeacherAssignment[]
   examPapers ExamPaper[]
+  studyMaterials StudyMaterial[]
 
   @@index([classId])
 }
@@ -377,10 +383,13 @@ model User {
   homeworkBroadcasts HomeworkBroadcast[]
   staffAttendances   StaffAttendance[]
   staffLeaveReviews  StaffAttendance[] @relation("StaffLeaveReviewer")
+  studyMaterials     StudyMaterial[]
 
   @@index([schoolId])
   @@index([schoolId, role, isActive])
   @@index([organizationId])
+  @@index([role, isActive, schoolId])
+  @@index([organizationId, role])
 }
 
 // Staff Session Tokens (Refresh Token Rotation)
@@ -419,6 +428,7 @@ model Parent {
   whatsappNo String    @unique // Key identifier for WhatsApp notifications
   phone      String?
   email      String?   // Primary notification channel (Email) until WhatsApp API budget is available
+  imageUrl   String?   // profile photo — portal header/settings (avatars/ folder)
   address    String?
   isBlocked  Boolean   @default(false)
   blockedAt  DateTime?
@@ -724,9 +734,27 @@ model Circular {
   content   String
   mediaUrl  String?
   audience  CircularAudience @default(PARENTS)
+  eventDate DateTime?
   createdAt DateTime         @default(now())
 
   school    School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+}
+
+// ==========================================
+// 8. ACTIVITIES
+// ==========================================
+
+model Activity {
+  id          String   @id @default(uuid())
+  schoolId    String
+  title       String
+  description String?
+  eventDate   DateTime
+  createdAt   DateTime @default(now())
+
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   @@index([schoolId])
 }
@@ -844,6 +872,7 @@ model Subject {
   examResults       ExamResult[]
   teacherAssignments TeacherAssignment[]
   examPapers        ExamPaper[]
+  studyMaterials    StudyMaterial[]
 
   @@index([classId])
 }
@@ -989,23 +1018,6 @@ model TeacherAssignment {
 }
 
 // ==========================================
-// 8. ACTIVITIES
-// ==========================================
-
-model Activity {
-  id          String   @id @default(uuid())
-  schoolId    String
-  title       String
-  description String?
-  eventDate   DateTime
-  createdAt   DateTime @default(now())
-
-  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-
-  @@index([schoolId])
-}
-
-// ==========================================
 // 9. ADMISSIONS
 // ==========================================
 
@@ -1069,6 +1081,44 @@ model ApplicantDocument {
 // (who blocked whom, when, optional reason).
 // All actor/entity references are stored as denormalized strings so the
 // log survives even if the referenced row is later deleted.
+// ==========================================
+// 11. STUDY MATERIALS
+// ==========================================
+
+// Teachers and admins upload study material (documents, links, etc.) for students.
+// Parents and students can view; receptionist excluded.
+model StudyMaterial {
+  id          String   @id @default(uuid())
+  schoolId    String
+  title       String
+  description String?
+  type        StudyMaterialType @default(DOCUMENT)
+  fileUrl     String?
+  linkUrl     String?
+  sectionId   String?
+  subjectId   String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school    School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  section   Section? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  subject   Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  createdBy User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([schoolId])
+  @@index([sectionId])
+  @@index([subjectId])
+  @@index([createdById])
+}
+
+enum StudyMaterialType {
+  DOCUMENT
+  VIDEO
+  IMAGE
+  LINK
+}
+
 model AuditLog {
   id             String   @id @default(uuid())
   actorId        String?  // user id who performed the action (null = system)

@@ -14,6 +14,9 @@ interface ApplicantDetailsProps {
 export function ApplicantDetails({ applicant, busy, onPhoto }: ApplicantDetailsProps) {
   const photoRef = useRef<HTMLInputElement>(null);
   const name = `${applicant.firstName} ${applicant.lastName}`;
+  // Approve pehle, fee baad — advance fee sirf APPROVED ke baad hi dikhta hai.
+  const stageShowFee = applicant.status === 'APPROVED' || applicant.status === 'FEE_PENDING' || applicant.status === 'ENROLLED';
+  const showFee = stageShowFee && applicant.advanceFeeAmount != null;
 
   return (
     <div className="space-y-4">
@@ -55,8 +58,8 @@ export function ApplicantDetails({ applicant, busy, onPhoto }: ApplicantDetailsP
         {(applicant.status === 'TEST_PASSED' || applicant.status === 'TEST_FAILED') && applicant.testMarks && (
           <div className="col-span-2"><p className="text-gray-500 mb-0.5">Test Marks</p><p className="font-medium text-gray-900">{applicant.testMarks}</p></div>
         )}
-        {applicant.advanceFeeAmount != null && (
-          <div className="col-span-2"><p className="text-gray-500 mb-0.5">Advance Fee</p><p className="font-medium text-gray-900">{formatCurrency(applicant.advanceFeeAmount)}</p></div>
+        {showFee && (
+          <div className="col-span-2"><p className="text-gray-500 mb-0.5">Advance Fee</p><p className="font-medium text-gray-900">{formatCurrency(applicant.advanceFeeAmount ?? 0)}</p></div>
         )}
       </div>
 

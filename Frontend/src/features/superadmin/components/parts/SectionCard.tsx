@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { Card, CardHeader, CardContent } from '@/features/shared/components';
 
-function StepIcon({ step, icon, title }: { step: number; icon: React.ReactNode; title: string }) {
+function StepIcon({ step, icon, title }: { step: number; icon?: React.ReactNode; title: string }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-primary-700">
-        {icon}
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-primary-700 text-sm font-bold text-primary-700">
+        {icon || step}
       </div>
       <div>
         <span className="text-[10px] font-semibold uppercase tracking-wider text-primary-600">Step {step}</span>
@@ -19,7 +19,7 @@ function StepIcon({ step, icon, title }: { step: number; icon: React.ReactNode; 
 
 interface SectionCardProps {
   step: number;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   title: string;
   children: React.ReactNode;
   defaultOpen?: boolean;

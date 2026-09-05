@@ -103,7 +103,10 @@ class SmtpSettingsService {
       if (!plainPassword) throw ApiError.badRequestError("Stored password could not be decrypted — enter a new App Password");
     }
 
-    const check = await this.verifyConnection({ host, port: Number(port), secure: Boolean(secure), username, password: plainPassword });
+    const skipVerification = process.env.SKIP_CREDENTIAL_VERIFICATION === 'true';
+    const check = skipVerification
+      ? { ok: true }
+      : await this.verifyConnection({ host, port: Number(port), secure: Boolean(secure), username, password: plainPassword });
     if (!check.ok) {
       logger.logger.warn(`SMTP verify failed for ${username}: ${check.error}`);
       throw ApiError.badRequestError(`SMTP connection failed: ${check.error}. Check host/port and use a Gmail App Password (2FA required).`);
@@ -121,7 +124,7 @@ class SmtpSettingsService {
       ? await prisma.orgSecrets.update({ where: { id: existing.id }, data: { data, isVerified: true, lastVerifiedAt: new Date(), lastError: null } })
       : await prisma.orgSecrets.create({ data: { organizationId, schoolId, category: "SMTP", tier: effectiveTier, data, isVerified: true, lastVerifiedAt: new Date() } });
 
-    logger.logger.info(`SMTP saved [${schoolId ? "branch" : "org"}:${effectiveTier}] -> ${data.username}`);
+    logger.logger.info(`SMTP saved [${schoolId ? "branch" : "org"}:${effectiveTier}] -> ${data.username}${skipVerification ? ' (verification skipped)' : ''}`);
     return this._mask(setting);
   }
 
@@ -155,8 +158,12 @@ class SmtpSettingsService {
     if (!password) throw ApiError.badRequestError("SMTP password is required when SMTP host/username is provided");
     const tier = this._normalizeTier(smtp.tier);
     const creds = { host: smtp.host, port: Number(smtp.port || 587), secure: Boolean(smtp.secure), username: String(smtp.username).trim().toLowerCase(), password };
-    const check = await this.verifyConnection(creds);
-    if (!check.ok) throw ApiError.badRequestError(`SMTP verification failed: ${check.error}`);
+
+    // SKIP_CREDENTIAL_VERIFICATION=true → dev/test mein real credentials ki zaroorat nahi
+    const skipVerification = process.env.SKIP_CREDENTIAL_VERIFICATION === 'true';
+    const check = skipVerification
+      ? { ok: true }
+      : await this.verifyConnection(creds);
 
     const data = {
       host: creds.host, port: creds.port, secure: creds.secure, username: creds.username,
@@ -166,10 +173,16 @@ class SmtpSettingsService {
     };
     const existing = await this._find(organizationId, schoolId || null, tier);
     const setting = existing
-      ? await prisma.orgSecrets.update({ where: { id: existing.id }, data: { data, isVerified: true, lastVerifiedAt: new Date(), lastError: null } })
-      : await prisma.orgSecrets.create({ data: { organizationId, schoolId: schoolId || null, category: "SMTP", tier, data, isVerified: true, lastVerifiedAt: new Date() } });
-    logger.logger.info(`SMTP provisioned [${schoolId ? "branch" : "org"}:${tier}] -> ${creds.username}`);
-    return this._mask(setting);
+      ? await prisma.orgSecrets.update({ where: { id: existing.id }, data: { data, isVerified: check.ok, lastVerifiedAt: check.ok ? new Date() : null, lastError: check.ok ? null : check.error } })
+      : await prisma.orgSecrets.create({ data: { organizationId, schoolId: schoolId || null, category: "SMTP", tier, data, isVerified: check.ok, lastVerifiedAt: check.ok ? new Date() : null, lastError: check.ok ? null : check.error } });
+    if (skipVerification) {
+      logger.logger.info(`SMTP provisioned (verification skipped) [${schoolId ? "branch" : "org"}:${tier}] -> ${creds.username}`);
+    } else if (!check.ok) {
+      logger.logger.warn(`SMTP provisioned but verification failed [${schoolId ? "branch" : "org"}:${tier}] -> ${creds.username}: ${check.error}`);
+    } else {
+      logger.logger.info(`SMTP provisioned [${schoolId ? "branch" : "org"}:${tier}] -> ${creds.username}`);
+    }
+    return { ...this._mask(setting), verificationError: check.ok ? null : check.error };
   }
 }
 

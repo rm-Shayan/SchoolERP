@@ -8,7 +8,9 @@ import { getStage } from '../utils/admissionStages';
 import { ApplicantDetails } from './parts/ApplicantDetails';
 import { ApplicantDocuments } from './parts/ApplicantDocuments';
 import AdmissionActions from './parts/AdmissionActions';
+import AdmissionSlipActions from './parts/AdmissionSlipActions';
 import AdmissionModalFooter from './parts/AdmissionModalFooter';
+import { StageProgress } from './parts/StageProgress';
 import toast from 'react-hot-toast';
 
 interface AdmissionActionsModalProps {
@@ -19,12 +21,12 @@ interface AdmissionActionsModalProps {
   onEdit: (applicant: Applicant) => void;
   onRemoved: (id: string) => void;
 }
-
 export default function AdmissionActionsModal({ applicant, onClose, onChanged, onRefresh, onEdit, onRemoved }: AdmissionActionsModalProps) {
   const stage = getStage(applicant.status);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const enrolled = applicant.status === 'ENROLLED';
+
   const move = async (status: AdmissionStatus, extra?: { testDate?: string; testTime?: string; testVenue?: string; testMarks?: string }) => {
     setBusy(true);
     try {
@@ -37,12 +39,11 @@ export default function AdmissionActionsModal({ applicant, onClose, onChanged, o
       setBusy(false);
     }
   };
-
   const approve = async () => {
     setBusy(true);
     try {
       const updated = await admissionService.approve(applicant.id);
-      toast.success('Applicant approved — slip emailed to parent');
+      toast.success('Admission approved — confirmation sent to parent');
       onChanged(updated);
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Failed to approve');
@@ -50,13 +51,12 @@ export default function AdmissionActionsModal({ applicant, onClose, onChanged, o
       setBusy(false);
     }
   };
-
   const generateSlip = async (amount: string) => {
     setBusy(true);
     try {
       await admissionService.recordAdvanceFee(applicant.id, Number(amount));
       await admissionService.getSlipPdf(applicant.id);
-      toast.success('Advance fee recorded — slip opened');
+      toast.success('Fee recorded — receipt sent to parent');
       onRefresh();
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Failed to record advance fee');
@@ -64,7 +64,6 @@ export default function AdmissionActionsModal({ applicant, onClose, onChanged, o
       setBusy(false);
     }
   };
-
   const enroll = async (sectionId: string, rollNumber: string) => {
     setBusy(true);
     try {
@@ -77,9 +76,7 @@ export default function AdmissionActionsModal({ applicant, onClose, onChanged, o
       setBusy(false);
     }
   };
-
   const handlePhoto = async (file: File) => {
-    // After enrollment, photo must be updated from the Students section
     if (enrolled) return;
     setBusy(true);
     try {
@@ -92,7 +89,6 @@ export default function AdmissionActionsModal({ applicant, onClose, onChanged, o
       setBusy(false);
     }
   };
-
   const handleDelete = async () => {
     setBusy(true);
     try {
@@ -106,13 +102,14 @@ export default function AdmissionActionsModal({ applicant, onClose, onChanged, o
       setBusy(false);
     }
   };
-
   return (
     <Modal open onClose={onClose} title={`${applicant.firstName} ${applicant.lastName}`}>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <Badge variant={enrolled ? 'success' : 'info'}>{stage.label}</Badge>
         </div>
+
+        <StageProgress current={applicant.status} />
 
         {enrolled ? (
           <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-700">
@@ -123,6 +120,10 @@ export default function AdmissionActionsModal({ applicant, onClose, onChanged, o
         )}
 
         <ApplicantDocuments applicant={applicant} onChanged={onChanged} />
+
+        {['APPROVED', 'FEE_PENDING', 'ENROLLED'].includes(applicant.status) && (
+          <AdmissionSlipActions applicant={applicant} />
+        )}
 
         <AdmissionActions
           applicant={applicant}

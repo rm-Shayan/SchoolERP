@@ -36,6 +36,19 @@ class ConductRepository {
     return prisma.academicYear.findFirst({ where: { schoolId, isCurrent: true } });
   }
 
+  /** Staff member on whose behalf an admin can author a remark (same school). */
+  async findStaffForRemark(id, schoolId) {
+    return prisma.user.findFirst({
+      where: {
+        id,
+        schoolId,
+        isActive: true,
+        role: { in: ["TEACHER", "ADMIN", "RECEPTIONIST"] },
+      },
+      select: { id: true, name: true, role: true },
+    });
+  }
+
   async findRemarkById(id) {
     return prisma.conductRemark.findUnique({
       where: { id },

@@ -18,11 +18,6 @@ function mix(rgb: [number, number, number], target: number, ratio: number): stri
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
-function mixHex(hex: string, target: number, ratio: number): string {
-  const rgb = hexToRgb(hex);
-  return rgb ? mix(rgb, target, ratio) : hex;
-}
-
 export function buildPrimaryScale(hex: string): Record<string, string> | null {
   const rgb = hexToRgb(hex);
   if (!rgb) return null;
@@ -71,6 +66,38 @@ export function clearOrgThemeFromRoot(): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement.style;
   for (const step of PRIMARY_STEPS) {
+    root.removeProperty(`--color-primary-${step}`);
+  }
+}
+
+/**
+ * Portal (parent/student) theming — org admin portal jaisa hi: org ka color
+ * poore portal par lage. Primary scale ke saath blue scale bhi org color par
+ * remap hota hai kyunke parent/student content components blue utilities
+ * (bg-blue-*, text-blue-*, ring-blue-*, …) use karte hain — isse har card,
+ * button, chip aur link ekdum brand color mein aa jata hai.
+ */
+const BLUE_STEPS = PRIMARY_STEPS;
+
+export function applyPortalThemeToRoot(themeColor?: string | null): void {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement.style;
+  const scale = themeColor ? buildPrimaryScale(themeColor) : null;
+  if (!scale) {
+    clearPortalThemeFromRoot();
+    return;
+  }
+  for (const step of BLUE_STEPS) {
+    root.setProperty(`--color-blue-${step}`, scale[step]);
+    root.setProperty(`--color-primary-${step}`, scale[step]);
+  }
+}
+
+export function clearPortalThemeFromRoot(): void {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement.style;
+  for (const step of BLUE_STEPS) {
+    root.removeProperty(`--color-blue-${step}`);
     root.removeProperty(`--color-primary-${step}`);
   }
 }

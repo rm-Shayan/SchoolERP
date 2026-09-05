@@ -1,3 +1,4 @@
+import "dotenv/config";
 import prisma from "../src/config/db.js";
 import bcrypt from "bcryptjs";
 import { generateIdentifierCode } from "../src/lib/identifier.js";

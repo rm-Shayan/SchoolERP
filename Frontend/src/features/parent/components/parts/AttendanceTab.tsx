@@ -4,13 +4,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/features/shared/components';
 import { portalDataService } from '@/lib/api/portalDataService';
 import type { PortalAttendanceRecord, PortalAttendanceSummary } from '@/types/portal';
-import { cn, formatDate } from '@/lib/utils';
-import { getOrgThemeColor } from '@/lib/utils/orgTheme';
+import { cn } from '@/lib/utils';
+
 import { AttendanceSkeleton } from './PortalSkeletonsA';
 import { usePortalEvents } from '@/hooks/usePortalEvents';
 
 const STATUS_COLORS: Record<string, string> = {
-  PRESENT: 'bg-green-400', LATE: 'bg-yellow-400', ABSENT: 'bg-red-400', LEAVE: 'bg-blue-400', MANUAL_OVERRIDE: 'bg-gray-400',
+  PRESENT: 'bg-green-400', LATE: 'bg-yellow-400', ABSENT: 'bg-red-400', LEAVE: 'bg-blue-400', HALF_DAY: 'bg-cyan-400', MANUAL_OVERRIDE: 'bg-gray-400',
 };
 
 export default function AttendanceTab() {
@@ -51,7 +51,6 @@ export default function AttendanceTab() {
 }
 
 function MonthNav({ label, onPrev, onNext }: { month: number; year: number; label: string; onPrev: () => void; onNext: () => void }) {
-  const theme = getOrgThemeColor();
   return (
     <div className="flex items-center justify-between">
       <button onClick={onPrev} className="p-2 rounded-xl hover:bg-gray-100 text-gray-600 transition">
@@ -105,6 +104,7 @@ function SummaryCards({ summary }: { summary: PortalAttendanceSummary }) {
     { label: 'Late', value: summary.late, color: '#f59e0b' },
     { label: 'Absent', value: summary.absent, color: '#ef4444' },
     { label: 'Leave', value: summary.leave, color: '#3b82f6' },
+    ...(summary.halfDay > 0 ? [{ label: 'Half Day', value: summary.halfDay, color: '#0891b2' }] : []),
   ];
   return (
     <div className="grid grid-cols-4 gap-3">

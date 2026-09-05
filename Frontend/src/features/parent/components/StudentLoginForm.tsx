@@ -35,7 +35,7 @@ export default function StudentLoginForm({ themeColor }: StudentLoginFormProps) 
         );
         localStorage.setItem('studentToken', token);
         localStorage.setItem('studentProfile', JSON.stringify(student));
-        router.push('/parent/dashboard');
+        router.push('/student/dashboard');
       } catch (err: any) {
         setLocalError(err?.response?.data?.message ?? 'Invalid school code or roll number');
       }

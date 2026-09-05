@@ -17,6 +17,23 @@ class AuditRepository {
     ]);
     return { items, total, page, pageSize };
   }
+
+  async exportCsv({ where, limit = 5000 }) {
+    return prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: {
+        actorName: true,
+        actorRole: true,
+        action: true,
+        entityType: true,
+        entityName: true,
+        ipAddress: true,
+        createdAt: true,
+      },
+    });
+  }
 }
 
 export default new AuditRepository();

@@ -44,17 +44,68 @@ class NotificationController {
 
   sendFromSuperAdmin = asyncHandler(async (req, res) => {
     const { organizationId, schoolId, recipientId, title, body, category } = req.body;
-    const notif = await portalNotificationService.create({
-      organizationId: organizationId || null,
-      schoolId: schoolId || null,
-      senderId: req.user.id,
-      senderName: req.user.name,
-      recipientId: recipientId || null,
-      title: title || "GENERAL",
-      body,
-      category: category || "GENERAL",
+    const prisma = (await import("../../config/db.js")).default;
+    const { sendEmail, resolveEmailBranding } = await import("../../services/email.service.js");
+    const { announcementEmail } = await import("../../services/email.templates.js");
+
+    // 1. Find all target admins
+    const where = { role: "ADMIN", isActive: true };
+    if (schoolId) {
+      where.OR = [{ schoolId }, { branchAccess: { array_contains: [schoolId] } }];
+    } else if (organizationId) {
+      where.organizationId = organizationId;
+    }
+    if (recipientId) where.id = recipientId;
+
+    const admins = await prisma.user.findMany({
+      where,
+      select: { id: true, name: true, email: true, schoolId: true, organizationId: true },
     });
-    return res.status(201).json(ApiResponse.ok("Notification sent", notif));
+
+    if (admins.length === 0) {
+      return res.status(201).json(ApiResponse.ok("Notification sent (no admins found)", null));
+    }
+
+    // 2. Create portal notification for each admin
+    const created = [];
+    for (const admin of admins) {
+      const notif = await portalNotificationService.create({
+        organizationId: admin.organizationId || organizationId || null,
+        schoolId: admin.schoolId || schoolId || null,
+        senderId: req.user.id,
+        senderName: req.user.name,
+        recipientId: admin.id,
+        title: title || "GENERAL",
+        body,
+        category: category || "GENERAL",
+      });
+      if (notif) created.push(notif);
+    }
+
+    // 3. Send email to all admins
+    const branding = await resolveEmailBranding({ organizationId, schoolId }).catch(() => ({}));
+    const emailPromises = admins
+      .filter((a) => a.email)
+      .map((admin) => {
+        const tpl = announcementEmail({
+          name: admin.name,
+          title: title || "Announcement",
+          message: body,
+          logoUrl: branding.logoUrl,
+          themeColor: branding.themeColor,
+        });
+        return sendEmail({
+          to: admin.email,
+          subject: tpl.subject,
+          text: tpl.text,
+          html: tpl.html,
+          schoolId: admin.schoolId || schoolId,
+          organizationId: admin.organizationId || organizationId,
+        }).catch(() => {});
+      });
+    await Promise.allSettled(emailPromises);
+
+    return res.status(201).json(ApiResponse.ok(`Notification sent to ${admins.length} admin(s)`, { count: created.length, emailed: admins.filter((a) => a.email).length }));
   });
 }
 

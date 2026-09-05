@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import type { ParentChild } from '@/lib/api/parentService';
+import AvatarPlaceholder from '@/features/shared/components/AvatarPlaceholder';
 
 interface SiblingSelectorProps {
   items: ParentChild[];
@@ -24,9 +25,7 @@ export default function SiblingSelector({ items, activeId, onChange }: SiblingSe
                 : 'bg-white text-gray-700 border-gray-200 hover:border-primary-300'
             )}
           >
-            <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-white/20">
-              {child.firstName.charAt(0)}{child.lastName.charAt(0)}
-            </span>
+            <AvatarPlaceholder className="w-6 h-6 rounded-full shrink-0" />
             <span className="truncate">{child.firstName}</span>
           </button>
         );

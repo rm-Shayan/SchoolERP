@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 const BASE = 'http://localhost:3000';
 const API = 'http://localhost:5000/api/v1';

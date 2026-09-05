@@ -34,8 +34,8 @@ export default function IdCardDesign({ member, school, org }: Props) {
   return (
     <div className="id-card relative w-[3.375in] h-[2.125in] bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col print:shadow-none print:border print:w-[85.6mm] print:h-[54mm] print:rounded print:border-slate-300 font-sans">
       <div className="relative bg-gradient-to-r from-slate-800 to-slate-900 px-3 py-1.5 flex items-center gap-2">
-        {org?.logoUrl && (
-          <img src={org.logoUrl} alt="Logo" className="h-6 w-6 rounded-full object-cover ring-1 ring-white/30" />
+        {(school?.logoUrl || org?.logoUrl) && (
+          <img src={school?.logoUrl || org?.logoUrl} alt="Logo" className="h-6 w-6 rounded-full object-cover ring-1 ring-white/30" />
         )}
         <div className="min-w-0">
           <p className="text-white font-bold text-[10px] leading-tight tracking-tight truncate">

@@ -7,7 +7,7 @@ import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { useSocket } from '@/hooks/useSocket';
 import { orgThemeStyle, applyOrgThemeToRoot, clearOrgThemeFromRoot } from '@/lib/theme';
-import { isNavGroup, type SidebarNavItem } from '@/config/navLinks';
+import { isNavGroup, filterLinksByRole, type SidebarNavItem } from '@/config/navLinks';
 import type { ReactNode } from 'react';
 import PortalErrorBoundary from '@/components/PortalErrorBoundary';
 
@@ -32,7 +32,7 @@ export default function DashboardLayout({ links, title, children }: DashboardLay
   useSocket();
   const pathname = usePathname();
   const router = useRouter();
-  const { organization, school } = useAppSelector((s) => s.auth);
+  const { organization, school, user } = useAppSelector((s) => s.auth);
 
   const themeColor = organization?.themeColor ?? school?.themeColor ?? null;
   const themeStyle = orgThemeStyle(themeColor);
@@ -51,11 +51,12 @@ export default function DashboardLayout({ links, title, children }: DashboardLay
 
   // NOTE: getBranding() call removed — logo/theme/name are already included
   // in the login + loadUser Redux state (school.logoUrl, organization.themeColor, etc.).
-  // Re-fetching caused a 2-render flicker on every page load.
+  // Re-fetching caused a 2- render flicker on every page load.
 
   const slugMatch = pathname.match(/^\/o\/([^/]+)\//);
   const slugPrefix = slugMatch ? `/o/${slugMatch[1]}` : '';
-  const scopedLinks = slugPrefix ? prefixLinks(links, slugPrefix) : links;
+  const roleFilteredLinks = filterLinksByRole(links, user?.role);
+  const scopedLinks = slugPrefix ? prefixLinks(roleFilteredLinks, slugPrefix) : roleFilteredLinks;
 
   useEffect(() => {
     if (organization?.slug && !pathname.startsWith(`/o/${organization.slug}`)) {

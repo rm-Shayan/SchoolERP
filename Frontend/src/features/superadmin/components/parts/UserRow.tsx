@@ -1,81 +1,82 @@
 'use client';
 
 import { memo } from 'react';
-import { Badge, Button } from '@/features/shared/components';
-import { getRoleLabel, formatDate } from '@/lib/utils';
-import type { User } from '@/types';
-import { ROLE_BADGE } from './helpers';
+import { Badge } from '@/features/shared/components';
+import Logo from '@/features/shared/components/Logo';
+import UserAvatar from '@/features/shared/components/UserAvatar';
+import { formatDate } from '@/lib/utils';
+import type { DirectoryItem } from '@/lib/api/staffService';
+import ActionsMenu from './ActionsMenu';
 
 interface UserRowProps {
-  member: User;
+  member: DirectoryItem;
   currentUserId?: string;
-  busy?: boolean;
-  onToggleBlock: (member: User) => void;
-  onOpenBlock: (member: User) => void;
-  onView: (member: User) => void;
+  onToggleBlock: (member: DirectoryItem) => void;
+  onOpenBlock: (member: DirectoryItem) => void;
+  onView: (member: DirectoryItem) => void;
+  onEdit: (member: DirectoryItem) => void;
+  onDelete: (member: DirectoryItem) => void;
+  onResetPassword: (member: DirectoryItem) => void;
 }
 
-const avatarGradients = [
-  'from-violet-400 to-purple-600',
-  'from-sky-400 to-blue-600',
-  'from-emerald-400 to-teal-600',
-  'from-amber-400 to-orange-600',
-  'from-rose-400 to-pink-600',
-];
+const STATUS_BADGE: Record<string, 'success' | 'danger' | 'warning' | 'info' | 'default'> = {
+  ACTIVE: 'success', BLOCKED: 'danger', GRADUATED: 'info', DROPPED_OUT: 'danger', TRANSFERRED_OUT: 'warning',
+};
 
-function getAvatarGradient(name: string) {
-  const hash = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  return avatarGradients[hash % avatarGradients.length];
-}
-
-function UserRowBase({ member, currentUserId, busy, onToggleBlock, onOpenBlock, onView }: UserRowProps) {
+function UserRowBase({
+  member, currentUserId, onToggleBlock, onOpenBlock, onView,
+  onEdit, onDelete, onResetPassword,
+}: UserRowProps) {
+  const blocked = member.status === 'BLOCKED';
+  const isStudent = member.type === 'student';
   const isCurrent = member.id === currentUserId;
-  const blocked = !member.isActive;
+
   return (
     <tr
       className="border-b border-gray-100/80 hover:bg-gradient-to-r hover:from-primary-50/30 hover:to-transparent transition-all duration-200 cursor-pointer"
       onClick={() => onView(member)}
     >
       <td className="py-3.5 px-4">
-        <div className="flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-2xl bg-gradient-to-br ${getAvatarGradient(member.name)} flex items-center justify-center shrink-0 shadow-sm`}>
-            <span className="text-sm font-bold text-white">{member.name.charAt(0)}</span>
-          </div>
+          <div className="flex items-center gap-3">
+            <UserAvatar src={member.avatarUrl} orgLogoUrl={member.organization?.logoUrl} name={member.name} size="sm" />
           <div className="min-w-0">
             <p className="font-semibold text-gray-900 truncate">{member.name}</p>
-            <p className="text-xs text-gray-500 truncate">{member.email}</p>
+            <p className="text-xs text-gray-500 truncate">{member.email ?? '—'}</p>
           </div>
         </div>
       </td>
       <td className="py-3.5 px-4">
-        <Badge variant={ROLE_BADGE[member.role] ?? 'default'}>{getRoleLabel(member.role)}</Badge>
+        <Badge variant={isStudent ? 'info' : 'default'}>{isStudent ? 'Student' : (member.subtitle ?? '—')}</Badge>
       </td>
-      <td className="py-3.5 px-4 text-gray-700">{member.organization?.name ?? <span className="text-gray-400">Not assigned</span>}</td>
-      <td className="py-3.5 px-4 text-gray-500">{member.school?.name ?? <span className="text-gray-400">Not assigned</span>}</td>
       <td className="py-3.5 px-4">
-        <div>
-          <Badge variant={blocked ? 'danger' : 'success'}>
-            {blocked ? 'Blocked' : 'Active'}
-          </Badge>
-          {blocked && member.blockedReason && (
-            <p className="text-[11px] text-red-500 mt-0.5 max-w-[160px] truncate" title={member.blockedReason}>
-              {member.blockedReason}
-            </p>
-          )}
+        <div className="flex items-center gap-2">
+          <Logo src={member.organization?.logoUrl} name={member.organization?.name ?? ''} size="sm" />
+          <span className="text-gray-700 truncate">{member.organization?.name ?? '—'}</span>
         </div>
+      </td>
+      <td className="py-3.5 px-4">
+        <div className="flex items-center gap-2">
+          <Logo src={member.branch?.logoUrl} name={member.branch?.name ?? ''} size="sm" />
+          <span className="text-gray-500 truncate">{member.branch?.name ?? '—'}</span>
+        </div>
+      </td>
+      <td className="py-3.5 px-4">
+        <Badge variant={STATUS_BADGE[member.status] ?? 'default'}>{member.status.replace('_', ' ')}</Badge>
       </td>
       <td className="py-3.5 px-4 text-gray-500 whitespace-nowrap">{formatDate(member.createdAt)}</td>
       <td className="py-3.5 px-4 text-right">
         {isCurrent ? (
-          <span className="text-xs text-gray-400">Current account</span>
-        ) : blocked ? (
-          <Button size="sm" variant="secondary" loading={busy} disabled={busy} onClick={(e) => { e.stopPropagation(); onToggleBlock(member); }}>
-            Unblock
-          </Button>
+          <span className="text-xs text-gray-400">Current</span>
         ) : (
-          <Button size="sm" variant="outline" loading={busy} disabled={busy} onClick={(e) => { e.stopPropagation(); onOpenBlock(member); }}>
-            Block
-          </Button>
+          <ActionsMenu
+            member={member}
+            blocked={blocked}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onResetPassword={onResetPassword}
+            onBlock={onOpenBlock}
+            onUnblock={onToggleBlock}
+          />
         )}
       </td>
     </tr>

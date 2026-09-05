@@ -18,6 +18,8 @@ export default function EditApplicantModal({ applicant, onClose, onSaved }: Edit
   const { user, school } = useAppSelector((s) => s.auth);
   const schoolId = school?.id ?? user?.schoolId;
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
+  // Approve pehle, fee baad — advance fee sirf APPROVED/FEE_PENDING ke baad editable.
+  const feeEditable = applicant.status === 'APPROVED' || applicant.status === 'FEE_PENDING';
 
   const { values, errors, isSubmitting, handleChange, handleBlur, handleSubmit } = useForm({
     initialValues: {
@@ -55,7 +57,7 @@ export default function EditApplicantModal({ applicant, onClose, onSaved }: Edit
           parentWhatsappNo: v.parentWhatsappNo as string,
           parentEmail: (v.parentEmail as string) || undefined,
           parentAddress: (v.parentAddress as string) || undefined,
-          advanceFeeAmount: v.advanceFeeAmount ? Number(v.advanceFeeAmount) : undefined,
+          ...(feeEditable ? { advanceFeeAmount: v.advanceFeeAmount ? Number(v.advanceFeeAmount) : undefined } : {}),
         });
         toast.success('Applicant updated');
         onSaved(updated);
@@ -104,7 +106,9 @@ export default function EditApplicantModal({ applicant, onClose, onSaved }: Edit
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Date of Birth" name="dob" type="date" value={values.dob as string} onChange={handleChange} />
-          <Input label="Advance Fee Amount (PKR)" name="advanceFeeAmount" type="number" placeholder="e.g. 20000" value={values.advanceFeeAmount as string} onChange={handleChange} />
+          {feeEditable && (
+            <Input label="Advance Fee Amount (PKR)" name="advanceFeeAmount" type="number" placeholder="e.g. 20000" value={values.advanceFeeAmount as string} onChange={handleChange} />
+          )}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Parent Name" name="parentName" value={values.parentName as string} onChange={handleChange} onBlur={() => handleBlur('parentName')} error={errors.parentName} required />

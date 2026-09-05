@@ -21,6 +21,7 @@ export interface PortalOverview {
   };
   homeworkCount: number;
   circularCount: number;
+  studyMaterialCount: number;
 }
 
 export interface PortalAttendanceRecord {
@@ -28,6 +29,7 @@ export interface PortalAttendanceRecord {
   status: string;
   checkIn?: string;
   checkOut?: string;
+  studentId?: string;
   student?: { id: string; firstName: string; lastName: string };
 }
 
@@ -38,6 +40,7 @@ export interface PortalAttendanceSummary {
   late: number;
   absent: number;
   leave: number;
+  halfDay: number;
   percentage: number;
 }
 
@@ -99,6 +102,7 @@ export interface PortalExamResult {
   remarks?: string;
   exam: { id: string; name: string; startDate: string; term?: { name: string } };
   subject: { id: string; name: string };
+  student?: { id: string; firstName: string; lastName: string };
 }
 
 export interface PortalTimetableSlot {
@@ -116,6 +120,7 @@ export interface PortalConductRemark {
   comment: string;
   createdAt: string;
   teacher: { id: string; name: string };
+  student?: { id: string; firstName: string; lastName: string };
 }
 
 export interface PortalPTMSession {

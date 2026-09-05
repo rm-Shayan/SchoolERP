@@ -9,6 +9,8 @@ export const createRemarkSchema = z.object({
     studentId: z.string().uuid("Invalid studentId"),
     type: z.enum(["POSITIVE", "NEUTRAL", "NEGATIVE"]).default("NEUTRAL"),
     comment: z.string().min(1, "Comment required (keep it short)").max(500),
+    // ADMIN/SUPER_ADMIN kisi teacher ke naam par remark daal sakte hain
+    teacherId: z.string().uuid("Invalid teacherId").optional(),
   }),
 });
 

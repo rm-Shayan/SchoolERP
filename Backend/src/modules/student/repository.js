@@ -137,6 +137,44 @@ class StudentRepository {
     return prisma.student.count({ where: { schoolId, status: "ACTIVE" } });
   }
 
+  /**
+   * Platform-wide student listing (SUPER_ADMIN only).
+   * Filters: organizationId, schoolId, classId, sectionId, status, search.
+   */
+  async listAllStudentsPlatform({ organizationId, schoolId, classId, sectionId, status, search, page = 1, pageSize = 50 } = {}) {
+    const where = {};
+    if (organizationId) where.school = { organizationId };
+    if (schoolId) where.schoolId = schoolId;
+    if (sectionId) where.sectionId = sectionId;
+    else if (classId) where.section = { classId };
+    if (status) where.status = status;
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: "insensitive" } },
+        { lastName: { contains: search, mode: "insensitive" } },
+        { rollNumber: { contains: search, mode: "insensitive" } },
+        { identifierCode: { contains: search, mode: "insensitive" } },
+        { parent: { whatsappNo: { contains: search, mode: "insensitive" } } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.student.findMany({
+        where,
+        include: {
+          school: { select: { id: true, name: true, code: true, organization: { select: { id: true, name: true } } } },
+          section: { include: { class: true } },
+          parent: { select: { id: true, name: true, whatsappNo: true } },
+        },
+        orderBy: [{ createdAt: "desc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.student.count({ where }),
+    ]);
+    return { items, total, page, pageSize };
+  }
+
   async sectionExists(sectionId, client = prisma) {
     return client.section.findUnique({
       where: { id: sectionId },

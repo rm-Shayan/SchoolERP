@@ -22,6 +22,7 @@ export interface StorageSettingsStatus {
 
 export interface StorageSettingsPayload {
   organizationId?: string;
+  schoolId?: string | null;
   cloudName: string;
   apiKey: string;
   /** Update par optional — khali chhodo to purana secret rehta hai */

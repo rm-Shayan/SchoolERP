@@ -46,8 +46,9 @@ class AttendanceService {
    */
   async processScan(requesterSchoolId, { identifierCode, deviceId, method = "QR", scannedAt, synced = true }) {
     const scanTime = scannedAt ? new Date(scannedAt) : new Date();
-    const today = new Date(scanTime);
-    today.setHours(0, 0, 0, 0);
+    // DATE column UTC-midnight convention — local calendar day ka UTC start,
+    // warna local-midnight instants UTC me previous date par save hote the.
+    const today = new Date(Date.UTC(scanTime.getFullYear(), scanTime.getMonth(), scanTime.getDate()));
 
     // 1. Find Student by identifierCode (single indexed query)
     const student = await attendanceRepository.findStudentByIdentifierCode(identifierCode);
@@ -217,27 +218,33 @@ class AttendanceService {
     try {
       const dateKey = date.toISOString().split("T")[0];
       await redis.del(`attendance:daily:${schoolId}:${dateKey}`);
+      await redis.del(`attendance:daily:v2:${schoolId}:${dateKey}`);
     } catch (_) {}
   }
 
   /**
    * Daily Attendance Report for Office Dashboard — Redis cached (5 min TTL)
+   * sectionStats: har section me total enrolled ACTIVE students (unmarked
+   * sections bhi cards me dikh sakein with real counts).
    */
   async getDailyReport(schoolId, dateStr) {
-    const targetDate = dateStr ? new Date(dateStr) : new Date();
-    targetDate.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const targetDate = dateStr ? new Date(dateStr) : new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 
     const dateKey = targetDate.toISOString().split("T")[0];
-    const cacheKey = `attendance:daily:${schoolId}:${dateKey}`;
+    const cacheKey = `attendance:daily:v2:${schoolId}:${dateKey}`;
 
     try {
       const cached = await redis.get(cacheKey);
       if (cached) return JSON.parse(cached);
     } catch (_) {}
 
-    const records = await attendanceRepository.getDailySchoolAttendance(schoolId, targetDate);
-    const offDays = await attendanceRepository.findOffDays(schoolId);
-    const weeklyOff = await attendanceRepository.findWeeklyOff(schoolId);
+    const [records, offDays, weeklyOff, enrolled] = await Promise.all([
+      attendanceRepository.getDailySchoolAttendance(schoolId, targetDate),
+      attendanceRepository.findOffDays(schoolId),
+      attendanceRepository.findWeeklyOff(schoolId),
+      attendanceRepository.getEnrolledStudentsBySection(schoolId),
+    ]);
 
     const summary = {
       date: targetDate,
@@ -246,10 +253,26 @@ class AttendanceService {
       late: records.filter((r) => r.status === "LATE").length,
       absent: records.filter((r) => r.status === "ABSENT").length,
       leave: records.filter((r) => r.status === "LEAVE").length,
+      halfDay: records.filter((r) => r.status === "HALF_DAY").length,
       manualOverride: records.filter((r) => r.status === "MANUAL_OVERRIDE").length,
     };
 
-    const result = { summary, records, offDays, weeklyOff };
+    const totals = {};
+    for (const stu of enrolled) {
+      if (stu.sectionId) totals[stu.sectionId] = (totals[stu.sectionId] || 0) + 1;
+    }
+    const markedBySection = {};
+    for (const r of records) {
+      const sid = r.student?.sectionId;
+      if (sid) markedBySection[sid] = (markedBySection[sid] || 0) + 1;
+    }
+    const sectionStats = Object.entries(totals).map(([sectionId, totalStudents]) => ({
+      sectionId,
+      totalStudents,
+      marked: markedBySection[sectionId] || 0,
+    }));
+
+    const result = { summary, records, offDays, weeklyOff, sectionStats };
 
     try {
       // Cache for 5 minutes — invalidated after each new scan or override
@@ -306,9 +329,99 @@ class AttendanceService {
     return attendanceRepository.getStudentYearlySummaries(studentId);
   }
 
+  /**
+   * POST /attendance/override — manual status override by [studentId, date]
+   * (upsert: student pehle mark nahi hua to record bhi bana deta hai).
+   * Student ka record hota hai to update, warna create — dono me cache invalidate
+   * + websocket broadcast taake portal/dashboard turant refresh ho.
+   */
+  async manualOverride(schoolId, { studentId, date, status, remarks }) {
+    if (!studentId || !date || !status) {
+      throw ApiError.badRequestError("studentId, date and status are required");
+    }
+
+    const student = await prisma.student.findFirst({
+      where: { id: studentId, schoolId },
+      select: { id: true, sectionId: true },
+    });
+    if (!student) throw ApiError.notFoundError("Student not found in this branch");
+
+    const day = new Date(date);
+    day.setHours(0, 0, 0, 0);
+    if (Number.isNaN(day.getTime())) {
+      throw ApiError.badRequestError("Invalid date — expected YYYY-MM-DD");
+    }
+
+    const record = await prisma.attendanceRecord.upsert({
+      where: { studentId_date: { studentId, date: day } },
+      create: {
+        studentId,
+        date: day,
+        status,
+        remarks: remarks || null,
+      },
+      update: {
+        status,
+        ...(remarks !== undefined && { remarks }),
+      },
+    });
+
+    try { await attendanceService._invalidateDailyCache(schoolId, day); } catch (_) {}
+
+    emitToRoom(`school:${schoolId}`, "portal:attendance_marked", {
+      studentId,
+      sectionId: student.sectionId,
+      status: record.status,
+      date: day,
+      action: "override",
+    });
+
+    return record;
+  }
+
+  /**
+   * POST /attendance/sync — offline gate scans ka bulk replay.
+   * Har scan ko normal processScan se chalao (school isolation + status + cache).
+   */
+  async syncOfflineScans(schoolId, scans = []) {
+    let synced = 0;
+    let failed = 0;
+    for (const s of scans) {
+      try {
+        const result = await attendanceService.processScan(schoolId, {
+          identifierCode: s.identifierCode,
+          deviceId: s.deviceId,
+          method: s.method || "QR",
+          scannedAt: s.scannedAt,
+          synced: true,
+        });
+        if (result?.status === "not_found") { failed += 1; continue; }
+        synced += 1;
+      } catch (_) {
+        failed += 1;
+      }
+    }
+    return { synced, failed };
+  }
+
+  /**
+   * GET /attendance/staff — branch ke active staff members (marking UI ke liye).
+   */
+  async getSchoolStaff(schoolId) {
+    return prisma.user.findMany({
+      where: { schoolId, isActive: true, role: { notIn: ["SUPER_ADMIN"] } },
+      select: { id: true, name: true, email: true, role: true, username: true, phone: true, avatarUrl: true },
+      orderBy: { name: "asc" },
+    });
+  }
+
   async updateRecord(schoolId, recordId, { status, remarks }) {
-    const record = await prisma.attendanceRecord.findFirst({ where: { id: recordId, schoolId } });
-    if (!record) throw ApiError.notFoundError("Attendance record not found");
+    // AttendanceRecord me schoolId column nahi — branch check student relation se hota hai.
+    const record = await prisma.attendanceRecord.findFirst({
+      where: { id: recordId },
+      include: { student: { select: { schoolId: true } } },
+    });
+    if (!record || record.student?.schoolId !== schoolId) throw ApiError.notFoundError("Attendance record not found");
 
     const updated = await prisma.attendanceRecord.update({
       where: { id: recordId },
@@ -329,14 +442,68 @@ class AttendanceService {
   }
 
   async deleteRecord(schoolId, recordId) {
-    const record = await prisma.attendanceRecord.findFirst({ where: { id: recordId, schoolId } });
-    if (!record) throw ApiError.notFoundError("Attendance record not found");
+    // AttendanceRecord me schoolId column nahi — branch check student relation se hota hai.
+    const record = await prisma.attendanceRecord.findFirst({
+      where: { id: recordId },
+      include: { student: { select: { schoolId: true } } },
+    });
+    if (!record || record.student?.schoolId !== schoolId) throw ApiError.notFoundError("Attendance record not found");
 
     await prisma.attendanceRecord.delete({ where: { id: recordId } });
 
     try { await attendanceService._invalidateDailyCache(schoolId, record.date); } catch (_) {}
 
     return { deleted: true, id: recordId };
+  }
+
+  /**
+   * Bulk-mark attendance for all students of a section on a given date
+   * (create-or-update per `[studentId, date]` unique key). Used by the
+   * section attendance UI (Global Section Day Card / teacher & receptionist).
+   */
+  async markSectionBulkAttendance(schoolId, { sectionId, date, records }) {
+    if (!sectionId || !date || !Array.isArray(records) || records.length === 0) {
+      throw ApiError.badRequestError("sectionId, date and records are required");
+    }
+
+    const targetDate = new Date(date);
+    targetDate.setHours(0, 0, 0, 0);
+    if (Number.isNaN(targetDate.getTime())) {
+      throw ApiError.badRequestError("Invalid date — expected YYYY-MM-DD");
+    }
+
+    // Only allow marking students that belong to this section within the school.
+    const sectionStudents = await prisma.student.findMany({
+      where: { sectionId, schoolId },
+      select: { id: true },
+    });
+    const allowed = new Set(sectionStudents.map((s) => s.id));
+
+    const results = await prisma.$transaction(
+      records.map((r) => {
+        if (!allowed.has(r.studentId)) {
+          throw ApiError.forbiddenError("Cannot mark attendance for a student outside this section");
+        }
+        return prisma.attendanceRecord.upsert({
+          where: { studentId_date: { studentId: r.studentId, date: targetDate } },
+          create: {
+            studentId: r.studentId,
+            date: targetDate,
+            status: r.status,
+            remarks: r.remarks || null,
+          },
+          update: {
+            status: r.status,
+            ...(r.remarks !== undefined && { remarks: r.remarks }),
+          },
+        });
+      })
+    );
+
+    try { await attendanceService._invalidateDailyCache(schoolId, targetDate); } catch (_) {}
+    emitToRoom(`school:${schoolId}`, "portal:attendance_marked", { sectionId, date, action: "bulk" });
+
+    return { updated: results.length };
   }
 }
 

@@ -1,6 +1,6 @@
 import cron from "node-cron";
 import Logger from "../lib/utils/logger.js";
-import { runLateMarkJob } from "../jobs/cron/lateMark.job.js";
+import { runLateMarkJob, runStartupCatchup } from "../jobs/cron/lateMark.job.js";
 import { runAttendanceAlertJob } from "../jobs/cron/attendanceAlert.job.js";
 import { runFeeReminderJob } from "../jobs/cron/feeReminder.job.js";
 import { runCleanupJob } from "../jobs/cron/cleanup.job.js";
@@ -15,8 +15,17 @@ import { runPendingEmailJob } from "../jobs/cron/pendingEmail.job.js";
 const logger = new Logger("scheduler-service");
 
 class SchedulerService {
-  initSchedules() {
+  async initSchedules() {
     logger.logger.info("Initializing Automated Node-Cron Schedulers...");
+
+    // Server restart par agar aaj ka late/absent mark nahi hua to catchup karo.
+    // node-cron missed executions recover nahi karta — ye startup pe ek baar
+    // chalega taake server down hone par bhi attendance mark ho jaye.
+    try {
+      await runStartupCatchup();
+    } catch (err) {
+      logger.logger.error(`[Startup Catchup] Failed: ${err.message}`);
+    }
 
     // Attendance automation (Mon-Sat, every 15 min)
     cron.schedule("*/15 7-18 * * 1-6", async () => {

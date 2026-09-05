@@ -1,4 +1,4 @@
-import { Card, CardContent, Button, EmptyState, GridCardsSkeleton } from '@/features/shared/components';
+import { Button, EmptyState, GridCardsSkeleton } from '@/features/shared/components';
 import ClassForm from './parts/ClassForm';
 import ClassCard from './parts/ClassCard';
 import { useClasses } from './parts/useClasses';

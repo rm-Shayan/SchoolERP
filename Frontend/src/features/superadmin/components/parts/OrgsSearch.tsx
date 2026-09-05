@@ -2,21 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { Input } from '@/features/shared/components';
+import { useDebouncedValue } from '@/lib/utils/useDebouncedValue';
 
 interface OrgsSearchProps {
   value: string;
   onChange: (value: string) => void;
 }
 
-const DEBOUNCE_MS = 200;
-
 function OrgsSearch({ value, onChange }: OrgsSearchProps) {
   const [query, setQuery] = useState(value);
+  const debouncedQuery = useDebouncedValue(query, 250);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => onChange(query), DEBOUNCE_MS);
-    return () => window.clearTimeout(timer);
-  }, [query, onChange]);
+    onChange(debouncedQuery);
+  }, [debouncedQuery, onChange]);
 
   return (
     <div className="relative w-full max-w-sm">

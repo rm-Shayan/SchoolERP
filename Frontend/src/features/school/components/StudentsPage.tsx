@@ -8,6 +8,7 @@ import { ConfirmDialog, PageHeader } from '@/features/shared/components';
 import toast from 'react-hot-toast';
 import { useStudentsQuery } from '../hooks/useStudentsQuery';
 import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { StudentStats } from './parts/StudentStats';
 import { StudentToolbar } from './parts/StudentToolbar';
 import { StudentList } from './parts/StudentList';
@@ -19,6 +20,7 @@ import { getLastClassIds, studentCreatePayload, studentUpdatePayload } from './p
 
 export default function StudentsPage() {
   const { user, school } = useAppSelector((s) => s.auth);
+  const { isReadOnly } = useRoleAccess();
   const schoolId = school?.id ?? user?.schoolId;
   const [classes, setClasses] = useState<Class[]>([]);
   const [classesLoading, setClassesLoading] = useState(true);
@@ -104,21 +106,21 @@ export default function StudentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Students" description="Manage all enrolled students in this branch."
-        actions={<StudentsHeaderActions onAdd={() => { setFormStudent(null); setFormMode('create'); }} onImport={() => setShowImport(true)} onExport={exportCsv} />} />
+        actions={!isReadOnly && <StudentsHeaderActions onAdd={() => { setFormStudent(null); setFormMode('create'); }} onImport={() => setShowImport(true)} onExport={exportCsv} />} />
 
       <StudentStats summary={summary} />
 
       <StudentToolbar search={search} onSearchChange={setSearch} statusFilter={statusFilter} onStatusChange={setStatusFilter} sectionFilter={sectionFilter} onSectionChange={setSectionFilter} classes={classes} classesLoading={classesLoading} resultCount={total} />
 
       <StudentList loading={loading} refetching={refetching} students={students} total={total} hasFilters={!!search.trim() || !!statusFilter || !!sectionFilter} page={page} pageSize={pageSize} totalPages={totalPages} lastClassIds={lastClassIds} onPageChange={setPage} onPageSizeChange={setPageSize}         onView={setSelected}
-        onEdit={openEdit}
-        onDelete={setDeleteTarget}
-        onPassedOut={setPassTarget}
+        onEdit={isReadOnly ? undefined : openEdit}
+        onDelete={isReadOnly ? undefined : setDeleteTarget}
+        onPassedOut={isReadOnly ? undefined : setPassTarget}
       />
 
       <StudentFormModal key={formMode === 'create' ? 'create' : formStudent?.id ?? 'none'} open={formMode !== null} onClose={() => { setFormMode(null); setFormStudent(null); }} classes={classes} mode={formMode === 'create' ? 'create' : 'edit'} student={formStudent} onSubmit={handleFormSubmit} />
 
-      <StudentDetails student={selected} lastClassIds={lastClassIds} onClose={() => setSelected(null)} onUpdated={(updated) => { setSelected(updated); reload(); }} onEdit={openEdit} onDeleted={() => { setSelected(null); setFormStudent(null); reload(); }} />
+      <StudentDetails student={selected} lastClassIds={lastClassIds} onClose={() => setSelected(null)} onUpdated={(updated) => { setSelected(updated); reload(); }} onEdit={isReadOnly ? undefined : openEdit} onDeleted={() => { setSelected(null); setFormStudent(null); reload(); }} />
 
       <StudentImportModal open={showImport} schoolId={schoolId} onClose={() => setShowImport(false)} onImported={() => { setShowImport(false); reload(); }} />
 

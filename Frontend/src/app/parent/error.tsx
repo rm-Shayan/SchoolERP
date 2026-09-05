@@ -30,7 +30,7 @@ export default function ParentError({ error, reset }: ErrorProps) {
         <button onClick={reset} className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50">
           Try again
         </button>
-        <a href="/parent/login" className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+        <a href="/login" className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
           Go to Login
         </a>
       </div>

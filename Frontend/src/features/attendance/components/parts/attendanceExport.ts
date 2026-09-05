@@ -3,7 +3,7 @@ import type { AttendanceRecord } from '@/types';
 
 const STATUS_COLORS: Record<string, string> = {
   PRESENT: '#22c55e', LATE: '#f59e0b', ABSENT: '#ef4444',
-  LEAVE: '#3b82f6', MANUAL_OVERRIDE: '#a855f7',
+  LEAVE: '#3b82f6', HALF_DAY: '#0891b2', MANUAL_OVERRIDE: '#a855f7',
 };
 
 /** Generate a simple CSV from attendance records */
@@ -36,7 +36,7 @@ export function exportToExcel(records: AttendanceRecord[], filename: string, sec
 
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
 <head><meta charset="utf-8">
-<style>td{mso-number-format:"\\@"}th{background:#1e3a8a;color:#fff;font-weight:700;padding:6px 10px;border:1px solid #ccc}td{padding:5px 10px;border:1px solid #ddd}.present{color:#16a34a}.late{color:#d97706}.absent{color:#dc2626}.leave{color:#2563eb}.manual_override{color:#9333ea}</style>
+<style>td{mso-number-format:"\\@"}th{background:#1e3a8a;color:#fff;font-weight:700;padding:6px 10px;border:1px solid #ccc}td{padding:5px 10px;border:1px solid #ddd}.present{color:#16a34a}.late{color:#d97706}.absent{color:#dc2626}.leave{color:#2563eb}.half_day{color:#0891b2}.manual_override{color:#9333ea}</style>
 </head><body><h2>${sectionLabel} — Attendance Report</h2>
 <table><tr><th>Student</th><th>Roll #</th><th>Date</th><th>Status</th><th>Check In</th><th>Check Out</th><th>Remarks</th></tr>
 ${rows.map((r) => `<tr><td>${r.name}</td><td>${r.roll}</td><td>${r.date}</td><td class="${r.status.toLowerCase()}">${r.status}</td><td>${r.checkIn}</td><td>${r.checkOut}</td><td>${r.remarks}</td></tr>`).join('')}
