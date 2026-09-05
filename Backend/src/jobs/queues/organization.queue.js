@@ -1,15 +1,9 @@
 import { Queue } from "bullmq";
 import { redisConnection } from "../../lib/redis.connection.js";
+import { defaultJobOptions } from "./jobDefaults.js";
 import Logger from "../../lib/utils/logger.js";
 
 const logger = new Logger("organization-queue");
-
-const defaultJobOptions = {
-  attempts: 3,
-  backoff: { type: "exponential", delay: 2000 },
-  removeOnComplete: true,
-  removeOnFail: 50,
-};
 
 export const organizationImportQueue = new Queue("organization-import", {
   connection: redisConnection,

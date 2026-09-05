@@ -3,8 +3,44 @@ logs
 uploads
 .env
 .env.*
+!.env.example
 *.log
-src/generated
-generated
+
+# Scripts (one-time / dev only)
+scripts
+
+# Prisma seed
+prisma/seed.js
+
+# Dev/build artifacts
+dist
+build
+coverage
+.nyc_output
+
+# Git
 .git
 .gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Docs
+*.md
+LICENSE
+
+# Test files
+*.test.js
+*.spec.js

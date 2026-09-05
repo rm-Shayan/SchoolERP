@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "node --env-file=.env --watch src/index.js",
-    "start": "node --env-file=.env src/index.js",
+    "start": "node src/index.js",
+    "start:local": "node --env-file=.env src/index.js",
     "test": "node --test",
     "seed": "node --env-file=.env scripts/seed-data.js",
     "clean": "node --env-file=.env scripts/clean-org-data.js"

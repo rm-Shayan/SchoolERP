@@ -23,9 +23,6 @@ redis.on("reconnecting", (delay) => logger.logger.info(`Redis reconnecting in ${
   if (!redis.isOpen) {
     try {
       await redis.connect();
-      // Ensure noeviction — prevents important cache/auth data from being evicted
-      // under memory pressure. OOM errors are better than silent data loss.
-      await redis.configSet("maxmemory-policy", "noeviction");
     } catch (err) {
       logger.logger.error(`Failed to connect Redis: ${err.message}`);
     }

@@ -75,8 +75,7 @@ services:
   # ============================================================
 
   redis:
-    build: ./Backend/docker/redis
-    image: school-redis:latest
+    image: redis:7-alpine
 
     restart: unless-stopped
 
