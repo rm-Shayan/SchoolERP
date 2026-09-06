@@ -61,18 +61,27 @@ function toAbsoluteUrl(url) {
 
 /**
  * Portal links for credential emails — frontend ke slug scheme ke mutabiq:
- *  - Login page:  /login?org={slug}  (org branding ke saath, slug → branding lookup)
+ *  - Login page:  /login?org={slug}&school={code}  (org + branch branding ke saath)
  *  - Root page:   /o/{slug}          (org ka public landing page)
  * schoolCode sirf fallback hai jab orgSlug available na ho.
  */
 function buildPortalLinks({ orgSlug, schoolCode }) {
-  const loginUrl = orgSlug
-    ? `${CLIENT_URL()}/login?org=${encodeURIComponent(orgSlug)}`
-    : schoolCode
-      ? `${CLIENT_URL()}/login?code=${encodeURIComponent(schoolCode)}`
-      : `${CLIENT_URL()}/login`;
+  const loginUrl = buildLoginUrl({ orgSlug, schoolCode });
   const orgUrl = orgSlug ? `${CLIENT_URL()}/o/${encodeURIComponent(orgSlug)}` : null;
   return { loginUrl, orgUrl };
+}
+
+/**
+ * Branded login URL for email CTAs. Recipient ko org/branch ke page par laate
+ * hain taake theme + logo already loaded hon sign-in ke waqt.
+ */
+export function buildLoginUrl({ orgSlug, schoolCode }) {
+  if (orgSlug) {
+    const schoolParam = schoolCode ? `&school=${encodeURIComponent(schoolCode)}` : "";
+    return `${CLIENT_URL()}/login?org=${encodeURIComponent(orgSlug)}${schoolParam}`;
+  }
+  if (schoolCode) return `${CLIENT_URL()}/login?code=${encodeURIComponent(schoolCode)}`;
+  return `${CLIENT_URL()}/login`;
 }
 
 function linkHtml(url, label) {

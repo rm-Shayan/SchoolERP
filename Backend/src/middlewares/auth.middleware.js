@@ -3,7 +3,7 @@ import prisma from "../config/db.js";
 import redis from "../config/redis.js";
 import ApiError from "../lib/utils/ApiError.js";
 import { BLOCKED_MESSAGE } from "../constants.js";
-import { setRequestOrganization } from "../lib/requestContext.js";
+import { setRequestOrganization, setRequestSchool } from "../lib/requestContext.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_school_erp_token";
 
@@ -149,8 +149,10 @@ export const authenticate = async (req, res, next) => {
     };
 
     // ALS tenant context — storage.service deep layers isi se org resolve
-    // karta hai (tenant Cloudinary creds ke liye).
+    // karta hai (tenant Cloudinary creds ke liye). Branch (school) bhi set
+    // karo taake school-level OrgSecrets wali rows bhi resolve hon.
     setRequestOrganization(user.organizationId);
+    setRequestSchool(effectiveSchoolId);
 
     return next();
   } catch (error) {

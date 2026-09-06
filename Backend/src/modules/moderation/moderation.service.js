@@ -28,16 +28,18 @@ const UNBLOCK_META = {
 /**
  * Block/unblock par affected org/branch ke ADMIN ko email bhejo. Platform
  * transport (SUPER_ADMIN ki SMTP) use hota hai — lekin From `noreply` hai aur
- * `sendEmail` guard `to === holder` (super admin) skip karta hai, to SUPER_ADMIN
- * ko kabhi copy na aaye.
+ * `sendEmail` guard `to === holder` (super admin) skip karta hai. Isliye ruqa
+ * notices `organizationId`/`schoolId` ke saath bhejte hain: us org/branch ka
+ * khud ka SMTP (OrgSecrets) pehle try hota hai (user ki branch-credentials
+ * wali requirement), platform sirf fallback. Holder guard bypass (allowHolder)
+ * taake test ke waqt super admin ko bhi mail aaye.
  *
- * Branding rule: ye SUPER_ADMIN (platform) mail hai → public primary image
- * (CLIENT_URL/screen.png) + "School ERP" name. Org/Branch admin ki mail apni
- * taraf se org/branch logo + "Org - Branch" name leti hai (resolveEmailBranding).
+ * Branding rule: org/branch scope → us org ka logo + "Org - Branch" name
+ * (resolveEmailBranding). No scope → public primary image + "School ERP".
  */
-async function notifyAdminsOfModeration(admins, { entityName, entityType, action, reason }) {
+async function notifyAdminsOfModeration(admins, { entityName, entityType, action, reason, organizationId, schoolId }) {
   if (!admins || !admins.length) return;
-  const branding = await resolveEmailBranding({}); // super admin context → public primary
+  const branding = await resolveEmailBranding({ organizationId, schoolId });
   await Promise.allSettled(
     admins.map((admin) => {
       const tpl = moderationNoticeEmail({
@@ -49,7 +51,15 @@ async function notifyAdminsOfModeration(admins, { entityName, entityType, action
         logoUrl: branding.logoUrl,
         themeColor: branding.themeColor,
       });
-      return sendEmail({ to: admin.email, subject: tpl.subject, text: tpl.text, html: tpl.html });
+      return sendEmail({
+        to: admin.email,
+        subject: tpl.subject,
+        text: tpl.text,
+        html: tpl.html,
+        organizationId: organizationId || undefined,
+        schoolId: schoolId || undefined,
+        allowHolderAsRecipient: true,
+      });
     })
   );
 }
@@ -156,6 +166,7 @@ class ModerationService {
       entityType: "ORGANIZATION",
       action: "blocked",
       reason,
+      organizationId,
     });
 
     // Portal notification — affected org feed ko block ka pata chale.
@@ -215,6 +226,7 @@ class ModerationService {
       entityName: org.name,
       entityType: "ORGANIZATION",
       action: "unblocked",
+      organizationId,
     });
 
     portalNotificationService.create({
@@ -294,6 +306,8 @@ class ModerationService {
       entityType: "SCHOOL",
       action: "blocked",
       reason,
+      organizationId: school.organizationId,
+      schoolId,
     });
 
     portalNotificationService.create({
@@ -366,6 +380,8 @@ class ModerationService {
       entityName: school.name,
       entityType: "SCHOOL",
       action: "unblocked",
+      organizationId: school.organizationId,
+      schoolId,
     });
 
     portalNotificationService.create({
@@ -427,7 +443,7 @@ class ModerationService {
         logoUrl: branding.logoUrl,
         themeColor: branding.themeColor,
       });
-      sendEmail({ to: target.email, subject: tpl.subject, text: tpl.text, html: tpl.html, schoolId: target.schoolId, organizationId: target.organizationId }).catch(() => {});
+      sendEmail({ to: target.email, subject: tpl.subject, text: tpl.text, html: tpl.html, schoolId: target.schoolId, organizationId: target.organizationId, allowHolderAsRecipient: true }).catch(() => {});
     }
 
     // Portal notification — branch feed me staff block dikhe.
@@ -486,7 +502,7 @@ class ModerationService {
         logoUrl: branding.logoUrl,
         themeColor: branding.themeColor,
       });
-      sendEmail({ to: target.email, subject: tpl.subject, text: tpl.text, html: tpl.html, schoolId: target.schoolId, organizationId: target.organizationId }).catch(() => {});
+      sendEmail({ to: target.email, subject: tpl.subject, text: tpl.text, html: tpl.html, schoolId: target.schoolId, organizationId: target.organizationId, allowHolderAsRecipient: true }).catch(() => {});
     }
 
     // Portal notification — branch feed me staff unblock dikhe.

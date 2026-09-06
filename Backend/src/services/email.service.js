@@ -203,6 +203,7 @@ export const sendEmail = async ({
   attachments,
   organizationId,
   schoolId,
+  allowHolderAsRecipient = false,
 }) => {
   const chain = await getTransportChain({ organizationId, schoolId });
 
@@ -225,6 +226,7 @@ export const sendEmail = async ({
     // hui mail ki copy na aaye. Tenant transports par skip nahi karte —
     // branch admin apne hi address ko test mail bhej sakta hai.
     if (
+      !allowHolderAsRecipient &&
       mailer.source === "platform" &&
       mailer.holder &&
       to &&

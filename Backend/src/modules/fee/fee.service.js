@@ -671,6 +671,22 @@ class FeeService {
           message: `${studentName}${className ? ` (${className})` : ""} ki ${monthLabel} fee poori clear ho gayi hai.`,
           details: paymentDetails,
         }).catch(() => {});
+        // Full payment par bhi parent ko EMAIL — receipt PDF attachment ke
+        // saath (pehle sirf portal notif hota tha; user chahta hai har
+        // payment par mail jaye).
+        await notificationService.notifyParent({
+          schoolId: record.student.schoolId,
+          parentEmail: record.student.parent?.email,
+          parentPhone: record.student.parent?.phone,
+          message: `Dear Parent, we have received Rs. ${paidAmount.toFixed(2)} for ${studentName}'s ${monthLabel} fee. This has been fully cleared (balance Rs. 0.00). Your receipt is attached.`,
+          title: `Fee Receipt — ${monthLabel} (Paid in Full)`,
+          details: paymentDetails,
+          attachments: [{
+            filename: `fee-receipt-${record.id.slice(0, 8)}.pdf`,
+            content: receipt,
+            caption: `Fee Receipt — ${monthLabel} (${studentName})`,
+          }],
+        }).catch(() => {});
       } else {
         let voucherPdf = null;
         try { voucherPdf = await this._buildVoucherForRecord({ ...record, paidAmount: newPaid, periods }); } catch (e) { console.warn(`[fee] partial voucher build failed: ${e.message}`); }
@@ -788,6 +804,19 @@ class FeeService {
         title: `Fee Paid — ${monthLabel}`,
         message: `${studentName}${className ? ` (${className})` : ""} ki ${monthLabel} fee poori clear ho gayi hai.`,
         details: paymentDetails,
+      }).catch(() => {});
+      await notificationService.notifyParent({
+        schoolId: record.student.schoolId,
+        parentEmail: record.student.parent?.email,
+        parentPhone: record.student.parent?.phone,
+        message: `Dear Parent, we have received Rs. ${paidAmount.toFixed(2)} for ${studentName}'s ${monthLabel} fee. This has been fully cleared (balance Rs. 0.00). Your receipt is attached.`,
+        title: `Fee Receipt — ${monthLabel} (Paid in Full)`,
+        details: paymentDetails,
+        attachments: [{
+          filename: `fee-receipt-${record.id.slice(0, 8)}.pdf`,
+          content: receipt,
+          caption: `Fee Receipt — ${monthLabel} (${studentName})`,
+        }],
       }).catch(() => {});
     } else {
       // Partial — fresh record snapshot ke saath updated voucher banao.

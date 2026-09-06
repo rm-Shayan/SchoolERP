@@ -23,8 +23,18 @@ export const setRequestOrganization = (organizationId) => {
   if (store) store.organizationId = organizationId || null;
 };
 
+/** Branch (school) bhi tenant context mein — storage/email branch-level creds
+ *  (OrgSecrets schoolId wali rows) isi se resolve karte hain. */
+export const setRequestSchool = (schoolId) => {
+  const store = als.getStore();
+  if (store) store.schoolId = schoolId || null;
+};
+
 /** Current request ka org id (ya null jab context/portal/worker na ho). */
 export const getRequestOrganizationId = () => als.getStore()?.organizationId ?? null;
+
+/** Current request ka school id (branch-level override ke liye). */
+export const getRequestSchoolId = () => als.getStore()?.schoolId ?? null;
 
 /** Test helper. */
 export const clearRequestContext = () => als.disable();

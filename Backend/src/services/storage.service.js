@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { fileURLToPath } from "url";
 import Logger from "../lib/utils/logger.js";
 import { getTenantStorageCreds } from "../lib/utils/orgStorage.cache.js";
-import { getRequestOrganizationId } from "../lib/requestContext.js";
+import { getRequestOrganizationId, getRequestSchoolId } from "../lib/requestContext.js";
 
 const logger = new Logger("storage-service");
 
@@ -92,7 +92,11 @@ class StorageService {
   async _tenantCallOptions(organizationId, schoolId) {
     const orgId = organizationId || getRequestOrganizationId();
     if (!orgId) return null;
-    const creds = await getTenantStorageCreds(orgId, schoolId);
+    // Branch-level creds ke liye schoolId bhi request context se fallback
+    // karo — warna school-specific Cloudinary settings kabhi use nahi hotin
+    // aur upload platform/local cloud par chale jaate.
+    const schId = schoolId || getRequestSchoolId();
+    const creds = await getTenantStorageCreds(orgId, schId);
     if (!creds) return null;
     return {
       cloud_name: creds.cloudName,
@@ -173,12 +177,10 @@ class StorageService {
       logger.logger.warn(`[Storage] sharp resize skipped: ${err.message}`);
     }
 
-    // Tenant ke apne creds hon to usi ke account par jaye.
-    // Agar organizationId hai (school operation) lekin tenant creds nahi
-    // → local disk, platform env kabhi school operations ke liye use nahi.
-    // Platform Cloudinary sirf super admin (no org context) ke liye.
+    // Tenant ke apne creds hon to usi ke account par jaye — CHAHE platform
+    // client initialized na ho. Per-call creds (options) hi auth karte hain.
     const tenantOpts = await this._tenantCallOptions(organizationId, schoolId);
-    if (this._cloudinary && tenantOpts) {
+    if (tenantOpts) {
       return this._uploadToCloudinary(processed, folder, outputFormat, width, height, existingUrl, tenantOpts);
     }
     // Agar org context hai lekin tenant creds nahi → local disk (platform env use mat karo).
@@ -227,6 +229,17 @@ class StorageService {
     throw lastErr;
   }
 
+  /**
+   * Cloudinary client — platform-initialized wala, ya agar wo initialized na
+   * ho (school ke apne creds scenario) to raw v2 import (per-call creds
+   * options mein aate hain, isliye global config zaroori nahi).
+   */
+  async _getCloudinaryClient() {
+    if (this._cloudinary) return this._cloudinary;
+    const mod = await import("cloudinary");
+    return mod.v2;
+  }
+
   async _uploadToCloudinary(buffer, folder, format = "jpeg", width = IMAGE_MAX_DIMENSION, height = IMAGE_MAX_DIMENSION, existingUrl, tenantOpts = null) {
     const mime = { jpeg: "image/jpeg", png: "image/png", webp: "image/webp" }[format] || "image/jpeg";
     const options = {
@@ -256,9 +269,11 @@ class StorageService {
     }
 
     const result = await this._retryTransient(() =>
-      this._cloudinary.uploader.upload(
-        `data:${mime};base64,${buffer.toString("base64")}`,
-        options
+      this._getCloudinaryClient().then((client) =>
+        client.uploader.upload(
+          `data:${mime};base64,${buffer.toString("base64")}`,
+          options
+        )
       )
     );
     return { url: result.secure_url, publicId: result.public_id, overwritten: Boolean(options.public_id) };
@@ -397,7 +412,7 @@ class StorageService {
     }
 
     const tenantOpts = await this._tenantCallOptions(organizationId, schoolId);
-    if (this._cloudinary && tenantOpts) {
+    if (tenantOpts) {
       return this._uploadDocumentToCloudinary(buffer, folder, filename, tenantOpts);
     }
     const hasOrgContext = !!(organizationId || getRequestOrganizationId());
@@ -410,13 +425,15 @@ class StorageService {
   async _uploadDocumentToCloudinary(buffer, folder, filename, tenantOpts = null) {
     const safeFolder = folder.replace(/[^a-z0-9-_]/gi, "");
     const result = await this._retryTransient(() =>
-      this._cloudinary.uploader.upload(`data:application/octet-stream;base64,${buffer.toString("base64")}`, {
-        ...(tenantOpts || {}),
-        folder: `school-erp/${safeFolder}`,
-        resource_type: "auto", // PDFs + images dono
-        use_filename: true,
-        unique_filename: true,
-      })
+      this._getCloudinaryClient().then((client) =>
+        client.uploader.upload(`data:application/octet-stream;base64,${buffer.toString("base64")}`, {
+          ...(tenantOpts || {}),
+          folder: `school-erp/${safeFolder}`,
+          resource_type: "auto", // PDFs + images dono
+          use_filename: true,
+          unique_filename: true,
+        })
+      )
     );
     return { url: result.secure_url, publicId: result.public_id };
   }
@@ -440,9 +457,11 @@ class StorageService {
    */
   async deleteImage({ publicId, url, organizationId, schoolId }) {
     const tenantOpts = await this._tenantCallOptions(organizationId, schoolId);
-    if (publicId && this._cloudinary) {
+    if (publicId && (this._cloudinary || tenantOpts)) {
       try {
-        await this._retryTransient(() => this._cloudinary.uploader.destroy(publicId, tenantOpts || undefined));
+        await this._retryTransient(() =>
+          this._getCloudinaryClient().then((c) => c.uploader.destroy(publicId, tenantOpts || undefined))
+        );
         return true;
       } catch (err) {
         logger.logger.warn(`[Storage] Cloudinary delete failed: ${err.message || err.error}`);
@@ -450,11 +469,13 @@ class StorageService {
       }
     }
     // Best-effort: derive publicId from a Cloudinary URL when only url is given
-    if (url && this._cloudinary) {
+    if (url && (this._cloudinary || tenantOpts)) {
       const derived = this.extractPublicId(url);
       if (derived) {
         try {
-          await this._retryTransient(() => this._cloudinary.uploader.destroy(derived, tenantOpts || undefined));
+          await this._retryTransient(() =>
+            this._getCloudinaryClient().then((c) => c.uploader.destroy(derived, tenantOpts || undefined))
+          );
           return true;
         } catch (err) {
           logger.logger.warn(`[Storage] Cloudinary delete from URL failed: ${err.message || err.error}`);
@@ -482,10 +503,12 @@ class StorageService {
    */
   async moveToArchive({ publicId, url, organizationId, schoolId }) {
     const tenantOpts = await this._tenantCallOptions(organizationId, schoolId);
-    if (publicId && this._cloudinary) {
+    if (publicId && (this._cloudinary || tenantOpts)) {
       const folder = path.dirname(publicId) + "/archive";
       try {
-        const result = await this._cloudinary.uploader.rename(publicId, `${folder}/${path.basename(publicId)}`, tenantOpts || undefined);
+        const result = await this._getCloudinaryClient().then((c) =>
+          c.uploader.rename(publicId, `${folder}/${path.basename(publicId)}`, tenantOpts || undefined)
+        );
         return { url: result.secure_url, publicId: result.public_id };
       } catch (err) {
         logger.logger.warn(`[Storage] Cloudinary archive move failed: ${err.message}`);

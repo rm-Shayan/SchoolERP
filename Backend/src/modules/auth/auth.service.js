@@ -11,6 +11,8 @@ import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../audit/actions.js";
 import organizationService from "../organization/organization.service.js";
 import storageService from "../../services/storage.service.js";
 import { sendEmail, sendOtpEmail } from "../../services/email.service.js";
+import { queueEmail } from "../../services/emailOutbox.js";
+import { buildLoginUrl } from "../../services/email.templates.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import Logger from "../../lib/utils/logger.js";
 import redis from "../../config/redis.js";
@@ -613,6 +615,13 @@ class AuthService {
       await authRepository.updateUser(user.id, { password: hashed });
       await authRepository.revokeAllRefreshTokens(user.id);
 
+      // Branded login link (org slug + school code) — recipient ko /login par
+      // le jaata hai jahan theme or logo already loaded ho.
+      const loginUrl = buildLoginUrl({
+        orgSlug: user.organization?.slug || null,
+        schoolCode: user.school?.code || null,
+      });
+
       auditService.record({
         actorId: user.id,
         actorName: user.name,
@@ -630,14 +639,16 @@ class AuthService {
         priority: "CRITICAL",
         organizationId: user.organizationId || undefined,
         schoolId: user.schoolId || undefined,
+        allowHolderAsRecipient: true,
         subject: "Your SchoolERP account - new password",
         html: `
           <p>Hello <b>${user.name}</b>,</p>
           <p>A new password was requested for your account.</p>
           <p style="font-size:18px;font-weight:bold;letter-spacing:1px;">${tempPassword}</p>
           <p>Please sign in with this password. You can change it later from Settings → Security.</p>
+          <p>Sign in here: <a href="${loginUrl}" style="color:#4f46e5;">${loginUrl}</a></p>
         `,
-        text: `Your new SchoolERP password: ${tempPassword}`,
+        text: `Your new SchoolERP password: ${tempPassword}\n\nSign in here: ${loginUrl}`,
       }).catch(() => {});
     }
 

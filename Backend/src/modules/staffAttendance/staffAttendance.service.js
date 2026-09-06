@@ -62,6 +62,26 @@ class StaffAttendanceService {
         refId: staff.id,
         link: "/staff-attendance",
       }).catch(() => {});
+
+      // Absent ho jane par STAFF ko khud email — uski branch ke SMTP
+      // credentials se (schoolId scoping se tenant transport pehle try hota hai,
+      // platform sirf fallback). Email na ho to silently skip.
+      if (staff.email) {
+        notificationService
+          ._sendEmail({
+            schoolId,
+            to: staff.email,
+            title: "Attendance Alert — Absent",
+            message: `Dear ${staff.name}, you were marked ABSENT on ${day.toLocaleDateString("en-PK")}. If this is a mistake, please contact your branch office.`,
+            details: [
+              ["Staff", staff.name],
+              ["Role", staff.role],
+              ["Date", day.toLocaleDateString("en-PK")],
+              ["Status", "Absent"],
+            ],
+          })
+          .catch(() => {});
+      }
     }
 
     return record;

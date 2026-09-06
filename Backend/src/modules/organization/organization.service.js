@@ -16,6 +16,7 @@ import storageSettingsService from "../storageSettings/storageSettings.service.j
 import storageService from "../../services/storage.service.js";
 import auditService from "../audit/audit.service.js";
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../audit/actions.js";
+import portalNotificationService from "../notification/notification.portalService.js";
 import prisma from "../../config/db.js";
 
 const ORG_CACHE_TTL = 3600; // 1 hour
@@ -164,33 +165,28 @@ class OrganizationService {
         password: generatedPassword,
       };
 
-      // Don't email the platform super admin who is creating the org and
-      // designated their OWN email as the admin.
-      const selfDesignation =
-        requester?.email &&
-        String(requester.email).trim().toLowerCase() ===
-          String(data.adminEmail).trim().toLowerCase();
-      if (!selfDesignation) {
-        const mail = adminCredentialsEmail({
-          orgName: data.name,
-          orgSlug: org.slug,
-          schoolName: defaultBranch.name,
-          name: branchAdminUser.name,
-          email: branchAdminUser.email,
-          username: branchAdminUser.username || data.adminUsername || null,
-          password: generatedPassword,
-          schoolCode: defaultBranch.code,
-          logoUrl: org.logoUrl || null,
-          themeColor: org.themeColor || null,
-        });
-        await queueEmail({
-          to: branchAdminUser.email,
-          ...mail,
-          priority: "CRITICAL",
-          organizationId: org.id,
-          schoolId: defaultBranch.id,
-        });
-      }
+      const mail = adminCredentialsEmail({
+        orgName: data.name,
+        orgSlug: org.slug,
+        schoolName: defaultBranch.name,
+        name: branchAdminUser.name,
+        email: branchAdminUser.email,
+        username: branchAdminUser.username || data.adminUsername || null,
+        password: generatedPassword,
+        schoolCode: defaultBranch.code,
+        logoUrl: org.logoUrl || null,
+        themeColor: org.themeColor || null,
+      });
+      await queueEmail({
+        to: branchAdminUser.email,
+        ...mail,
+        priority: "CRITICAL",
+        organizationId: org.id,
+        schoolId: defaultBranch.id,
+        // Super admin apni hi gmail ko admin banaye to bhi credentials email ho
+        // (holder guard bypass — Gmail self-send allow karta hai).
+        allowHolderAsRecipient: true,
+      });
     }
 
     // Notify connected admin WebSocket clients (dashboard refetches on this)

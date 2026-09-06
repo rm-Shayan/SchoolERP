@@ -141,11 +141,22 @@ export async function runAttendanceAlertJob() {
         }).catch(() => {});
       }
 
-      try { await redis.setEx(sentKey, 86400, "sent"); } catch (_) {}
-      emitToRoom(`school:${school.id}`, "attendance_alert_completed", {
-        schoolId: school.id,
-        date: today,
-      });
+      // Dedup key SIRF tab set karo jab koi parent email actually bheji gayi.
+      // lateMark job LATE→ABSENT upgrade absentTime par karta hai (default
+      // 10:00), alertTime (default 09:30) se BAAD. Agar pehli pass par koi
+      // ABSENT na ho to key set karne ka matlab hai absent wale parents ko
+      // din bhar mail na mile. Isliye jab tak koi absent-email dispatch na ho,
+      // alert job har 15-min tick par dobara chalti hai aur updgrade hone ke
+      // baad email karti hai.
+      if (absentByEmail.size > 0) {
+        try { await redis.setEx(sentKey, 86400, "sent"); } catch (_) {}
+      }
+      if (absentByEmail.size > 0) {
+        emitToRoom(`school:${school.id}`, "attendance_alert_completed", {
+          schoolId: school.id,
+          date: today,
+        });
+      }
     }
 
     logger.logger.info(`[AttAlert] Done. Sent ${totalAlerts} attendance alert(s).`);

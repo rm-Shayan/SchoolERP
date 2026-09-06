@@ -19,7 +19,7 @@ const worker = new Worker(
   "organization-import",
   async (job) => {
     logger.logger.info(`Starting import job ${job.id}`);
-    const { organizations, requesterEmail = null } = job.data;
+    const { organizations } = job.data;
 
     let successCount = 0;
     let skipCount = 0;
@@ -115,33 +115,28 @@ const worker = new Worker(
             },
           });
 
-          // Don't email the platform super admin who imported the file when a
-          // row designates their OWN email as the org admin.
-          const selfDesignation =
-            requesterEmail &&
-            String(requesterEmail).trim().toLowerCase() ===
-              String(adminEmail).trim().toLowerCase();
-          if (!selfDesignation) {
-            const mail = adminCredentialsEmail({
-              orgName: newOrg.name,
-              orgSlug: newOrg.slug,
-              schoolName: defaultBranch.name,
-              name: adminName ? adminName.toString().trim() : `${newOrg.name} Principal`,
-              email: adminEmail,
-              username: adminUsername || null,
-              password: generatedPassword,
-              schoolCode: defaultBranch.code,
-              logoUrl: newOrg.logoUrl || null,
-              themeColor: newOrg.themeColor || null,
-            });
-            await queueEmail({
-              to: adminEmail,
-              ...mail,
-              priority: "CRITICAL",
-              organizationId: newOrg.id,
-              schoolId: defaultBranch.id,
-            });
-          }
+          const mail = adminCredentialsEmail({
+            orgName: newOrg.name,
+            orgSlug: newOrg.slug,
+            schoolName: defaultBranch.name,
+            name: adminName ? adminName.toString().trim() : `${newOrg.name} Principal`,
+            email: adminEmail,
+            username: adminUsername || null,
+            password: generatedPassword,
+            schoolCode: defaultBranch.code,
+            logoUrl: newOrg.logoUrl || null,
+            themeColor: newOrg.themeColor || null,
+          });
+          await queueEmail({
+            to: adminEmail,
+            ...mail,
+            priority: "CRITICAL",
+            organizationId: newOrg.id,
+            schoolId: defaultBranch.id,
+            // Importing super admin apni email ko admin banaye to bhi email ho
+            // (holder guard bypass — Gmail self-send allow karta hai).
+            allowHolderAsRecipient: true,
+          });
         }
 
         successCount++;

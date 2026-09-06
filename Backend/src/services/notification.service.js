@@ -173,7 +173,7 @@ class NotificationService {
       } catch (err) {
         logger.logger.warn(`[Notification] Branded email render failed (fallback plain): ${err.message}`);
       }
-      const result = await queueEmail({ to, subject: title, text, html, attachments, schoolId: schoolId || undefined, organizationId });
+      const result = await queueEmail({ to, subject: title, text, html, attachments, schoolId: schoolId || undefined, organizationId, allowHolderAsRecipient: true });
 
       // Outbox honesty: agar Gmail daily limit lag gayi to email drop NAHI
       // hui — PendingEmail me persist hui hai aur cron retry karega. Log
@@ -279,7 +279,7 @@ class NotificationService {
             logoUrl, themeColor: school?.organization?.themeColor || "#00236f", title, message,
           });
         } catch { /* plain fallback */ }
-        await queueEmail({ to: email, subject: title, text: message, html, schoolId, organizationId: school?.organizationId });
+        await queueEmail({ to: email, subject: title, text: message, html, schoolId, organizationId: school?.organizationId, allowHolderAsRecipient: true });
         sent++;
       } catch { failed++; }
     }
@@ -321,7 +321,7 @@ class NotificationService {
             logoUrl, themeColor: school?.organization?.themeColor || "#00236f", title, message: r.message,
           });
         } catch { /* plain fallback */ }
-        await queueEmail({ to: email, subject: title, text: r.message, html, schoolId, organizationId: school?.organizationId });
+        await queueEmail({ to: email, subject: title, text: r.message, html, schoolId, organizationId: school?.organizationId, allowHolderAsRecipient: true });
         sent++;
       } catch { failed++; }
     }

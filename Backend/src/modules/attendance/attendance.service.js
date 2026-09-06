@@ -507,4 +507,6 @@ class AttendanceService {
   }
 }
 
-export default new AttendanceService();
+const attendanceService = new AttendanceService();
+
+export default attendanceService;
