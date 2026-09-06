@@ -19,6 +19,7 @@ COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=build /app/node_modules/.bin ./node_modules/.bin
 COPY --from=build /app/node_modules/prisma ./node_modules/prisma
+COPY --from=build /app/node_modules/@prisma/client ./node_modules/@prisma/client
 COPY Backend/package.json ./
 COPY Backend/src ./src
 COPY Backend/prisma ./prisma
