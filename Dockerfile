@@ -15,15 +15,13 @@ WORKDIR /app
 RUN groupadd -r appuser && useradd -r -g appuser -d /app -s /sbin/nologin appuser
 COPY Backend/package.json Backend/package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
-COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=build /app/node_modules/.bin ./node_modules/.bin
-COPY --from=build /app/node_modules/prisma ./node_modules/prisma
-COPY --from=build /app/node_modules/@prisma/client ./node_modules/@prisma/client
-COPY Backend/package.json ./
-COPY Backend/src ./src
+# Build stage se sirf node_modules copy karte hain (prisma generate production me run hoga)
+COPY --from=build /app/node_modules ./node_modules
 COPY Backend/prisma ./prisma
 COPY Backend/prisma.config.ts ./
+RUN npx prisma generate
+COPY Backend/package.json ./
+COPY Backend/src ./src
 RUN mkdir -p logs uploads && chown -R appuser:appuser /app
 USER appuser
 ENV NODE_ENV=production
