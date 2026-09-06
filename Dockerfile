@@ -17,6 +17,7 @@ COPY Backend/package.json Backend/package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 # Build stage se sirf node_modules copy karte hain (prisma generate production me run hoga)
 COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
 COPY Backend/prisma ./prisma
 COPY Backend/prisma.config.ts ./
 RUN npx prisma generate
