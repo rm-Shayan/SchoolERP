@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import type { OrgPublicData } from '@/lib/api/orgService';
+import { buildOrgLoginHref } from './orgLoginHref';
 
 interface OrgAdmissionCtaProps {
   org: OrgPublicData;
@@ -42,12 +43,12 @@ export default function OrgAdmissionCta({ org, gradient }: OrgAdmissionCtaProps)
                 <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
               </svg>
             </Link>
-            <a
-              href="#login"
+            <Link
+              href={buildOrgLoginHref(org)}
               className="inline-flex items-center rounded-full border border-white/30 px-10 py-4 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-white/50 hover:bg-white/10"
             >
               Sign In
-            </a>
+            </Link>
           </div>
         </div>
       </div>

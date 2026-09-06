@@ -11,7 +11,7 @@ interface SchoolsSectionProps {
   exporting: boolean;
   onExport: () => void;
   onAdd: () => void;
-  onDeleteSchool: (id: string) => void;
+  onDeleteSchool: (school: School) => void;
   onBlockSchool: (school: School) => void;
   onUnblockSchool: (school: School) => void;
 }

@@ -10,7 +10,7 @@ import { SchoolStatusBadge } from './StatusBadge';
 interface SchoolCardProps {
   org: Organization;
   school: School;
-  onDelete: (id: string) => void;
+  onDelete: (school: School) => void;
   onBlock: (school: School) => void;
   onUnblock: (school: School) => void;
 }
@@ -83,7 +83,7 @@ function SchoolCard({ org, school, onDelete, onBlock, onUnblock }: SchoolCardPro
             {blocked ? 'Unblock' : 'Block'}
           </Button>
           <button
-            onClick={() => onDelete(school.id)}
+            onClick={() => onDelete(school)}
             className="p-2 text-gray-400 hover:text-red-600 rounded-xl hover:bg-red-50 transition-all duration-200"
             title="Delete Branch"
           >

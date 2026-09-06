@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Logo from '@/features/shared/components/Logo';
 import OrgFooterContact from './OrgFooterContact';
 import type { OrgPublicData } from '@/lib/api/orgService';
+import { buildOrgLoginHref } from './orgLoginHref';
 
 interface OrgFooterProps {
   org: OrgPublicData;
@@ -103,7 +104,7 @@ export default function OrgFooter({ org, theme }: OrgFooterProps) {
             <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400">Portals</h3>
             <ul className="mt-5 space-y-3">
               <li><Link href={`/o/${org.slug}/admission`} className="text-sm text-gray-500 transition-colors hover:text-gray-900">Apply for Admission</Link></li>
-              <li><a href="#login" className="text-sm text-gray-500 transition-colors hover:text-gray-900">Login</a></li>
+              <li><Link href={buildOrgLoginHref(org)} className="text-sm text-gray-500 transition-colors hover:text-gray-900">Login</Link></li>
             </ul>
           </div>
 

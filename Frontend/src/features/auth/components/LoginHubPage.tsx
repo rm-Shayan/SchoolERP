@@ -91,7 +91,7 @@ export default function LoginHubPage({ orgSlug, code, initialBranding }: LoginHu
         )}
         {group === 'parent' && <ParentLoginForms themeColor={themeColor} />}
         {group === 'student' && <StudentLoginForm themeColor={themeColor} />}
-        {group === 'admin' && <AdminLoginForm themeColor={themeColor} />}
+        {group === 'admin' && <AdminLoginForm themeColor={themeColor} branding={branding} />}
       </motion.div>
     </AuthLayout>
   );

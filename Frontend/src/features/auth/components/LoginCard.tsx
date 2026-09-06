@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { login } from '@/store/slices/authSlice';
@@ -11,6 +10,7 @@ import { schoolService } from '@/lib/api';
 import type { SchoolBranding } from '@/types';
 import { BuildingIcon, EyeIcon, LockIcon, UserIcon } from './parts/loginIcons';
 import AuthFormHeader from './parts/AuthFormHeader';
+import ForgotPasswordLink from './parts/ForgotPasswordLink';
 
 interface LoginCardProps {
   branding?: SchoolBranding | null;
@@ -67,13 +67,7 @@ export default function LoginCard({ branding, onBrandingChange, heading, subhead
     const trimmed = value.trim();
     if (trimmed.length < 2) return;
     codeTimer.current = window.setTimeout(() => {
-      (async () => {
-        try {
-          onBrandingChange?.(await schoolService.getBranding({ code: trimmed }));
-        } catch {
-          // Keep existing branding on a failed lookup.
-        }
-      })();
+      schoolService.getBranding({ code: trimmed }).then(onBrandingChange).catch(() => undefined);
     }, 400);
   };
 
@@ -144,14 +138,8 @@ export default function LoginCard({ branding, onBrandingChange, heading, subhead
         </Button>
       </form>
 
-      <div className="flex items-center justify-between mt-4">
-        <Link
-          href="/forgot-password"
-          className="text-xs font-semibold shrink-0 transition hover:opacity-80"
-          style={branding?.themeColor ? { color: branding.themeColor } : undefined}
-        >
-          Forgot password?
-        </Link>
+      <div className="mt-4">
+        <ForgotPasswordLink branding={branding} schoolCode={schoolCode.trim() || undefined} />
       </div>
     </div>
   );

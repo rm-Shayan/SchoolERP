@@ -1,13 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { composeValidators, isEmail, required, useForm } from '@/lib/utils';
 import { authService } from '@/lib/api';
 import { AuthLayout, Button, Input } from '@/features/shared/components';
+import { applyOrgThemeToRoot, clearOrgThemeFromRoot } from '@/lib/theme';
+import type { SchoolBranding } from '@/types';
 
-export default function ForgotPasswordPage() {
+interface ForgotPasswordPageProps {
+  branding?: SchoolBranding | null;
+}
+
+export default function ForgotPasswordPage({ branding }: ForgotPasswordPageProps) {
   const [sent, setSent] = useState(false);
+  const themeColor = branding?.themeColor || undefined;
+
+  // Login hub ki tarah org theme yahan bhi apply karo — forgot-password page
+  // bhi branded rehto hai jab org/school query param se aaya ho.
+  useEffect(() => {
+    if (themeColor) applyOrgThemeToRoot(themeColor);
+    else clearOrgThemeFromRoot();
+    return () => { if (themeColor) clearOrgThemeFromRoot(); };
+  }, [themeColor]);
+
   const { values, errors, isSubmitting, handleChange, handleBlur, handleSubmit } = useForm({
     initialValues: { email: '' },
     validators: {
@@ -19,12 +35,23 @@ export default function ForgotPasswordPage() {
     },
   });
 
+  const label = branding?.orgName || branding?.name || 'School Management System';
+  const schoolName = branding?.school?.name || 'SchoolERP';
+  const backHref = branding?.slug ? `/login?org=${encodeURIComponent(branding.slug)}` : '/login';
+
   return (
     <AuthLayout
       variant="secondary"
-      brandIcon={<img src="/screen.png" alt="SchoolERP" className="h-full w-full object-contain" />}
-      brandLabel="School Management System"
-      brandSub="SchoolERP"
+      themeColor={themeColor}
+      brandIcon={
+        branding?.logoUrl ? (
+          <img src={branding.logoUrl} alt={label} className="h-full w-full object-contain" />
+        ) : (
+          <img src="/screen.png" alt="SchoolERP" className="h-full w-full object-contain" />
+        )
+      }
+      brandLabel={label}
+      brandSub={schoolName}
       badge="Account Recovery"
       heading="Locked out? We'll get you back in."
       description="Enter the email linked to your staff account and we'll send you a fresh password right away."
@@ -32,7 +59,7 @@ export default function ForgotPasswordPage() {
       footerNote={
         <p className="text-slate-500">
           Remembered it?{' '}
-          <Link href="/login" className="font-semibold text-primary-600 hover:text-primary-700">
+          <Link href={backHref} className="font-semibold text-primary-600 hover:text-primary-700">
             Back to sign in
           </Link>
         </p>
@@ -44,7 +71,7 @@ export default function ForgotPasswordPage() {
             If an account exists for <b>{values.email as string}</b>, a new password is on its way. Check your inbox
             (and spam folder just in case).
           </div>
-          <Link href="/login">
+          <Link href={backHref}>
             <Button className="w-full">Back to sign in</Button>
           </Link>
         </div>
@@ -67,7 +94,7 @@ export default function ForgotPasswordPage() {
             error={errors.email}
             required
           />
-          <Button type="submit" loading={isSubmitting} size="lg" className="w-full mt-1">
+          <Button type="submit" loading={isSubmitting} size="lg" className="w-full mt-1" themeColor={themeColor}>
             Send new password
           </Button>
           <p className="text-xs leading-relaxed text-slate-400">

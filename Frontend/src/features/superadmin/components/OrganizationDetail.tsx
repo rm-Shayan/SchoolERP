@@ -14,8 +14,10 @@ import EditOrgModal from './parts/EditOrgModal';
 import AddBranchModal from './parts/AddBranchModal';
 import OrgDashboardSection from './parts/OrgDashboardSection';
 import OrgModerationDialogs, { type OrgModerationDialogsHandle } from './parts/OrgModerationDialogs';
+import DeleteBranchDialog from './parts/DeleteBranchDialog';
 import { useOrganizationData } from './parts/useOrganizationData';
 import { useOrganizationModeration } from './parts/useOrganizationModeration';
+import type { School } from '@/types';
 
 export default function OrganizationDetail() {
   const params = useParams();
@@ -24,12 +26,14 @@ export default function OrganizationDetail() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
   const moderationRef = useRef<OrgModerationDialogsHandle>(null);
   const {
     org,
     schools,
     loading,
     exporting,
+    deletingSchoolId,
     branchCredentials,
     setBranchCredentials,
     handleExportBranches,
@@ -51,11 +55,17 @@ export default function OrganizationDetail() {
   const openDeleteConfirm = useCallback(() => setConfirmDelete(true), []);
   const closeDeleteConfirm = useCallback(() => setConfirmDelete(false), []);
 
-  const confirmDeleteOrg = useCallback(async () => {
+  const confirmDeleteOrg = async () => {
     setDeleting(true);
     await handleDeleteOrg();
     setDeleting(false);
-  }, [handleDeleteOrg]);
+  };
+
+  const confirmDeleteSchool = async () => {
+    if (!schoolToDelete) return;
+    await handleDeleteSchool(schoolToDelete.id);
+    setSchoolToDelete(null);
+  };
 
   if (loading) {
     return <SectionSkeleton />;
@@ -108,7 +118,7 @@ export default function OrganizationDetail() {
           exporting={exporting}
           onExport={handleExportBranches}
           onAdd={openAdd}
-          onDeleteSchool={handleDeleteSchool}
+          onDeleteSchool={setSchoolToDelete}
           onBlockSchool={(school) => moderationRef.current?.openBlockSchool(school)}
           onUnblockSchool={(school) => moderationRef.current?.openUnblockSchool(school)}
         />
@@ -124,14 +134,11 @@ export default function OrganizationDetail() {
         onBlockSchool={handleBlockSchool}
         onUnblockSchool={handleUnblockSchool}
       />
+      <DeleteBranchDialog school={schoolToDelete} loading={deletingSchoolId === schoolToDelete?.id} onConfirm={confirmDeleteSchool} onCancel={() => setSchoolToDelete(null)} />
       <ConfirmDialog
         open={confirmDelete}
         title="Delete organization"
-        message={
-          <>
-            This permanently removes <span className="font-medium">{org.name}</span>, all its branches, and all related data (students, staff, fees, attendance, exams, etc.). This action cannot be undone.
-          </>
-        }
+        message={<>This permanently removes <span className="font-medium">{org.name}</span>, all its branches, and all related data (students, staff, fees, attendance, exams, etc.). This action cannot be undone.</>}
         confirmLabel="Delete"
         loading={deleting}
         onConfirm={confirmDeleteOrg}

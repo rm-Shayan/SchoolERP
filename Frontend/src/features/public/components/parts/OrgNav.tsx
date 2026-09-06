@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Logo from '@/features/shared/components/Logo';
 import type { OrgPublicData } from '@/lib/api/orgService';
+import { buildOrgLoginHref } from './orgLoginHref';
 
 const sectionLinks = [
   { label: 'About', href: '#about' },
@@ -64,6 +65,13 @@ export default function OrgNav({ org }: OrgNavProps) {
 
         <div className="flex items-center gap-3">
           <Link
+            href={buildOrgLoginHref(org)}
+            className="hidden rounded-xl px-4 py-2.5 text-sm font-bold transition-colors sm:inline-flex"
+            style={{ color: theme }}
+          >
+            Sign In
+          </Link>
+          <Link
             href={admissionHref}
             className="hidden rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-lg transition-all duration-200 hover:scale-[1.03] hover:shadow-xl sm:inline-flex"
             style={{
@@ -105,6 +113,14 @@ export default function OrgNav({ org }: OrgNavProps) {
                 {item.label}
               </a>
             ))}
+            <Link
+              href={buildOrgLoginHref(org)}
+              onClick={() => setOpen(false)}
+              className="mt-2 inline-flex items-center justify-center rounded-xl px-4 py-3 font-bold transition hover:bg-gray-50"
+              style={{ color: theme }}
+            >
+              Sign In
+            </Link>
             <Link
               href={admissionHref}
               onClick={() => setOpen(false)}

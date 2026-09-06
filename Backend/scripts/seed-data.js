@@ -35,6 +35,7 @@
 import prisma from '../src/config/db.js';
 import bcryptjs from 'bcryptjs';
 import { generateIdentifierCode } from '../src/lib/identifier.js';
+import { pathToFileURL } from 'url';
 
 // ─── CLI args ───────────────────────────────────────────────────────────────
 function parseArgs() {
@@ -686,6 +687,16 @@ async function main() {
   console.log('  Teacher login: schoolCode + teacher1.<code>@seed.example.com / Teacher@123');
 }
 
-main()
-  .catch((err) => { console.error('SEED FAILED:', err); process.exitCode = 1; })
-  .finally(() => prisma.$disconnect());
+// ─── Entry guard ─────────────────────────────────────────────────────────────
+// Direct run (npm run seed / node scripts/seed-data.js) → main().
+// Imported as a module (scripts/demo-data.js) → reuse seedBranch() only.
+const isDirectRun =
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isDirectRun) {
+  main()
+    .catch((err) => { console.error('SEED FAILED:', err); process.exitCode = 1; })
+    .finally(() => prisma.$disconnect());
+}
+
+export { seedBranch };

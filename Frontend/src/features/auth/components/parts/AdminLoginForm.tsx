@@ -1,19 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { login } from '@/store/slices/authSlice';
 import { composeValidators, getRoleHomePath, isEmail, isPassword, required, useForm } from '@/lib/utils';
 import { Button, Input } from '@/features/shared/components';
 import AuthFormHeader from './AuthFormHeader';
+import ForgotPasswordLink from './ForgotPasswordLink';
+import type { SchoolBranding } from '@/types';
 
 interface AdminLoginFormProps {
   themeColor?: string;
+  branding?: SchoolBranding | null;
 }
 
-export default function AdminLoginForm({ themeColor }: AdminLoginFormProps) {
+export default function AdminLoginForm({ themeColor, branding }: AdminLoginFormProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { loading, error } = useAppSelector((s) => s.auth);
@@ -87,10 +89,8 @@ export default function AdminLoginForm({ themeColor }: AdminLoginFormProps) {
           Sign in
         </Button>
 
-        <p className="text-center">
-          <Link href="/forgot-password" className="text-xs font-semibold text-primary-600 hover:text-primary-700">
-            Forgot password?
-          </Link>
+        <p className="mt-2 text-center">
+          <ForgotPasswordLink branding={branding} schoolCode={branding?.code} />
         </p>
       </form>
     </div>

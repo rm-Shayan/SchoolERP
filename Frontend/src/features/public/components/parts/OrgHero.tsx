@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import OrgHeroVisual from './OrgHeroVisual';
 import type { OrgPublicData } from '@/lib/api/orgService';
+import { buildOrgLoginHref } from './orgLoginHref';
 
 interface OrgHeroProps {
   org: OrgPublicData;
@@ -63,12 +64,12 @@ export default function OrgHero({ org, gradient }: OrgHeroProps) {
                 <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
               </svg>
             </Link>
-            <a
-              href="#login"
+            <Link
+              href={buildOrgLoginHref(org)}
               className="inline-flex items-center rounded-full border border-white/30 px-8 py-4 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-white/50 hover:bg-white/10"
             >
               Sign In
-            </a>
+            </Link>
             <button
               onClick={copyLink}
               className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-4 text-sm font-medium text-white/85 backdrop-blur-sm transition-all duration-300 hover:border-white/40 hover:text-white"

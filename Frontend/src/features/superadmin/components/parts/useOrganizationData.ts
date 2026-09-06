@@ -19,6 +19,7 @@ export function useOrganizationData(id: string | undefined) {
   const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [deletingSchoolId, setDeletingSchoolId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [branchCredentials, setBranchCredentials] = useState<{ email: string; password: string } | null>(null);
   const fetchOrgAndSchools = useCallback(async () => {
@@ -82,12 +83,15 @@ export function useOrganizationData(id: string | undefined) {
   }, [id, router]);
 
   const handleDeleteSchool = useCallback(async (schoolId: string) => {
+    setDeletingSchoolId(schoolId);
     try {
       await dedupRequest(`delete-school-${schoolId}`, () => schoolService.remove(schoolId));
       setSchools((prev) => prev.filter((s) => s.id !== schoolId));
       toast.success('Branch deleted');
     } catch (err: any) {
       toast.error(errMsg(err, 'Failed to delete branch'));
+    } finally {
+      setDeletingSchoolId(null);
     }
   }, []);
 
@@ -127,7 +131,8 @@ export function useOrganizationData(id: string | undefined) {
     org,
     schools,
     loading,
-    deleting,
+deleting,
+    deletingSchoolId,
     exporting,
     branchCredentials,
     setBranchCredentials,

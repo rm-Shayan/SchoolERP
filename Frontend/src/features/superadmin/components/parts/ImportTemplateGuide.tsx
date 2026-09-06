@@ -8,9 +8,9 @@ const TEMPLATE_COLUMNS: ReadonlyArray<readonly [string, string, string]> = [
   ['Code', 'Yes', 'FALCON-01'],
   ['Slug', 'No', 'falcon-academy (auto-created from Code if blank)'],
   ['LogoUrl', 'No', 'https://example.com/logo.png'],
-  ['AdminName', 'No', 'Mr. Ali Khan'],
+  ['AdminName', 'No', 'Mr. Ali Khan (Principal name)'],
   ['AdminUsername', 'No', 'falcon_admin'],
-  ['AdminEmail', 'No', 'admin@falcon.edu'],
+  ['AdminEmail', 'No', 'admin@falcon.edu (required to create an Admin)'],
   ['AdminPassword', 'No', 'Welcome@123 (auto-generated if blank)'],
   ['AdminPhone', 'No', '03001234567'],
 ];
@@ -105,9 +105,9 @@ export default function ImportTemplateGuide({
       </p>
       <p className="mt-4 text-xs text-gray-500">
         Rows with a duplicate Code are skipped automatically, and a duplicate AdminUsername is
-        skipped too. When AdminEmail is provided, a Super Admin account is created (with the
-        username, password and phone from the row, when given), a default branch is added, and
-        credentials are emailed.
+        skipped too. When AdminEmail is provided, an <span className="font-semibold text-gray-700">Admin (Principal)</span> account is
+        created for the auto-created default branch — with the username, password and phone from the
+        row, when given — and credentials are emailed. Leave AdminPassword blank to auto-generate one.
       </p>
     </Card>
   );

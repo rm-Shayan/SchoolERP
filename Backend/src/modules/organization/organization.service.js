@@ -10,13 +10,13 @@ import authRepository from "../auth/repository.js";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { emitToRoom } from "../../config/websocket.js";
-import { createDefaultBranch } from "./provision.js";
 import smtpSettingsService from "../smtpSettings/smtpSettings.service.js";
 import storageSettingsService from "../storageSettings/storageSettings.service.js";
 import storageService from "../../services/storage.service.js";
 import auditService from "../audit/audit.service.js";
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../audit/actions.js";
 import portalNotificationService from "../notification/notification.portalService.js";
+import { encryptSecret } from "../../lib/utils/secretBox.js";
 import prisma from "../../config/db.js";
 
 const ORG_CACHE_TTL = 3600; // 1 hour
@@ -26,8 +26,16 @@ class OrganizationService {
   /**
    * Create a new organization and auto-generate initial Super Admin account.
    * Sends credentials via Email (mocked or SMTP).
+   *
+   * All DB writes run inside a single Prisma interactive transaction so a
+   * mid-flow failure (e.g. admin user creation) can never leave a half-created
+   * org in the database.  External I/O (logo upload, SMTP/Cloudinary
+   * verification) runs BEFORE the transaction to avoid holding the DB
+   * connection open during slow network calls.
    */
   async createOrganization(data, requester = null, req = null) {
+    // ── Phase 1: Validation + external I/O (outside transaction) ──────
+
     const existingCode = await organizationRepository.findByCode(data.code);
     if (existingCode) {
       throw ApiError.badRequestError("Organization with this code already exists");
@@ -46,50 +54,188 @@ class OrganizationService {
       throw ApiError.badRequestError("Organization with this slug already exists");
     }
 
-    // Delivery cycle (user spec): an org is created as SETUP_PENDING ("Not
-    // delivered") and only becomes ACTIVE ("Delivered") on the FIRST successful
-    // login — see markDeliveredOnLogin(). Blocking is the only other path that
-    // changes this status.
-    const org = await organizationRepository.create({
-      name: data.name,
-      slug,
-      code: data.code,
-      // data: URL (base64) ko storage par upload karo — emails/PDFs me data:
-      // URLs render nahi hote (blank logo circle).
-      logoUrl: (await this._persistDataUrlLogo(data.logoUrl)) || null,
-      themeColor: data.themeColor || null,
-      // Bank details — fee vouchers par print hote hain (branch override kar
-      // sakta hai, warna ye default use hota hai).
-      bankName: data.bankName || null,
-      bankAccountTitle: data.bankAccountTitle || null,
-      bankAccountNumber: data.bankAccountNumber || null,
-    });
+    // Logo upload to storage (external I/O — must happen before transaction)
+    const logoUrl = (await this._persistDataUrlLogo(data.logoUrl)) || null;
 
-    // Every delivered organization starts with one ready-to-use default branch
-    const defaultBranch = await createDefaultBranch(org);
+    // Pre-hash admin password (CPU-bound, do outside tx for clarity)
+    let generatedPassword = null;
+    let adminPasswordHash = null;
+    if (!data.existingAdminEmail && data.adminEmail) {
+      generatedPassword = data.adminPassword || crypto.randomBytes(4).toString("hex") + "A1!";
+      adminPasswordHash = await bcrypt.hash(generatedPassword, 12);
+    }
 
-    // Optional tenant SMTP intake at creation time (Super Admin form se):
-    // primary (+ optional secondary failover). Invalid creds par yahan fail
-    // fast hota hai — org create hone se PEHLE, taake aadha-setup org na bache.
-    // Baad mein admin Settings se add/update kar sakta hai.
-    let smtpSetting = null;
-    let smtpSecondary = null;
+    // SMTP verification (network I/O — must NOT be inside transaction)
+    const skipVerification = process.env.SKIP_CREDENTIAL_VERIFICATION === "true";
+    let smtpPayload = null;
+    let smtpSecondaryPayload = null;
     if (data.smtp?.host && data.smtp?.username) {
-      smtpSetting = await smtpSettingsService.provision(org.id, null, data.smtp);
+      const smtp = data.smtp;
+      const plainPwd = String(smtp.password || "");
+      if (!plainPwd) throw ApiError.badRequestError("SMTP password is required when SMTP host/username is provided");
+      const smtpCheck = skipVerification
+        ? { ok: true }
+        : await smtpSettingsService.verifyConnection({
+            host: smtp.host, port: Number(smtp.port || 587), secure: Boolean(smtp.secure),
+            username: String(smtp.username).trim().toLowerCase(), password: plainPwd,
+          });
+      const _clamp = (v) => Math.min(5000, Math.max(100, parseInt(v, 10) || 500));
+      smtpPayload = {
+        host: smtp.host, port: Number(smtp.port || 587), secure: Boolean(smtp.secure),
+        username: String(smtp.username).trim().toLowerCase(),
+        passwordEnc: encryptSecret(plainPwd),
+        fromName: smtp.fromName ? String(smtp.fromName).trim() : null,
+        dailyLimit: _clamp(smtp.dailyLimit),
+        isVerified: smtpCheck.ok,
+        lastVerifiedAt: smtpCheck.ok ? new Date() : null,
+        lastError: smtpCheck.ok ? null : smtpCheck.error,
+      };
     }
     if (data.smtpSecondary?.host && data.smtpSecondary?.username) {
-      smtpSecondary = await smtpSettingsService.provision(org.id, null, {
-        ...data.smtpSecondary,
-        tier: "SECONDARY",
-      });
+      const smtp = data.smtpSecondary;
+      const plainPwd = String(smtp.password || "");
+      if (!plainPwd) throw ApiError.badRequestError("SMTP secondary password is required when host/username is provided");
+      const smtpCheck = skipVerification
+        ? { ok: true }
+        : await smtpSettingsService.verifyConnection({
+            host: smtp.host, port: Number(smtp.port || 587), secure: Boolean(smtp.secure),
+            username: String(smtp.username).trim().toLowerCase(), password: plainPwd,
+          });
+      const _clamp = (v) => Math.min(5000, Math.max(100, parseInt(v, 10) || 500));
+      smtpSecondaryPayload = {
+        host: smtp.host, port: Number(smtp.port || 587), secure: Boolean(smtp.secure),
+        username: String(smtp.username).trim().toLowerCase(),
+        passwordEnc: encryptSecret(plainPwd),
+        fromName: smtp.fromName ? String(smtp.fromName).trim() : null,
+        dailyLimit: _clamp(smtp.dailyLimit),
+        isVerified: smtpCheck.ok,
+        lastVerifiedAt: smtpCheck.ok ? new Date() : null,
+        lastError: smtpCheck.ok ? null : smtpCheck.error,
+      };
     }
 
-    // Optional tenant Cloudinary intake at creation time — org apne storage
-    // account par uploads kare, Super Admin ka platform cloud load na uthaye.
-    let storageSetting = null;
+    // Cloudinary verification (network I/O — must NOT be inside transaction)
+    let storagePayload = null;
     if (data.cloudinary?.cloudName && data.cloudinary?.apiKey) {
-      storageSetting = await storageSettingsService.provision(org.id, data.cloudinary);
+      const c = data.cloudinary;
+      const apiSecret = String(c.apiSecret || "");
+      if (!apiSecret) throw ApiError.badRequestError("'apiSecret' is required when Cloudinary cloudName/apiKey is provided");
+      const cCheck = skipVerification
+        ? { ok: true }
+        : await storageSettingsService.verifyConnection({
+            cloudName: String(c.cloudName).trim(), apiKey: String(c.apiKey).trim(), apiSecret,
+          });
+      if (!cCheck.ok) throw ApiError.badRequestError(`Cloudinary verification failed: ${cCheck.error}`);
+      storagePayload = {
+        provider: "CLOUDINARY",
+        cloudName: String(c.cloudName).trim(),
+        apiKey: String(c.apiKey).trim(),
+        apiSecretEnc: encryptSecret(apiSecret),
+        isVerified: skipVerification,
+        lastVerifiedAt: skipVerification ? new Date() : null,
+        lastError: skipVerification ? null : cCheck.error,
+      };
     }
+
+    // ── Phase 2: All DB writes atomically ─────────────────────────────
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Create organization
+      const org = await tx.organization.create({
+        data: {
+          name: data.name, slug, code: data.code, logoUrl,
+          themeColor: data.themeColor || null,
+          bankName: data.bankName || null,
+          bankAccountTitle: data.bankAccountTitle || null,
+          bankAccountNumber: data.bankAccountNumber || null,
+        },
+      });
+
+      // 2. Create default branch (inline from provision.js — uses tx)
+      let branchCode = `${org.code}-01`;
+      let suffix = 0;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const exists = await tx.school.findUnique({ where: { code: branchCode } });
+        if (!exists) break;
+        suffix += 1;
+        branchCode = `${org.code}-${String(suffix).padStart(2, "0")}`;
+      }
+      const defaultBranch = await tx.school.create({
+        data: { organizationId: org.id, name: `${org.name} Main Campus`, code: branchCode },
+      });
+
+      // 3. SMTP settings (primary)
+      let smtpSetting = null;
+      if (smtpPayload) {
+        smtpSetting = await tx.orgSecrets.create({
+          data: { organizationId: org.id, schoolId: null, category: "SMTP", tier: "PRIMARY", data: smtpPayload },
+        });
+      }
+      // 4. SMTP settings (secondary)
+      let smtpSecondary = null;
+      if (smtpSecondaryPayload) {
+        smtpSecondary = await tx.orgSecrets.create({
+          data: { organizationId: org.id, schoolId: null, category: "SMTP", tier: "SECONDARY", data: smtpSecondaryPayload },
+        });
+      }
+      // 5. Cloudinary / storage settings
+      let storageSetting = null;
+      if (storagePayload) {
+        storageSetting = await tx.orgSecrets.create({
+          data: { organizationId: org.id, schoolId: null, category: "CLOUDINARY", data: storagePayload },
+        });
+      }
+
+      // 6. Admin user — two modes
+      let adminCredentials = null;
+      if (data.existingAdminEmail) {
+        const cleanEmail = String(data.existingAdminEmail).trim().toLowerCase();
+        const existingAdmin = await tx.user.findFirst({
+          where: { email: cleanEmail, role: "ADMIN", isActive: true },
+          select: { id: true, name: true, email: true },
+        });
+        if (existingAdmin) {
+          const branchAdmin = await tx.user.findFirst({
+            where: { role: "ADMIN", schoolId: defaultBranch.id, isActive: true, id: { not: existingAdmin.id } },
+            select: { id: true },
+          });
+          if (!branchAdmin) {
+            await tx.user.update({
+              where: { id: existingAdmin.id },
+              data: { schoolId: defaultBranch.id, organizationId: org.id },
+            });
+          }
+        }
+      } else if (data.adminEmail) {
+        const branchAdminUser = await tx.user.create({
+          data: {
+            name: data.adminName || `${data.name} Principal`,
+            email: data.adminEmail,
+            username: data.adminUsername || null,
+            password: adminPasswordHash,
+            phone: data.adminPhone || null,
+            role: "ADMIN",
+            organizationId: org.id,
+            schoolId: defaultBranch.id,
+          },
+        });
+        adminCredentials = { email: branchAdminUser.email, password: generatedPassword };
+      }
+
+      // 7. Find unassigned admins for this org (for UI)
+      let unassignedAdmins = [];
+      try {
+        unassignedAdmins = await tx.user.findMany({
+          where: { role: "ADMIN", organizationId: org.id, isActive: true, schoolId: null },
+          select: { id: true, name: true, email: true },
+        });
+      } catch (_) {}
+
+      return { org, defaultBranch, adminCredentials, smtpSetting, smtpSecondary, storageSetting, unassignedAdmins };
+    });
+
+    // ── Phase 3: Side effects (post-transaction, best-effort) ─────────
+    const { org, defaultBranch, adminCredentials, smtpSetting, smtpSecondary, storageSetting, unassignedAdmins } = result;
 
     auditService.record(
       auditService.fromRequest(requester, req, {
@@ -102,14 +248,10 @@ class OrganizationService {
       })
     );
 
-    // Invalidate Redis organization + overview caches
     try {
       await redis.del(["orgs:all", "superadmin:overview", "schools:all", `schools:org:${org.id}`]);
-    } catch (err) {
-      // Non-blocking cache error
-    }
+    } catch (_) {}
 
-    // Super admin ko notification — org create ka confirmation
     portalNotificationService.create({
       organizationId: org.id,
       senderId: requester?.id, senderName: requester?.name || "Super Admin",
@@ -118,90 +260,27 @@ class OrganizationService {
       category: "GENERAL",
     });
 
-    // Auto-assign or create the branch Principal (ADMIN) for the default branch.
-    // Two modes:
-    // 1. existingAdminEmail → assign an existing unassigned admin to this branch
-    // 2. adminEmail (new) → create a new admin account with credentials
-    let adminCredentials = null;
-    if (data.existingAdminEmail) {
-      // Mode 1: Assign existing admin
-      const cleanEmail = String(data.existingAdminEmail).trim().toLowerCase();
-      const existingAdmin = await prisma.user.findFirst({
-        where: { email: cleanEmail, role: "ADMIN", isActive: true },
-        select: { id: true, name: true, email: true },
-      });
-      if (existingAdmin) {
-        // Validate no duplicate admin in the target branch
-        const branchAdmin = await prisma.user.findFirst({
-          where: { role: "ADMIN", schoolId: defaultBranch.id, isActive: true, id: { not: existingAdmin.id } },
-          select: { id: true },
-        });
-        if (!branchAdmin) {
-          await prisma.user.update({
-            where: { id: existingAdmin.id },
-            data: { schoolId: defaultBranch.id, organizationId: org.id },
-          });
-          adminCredentials = null; // No new credentials — existing account
-        }
-      }
-    } else if (data.adminEmail) {
-      // Mode 2: Create new admin account
-      const generatedPassword = data.adminPassword || crypto.randomBytes(4).toString("hex") + "A1!";
-      const hashedPassword = await bcrypt.hash(generatedPassword, 12);
-
-      const branchAdminUser = await authRepository.createUser({
-        name: data.adminName || `${data.name} Principal`,
-        email: data.adminEmail,
-        username: data.adminUsername || null,
-        password: hashedPassword,
-        phone: data.adminPhone || null,
-        role: "ADMIN",
-        organizationId: org.id,
-        schoolId: defaultBranch.id,
-      });
-
-      adminCredentials = {
-        email: branchAdminUser.email,
-        password: generatedPassword,
-      };
-
+    // Queue admin credentials email (outside tx — email sending is async)
+    if (adminCredentials) {
       const mail = adminCredentialsEmail({
-        orgName: data.name,
-        orgSlug: org.slug,
-        schoolName: defaultBranch.name,
-        name: branchAdminUser.name,
-        email: branchAdminUser.email,
-        username: branchAdminUser.username || data.adminUsername || null,
-        password: generatedPassword,
+        orgName: data.name, orgSlug: org.slug, schoolName: defaultBranch.name,
+        name: data.adminName || `${data.name} Principal`,
+        email: adminCredentials.email,
+        username: data.adminUsername || null,
+        password: adminCredentials.password,
         schoolCode: defaultBranch.code,
-        logoUrl: org.logoUrl || null,
-        themeColor: org.themeColor || null,
+        logoUrl: org.logoUrl || null, themeColor: org.themeColor || null,
       });
       await queueEmail({
-        to: branchAdminUser.email,
-        ...mail,
+        to: adminCredentials.email, ...mail,
         priority: "CRITICAL",
-        organizationId: org.id,
-        schoolId: defaultBranch.id,
-        // Super admin apni hi gmail ko admin banaye to bhi credentials email ho
-        // (holder guard bypass — Gmail self-send allow karta hai).
+        organizationId: org.id, schoolId: defaultBranch.id,
         allowHolderAsRecipient: true,
-      });
+      }).catch(() => {});
     }
 
-    // Notify connected admin WebSocket clients (dashboard refetches on this)
     emitToRoom("super_admins", "organization_created", { orgId: org.id, name: org.name });
     emitToRoom("super_admins", "overview_updated", {});
-
-    // Find unassigned admins (created without a branch) in this org —
-    // lets the UI offer assigning them to the default branch.
-    let unassignedAdmins = [];
-    try {
-      unassignedAdmins = await prisma.user.findMany({
-        where: { role: "ADMIN", organizationId: org.id, isActive: true, schoolId: null },
-        select: { id: true, name: true, email: true },
-      });
-    } catch (_) {}
 
     return {
       organization: org,
