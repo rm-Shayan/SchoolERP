@@ -3,6 +3,11 @@ const configuredOrigins = (process.env.CLIENT_URL || "")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const fixedOrigins = [
+  "https://school-mchoxdsno-areesharao9-8007s-projects.vercel.app",
+  "https://school-erp.vercel.app",
+];
+
 const developmentOrigins = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
@@ -12,6 +17,7 @@ const developmentOrigins = [
 
 const allowedOrigins = new Set([
   ...configuredOrigins,
+  ...fixedOrigins,
   ...(process.env.NODE_ENV === "production" ? [] : developmentOrigins),
 ]);
 
