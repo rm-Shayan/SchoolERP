@@ -43,20 +43,20 @@ class TeachingAssignmentService {
 
     emitToRoom(`school:${targetSchoolId}`, "assignment_updated", { id: assignment.id });
 
-    // Notification: sirf us teacher ko + pro org admin ko
-    const teacher = await prisma.user.findUnique({
+    // Notification: only to that teacher + org admin
+    const teacherProfile = await prisma.user.findUnique({
       where: { id: data.teacherId, role: "TEACHER" },
       select: { id: true, name: true, email: true, schoolId: true, organizationId: true },
     });
 
-    if (teacher) {
+    if (teacherProfile) {
       portalNotificationService.create({
         schoolId: targetSchoolId,
         senderId: user.id,
         senderName: user.name,
-        recipientId: teacher.id,
+        recipientId: teacherProfile.id,
         title: "TEACHER_ASSIGNED",
-        body: `${user.name} ne aapko ${assignment.class.name}${assignment.section ? ` - ${assignment.section.name}` : ""}${assignment.subject ? ` (${assignment.subject.name})` : ""} ke liye assign kiya hai.`,
+        body: `${user.name} assigned you to ${assignment.class.name}${assignment.section ? ` - ${assignment.section.name}` : ""}${assignment.subject ? ` (${assignment.subject.name})` : ""}.`,
         category: "ACADEMIC",
         refType: "TEACHING_ASSIGNMENT",
         refId: assignment.id,
