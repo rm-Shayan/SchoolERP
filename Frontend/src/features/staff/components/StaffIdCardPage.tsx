@@ -69,8 +69,8 @@ export default function StaffIdCardPage() {
               <div key={member.id} onClick={() => toggleSelect(member.id)}
                 className={`cursor-pointer rounded-2xl border-2 p-4 transition-all ${(selectedIds.has(member.id) || viewAll) ? 'border-primary-500 bg-primary-50/30 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow'}`}>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-                    {member.avatarUrl ? <img src={member.avatarUrl} alt="" className="w-full h-full rounded-full object-cover" /> : <span className="font-bold text-primary-600 text-sm">{member.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}</span>}
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 flex items-center justify-center ring-1 ring-inset ring-white/70 shadow-sm">
+                    {member.avatarUrl ? <img src={member.avatarUrl} alt="" className="w-full h-full rounded-full object-cover" /> : <svg viewBox="0 0 24 24" fill="currentColor" className="h-[52%] w-[52%] text-slate-400"><path d="M12 2.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm0 14.5c-5.13 0-9.5 2.23-9.5 5.5v.5h19v-.5c0-3.27-4.37-5.5-9.5-5.5Z" /></svg>}
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold text-gray-900 text-sm truncate">{member.name}</p>

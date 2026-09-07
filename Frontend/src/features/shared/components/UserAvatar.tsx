@@ -1,4 +1,4 @@
-import { cn, getInitials } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface UserAvatarProps {
   src?: string | null;
@@ -13,19 +13,6 @@ const sizes = {
   md: 'h-11 w-11 text-sm',
   lg: 'h-14 w-14 text-lg',
 };
-
-const avatarGradients = [
-  'from-violet-400 to-purple-600',
-  'from-sky-400 to-blue-600',
-  'from-emerald-400 to-teal-600',
-  'from-amber-400 to-orange-600',
-  'from-rose-400 to-pink-600',
-];
-
-function getGradient(name: string) {
-  const hash = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  return avatarGradients[hash % avatarGradients.length];
-}
 
 /**
  * User avatar with fallback chain:
@@ -43,8 +30,10 @@ export default function UserAvatar({ src, name, size = 'md', className }: UserAv
   }
 
   return (
-    <div className={cn(sizes[size], `rounded-full bg-gradient-to-br ${getGradient(name)} flex items-center justify-center text-white font-bold shrink-0 shadow-sm`, className)}>
-      {getInitials(name)}
+    <div className={cn(sizes[size], 'flex items-center justify-center rounded-full bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 ring-1 ring-inset ring-white/70 shadow-sm shrink-0', className)}>
+      <svg viewBox="0 0 24 24" fill="currentColor" className="h-[52%] w-[52%] text-slate-400">
+        <path d="M12 2.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm0 14.5c-5.13 0-9.5 2.23-9.5 5.5v.5h19v-.5c0-3.27-4.37-5.5-9.5-5.5Z" />
+      </svg>
     </div>
   );
 }
