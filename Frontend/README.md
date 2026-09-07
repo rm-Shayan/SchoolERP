@@ -139,9 +139,22 @@ Next.js 16 · React 19 · TypeScript 7 · Tailwind 4 · Redux Toolkit · Express
   - [ ] 320px → email/password inputs full width
   - [ ] 768px+ → Remember me + Forgot password align horizontally
 - [ ] Branded theme color resolves correctly at all widths
-- [ ] Back to school page link visible on mobile under branded hub pages
+- [ ] Back to school page link visible on mobile under branded hub pages### Admin / super-admin portal
+
+- [ ] `/admin/*`
+  - [ ] 320px → navbar height smaller, hamburger button reachable, logo touches edges without clipping
+  - [ ] 320px → navbar title truncated if long, subtitle not clipped
+  - [ ] 320px → notification bell + user menu still reachable, notification dropdown not wider than screen
+  - [ ] 320px → notification dropdown max-height leaves room for mobile tap targets
+- [ ] `/admin/login`
+  - [ ] 320px → Remember me + Forgot password stack vertically
+  - [ ] 320px → email/password inputs full width
+- [ ] `/admin/settings` and other admin pages
+  - [ ] 320px → main content padding smaller, max-width wrapper still centers
+  - [ ] 768px+ → sidebar collapsed/uncollapsed layout smooth
 
 ### Teacher portal
+
 - [ ] `/teacher/dashboard`
   - [ ] 320px → stat cards 2-col, timetable card full width, upcoming PTMs full width
   - [ ] 320px → recent homework card not overflowing horizontally

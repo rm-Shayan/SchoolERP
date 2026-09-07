@@ -49,10 +49,13 @@ export default function NotificationMenu() {
     if (portalData) dispatch(setPortalNotifications(portalData.items));
   }, [portalData, dispatch]);
 
-  // Refetch unread count when dropdown opens (to stay in sync).
+  // Auto mark all read when dropdown opens (professional UX — count hides instantly).
   useEffect(() => {
-    if (open) refetchUnread();
-  }, [open, refetchUnread]);
+    if (open && portalUnread > 0) {
+      dispatch(markAllPortalRead(schoolId || undefined));
+      markAllReadApi(schoolId || undefined).catch(() => {});
+    }
+  }, [open]);
 
   const [markReadApi] = useMarkReadMutation();
   const [markAllReadApi] = useMarkAllReadMutation();
