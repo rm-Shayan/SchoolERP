@@ -27,6 +27,8 @@ const OrgModerationDialogs = forwardRef<OrgModerationDialogsHandle, OrgModeratio
     const [blockSchoolTarget, setBlockSchoolTarget] = useState<School | null>(null);
     const [unblockTarget, setUnblockTarget] = useState<School | null>(null);
     const [blocking, setBlocking] = useState(false);
+    const [blockOrgReason, setBlockOrgReason] = useState('');
+    const [blockSchoolReason, setBlockSchoolReason] = useState('');
 
     useImperativeHandle(ref, () => ({
       openBlockOrg: () => setBlockOrgOpen(true),
@@ -76,13 +78,17 @@ const OrgModerationDialogs = forwardRef<OrgModerationDialogsHandle, OrgModeratio
         <BlockReasonDialog
           open={blockOrgOpen}
           title="Block organization"
+          memberName={org.name}
           message={`Blocking ${org.name} will lock out every branch, admin, staff, student, and parent account. This is reversible.`}
           loading={blocking}
+          reasonValue={blockOrgReason}
+          onReasonChange={setBlockOrgReason}
           onConfirm={confirmBlockOrg}
           onCancel={() => setBlockOrgOpen(false)}
         />
         <BlockReasonDialog
           open={blockSchoolTarget !== null}
+          memberName={blockSchoolTarget?.name}
           title="Block branch"
           message={
             blockSchoolTarget
@@ -90,6 +96,8 @@ const OrgModerationDialogs = forwardRef<OrgModerationDialogsHandle, OrgModeratio
               : ''
           }
           loading={blocking}
+          reasonValue={blockSchoolReason}
+          onReasonChange={setBlockSchoolReason}
           onConfirm={confirmBlockSchool}
           onCancel={() => setBlockSchoolTarget(null)}
         />
@@ -100,7 +108,7 @@ const OrgModerationDialogs = forwardRef<OrgModerationDialogsHandle, OrgModeratio
           confirmLabel="Unblock"
           variant="primary"
           loading={blocking}
-          onConfirm={confirmUnblockOrg}
+          onConfirm={async () => { await confirmUnblockOrg(); setUnblockOrgOpen(false); }}
           onCancel={() => setUnblockOrgOpen(false)}
         />
         <ConfirmDialog
@@ -110,7 +118,7 @@ const OrgModerationDialogs = forwardRef<OrgModerationDialogsHandle, OrgModeratio
           confirmLabel="Unblock"
           variant="primary"
           loading={blocking}
-          onConfirm={confirmUnblockSchool}
+          onConfirm={async () => { await confirmUnblockSchool(); setUnblockTarget(null); }}
           onCancel={() => setUnblockTarget(null)}
         />
       </>

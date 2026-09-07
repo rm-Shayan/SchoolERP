@@ -46,7 +46,9 @@ export default function UsersPage() {
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / 20));
 
-  const { blockTarget, setBlockTarget, busy, confirmBlock, confirmUnblock } = useUserBlocking({ setData: setData as any, reload });
+  const {
+    blockTarget, setBlockTarget, blockReason, setBlockReason, busy, confirmBlock, confirmUnblock, reset,
+  } = useUserBlocking({ setData: setData as any, reload });
 
   const handleUpdated = useCallback(() => { setEditTarget(null); reload(); }, [reload]);
   const handleDeleted = useCallback(() => { setDeleteTarget(null); reload(); }, [reload]);
@@ -118,9 +120,17 @@ export default function UsersPage() {
         onPageChange={setPage} onResetFilters={resetFilters}
       />
 
-      <BlockReasonDialog open={blockTarget !== null} title="Block account"
-        message={blockTarget ? `Blocking ${blockTarget.name} will immediately lock them out.` : ''}
-        loading={busy} onConfirm={confirmBlock} onCancel={() => setBlockTarget(null)} />
+      <BlockReasonDialog
+        open={blockTarget !== null}
+        title="Block account"
+        memberName={blockTarget?.name}
+        message={blockTarget ? `Blocking will immediately lock ${blockTarget.name} out of all portals. This is reversible.` : ''}
+        loading={busy}
+        reasonValue={blockReason}
+        onReasonChange={setBlockReason}
+        onConfirm={confirmBlock}
+        onCancel={reset}
+      />
       <UserProfileModal user={viewTarget as any} onClose={() => setViewTarget(null)} />
       <CreateUserModal open={createOpen} onClose={() => setCreateOpen(false)} onCreated={reload} />
       <EditUserModal user={editTarget as any} onClose={() => setEditTarget(null)} onUpdated={handleUpdated} />

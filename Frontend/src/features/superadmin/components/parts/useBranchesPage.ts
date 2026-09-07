@@ -109,6 +109,8 @@ export function useBranchesPage() {
     finally { setBusy(false); }
   }, [unblockTarget, loadBranches]);
 
+  const clearUnblockTarget = useCallback(() => setUnblockTarget(null), []);
+
   const handleCreateBranch = useCallback(async (v: BranchFormValues & { organizationId: string }): Promise<boolean> => {
     try {
       const result = await schoolService.create(branchCreatePayload(v, v.organizationId));

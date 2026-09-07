@@ -42,7 +42,7 @@ export function useBranchModeration(
       setBlocking(true);
       try {
         await moderationService.blockSchool(school.id, reason);
-        toast.success('Branch blocked');
+        toast.success(`${school.name} branch blocked`);
         setBlockOpen(false);
         await reloadAll();
       } catch (err: any) {
@@ -59,7 +59,7 @@ export function useBranchModeration(
     setBlocking(true);
     try {
       await moderationService.unblockSchool(school.id);
-      toast.success('Branch unblocked');
+      toast.success(`${school.name} branch unblocked`);
       await reloadAll();
     } catch (err: any) {
       toast.error(errMsg(err, 'Failed to unblock branch'));

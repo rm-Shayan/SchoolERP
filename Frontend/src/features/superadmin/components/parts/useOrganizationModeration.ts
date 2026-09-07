@@ -17,7 +17,7 @@ export function useOrganizationModeration({ id, reload }: UseOrganizationModerat
       if (!id) return false;
       try {
         await moderationService.blockOrganization(id, reason);
-        toast.success('Organization blocked — all branches and users locked out');
+        toast.success(`${id} organization blocked — all branches and users locked out`);
         await reload();
         return true;
       } catch (err: any) {
@@ -46,7 +46,7 @@ export function useOrganizationModeration({ id, reload }: UseOrganizationModerat
       try {
         await moderationService.blockSchool(schoolId, reason);
         await reload();
-        toast.success('Branch blocked');
+        toast.success('Branch blocked — users locked out');
         return true;
       } catch (err: any) {
         toast.error(errMsg(err, 'Failed to block branch'));
@@ -61,7 +61,7 @@ export function useOrganizationModeration({ id, reload }: UseOrganizationModerat
       try {
         await moderationService.unblockSchool(schoolId);
         await reload();
-        toast.success('Branch unblocked');
+        toast.success('Branch unblocked — access restored');
         return true;
       } catch (err: any) {
         toast.error(errMsg(err, 'Failed to unblock branch'));
@@ -69,7 +69,7 @@ export function useOrganizationModeration({ id, reload }: UseOrganizationModerat
       }
     },
     [reload]
-  );
+  )
 
   return { handleBlockOrg, handleUnblockOrg, handleBlockSchool, handleUnblockSchool };
 }

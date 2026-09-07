@@ -123,6 +123,9 @@ export function useOrganizationsPage() {
     finally { setBusy(false); }
   }, [unblockTarget, load]);
 
+  // Keep unblock target cleared on success (hook clears it, but parent also clears)
+  const clearUnblockTarget = useCallback(() => setUnblockTarget(null), []);
+
   return {
     overview, loading, search, setSearch, statusFilter, setStatusFilter,
     page, setPage, totalPages, pageItems, view, setView, filtered, chipOptions,

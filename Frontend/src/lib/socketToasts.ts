@@ -12,11 +12,11 @@ const isMySchool = (payload: any) => {
 };
 
 export function registerSocketHandlers(s: Socket) {
-  s.on('organization_blocked', () => store.dispatch(setOrgStatus('BLOCKED')));
-  s.on('organization_unblocked', () => store.dispatch(setOrgStatus('ACTIVE')));
+  s.on('organization_blocked', () => { store.dispatch(setOrgStatus('BLOCKED')); toast.error('Organization blocked'); });
+  s.on('organization_unblocked', () => { store.dispatch(setOrgStatus('ACTIVE')); toast.success('Organization unblocked'); });
 
-  s.on('school_blocked', (p: any) => { if (isMySchool(p)) store.dispatch(setSchoolStatus('BLOCKED')); });
-  s.on('school_unblocked', (p: any) => { if (isMySchool(p)) store.dispatch(setSchoolStatus('ACTIVE')); });
+  s.on('school_blocked', (p: any) => { if (isMySchool(p)) { store.dispatch(setSchoolStatus('BLOCKED')); toast.error('Your branch is blocked'); } });
+  s.on('school_unblocked', (p: any) => { if (isMySchool(p)) { store.dispatch(setSchoolStatus('ACTIVE')); toast.success('Your branch is unblocked'); } });
 
   const t = (msg: string, icon?: string) => toast(msg, icon ? { icon } : undefined);
   const ts = (msg: string) => toast.success(msg);

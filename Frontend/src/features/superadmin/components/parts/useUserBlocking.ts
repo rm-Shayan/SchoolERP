@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { moderationService } from '@/lib/api';
+import { moderationService, studentService, parentService } from '@/lib/api';
+import type { Student } from '@/types';
+import type { Parent } from '@/types';
 import type { PlatformDirectory, DirectoryItem } from '@/lib/api/staffService';
 import toast from 'react-hot-toast';
 
@@ -14,6 +16,7 @@ interface UseUserBlockingArgs {
 
 export function useUserBlocking({ setData, reload }: UseUserBlockingArgs) {
   const [blockTarget, setBlockTarget] = useState<DirectoryItem | null>(null);
+  const [blockReason, setBlockReason] = useState('');
   const [busy, setBusy] = useState(false);
 
   const patchLocal = useCallback(
@@ -27,14 +30,23 @@ export function useUserBlocking({ setData, reload }: UseUserBlockingArgs) {
   );
 
   const confirmBlock = useCallback(
-    async (reason: string) => {
-      if (!blockTarget || blockTarget.type !== 'staff') return;
+    async (reasonArg?: string) => {
+      if (!blockTarget) return;
       setBusy(true);
+      const reason = reasonArg?.trim() || blockReason.trim() || undefined;
       try {
-        await moderationService.blockUser(blockTarget.id, reason);
-        patchLocal(blockTarget, { status: 'BLOCKED' });
+        if (blockTarget.type === 'staff') {
+          await moderationService.blockUser(blockTarget.id, reason);
+          patchLocal(blockTarget, { status: 'BLOCKED' });
+        } else if (blockTarget.type === 'student') {
+          await moderationService.blockStudent(blockTarget.id, reason);
+          patchLocal(blockTarget, { status: 'BLOCKED' });
+        } else if (blockTarget.type === 'parent') {
+          await moderationService.blockParent(blockTarget.id, reason);
+          patchLocal(blockTarget, { status: 'BLOCKED' });
+        }
         toast.success(`${blockTarget.name} blocked`);
-        setBlockTarget(null);
+        reset();
       } catch (err: any) {
         toast.error(errMsg(err, 'Failed to block user'));
         reload();
@@ -42,15 +54,20 @@ export function useUserBlocking({ setData, reload }: UseUserBlockingArgs) {
         setBusy(false);
       }
     },
-    [blockTarget, patchLocal, reload]
+    [blockTarget, blockReason, patchLocal, reload]
   );
 
   const confirmUnblock = useCallback(
     async (member: DirectoryItem) => {
-      if (member.type !== 'staff') return;
       setBusy(true);
       try {
-        await moderationService.unblockUser(member.id);
+        if (member.type === 'staff') {
+          await moderationService.unblockUser(member.id);
+        } else if (member.type === 'student') {
+          await moderationService.unblockStudent(member.id);
+        } else if (member.type === 'parent') {
+          await moderationService.unblockParent(member.id);
+        }
         patchLocal(member, { status: 'ACTIVE' });
         toast.success(`${member.name} unblocked`);
       } catch (err: any) {
@@ -63,5 +80,10 @@ export function useUserBlocking({ setData, reload }: UseUserBlockingArgs) {
     [patchLocal, reload]
   );
 
-  return { blockTarget, setBlockTarget, busy, confirmBlock, confirmUnblock };
+  const reset = useCallback(() => {
+    setBlockTarget(null);
+    setBlockReason('');
+  }, []);
+
+  return { blockTarget, setBlockTarget, blockReason, setBlockReason, busy, confirmBlock, confirmUnblock, reset };
 }

@@ -6,8 +6,11 @@ import { Modal, Button } from '@/features/shared/components';
 interface BlockReasonDialogProps {
   open: boolean;
   title: string;
+  memberName?: string;
   message: string;
   loading?: boolean;
+  reasonValue?: string;
+  onReasonChange?: (v: string) => void;
   onConfirm: (reason: string) => void;
   onCancel: () => void;
 }
@@ -17,20 +20,24 @@ export default function BlockReasonDialog({
   title,
   message,
   loading = false,
+  reasonValue = '',
+  onReasonChange,
   onConfirm,
   onCancel,
 }: BlockReasonDialogProps) {
-  const [reason, setReason] = useState('');
+  const [localReason, setLocalReason] = useState('');
+  const reason = reasonValue ?? localReason;
 
   const handleClose = () => {
     if (loading) return;
-    setReason('');
+    setLocalReason('');
     onCancel();
   };
 
   const handleConfirm = () => {
-    onConfirm(reason.trim());
-    setReason('');
+    onConfirm(reason);
+    setLocalReason('');
+    onReasonChange?.('');
   };
 
   return (
@@ -40,7 +47,7 @@ export default function BlockReasonDialog({
         <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Block reason (optional admin note)</span>
         <textarea
           value={reason}
-          onChange={(e) => setReason(e.target.value)}
+          onChange={(e) => { setLocalReason(e.target.value); onReasonChange?.(e.target.value); }}
           rows={3}
           maxLength={500}
           placeholder="e.g. Payment overdue / policy violation"

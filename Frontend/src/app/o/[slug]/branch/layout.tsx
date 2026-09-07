@@ -2,12 +2,16 @@
 
 import PortalGuard from '@/lib/auth/PortalGuard';
 import DashboardLayout from '@/layouts/DashboardLayout';
-import { schoolAdminLinks } from '@/config/navLinks';
+import { schoolAdminLinks, receptionistLinks } from '@/config/navLinks';
+import { useAppSelector } from '@/store/hooks';
 
 export default function OrgBranchLayout({ children }: { children: React.ReactNode }) {
+  const role = useAppSelector((s) => s.auth.user?.role);
+  const links = role === 'RECEPTIONIST' ? receptionistLinks : schoolAdminLinks;
+
   return (
     <PortalGuard portal="branch">
-      <DashboardLayout links={schoolAdminLinks} title="Branch Admin">
+      <DashboardLayout links={links} title={role === 'RECEPTIONIST' ? 'Reception' : 'Branch Admin'}>
         {children}
       </DashboardLayout>
     </PortalGuard>

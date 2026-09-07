@@ -1,5 +1,3 @@
-import PortalSkeleton from '@/components/PortalSkeleton';
-
 export default function Loading() {
-  return <PortalSkeleton />;
+  return null;
 }

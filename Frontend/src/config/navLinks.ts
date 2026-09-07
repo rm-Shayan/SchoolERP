@@ -114,3 +114,44 @@ export const teacherLinks: NavLink[] = [
   { label: 'Notifications', path: '/teacher/notifications', icon: icon(I.bell) },
   { label: 'Settings', path: '/teacher/settings', icon: icon(I.gear) },
 ];
+
+export const receptionistLinks: SidebarNavItem[] = [
+  { label: 'Dashboard', path: '/branch/dashboard', icon: icon(I.home) },
+  {
+    title: 'Front Desk',
+    links: [
+      { label: 'Students', path: '/branch/students', icon: icon(I.academicCap) },
+      { label: 'Admissions', path: '/branch/admissions', icon: icon(I.userPlus) },
+    ],
+  },
+  {
+    title: 'Finance',
+    links: [
+      { label: 'Fee Collection', path: '/branch/fees/collection', icon: icon(I.wallet) },
+      { label: 'Fee Records', path: '/branch/fees/records', icon: icon(I.banknotes) },
+    ],
+  },
+  {
+    title: 'Attendance',
+    links: [
+      { label: 'Gate Scanner', path: '/branch/attendance/gate', icon: icon(I.qr) },
+      { label: 'Live Attendance', path: '/branch/attendance/live', icon: icon(I.checkCircle) },
+      { label: 'Attendance Records', path: '/branch/attendance/records', icon: icon(I.documentCheck) },
+    ],
+  },
+  {
+    title: 'Academics',
+    links: [
+      { label: 'Exam Results', path: '/branch/exams/results', icon: icon(I.chartBarSquare) },
+      { label: 'Study Materials', path: '/branch/study-material', icon: icon(I.folderOpen) },
+      { label: 'PTM', path: '/branch/ptm', icon: icon(I.chatBubble) },
+    ],
+  },
+  {
+    title: 'Communication',
+    links: [
+      { label: 'Announcements', path: '/branch/announcements/circulars', icon: icon(I.megaphone) },
+      { label: 'Notifications', path: '/branch/notifications', icon: icon(I.bell) },
+    ],
+  },
+];
