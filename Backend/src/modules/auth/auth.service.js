@@ -637,8 +637,6 @@ class AuthService {
       queueEmail({
         to: normalized,
         priority: "CRITICAL",
-        organizationId: user.organizationId || undefined,
-        schoolId: user.schoolId || undefined,
         allowHolderAsRecipient: true,
         subject: "Your SchoolERP account - new password",
         html: `

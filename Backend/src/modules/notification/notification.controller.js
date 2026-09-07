@@ -99,8 +99,6 @@ class NotificationController {
           subject: tpl.subject,
           text: tpl.text,
           html: tpl.html,
-          schoolId: admin.schoolId || schoolId,
-          organizationId: admin.organizationId || organizationId,
         }).catch(() => {});
       });
     await Promise.allSettled(emailPromises);

@@ -54,7 +54,7 @@ export default function LoginGroupTabs({ active, themeColor, onChange }: LoginGr
             onClick={() => onChange(g.key)}
             aria-pressed={isActive}
             className={cn(
-              'flex items-center justify-center gap-1.5 rounded-lg px-1 py-2.5 text-xs sm:text-[13px] font-semibold transition-all duration-200',
+              'flex items-center justify-center gap-1.5 rounded-lg px-1 py-2.5 text-xs sm:text-[13px] font-semibold transition-all duration-200 min-w-0',
               isActive ? 'text-white shadow-md' : 'text-gray-500 hover:bg-white/70 hover:text-gray-800',
             )}
             style={isActive

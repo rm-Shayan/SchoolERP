@@ -123,8 +123,8 @@ export default function SectionAttendancePage() {
 
       {students.length > 0 && (
         <div className="flex gap-2">
-          <button onClick={() => setView('mark')} className={view === 'mark' ? 'rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm' : 'rounded-lg border bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50'}>Mark Attendance</button>
-          <button onClick={() => setView('compare')} className={view === 'compare' ? 'rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm' : 'rounded-lg border bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50'}>📊 Monthly Comparison</button>
+          <button onClick={() => setView('mark')} className={view === 'mark' ? 'rounded-lg bg-primary-600 px-3 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-sm' : 'rounded-lg border bg-white px-3 py-1.5 text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-50'}>Mark Attendance</button>
+          <button onClick={() => setView('compare')} className={view === 'compare' ? 'rounded-lg bg-primary-600 px-3 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-sm' : 'rounded-lg border bg-white px-3 py-1.5 text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-50'}>📊 Monthly Comparison</button>
         </div>
       )}
 

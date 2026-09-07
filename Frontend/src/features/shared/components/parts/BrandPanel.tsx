@@ -48,39 +48,39 @@ export default function BrandPanel({
       className={cn(
         'relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between p-6 xl:p-8',
         compact ? 'lg:min-h-[480px]' : 'lg:min-h-[580px]',
-        !hasDarkBg && 'bg-gradient-to-b from-gray-50/70 via-white to-primary-50/40'
+        !hasDarkBg && 'bg-gradient-to-b from-gray-50/70 via-white to-primary-50/40',
       )}
       style={themeColor ? { background: `linear-gradient(135deg, ${themeColor}, ${darkenHex(themeColor) ?? themeColor})` } : undefined}
     >
       {!hasDarkBg && <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary-100/60 blur-3xl" />}
       <motion.div variants={stagger} initial="hidden" animate="show" className="relative z-10">
-        <motion.div variants={item} className="mb-6">
+        <motion.div variants={item} className="mb-4 sm:mb-6">
           {branded ? (
-            <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white p-1.5 shadow-lg ring-1 ring-black/10">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="flex h-12 w-12 sm:h-16 sm:w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white p-1.5 shadow-lg ring-1 ring-black/10">
                 {brandIcon}
               </div>
               <div className="min-w-0">
                 {brandLabel && (
-                  <p className={cn('truncate text-[10px] font-semibold uppercase tracking-[0.24em]', t.brandSubText)}>{brandLabel}</p>
+                  <p className={cn('truncate text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.24em]', t.brandSubText)}>{brandLabel}</p>
                 )}
-                <p className="mt-0.5 truncate text-xl font-extrabold tracking-tight text-white drop-shadow-sm">{brandSub}</p>
+                <p className="mt-0.5 truncate text-xl sm:text-2xl font-extrabold tracking-tight text-white drop-shadow-sm leading-tight">{brandSub}</p>
               </div>
             </div>
           ) : (
-            <div className="flex justify-center [&_img]:w-28 [&_img]:h-auto [&_img]:object-contain [&_img]:bg-transparent">{brandIcon}</div>
+            <div className="flex justify-center [&_img]:w-24 sm:[&_img]:w-28 [&_img]:h-auto [&_img]:object-contain [&_img]:bg-transparent">{brandIcon}</div>
           )}
         </motion.div>
 
-        <motion.span variants={item} className={cn('inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em]', hasDarkBg ? t.badge : 'border-primary-200/60 bg-primary-50/80 text-primary-700')}>
+        <motion.span variants={item} className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1 sm:px-4 sm:py-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.18em]', hasDarkBg ? t.badge : 'border-primary-200/60 bg-primary-50/80 text-primary-700')}>
           {badge}
         </motion.span>
-        <motion.h1 variants={item} className={cn('mt-5 max-w-md text-3xl xl:text-4xl font-extrabold leading-snug tracking-tight', hasDarkBg ? 'text-white' : 'text-gray-900')}>{heading}</motion.h1>
-        <motion.p variants={item} className={cn('mt-3 max-w-md text-[15px] leading-relaxed', hasDarkBg ? t.descriptionText : 'text-gray-500')}>{description}</motion.p>
+        <motion.h1 variants={item} className={cn('mt-3 sm:mt-5 max-w-md text-2xl sm:text-3xl lg:text-4xl font-extrabold leading-snug tracking-tight', hasDarkBg ? 'text-white' : 'text-gray-900')}>{heading}</motion.h1>
+        <motion.p variants={item} className={cn('mt-2 sm:mt-3 max-w-md text-[14px] sm:text-[15px] leading-relaxed', hasDarkBg ? t.descriptionText : 'text-gray-500')}>{description}</motion.p>
 
-        <motion.div variants={item} className="mt-8 flex flex-wrap gap-2">
+        <motion.div variants={item} className="mt-5 sm:mt-8 flex flex-wrap gap-2">
           {features.map((feature) => (
-            <span key={feature} className={cn('inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[13px] font-medium backdrop-blur-sm', hasDarkBg ? t.featureChip : 'border-gray-200 bg-white/80 text-gray-600')}>
+            <span key={feature} className={cn('inline-flex items-center gap-2 rounded-full border px-3 py-1.5 sm:px-3.5 sm:py-1.5 text-[12px] sm:text-[13px] font-medium backdrop-blur-sm', hasDarkBg ? t.featureChip : 'border-gray-200 bg-white/80 text-gray-600')}>
               <CheckIcon branded={hasDarkBg} />{feature}
             </span>
           ))}

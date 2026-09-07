@@ -89,9 +89,13 @@ export default function AdminLoginForm({ themeColor, branding }: AdminLoginFormP
           Sign in
         </Button>
 
-        <p className="mt-2 text-center">
-          <ForgotPasswordLink branding={branding} schoolCode={branding?.code} />
-        </p>
+        <div className="flex items-center justify-between gap-3 text-xs">
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+            <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+            Remember me
+          </label>
+          <ForgotPasswordLink branding={branding} schoolCode={branding?.code} className="text-center sm:text-left" />
+        </div>
       </form>
     </div>
   );

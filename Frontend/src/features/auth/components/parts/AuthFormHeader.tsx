@@ -8,7 +8,7 @@ interface AuthFormHeaderProps {
 /** Shared auth form header — consistent typography/spacing for every portal form. */
 export default function AuthFormHeader({ title, subtitle }: AuthFormHeaderProps) {
   return (
-    <div className="mb-5">
+    <div className="mb-4 sm:mb-5">
       <h2 className="text-lg font-semibold tracking-tight text-gray-900">{title}</h2>
       {subtitle && <p className="mt-1 text-[13px] leading-relaxed text-gray-500">{subtitle}</p>}
     </div>

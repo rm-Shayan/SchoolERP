@@ -71,69 +71,68 @@ const TodayTimetable = memo(function TodayTimetable({ slots }: Props) {
   const jumpToDay = (dow: number) => setDayOffset(dow - todayDow);
 
   return (
-    <Card>
-      <CardContent className="p-4 sm:p-5">
-        <DayNav targetDow={targetDay.dow} label={targetDay.label} isToday={isToday}
-          onPrev={() => setDayOffset((o) => o - 1)}
-          onNext={() => setDayOffset((o) => o + 1)} onJump={(d) => { setWeekView(false); jumpToDay(d); }}
-          onBackToToday={() => setDayOffset(0)} />
+    <Card>        <CardContent className="p-3 sm:p-5">
+          <DayNav targetDow={targetDay.dow} label={targetDay.label} isToday={isToday}
+            onPrev={() => setDayOffset((o) => o - 1)}
+            onNext={() => setDayOffset((o) => o + 1)} onJump={(d) => { setWeekView(false); jumpToDay(d); }}
+            onBackToToday={() => setDayOffset(0)} />
 
-        <div className="flex justify-end mb-2">
-          <button onClick={() => setWeekView((v) => !v)}
-            className={cn('px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all', weekView ? 'bg-primary-600 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200')}>
-            {weekView ? '📅 Day' : '📋 Week'}
-          </button>
-        </div>
-
-        {weekView ? (
-          <WeekOverview slots={slots} todayDow={todayDow} onDayClick={(dow) => { setWeekView(false); jumpToDay(dow); }} />
-        ) : grouped.length === 0 ? (
-          <div className="py-8 text-center">
-            <p className="text-2xl mb-1">📚</p>
-            <p className="text-sm text-gray-500">{isToday ? `Enjoy your ${DAY_NAMES[targetDay.dow]}!` : `No classes on ${DAY_NAMES[targetDay.dow]}.`}</p>
+          <div className="flex justify-end mb-3">
+            <button onClick={() => setWeekView((v) => !v)}
+              className={cn('px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium transition-all', weekView ? 'bg-primary-600 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200')}>
+              {weekView ? '📅 Day' : '📋 Week'}
+            </button>
           </div>
-        ) : (
-          <div className="space-y-1.5">
-            {grouped.map((g, idx) => {
-              const isCurrent = idx === currentGroupIdx;
-              const isPast = idx < currentGroupIdx || (currentGroupIdx === -1 && isToday && g.slots[0]?.time.split('–')[1] < currentTime);
-              const sc = getSubjectColor(g.subjectName);
-              const timesText = g.slots.map((s) => s.time).join(', ');
-              const sectionsText = g.slots.flatMap((s) => s.sections).join(', ');
-              return (
-                <div key={g.subjectName} className={cn('flex items-start gap-2.5 rounded-xl border px-3 py-2 transition-all',
-                  isCurrent && 'bg-primary-50 ring-1 ring-primary-200/60 shadow-sm border-primary-200',
-                  isPast && !isCurrent && cn('opacity-50', sc.bg, sc.border),
-                  !isPast && !isCurrent && cn(sc.bg, sc.border))}>
-                  <span className={cn('text-[10px] font-bold w-4 text-center shrink-0 mt-0.5', isCurrent ? 'text-primary-500' : 'text-gray-400')}>
-                    {isCurrent ? '▶' : idx + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className={cn('text-sm font-bold truncate', isCurrent ? 'text-primary-700' : isPast ? cn(sc.text, 'line-through') : sc.text)}>
-                        {g.subjectName}
-                      </span>
-                      {isCurrent && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary-100 text-[9px] font-bold text-primary-700 shrink-0">
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />NOW
+
+          {weekView ? (
+            <WeekOverview slots={slots} todayDow={todayDow} onDayClick={(dow) => { setWeekView(false); jumpToDay(dow); }} />
+          ) : grouped.length === 0 ? (
+            <div className="py-6 sm:py-8 text-center">
+              <p className="text-2xl mb-1">📚</p>
+              <p className="text-sm text-gray-500">{isToday ? `Enjoy your ${DAY_NAMES[targetDay.dow]}!` : `No classes on ${DAY_NAMES[targetDay.dow]}.`}</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {grouped.map((g, idx) => {
+                const isCurrent = idx === currentGroupIdx;
+                const isPast = idx < currentGroupIdx || (currentGroupIdx === -1 && isToday && g.slots[0]?.time.split('–')[1] < currentTime);
+                const sc = getSubjectColor(g.subjectName);
+                const timesText = g.slots.map((s) => s.time).join(', ');
+                const sectionsText = g.slots.flatMap((s) => s.sections).join(', ');
+                return (
+                  <div key={g.subjectName} className={cn('flex items-start gap-2.5 rounded-xl border px-3 py-2 transition-all',
+                    isCurrent && 'bg-primary-50 ring-1 ring-primary-200/60 shadow-sm border-primary-200',
+                    isPast && !isCurrent && cn('opacity-50', sc.bg, sc.border),
+                    !isPast && !isCurrent && cn(sc.bg, sc.border))}>
+                    <span className={cn('text-[10px] font-bold w-4 text-center shrink-0 mt-0.5', isCurrent ? 'text-primary-500' : 'text-gray-400')}>
+                      {isCurrent ? '▶' : idx + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={cn('text-sm font-bold truncate', isCurrent ? 'text-primary-700' : isPast ? cn(sc.text, 'line-through') : sc.text)}>
+                          {g.subjectName}
                         </span>
-                      )}
+                        {isCurrent && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary-100 text-[9px] font-bold text-primary-700 shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />NOW
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-500 mt-0.5">{timesText}</p>
+                      {sectionsText && <p className="text-[10px] text-gray-400 mt-0.5 truncate">{sectionsText}</p>}
                     </div>
-                    <p className="text-[11px] text-gray-500 mt-0.5">{timesText}</p>
-                    {sectionsText && <p className="text-[10px] text-gray-400 mt-0.5 truncate">{sectionsText}</p>}
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
 
-        {!weekView && nextGroup && (
-          <p className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-400">
-            Next: <span className="font-medium text-gray-600">{nextGroup.subjectName}</span> at {nextGroup.slots[0]?.time.split('–')[0]}
-          </p>
-        )}
-      </CardContent>
+          {!weekView && nextGroup && (
+            <p className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-400">
+              Next: <span className="font-medium text-gray-600">{nextGroup.subjectName}</span> at {nextGroup.slots[0]?.time.split('–')[0]}
+            </p>
+          )}
+        </CardContent>
     </Card>
   );
 });

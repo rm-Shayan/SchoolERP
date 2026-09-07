@@ -41,7 +41,7 @@ export default function Modal({ open, onClose, title, children, size = 'md' }: M
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-3 sm:p-4 bg-black/50 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-3 sm:p-4 bg-black/50 backdrop-blur-md pb-20 sm:pb-4"
           // Close only when the pointer starts on the backdrop. Using click here
           // makes selecting input text and releasing outside the panel dismiss it.
           onPointerDown={(e) => { if (e.target === overlayRef.current) onClose(); }}
