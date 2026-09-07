@@ -429,7 +429,7 @@ enforce** hoti hain — receptionist ko poora admin control nahi milta.
 
 | Area | Ability | Backend route grants |
 |---|---|---|
-| **Student records** | Create, edit, photo upload, status change | `POST /students/schools/:schoolId`, `PATCH /students/:id`, `POST /students/:id/photo`, `PATCH /students/:id/status` |
+| **Student records** | Create, edit, photo upload (no delete, no Excel import, no ID reissue, no TC, no rollback) | `POST /students/schools/:schoolId`, `PATCH /students/:id`, `POST /students/:id/photo` |
 | **Student read** | List + section/class/status filter + search | `GET /students` (`ALL_STAFF`) |
 | **Admissions** | Poore pipeline: inquiry → test → approve → advance fee → enroll → reject | `ADMISSIONS` group = SUPER_ADMIN + ADMIN + RECEPTIONIST |
 | **Student attendance** | Gate scan, offline sync, section bulk mark, daily/monthly report, manual override, record delete/update | `ATTENDANCE` group = SUPER_ADMIN + ADMIN + RECEPTIONIST + TEACHER |
@@ -440,7 +440,7 @@ enforce** hoti hain — receptionist ko poora admin control nahi milta.
 
 | Area | Reason |
 |---|---|
-| Student delete / Excel import / ID reissue | Destructive + bulk ops sirf ADMIN |
+| Student delete / Excel import / ID reissue / TC / rollback | Destructive + bulk ops sirf ADMIN |
 | Staff management (create/edit/delete users) | HR sirf ADMIN |
 | Academic setup (years/terms/classes/sections/subjects) | Structure changes ADMIN-only |
 | Fee structures + fee collection | Finance control ADMIN-only (read-only fee records dekh sakta hai) |
@@ -586,8 +586,8 @@ email to phir bhi chalegi (SMTP direct), lekin imports/caching fail ho sakte hai
 | "Har org ka apna color kahan se?" | `Organization.themeColor` — org create/edit par color picker se set hota hai; branded login + public pages us color par |
 | "Admission slip / ID card / fee receipt email mein kahan?" | **PDF attach** hote hain — admission approve (`admission-slip`), enroll (`student-id`), fee payment (`fee-receipt`) |
 | "Notification logs kahan dekhen?" | Admin console `/admin/notifications` page + navbar bell (realtime WS) |
-| "Receptionist kya kar sakta hai?" | Students (create/edit/photo/status), admissions pipeline, gate scan + attendance (bulk/reports/override), staff attendance, view leave/announcements |
-| "Receptionist kya nahi kar sakta?" | Student delete/import/ID-reissue, staff mgmt, academic setup, fee structures/collection, promotions, settings — sab ADMIN-only |
+| "Receptionist kya kar sakta hai?" | Students (create/edit/photo), admissions pipeline, gate scan + attendance (bulk/reports/override), staff attendance, view leave/announcements |
+| "Receptionist kya nahi kar sakta?" | Student delete/import/ID-reissue/TC/rollback, staff mgmt, academic setup, fee structures/collection, promotions, settings — sab ADMIN-only |
 | "GATE_STAFF / ACCOUNTANT role kahan gaye?" | Remove ho chuke — ab sirf 4 roles hain (SUPER_ADMIN/ADMIN/TEACHER/RECEPTIONIST). Gate + fees ADMIN/RECEPTIONIST handle karte hain |
 | "Parent portal mein kitne bachche dikhenge?" | Saare linked children (siblings) — sibling selector se switch. Student portal mein sirf khud ka data |
 | "Portal login kaise hota hai?" | 2 tarike: (1) Direct — school code + phone/roll + portal password, (2) OTP — WhatsApp par OTP. Dono 30-day JWT dete hain |

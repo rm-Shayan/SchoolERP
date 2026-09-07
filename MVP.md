@@ -2,7 +2,7 @@
 
 ## Status: MVP ACHIEVED (with polish items below)
 
-Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + portal routes audit (2 Sep 2026), this project has **all core modules implemented** — both backend (28 modules, 312 endpoints, 40 data models) and frontend (500+ components, 4 role-based portals). The platform is functional end-to-end. Build passes, backend tests pass, lint fixed (oxlint), and hardening (security headers, CORS, rate limits) is in place.
+Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + portal routes audit (2 Sep 2026) + lifecycle updates (7 Sep 2026), this project has **all core modules implemented** — both backend (28 modules, 322 endpoints, 40+ data models) and frontend (500+ components, 4 role-based portals). The platform is functional end-to-end. Build passes, backend tests pass, lint fixed (oxlint), and hardening (security headers, CORS, rate limits) is in place.
 
 ---
 
@@ -46,6 +46,11 @@ Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + port
 - [x] Section assignment with class/section hierarchy
 - [x] Roll number + identifier code (QR/RFID) generation
 - [x] Student status lifecycle (ACTIVE, GRADUATED, DROPPED_OUT, TRANSFERRED_OUT)
+- [x] Transfer Certificate (TC) generation — formal PDF with school header, student details, reason, conduct, signatures
+- [x] Lifecycle rollback — reactivate GRADUATED/DROPPED_OUT/TRANSFERRED_OUT students back to ACTIVE
+- [x] Bulk graduate / bulk dropout for last-class sections
+- [x] PromotionRecord audit trail for all lifecycle changes (including REACTIVATED)
+- [x] Parent portal auto-deactivation on student lifecycle exit, auto-reactivation on rollback
 - [x] Bulk import via Excel
 - [x] Student ID card PDF (2-sided)
 - [x] CSV export
@@ -155,8 +160,10 @@ Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + port
 ### Student Promotions
 - [x] Promote, repeat, transfer section, graduate, dropout
 - [x] Bulk promote with section mapping
+- [x] Bulk graduate / bulk dropout for last-class sections
 - [x] Section capacity enforcement (race-safe SELECT FOR UPDATE)
-- [x] History tracking
+- [x] History tracking with REACTIVATED action for rollbacks
+- [x] Export promotion records
 
 ### Staff Management
 - [x] Staff CRUD with role assignment
@@ -168,7 +175,8 @@ Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + port
 - [x] Bulk import
 
 ### Receptionist (Front-Desk Role)
-- [x] Student management — create, edit, photo upload, status change
+- [x] Dedicated receptionist nav links (Front Desk, Finance, Attendance, Academics, Communication groups)
+- [x] Student management — create, edit, photo upload
 - [x] Student read access (list, filter by section/class/status, search)
 - [x] Admission pipeline — inquiry → test → approve → advance fee → enroll
 - [x] Gate scanner (QR/RFID) + offline sync
@@ -177,7 +185,7 @@ Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + port
 - [x] Manual attendance override + record delete/update
 - [x] Staff attendance (bulk, daily, monthly, check-in/out, export)
 - [x] View student leave + announcements + notifications
-- [x] Exclusions enforced: no student delete/import/ID-reissue, no staff mgmt, no academic setup, no fee structures/collection, no settings
+- [x] Exclusions enforced: no student delete/import/ID-reissue, no staff mgmt, no academic setup, no fee structures/collection, no settings, no TC/rollback/lifecycle changes
 
 ### Parent/Student Portal
 - [x] Tabbed dashboard (14 tabs: Overview, Attendance, Fees, Homework, Materials, Notices, Results, Exams, Timetable, Conduct, PTM, Leave, Notifications, Profile)
@@ -194,6 +202,7 @@ Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + port
 
 ### Documents & PDF
 - [x] Fee vouchers, receipts, ID cards, admission slips, result cards, QR codes
+- [x] Transfer Certificate (TC) — formal A4 PDF with school header, student details, reason, conduct, fee clearance, signatures, stamp area
 
 ### Storage & Email
 - [x] Per-tenant Cloudinary with platform fallback
@@ -237,7 +246,7 @@ Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + port
 ### Documentation
 - [x] PRD.md (product requirements — updated with portal routes, exam papers, teacher dashboard)
 - [x] MVP.md (this file — updated with all audit findings)
-- [x] API_ROUTES.md (312 routes documented — 29 sections)
+- [x] API_ROUTES.md (322 routes documented — 29 sections)
 - [x] AGENTS.md (project rules for AI agents)
 - [x] APPLICATION_FLOW.md (complete application flow — updated with portal routes)
 - [x] APPLICATION_FLOW_DEEP.md (code-verified deep flow — updated with roles, portal routes)
@@ -321,7 +330,7 @@ Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + port
 |  +-- /o/[slug]/*   -> Org-branded routes                  |
 +-----------------------------------------------------------+
 |  Backend (Express + Prisma + Redis)                        |
-|  +-- 28 modules, 312 REST endpoints                       |
+|  +-- 28 modules, 322 REST endpoints                       |
 |  +-- Socket.io (real-time events)                         |
 |  +-- BullMQ (7 import workers)                            |
 |  +-- node-cron (11 scheduled jobs)                        |
@@ -335,4 +344,4 @@ Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + port
 ---
 
 ## Last Updated
-02 September 2026 — Portal routes audit + documentation update. 312 API routes across 28 modules, 14 portal tabs, 40 Prisma models.
+07 September 2026 — Student lifecycle (TC, rollback, bulk graduate/dropout), receptionist portal, access control hardening. 322 API routes across 28 modules, 14 portal tabs, 40+ Prisma models.

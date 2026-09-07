@@ -4,6 +4,8 @@ import pdfService from '../../services/pdf.service.js';
 import ApiError from '../../lib/utils/ApiError.js';
 import { assertSchoolAccess } from '../../lib/scope.js';
 import { signAttendanceToken } from '../../lib/utils/attendanceToken.js';
+import storageService from '../../services/storage.service.js';
+import { emitToRoom } from '../../config/websocket.js';
 
 const monthYear = (d) => (d ? new Date(d).toLocaleDateString('en-PK', { month: 'short', year: 'numeric' }) : '—');
 const endOfYear = () => new Date(new Date().getFullYear(), 11, 31);
@@ -168,6 +170,100 @@ class DocumentsService {
       { margin: 1, scale: 6, color: { dark: '#000000', light: '#ffffff' } }
     );
     return `data:image/png;base64,${buf.toString('base64')}`;
+  }
+
+  // TRANSFER CERTIFICATE (TC) — generates TC PDF, changes student status,
+  // deactivates student/parent portal, creates PromotionRecord.
+  async issueTc(user, studentId, { reason, remarks }) {
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+      include: {
+        section: { include: { class: true } },
+        parent: true,
+        school: { include: { organization: true } },
+      },
+    });
+    if (!student) throw ApiError.notFoundError('Student not found');
+    assertSchoolAccess(user, student.school.id);
+    if (student.status !== 'ACTIVE') throw ApiError.badRequestError(`Student is already ${student.status}`);
+
+    // Status map
+    const statusMap = {
+      GRADUATED: 'GRADUATED',
+      DROPPED_OUT: 'DROPPED_OUT',
+      TRANSFERRED_OUT: 'TRANSFERRED_OUT',
+    };
+    const newStatus = statusMap[reason];
+    if (!newStatus) throw ApiError.badRequestError('Invalid reason. Must be GRADUATED, DROPPED_OUT, or TRANSFERRED_OUT');
+
+    // 1. Move photo to archive
+    let imageUrl = student.imageUrl;
+    if (student.imageUrl) {
+      const moved = await storageService.moveToArchive({ url: student.imageUrl }).catch(() => null);
+      if (moved?.url) imageUrl = moved.url;
+    }
+
+    // 2. Generate TC number
+    const tcNumber = `TC-${Date.now().toString(36).toUpperCase()}`;
+
+    // 3. Update student status + generate TC in transaction
+    const tcDate = new Date();
+    const [updatedStudent] = await prisma.$transaction([
+      prisma.student.update({
+        where: { id: studentId },
+        data: { status: newStatus, imageUrl },
+      }),
+      prisma.promotionRecord.create({
+        data: {
+          studentId: student.id,
+          academicYearId: (await prisma.academicYear.findFirst({ where: { schoolId: student.schoolId, isCurrent: true } }))?.id || '',
+          fromSectionId: student.sectionId,
+          toSectionId: null,
+          action: newStatus,
+          remarks: `TC issued: ${tcNumber}. ${reason === 'TRANSFERRED_OUT' ? 'Transferred' : reason === 'GRADUATED' ? 'Graduated' : 'Dropped out'}. ${remarks || ''}`.trim(),
+        },
+      }),
+    ]);
+
+    // 4. Deactivate student portal (student + parent)
+    // Student portal deactivation: set status already handles this (ACTIVE check in portal auth)
+    // Parent portal: mark parent as inactive if no other active children
+    if (student.parentId) {
+      const otherActiveChildren = await prisma.student.count({
+        where: { parentId: student.parentId, status: 'ACTIVE', id: { not: studentId } },
+      });
+      if (otherActiveChildren === 0) {
+        await prisma.parent.update({ where: { id: student.parentId }, data: { isActive: false } }).catch(() => {});
+      }
+    }
+
+    // 5. Emit socket event
+    emitToRoom(`school:${student.schoolId}`, 'student_status_changed', {
+      studentId: student.id,
+      status: newStatus,
+    });
+
+    // 6. Generate TC PDF
+    const tc = await pdfService.transferCertificate({
+      schoolName: student.school.name,
+      schoolAddress: student.school.address,
+      schoolPhone: student.school.phone,
+      studentName: `${student.firstName} ${student.lastName}`,
+      fatherName: student.parent?.name || 'N/A',
+      className: student.section?.class?.name || 'N/A',
+      sectionName: student.section?.name || 'N/A',
+      rollNumber: student.rollNumber,
+      admissionDate: student.createdAt,
+      leavingDate: tcDate,
+      reason: newStatus,
+      remarks,
+      feeCleared: true,
+      tcNumber,
+      themeColor: student.school.themeColor || student.school.organization?.themeColor,
+      logoUrl: student.school.logoUrl || student.school.organization?.logoUrl,
+    });
+
+    return { tc, tcNumber, studentId: student.id, status: newStatus };
   }
 }
 

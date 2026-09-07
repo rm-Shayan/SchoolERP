@@ -17,7 +17,7 @@ export default function IdCardDesign({ member, school, org }: Props) {
     let active = true;
     documentsApi
       .staffQr(member.id)
-      .then((d) => active && setQr(d))
+      .then((d: string) => active && setQr(d))
       .catch(() => {});
     return () => {
       active = false;

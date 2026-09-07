@@ -18,6 +18,8 @@ interface StudentListProps {
   onEdit?: (student: Student) => void;
   onDelete?: (student: Student) => void;
   onPassedOut?: (student: Student) => void;
+  onTc?: (student: Student) => void;
+  onRollback?: (student: Student) => void;
 }
 
 function SkeletonTable() {
@@ -59,6 +61,8 @@ export function StudentList({
   onEdit,
   onDelete,
   onPassedOut,
+  onTc,
+  onRollback,
 }: StudentListProps) {
   if (loading) return <SkeletonTable />;
 
@@ -109,6 +113,8 @@ export function StudentList({
       onEdit={onEdit}
       onDelete={onDelete}
       onPassedOut={onPassedOut}
+      onTc={onTc}
+      onRollback={onRollback}
     />
   );
 }

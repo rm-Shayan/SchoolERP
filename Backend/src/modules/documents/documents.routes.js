@@ -14,4 +14,7 @@ router.get('/student-id-card/:id', authorize(ROLE_GROUPS.ALL_STAFF), documentsCo
 router.get('/staff-id-card/:id', authorize(ROLE_GROUPS.ALL_STAFF), documentsController.staffIdCard);
 router.get('/staff/:id/qr', authorize(ROLE_GROUPS.ALL_STAFF), documentsController.staffQr);
 
+// Transfer Certificate — issues TC, changes student status, deactivates portal
+router.post('/tc/:id', authorize(ROLE_GROUPS.MANAGEMENT), documentsController.issueTc);
+
 export default router;

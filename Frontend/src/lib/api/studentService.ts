@@ -113,6 +113,12 @@ export const studentService = {
     return res.data.data;
   },
 
+  // POST /students/:id/rollback — ADMIN ONLY (rollback lifecycle status → ACTIVE)
+  rollback: async (id: string, remarks?: string): Promise<Student> => {
+    const res = await api.post<ApiResponse<Student>>(`/students/${id}/rollback`, { remarks });
+    return res.data.data;
+  },
+
   // POST /students/schools/:schoolId/import — SCHOOL STAFF (Excel bulk import, async job)
   importExcel: async (schoolId: string, file: File): Promise<{ jobId: string; totalRows: number }> => {
     const formData = new FormData();

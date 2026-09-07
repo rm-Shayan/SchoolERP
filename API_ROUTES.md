@@ -2,7 +2,7 @@
 
 > Base URL: `/api/v1` (all routes below are relative to this prefix)
 
-**Total routes: 312** (309 API routes + 3 infra: `/health`, `/ready`, `/metrics`)
+**Total routes: 322** (319 API routes + 3 infra: `/health`, `/ready`, `/metrics`)
 
 ---
 
@@ -37,7 +37,7 @@
 
 ---
 
-## Auth (34)
+## Auth (35)
 
 ### Staff Auth — Public
 
@@ -97,12 +97,11 @@
 | 32 | POST | `/auth/student/login` | Public (school code + roll number) |
 | 33 | POST | `/auth/student/request-otp` | Public (OTP to parent WhatsApp) |
 | 34 | POST | `/auth/student/verify-otp` | Public → returns student JWT |
-
-> `GET /auth/student/me` is served by the Portal module (route #309 below).
+| 35 | GET | `/auth/student/me` | Student (profile read-only) |
 
 ---
 
-## Organizations (13)
+## Organizations (14)
 
 | # | Method | Route | Role |
 |---|--------|-------|------|
@@ -119,8 +118,7 @@
 | 11 | GET | `/organizations/:id/dashboard` | SUPER_ADMIN |
 | 12 | GET | `/organizations/:id` | SUPER_ADMIN |
 | 13 | PATCH | `/organizations/:id` | SUPER_ADMIN |
-
-> Note: `DELETE /organizations/:id` is not in the route file — removal is handled via Moderation (block).
+| 14 | DELETE | `/organizations/:id` | SUPER_ADMIN |
 
 ---
 
@@ -206,7 +204,7 @@
 
 ---
 
-## Students (11)
+## Students (12)
 
 | # | Method | Route | Role |
 |---|--------|-------|------|
@@ -219,12 +217,13 @@
 | 7 | PATCH | `/students/:id` | MANAGEMENT + RECEPTIONIST |
 | 8 | DELETE | `/students/:id` | SUPER_ADMIN only (hard delete) |
 | 9 | POST | `/students/:id/photo` | MANAGEMENT + RECEPTIONIST |
-| 10 | PATCH | `/students/:id/status` | MANAGEMENT + RECEPTIONIST (graduate/dropout/transfer) |
-| 11 | POST | `/students/:id/reissue-id` | MANAGEMENT (reissue QR/RFID) |
+| 10 | PATCH | `/students/:id/status` | MANAGEMENT (graduate/dropout/transfer) |
+| 11 | POST | `/students/:id/rollback` | MANAGEMENT (undo lifecycle → ACTIVE) |
+| 12 | POST | `/students/:id/reissue-id` | MANAGEMENT (reissue QR/RFID) |
 
 ---
 
-## Admissions (16)
+## Admissions (19)
 
 ### Public
 
@@ -251,12 +250,13 @@
 | 14 | POST | `/admissions/:id/approve` | ADMISSIONS (advance-fee slip PDF + email) |
 | 15 | POST | `/admissions/:id/advance-fee` | ADMISSIONS (record advance fee receipt) |
 | 16 | POST | `/admissions/:id/enroll` | ADMISSIONS (enroll → Student + QR ID) |
-
-> `GET /admissions/:id` and `GET /admissions/:id/slip` are included in the count but served by the same controller.
+| 17 | GET | `/admissions/:id` | ADMISSIONS (single applicant detail) |
+| 18 | GET | `/admissions/:id/slip` | ADMISSIONS (admission slip PDF) |
+| 19 | POST | `/admissions/:id/send-slip` | ADMISSIONS (email admission slip) |
 
 ---
 
-## Fees (27)
+## Fees (25)
 
 ### Fee Structures
 
@@ -310,7 +310,7 @@
 
 ---
 
-## Attendance (18)
+## Attendance (19)
 
 ### Gate Scan & Sync
 
@@ -364,8 +364,7 @@
 | # | Method | Route | Role |
 |---|--------|-------|------|
 | 18 | POST | `/attendance/archive` | SUPER_ADMIN, ADMIN (summarize + delete raw) |
-
-> `POST /attendance/archive/auto` is also registered but not shown in this doc (SUPER_ADMIN, auto-archive across all schools).
+| 19 | POST | `/attendance/archive/auto` | SUPER_ADMIN (auto-archive across all schools) |
 
 ---
 
@@ -494,7 +493,7 @@
 
 ---
 
-## Promotions (7)
+## Promotions (10)
 
 | # | Method | Route | Role |
 |---|--------|-------|------|
@@ -503,10 +502,11 @@
 | 3 | POST | `/promotions/transfer-section` | MANAGEMENT (mid-year transfer) |
 | 4 | POST | `/promotions/graduate` | MANAGEMENT (end-of-year graduation) |
 | 5 | POST | `/promotions/dropout` | MANAGEMENT (withdrawal) |
-| 6 | GET | `/promotions` | ALL_STAFF (history with filters) |
-| 7 | GET | `/promotions/export` | ALL_STAFF (CSV) |
-
-> `GET /promotions/:id` is also registered for single record detail.
+| 6 | POST | `/promotions/bulk-graduate` | MANAGEMENT (bulk graduation) |
+| 7 | POST | `/promotions/bulk-dropout` | MANAGEMENT (bulk dropout) |
+| 8 | GET | `/promotions` | ALL_STAFF (history with filters) |
+| 9 | GET | `/promotions/export` | ALL_STAFF (CSV) |
+| 10 | GET | `/promotions/:id` | ALL_STAFF (single record detail) |
 
 ---
 
@@ -584,28 +584,37 @@
 
 ---
 
-## Portal (15)
+## Portal (17)
 
 > All portal routes require either a **Parent** or **Student** JWT via `authenticateAnyPortal`.
 > Routes are served at `/api/v1/portal/*`.
 
+### Profile Management
+
 | # | Method | Route | Role | Description |
 |---|--------|-------|------|-------------|
-| 1 | GET | `/portal/overview` | Any Portal | Aggregated dashboard: attendance, fees, homework, circulars, study material counts |
-| 2 | GET | `/portal/attendance` | Any Portal | Monthly attendance summary (?month=&year=) |
-| 3 | GET | `/portal/fees` | Any Portal | Fee records + summary (total charged, paid, outstanding) |
-| 4 | GET | `/portal/homework` | Any Portal | Recent homework broadcasts for child's section |
-| 5 | GET | `/portal/circulars` | Any Portal | School circulars (PARENTS + ALL audience) |
-| 6 | GET | `/portal/results` | Any Portal | Exam results across all exams |
-| 7 | GET | `/portal/timetable` | Any Portal | Weekly timetable slots for child's section |
-| 8 | GET | `/portal/timetable/pdf` | Any Portal | Download timetable as PDF |
-| 9 | GET | `/portal/conduct` | Any Portal | Conduct remarks from teachers |
-| 10 | GET | `/portal/ptm` | Any Portal | Upcoming PTM sessions (scheduled, future) |
-| 11 | GET | `/portal/leave` | Any Portal | Leave requests for this parent's children |
-| 12 | POST | `/portal/leave` | Any Portal | Submit leave request (studentId, dateFrom, dateTo, reason) |
-| 13 | GET | `/portal/exams` | Any Portal | Exam date sheets for child's classes |
-| 14 | GET | `/portal/exams/:examId/date-sheet` | Any Portal | Download exam date sheet as PDF |
-| 15 | GET | `/portal/study-material` | Any Portal | Study materials for child's section |
+| 1 | PATCH | `/portal/me` | Any Portal | Update profile (name, phone, etc.) |
+| 2 | POST | `/portal/me/avatar` | Any Portal | Upload profile photo |
+
+### Dashboard & Data
+
+| # | Method | Route | Role | Description |
+|---|--------|-------|------|-------------|
+| 3 | GET | `/portal/overview` | Any Portal | Aggregated dashboard: attendance, fees, homework, circulars, study material counts |
+| 4 | GET | `/portal/attendance` | Any Portal | Monthly attendance summary (?month=&year=) |
+| 5 | GET | `/portal/fees` | Any Portal | Fee records + summary (total charged, paid, outstanding) |
+| 6 | GET | `/portal/homework` | Any Portal | Recent homework broadcasts for child's section |
+| 7 | GET | `/portal/circulars` | Any Portal | School circulars (PARENTS + ALL audience) |
+| 8 | GET | `/portal/results` | Any Portal | Exam results across all exams |
+| 9 | GET | `/portal/timetable` | Any Portal | Weekly timetable slots for child's section |
+| 10 | GET | `/portal/timetable/pdf` | Any Portal | Download timetable as PDF |
+| 11 | GET | `/portal/conduct` | Any Portal | Conduct remarks from teachers |
+| 12 | GET | `/portal/ptm` | Any Portal | Upcoming PTM sessions (scheduled, future) |
+| 13 | GET | `/portal/leave` | Any Portal | Leave requests for this parent's children |
+| 14 | POST | `/portal/leave` | Any Portal | Submit leave request (studentId, dateFrom, dateTo, reason) |
+| 15 | GET | `/portal/exams` | Any Portal | Exam date sheets for child's classes |
+| 16 | GET | `/portal/exams/:examId/date-sheet` | Any Portal | Download exam date sheet as PDF |
+| 17 | GET | `/portal/study-material` | Any Portal | Study materials for child's section |
 
 ### Portal Data Access Rules
 
@@ -682,7 +691,7 @@
 
 ---
 
-## Documents (5)
+## Documents (6)
 
 | # | Method | Route | Role |
 |---|--------|-------|------|
@@ -691,6 +700,7 @@
 | 3 | GET | `/documents/student-id-card/:id` | ALL_STAFF (PDF) |
 | 4 | GET | `/documents/staff-id-card/:id` | ALL_STAFF (PDF) |
 | 5 | GET | `/documents/staff/:id/qr` | ALL_STAFF (QR code) |
+| 6 | POST | `/documents/tc/:id` | MANAGEMENT (Transfer Certificate PDF) |
 
 ---
 
@@ -711,14 +721,14 @@
 | Section | Count |
 |---------|-------|
 | Infra | 3 |
-| Auth | 34 |
-| Organizations | 13 |
+| Auth | 35 |
+| Organizations | 14 |
 | Schools | 15 |
 | Academic | 26 |
-| Students | 11 |
-| Admissions | 16 |
-| Fees | 27 |
-| Attendance | 18 |
+| Students | 12 |
+| Admissions | 19 |
+| Fees | 25 |
+| Attendance | 19 |
 | Homework | 5 |
 | Exams | 10 |
 | Conduct | 8 |
@@ -727,16 +737,16 @@
 | Timetable | 12 |
 | Activities | 5 |
 | Notifications | 8 |
-| Promotions | 7 |
+| Promotions | 10 |
 | Moderation | 10 |
 | Audit Logs | 2 |
 | Leave (Student) | 7 |
 | Teaching Assignments | 5 |
-| **Portal** | **15** |
+| **Portal** | **17** |
 | SMTP Settings | 4 |
 | Storage Settings | 3 |
 | Staff Leave | 8 |
 | Staff Attendance | 11 |
-| Documents | 5 |
+| Documents | 6 |
 | Study Material | 5 |
-| **Total** | **312** |
+| **Total** | **322** |

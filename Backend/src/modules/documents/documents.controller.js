@@ -1,4 +1,5 @@
 import documentsService from './documents.service.js';
+import ApiResponse from '../../lib/utils/ApiResponse.js';
 
 const sendPdf = (res, buf, filename) => {
   res.setHeader('Content-Type', 'application/pdf');
@@ -42,6 +43,14 @@ export default {
     try {
       const dataUrl = await documentsService.getStaffQr(req.user, req.params.id);
       return res.status(200).json({ success: true, statusCode: 200, message: 'QR generated', data: { qr: dataUrl } });
+    } catch (e) {
+      next(e);
+    }
+  },
+  issueTc: async (req, res, next) => {
+    try {
+      const { tc, tcNumber, studentId, status } = await documentsService.issueTc(req.user, req.params.id, req.body);
+      sendPdf(res, tc, `TC-${tcNumber}.pdf`);
     } catch (e) {
       next(e);
     }

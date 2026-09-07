@@ -13,12 +13,16 @@ interface StudentRowProps {
   onEdit?: (student: Student) => void;
   onDelete?: (student: Student) => void;
   onPassedOut?: (student: Student) => void;
+  onTc?: (student: Student) => void;
+  onRollback?: (student: Student) => void;
 }
 
-function StudentRowInner({ student, lastClassIds, onView, onEdit, onDelete, onPassedOut }: StudentRowProps) {
+function StudentRowInner({ student, lastClassIds, onView, onEdit, onDelete, onPassedOut, onTc, onRollback }: StudentRowProps) {
   // "Passed Out" is only for ACTIVE students in the school's last class
   // (e.g., Class 10 / Matric) — other classes are promoted, not passed out.
   const showPassedOut = student.status === 'ACTIVE' && !!onPassedOut && isLastClassStudent(student, lastClassIds ?? new Set());
+  const showTc = student.status === 'ACTIVE' && !!onTc;
+  const isLifecycleInactive = (student.status === 'GRADUATED' || student.status === 'DROPPED_OUT' || student.status === 'TRANSFERRED_OUT') && !!onRollback;
   return (
     <tr className="group hover:bg-primary-50/40 transition-colors">
       <td className="px-4 py-3">
@@ -99,6 +103,24 @@ function StudentRowInner({ student, lastClassIds, onView, onEdit, onDelete, onPa
               className="ml-1 rounded-lg border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
             >
               Passed Out
+            </button>
+          )}
+          {showTc && (
+            <button
+              onClick={() => onTc?.(student)}
+              title="Issue Transfer Certificate"
+              className="ml-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors"
+            >
+              Issue TC
+            </button>
+          )}
+          {isLifecycleInactive && (
+            <button
+              onClick={() => onRollback?.(student)}
+              title={`Reactivate ${student.firstName} — undo ${student.status.toLowerCase()}`}
+              className="ml-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+            >
+              Reactivate
             </button>
           )}
         </div>

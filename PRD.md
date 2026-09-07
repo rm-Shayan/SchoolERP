@@ -45,8 +45,8 @@
 | Organizations CRUD | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Branch/School CRUD | ✅ | ✅ (own) | ❌ | ❌ | ❌ | ❌ |
 | Students — view | ✅ | ✅ | ✅ | ✅ (own sections) | ✅ (own child) | ✅ (own) |
-| Students — create/edit/photo/status | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Students — delete/import/reissue-ID | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Students — create/edit/photo/status | ✅ | ✅ | ✅ (no status change) | ❌ | ❌ | ❌ |
+| Students — delete/import/reissue-ID/TC/rollback | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Admissions pipeline | ✅ | ✅ | ✅ | ❌ | ✅ (submit) | ❌ |
 | Academic setup (years/classes/sections) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Teaching assignments / promotions | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -136,11 +136,14 @@ Organization (tenant)
 - Roll number, identifier code (QR/RFID), parent linkage
 - Bulk import via Excel with progress tracking
 - Student status lifecycle: ACTIVE -> GRADUATED / DROPPED_OUT / TRANSFERRED_OUT
+- **Transfer Certificate (TC):** Formal A4 PDF with school header, student details, reason, conduct statement, fee clearance, 3-signature area (Class Teacher, Principal, School Stamp). Requires ADMIN/SUPER_ADMIN only.
+- **Lifecycle rollback:** Reactivate GRADUATED/DROPPED_OUT/TRANSFERRED_OUT back to ACTIVE. Reopens parent portal, creates REACTIVATED PromotionRecord for audit trail. ADMIN/SUPER_ADMIN only.
+- **Bulk graduate / bulk dropout:** Admin can bulk-set all ACTIVE students in a section to GRADUATED or DROPPED_OUT (for last-class sections)
 - Student ID card PDF generation (front + back, 2-sided)
 - Export students to CSV
 - Platform-wide student directory (super admin)
 - Org-scoped student listing for teachers (assigned sections only)
-- **Receptionist:** full create/edit/photo/status access; delete, Excel import, ID reissue are ADMIN-only
+- **Receptionist:** full create/edit/photo access; delete, Excel import, ID reissue, TC, rollback are ADMIN-only
 
 ### 4.4 Admissions Pipeline
 - Public admission form (org-branded, `/o/{slug}/admission`)
@@ -257,9 +260,10 @@ Organization (tenant)
 
 ### 4.15 Student Promotions
 - Year-end student movement: promote, repeat, transfer section, graduate, dropout
-- Bulk promote with section mapping
+- **Bulk promote with section mapping**
+- **Bulk graduate / bulk dropout:** Admin can bulk-set all ACTIVE students in a section to GRADUATED or DROPPED_OUT (for last-class sections)
 - **Section capacity enforcement:** `assertSectionHasSeat` / `assertSectionHasSeats` — race-safe (SELECT FOR UPDATE) capacity check on student enrollment and bulk promotions
-- Promotion history tracking
+- **Promotion history tracking:** Includes REACTIVATED action for rollback audit trail
 - Export promotion records
 
 ### 4.16 Staff Management
@@ -296,6 +300,7 @@ Organization (tenant)
 - Admission slips
 - Exam result cards
 - Student/staff QR codes
+- **Transfer Certificate (TC):** Formal A4 PDF with school header band, student name, father name, class/section/roll, admission/leaving dates, reason grid, TC number, fee clearance statement, remarks section, conduct statement, 3-signature area (Class Teacher, Principal, School Stamp), footer with TC reference. Issued via `POST /documents/tc/:id` (ADMIN/SUPER_ADMIN only).
 
 ### 4.19 Portal Password Management
 - Branch admin **Settings → Portal Access** manages shared parent/student portal password
@@ -340,7 +345,7 @@ Organization (tenant)
 
 | Area | Ability | Backend routes granted |
 |------|---------|-----------------------|
-| **Student management** | Create, edit, update photo, change status (no delete, no Excel import, no ID reissue) | `POST /students/schools/:schoolId`, `PATCH /students/:id`, `POST /students/:id/photo`, `PATCH /students/:id/status` |
+| **Student management** | Create, edit, update photo (no delete, no Excel import, no ID reissue, no TC, no rollback) | `POST /students/schools/:schoolId`, `PATCH /students/:id`, `POST /students/:id/photo` |
 | **Student read** | View full student list, filter by section/class/status, search | `GET /students` |
 | **Admissions** | Full pipeline: inquiry, schedule test, pass/fail, approve, record advance fee, enroll, reject | `ADMISSIONS` group = ADMIN + RECEPTIONIST |
 | **Attendance (students)** | Gate scan, offline sync, section bulk mark, daily report, monthly report, manual override, delete record, update record | `ATTENDANCE` group = ADMIN + RECEPTIONIST + TEACHER |
@@ -352,7 +357,7 @@ Organization (tenant)
 
 | Area | Why |
 |------|-----|
-| Delete students / import students / reissue ID | Destructive/bulk ops reserved for ADMIN |
+| Delete students / import students / reissue ID / issue TC / rollback lifecycle | Destructive/bulk ops reserved for ADMIN |
 | Staff management (create/edit/delete users) | HR is ADMIN-only |
 | Academic setup (years, terms, classes, sections) | Structure changes are ADMIN-only |
 | Fee structures & fee collection | Financial control is ADMIN-only (read-only fee records view allowed) |

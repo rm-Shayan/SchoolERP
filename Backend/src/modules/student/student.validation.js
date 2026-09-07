@@ -68,4 +68,11 @@ export const changeStatusSchema = z.object({
   }),
 });
 
+export const rollbackSchema = z.object({
+  params: idParam,
+  body: z.object({
+    remarks: z.string().optional(),
+  }),
+});
+
 export const reissueIdSchema = z.object({ params: idParam });

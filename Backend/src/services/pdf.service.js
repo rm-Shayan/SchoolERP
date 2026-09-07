@@ -1456,6 +1456,202 @@ class PdfService {
       });
     });
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TRANSFER CERTIFICATE (TC) — A4 formal document
+  // Pakistani school TC format: school header, student details, reason,
+  // conduct, fee clearance, principal signature.
+  // ═══════════════════════════════════════════════════════════════════════════
+  async transferCertificate({
+    schoolName, schoolAddress, schoolPhone,
+    studentName, fatherName, className, sectionName, rollNumber,
+    admissionDate, leavingDate, reason, remarks,
+    feeCleared = true, tcNumber,
+    themeColor, logoUrl,
+  }) {
+    const logo  = await imageToBuffer(logoUrl);
+    const theme = themeColor || C.primary;
+    const cardW = 500, cardX = (A4.width - cardW) / 2;
+    const cardTop = 30;
+    const tcNo = tcNumber || `TC-${Date.now().toString(36).toUpperCase()}`;
+    const issued = dateStr(leavingDate || new Date());
+    const reasonLabel = reason === "GRADUATED" ? "Passed Out / Graduated"
+      : reason === "DROPPED_OUT" ? "Dropped Out"
+      : reason === "TRANSFERRED_OUT" ? "Transferred to Another School"
+      : reason || "N/A";
+
+    return this._buildDoc("A4", (doc) => {
+      // Background
+      doc.rect(0, 0, A4.width, A4.height).fillColor(C.white).fill();
+
+      // Decorative border
+      doc.save();
+      doc.roundedRect(cardX - 8, cardTop - 8, cardW + 16, 760, 4)
+        .lineWidth(2).strokeColor(theme).stroke();
+      doc.roundedRect(cardX - 4, cardTop - 4, cardW + 8, 752, 2)
+        .lineWidth(0.5).strokeColor(C.outlineVariant).stroke();
+      doc.restore();
+
+      // ── Header band ──
+      const headH = 72;
+      const bandGrad = doc.linearGradient(cardX, cardTop, cardX + cardW, cardTop);
+      bandGrad.stop(0, theme, 1).stop(1, C.primaryContainer, 1);
+      doc.save();
+      doc.roundedRect(cardX, cardTop, cardW, headH, [4, 4, 0, 0]).fill(bandGrad);
+      doc.restore();
+      doc.rect(cardX, cardTop + headH - 3, cardW, 3).fillColor(C.gold).fill();
+
+      // Logo
+      const logoD = 50;
+      doc.save();
+      doc.circle(cardX + 28, cardTop + headH / 2, logoD / 2 + 3).fillColor(C.white).fill();
+      if (logo) {
+        doc.circle(cardX + 28, cardTop + headH / 2, logoD / 2).clip();
+        doc.image(logo, cardX + 3, cardTop + headH / 2 - logoD / 2, { fit: [logoD, logoD] });
+      } else {
+        doc.circle(cardX + 28, cardTop + headH / 2, logoD / 2).fillColor(C.surfaceContainer).fill();
+        doc.font(FONT.bold).fontSize(18).fillColor(theme)
+          .text((schoolName || "S").charAt(0), cardX + 3, cardTop + headH / 2 - 11, { width: logoD, align: "center" });
+      }
+      doc.restore();
+
+      // School name + TC title
+      doc.font(FONT.bold).fontSize(16).fillColor(C.white)
+        .text(schoolName || "School Name", cardX + 80, cardTop + 14, { width: cardW - 110 });
+      doc.font(FONT.regular).fontSize(9).fillColor(C.surfaceHighest)
+        .text("TRANSFER CERTIFICATE", cardX + 80, cardTop + 36, { width: cardW - 110, characterSpacing: 3 });
+      doc.font(FONT.mono).fontSize(8).fillColor(C.white)
+        .text(`TC No: ${tcNo}`, cardX + cardW - 140, cardTop + 14, { width: 120, align: "right" });
+      doc.font(FONT.regular).fontSize(8).fillColor(C.surfaceHighest)
+        .text(`Date: ${issued}`, cardX + cardW - 140, cardTop + 30, { width: 120, align: "right" });
+
+      let y = cardTop + headH + 28;
+
+      // ── Title line ──
+      doc.font(FONT.bold).fontSize(12).fillColor(theme)
+        .text("CERTIFICATE", cardX, y, { width: cardW, align: "center" });
+      y += 18;
+      doc.moveTo(cardX + 20, y).lineTo(cardX + cardW - 20, y)
+        .lineWidth(0.75).strokeColor(C.outlineVariant).stroke();
+      y += 16;
+
+      // ── Body text ──
+      const bodyText = `This is to certify that`;
+
+      doc.font(FONT.regular).fontSize(10).fillColor(C.onSurface)
+        .text(bodyText, cardX + 30, y, { width: cardW - 60, align: "center" });
+      y += 16;
+
+      // Student name (prominent)
+      doc.font(FONT.bold).fontSize(16).fillColor(theme)
+        .text(studentName || "N/A", cardX + 30, y, { width: cardW - 60, align: "center" });
+      y += doc.heightOfString(studentName || "N/A", { width: cardW - 60 }) + 6;
+
+      // Father name
+      doc.font(FONT.regular).fontSize(10).fillColor(C.onSurface)
+        .text(`S/O / D/O ${fatherName || "N/A"}`, cardX + 30, y, { width: cardW - 60, align: "center" });
+      y += 20;
+
+      // Class details
+      doc.font(FONT.regular).fontSize(10).fillColor(C.onSurface)
+        .text(`was a student of ${className || "N/A"} — ${sectionName || "N/A"}, Roll No. ${rollNumber || "N/A"}`, cardX + 30, y, { width: cardW - 60, align: "center" });
+      y += 20;
+
+      // Admission + leaving dates
+      doc.font(FONT.regular).fontSize(10).fillColor(C.onSurface)
+        .text(
+          `having been admitted on ${admissionDate ? dateStr(admissionDate) : "N/A"} and leaving on ${issued}.`,
+          cardX + 30, y, { width: cardW - 60, align: "center" }
+        );
+      y += 24;
+
+      // ── Info grid ──
+      const gridY = y;
+      const colW = (cardW - 60) / 2;
+      const rowH = 28;
+
+      const leftRows = [
+        ["REASON FOR LEAVING", reasonLabel],
+        ["FEE STATUS", feeCleared ? "CLEARED" : "OUTSTANDING"],
+      ];
+      const rightRows = [
+        ["DATE OF ISSUE", issued],
+        ["TC NUMBER", tcNo],
+      ];
+
+      const drawGridRow = (rows, startX, startY) => {
+        rows.forEach(([label, value], i) => {
+          const ry = startY + i * rowH;
+          doc.save();
+          doc.roundedRect(startX, ry, colW, rowH - 4, 6).fillColor(C.surfaceLow).fill();
+          doc.roundedRect(startX, ry, colW, rowH - 4, 6).lineWidth(0.5).strokeColor(C.outlineVariant).stroke();
+          doc.restore();
+          doc.font(FONT.bold).fontSize(6.5).fillColor(theme)
+            .text(label, startX + 10, ry + 5, { width: colW - 20, characterSpacing: 0.8 });
+          doc.font(FONT.bold).fontSize(10).fillColor(C.onSurface)
+            .text(String(value), startX + 10, ry + 15, { width: colW - 20 });
+        });
+      };
+
+      drawGridRow(leftRows, cardX + 30, gridY);
+      drawGridRow(rightRows, cardX + 30 + colW + 10, gridY);
+      y = gridY + rowH * 2 + 16;
+
+      // ── Remarks ──
+      if (remarks) {
+        doc.font(FONT.bold).fontSize(8).fillColor(theme)
+          .text("REMARKS", cardX + 30, y, { width: cardW - 60, characterSpacing: 1.5 });
+        y += 14;
+        doc.save();
+        doc.roundedRect(cardX + 30, y, cardW - 60, 40, 6).fillColor(C.surfaceLow).fill();
+        doc.roundedRect(cardX + 30, y, cardW - 60, 40, 6).lineWidth(0.5).strokeColor(C.outlineVariant).stroke();
+        doc.restore();
+        doc.font(FONT.regular).fontSize(9).fillColor(C.onSurface)
+          .text(remarks, cardX + 40, y + 8, { width: cardW - 80, lineGap: 2 });
+        y += 52;
+      }
+
+      // ── Conduct statement ──
+      doc.font(FONT.regular).fontSize(9).fillColor(C.onSurface)
+        .text(
+          "The above information is correct to the best of our knowledge. We wish the student all the best for future endeavors.",
+          cardX + 30, y, { width: cardW - 60, align: "center", lineGap: 2 }
+        );
+      y += 40;
+
+      // ── Signatures ──
+      const sigY = y + 20;
+      // Left: Class Teacher
+      doc.moveTo(cardX + 60, sigY).lineTo(cardX + 160, sigY)
+        .lineWidth(0.75).strokeColor(C.onSurface).stroke();
+      doc.font(FONT.regular).fontSize(8).fillColor(C.onSurfaceVariant)
+        .text("Class Teacher", cardX + 60, sigY + 6, { width: 100, align: "center" });
+
+      // Right: Principal
+      doc.moveTo(cardX + cardW - 160, sigY).lineTo(cardX + cardW - 60, sigY)
+        .lineWidth(0.75).strokeColor(C.onSurface).stroke();
+      doc.font(FONT.regular).fontSize(8).fillColor(C.onSurfaceVariant)
+        .text("Principal / Head of School", cardX + cardW - 160, sigY + 6, { width: 100, align: "center" });
+
+      // ── School stamp area ──
+      doc.save();
+      doc.circle(A4.width / 2, sigY - 10, 30)
+        .lineWidth(1).strokeColor(C.outlineVariant).strokeOpacity(0.4).stroke();
+      doc.font(FONT.regular).fontSize(6).fillColor(C.onSurfaceVariant)
+        .text("SCHOOL STAMP", A4.width / 2 - 30, sigY + 18, { width: 60, align: "center" });
+      doc.restore();
+
+      // ── Footer ──
+      const fy = cardTop + 740;
+      doc.moveTo(cardX + 30, fy).lineTo(cardX + cardW - 30, fy)
+        .lineWidth(0.5).strokeColor(C.outlineVariant).stroke();
+      doc.font(FONT.italic).fontSize(7).fillColor(C.onSurfaceVariant)
+        .text(
+          `This is an official Transfer Certificate generated by ${schoolName || "the school"}. Ref: ${tcNo}`,
+          cardX + 40, fy + 6, { width: cardW - 80, align: "center" }
+        );
+    });
+  }
 }
 
 export default new PdfService();

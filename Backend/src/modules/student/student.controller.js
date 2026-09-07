@@ -70,6 +70,16 @@ class StudentController {
   });
 
   /**
+   * POST /api/v1/students/:id/rollback
+   * Rollback GRADUATED / DROPPED_OUT / TRANSFERRED_OUT → ACTIVE.
+   * Admin-only operation for correcting accidental status changes.
+   */
+  rollback = asyncHandler(async (req, res) => {
+    const student = await studentService.rollbackLifecycle(req.user, req.params.id, req.body);
+    return res.status(200).json(ApiResponse.ok("Student reactivated successfully", student));
+  });
+
+  /**
    * GET /api/v1/students/platform
    * Platform-wide student directory (SUPER_ADMIN only).
    */

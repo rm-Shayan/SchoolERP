@@ -65,7 +65,7 @@ export const listPromotionsSchema = z.object({
     studentId: uuid("studentId").optional(),
     sectionId: uuid("sectionId").optional(),
     academicYearId: uuid("academicYearId").optional(),
-    action: z.enum(["PROMOTED", "REPEATED", "TRANSFERRED_SECTION", "GRADUATED", "DROPPED_OUT"]).optional(),
+    action: z.enum(["PROMOTED", "REPEATED", "TRANSFERRED_SECTION", "GRADUATED", "DROPPED_OUT", "REACTIVATED"]).optional(),
     page: z.coerce.number().int().positive().optional(),
     pageSize: z.coerce.number().int().positive().max(100).optional(),
   }),

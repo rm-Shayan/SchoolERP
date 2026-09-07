@@ -101,6 +101,7 @@ enum PromotionAction {
   TRANSFERRED_SECTION
   GRADUATED
   DROPPED_OUT
+  REACTIVATED
 }
 
 // SaaS delivery lifecycle — a School Web (dedicated LMS site) is "delivered"

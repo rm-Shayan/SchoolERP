@@ -9,6 +9,7 @@ import {
   getStudentSchema,
   updateStudentSchema,
   changeStatusSchema,
+  rollbackSchema,
   reissueIdSchema,
 } from "./student.validation.js";
 import multer from "multer";
@@ -148,13 +149,25 @@ router.post(
 /**
  * PATCH /api/v1/students/:id/status
  * Graduate / dropout / transfer / reactivate (PRD §9 — archive, never delete).
- * Receptionist ko status change diya jata hai (front-desk archive op).
+ * ADMIN / SUPER_ADMIN only — lifecycle changes require admin privileges.
  */
 router.patch(
   "/:id/status",
-  authorize(ROLE_GROUPS.MANAGEMENT.concat("RECEPTIONIST")),
+  authorize(ROLE_GROUPS.MANAGEMENT),
   validate(changeStatusSchema),
   studentController.changeStatus
+);
+
+/**
+ * POST /api/v1/students/:id/rollback
+ * Rollback GRADUATED / DROPPED_OUT / TRANSFERRED_OUT → ACTIVE.
+ * ADMIN / SUPER_ADMIN only — correct accidental lifecycle changes.
+ */
+router.post(
+  "/:id/rollback",
+  authorize(ROLE_GROUPS.MANAGEMENT),
+  validate(rollbackSchema),
+  studentController.rollback
 );
 
 /**

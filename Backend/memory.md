@@ -194,3 +194,12 @@ Spec §4 optional optimization implemented: replacing an image now **reuses the 
 - **`src/modules/school/logoSync.test.js`** (Node built-in `node:test`, zero dependencies) — 12 tests covering: Case A (1 branch → org image synced + old org image deleted), Case B (2+/many branches → org untouched, branch image still cleaned up), overwrite guard (same public_id → nothing deleted), logo removal (null → org never touched), and no-op guards (unchanged/undefined logo → no `countBranches` call, no deletes).
 - Added `npm test` script (`node --test`) to `Backend/package.json`. Run: `npm test`.
 
+### 17. Student Lifecycle — TC, Rollback, Bulk Graduate/Dropout
+
+- **Transfer Certificate (TC)**: `POST /documents/tc/:id` (MANAGEMENT only) — validates student is ACTIVE, moves photo to archive, generates TC number, creates PromotionRecord, deactivates parent portal (if no other active children), emits `student_status_changed`, returns formal TC PDF via pdfkit (school header, student details, reason, conduct, signatures, stamp area).
+- **Rollback**: `POST /students/:id/rollback` (MANAGEMENT only) — reactivates GRADUATED/DROPPED_OUT/TRANSFERRED_OUT students back to ACTIVE, reactivates parent portal, creates `REACTIVATED` PromotionRecord for audit trail, emits socket event.
+- **Bulk lifecycle**: `POST /promotions/bulk-graduate` and `POST /promotions/bulk-dropout` — entire section lifecycle with individual PromotionRecords per student.
+- **Access control**: `PATCH /students/:id/status` restricted from `MANAGEMENT + RECEPTIONIST` to `MANAGEMENT` only. All lifecycle operations (TC, dropout, graduate, rollback) require ADMIN/SUPER_ADMIN.
+- **Prisma schema**: Added `REACTIVATED` to `PromotionAction` enum; pushed to DB.
+- **API_ROUTES.md** updated: 322 total routes (was 312). Added missing routes: TC, rollback, bulk-graduate, bulk-dropout, archive/auto, admissions/send-slip, portal profile routes, student/me, organizations DELETE.
+

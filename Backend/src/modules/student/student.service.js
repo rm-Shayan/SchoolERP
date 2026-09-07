@@ -218,6 +218,59 @@ class StudentService {
   }
 
   /**
+   * Rollback a lifecycle status change (GRADUATED / DROPPED_OUT / TRANSFERRED_OUT → ACTIVE).
+   * Only works when student is currently in a non-ACTIVE lifecycle state.
+   * Creates a PromotionRecord for audit trail, reactivates parent portal if needed.
+   */
+  async rollbackLifecycle(user, id, { remarks }) {
+    const student = await this.getStudent(user, id);
+    assertOwnSchool(user, student.schoolId);
+
+    if (student.status === "ACTIVE") {
+      throw ApiError.badRequestError("Student is already ACTIVE — nothing to rollback");
+    }
+
+    const previousStatus = student.status;
+    const statusLabel = previousStatus === "GRADUATED" ? "Graduated" : previousStatus === "DROPPED_OUT" ? "Dropped Out" : "Transferred Out";
+
+    // 1. Reactivate student
+    await studentRepository.updateStudent(id, { status: "ACTIVE" });
+
+    // 2. Create rollback PromotionRecord for audit trail
+    const currentYear = await prisma.academicYear.findFirst({
+      where: { schoolId: student.schoolId, isCurrent: true },
+    });
+    if (currentYear) {
+      await prisma.promotionRecord.create({
+        data: {
+          studentId: student.id,
+          academicYearId: currentYear.id,
+          fromSectionId: null,
+          toSectionId: student.sectionId,
+          action: "REACTIVATED",
+          remarks: `Rollback from ${previousStatus}. ${remarks || ""}`.trim(),
+        },
+      }).catch(() => {});
+    }
+
+    // 3. Reactivate parent portal if the student has a parent
+    if (student.parentId) {
+      await prisma.parent.update({
+        where: { id: student.parentId },
+        data: { isActive: true },
+      }).catch(() => {});
+    }
+
+    // 4. Emit socket event
+    emitToRoom(`school:${student.schoolId}`, "student_status_changed", {
+      studentId: student.id,
+      status: "ACTIVE",
+    });
+
+    return this._hydrated(id);
+  }
+
+  /**
    * Re-issue a student's ID: generates a brand-new identifierCode (QR value),
    * invalidating the old one (PRD §9 — ID reissue after promotion / loss).
    * Returns the new code plus a printable ID slip PDF buffer.

@@ -16,6 +16,7 @@ import { StudentFormModal, type StudentFormValues } from './parts/StudentFormMod
 import { StudentDetails } from './parts/StudentDetails';
 import { StudentsHeaderActions } from './parts/StudentsHeaderActions';
 import StudentImportModal from './parts/StudentImportModal';
+import IssueTCModal from './parts/IssueTCModal';
 import { getLastClassIds, studentCreatePayload, studentUpdatePayload } from './parts/helpers';
 
 export default function StudentsPage() {
@@ -32,6 +33,9 @@ export default function StudentsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [tcTarget, setTcTarget] = useState<Student | null>(null);
+  const [rollbackTarget, setRollbackTarget] = useState<Student | null>(null);
+  const [rollbackBusy, setRollbackBusy] = useState(false);
 
   const lastClassIds = useMemo(() => getLastClassIds(classes), [classes]);
 
@@ -69,6 +73,19 @@ export default function StudentsPage() {
       setDeleteTarget(null);
       reload();
     } catch (err: any) { toast.error(err?.response?.data?.message ?? 'Failed to delete student'); } finally { setDeleteBusy(false); }
+  };
+
+  const handleRollback = async () => {
+    if (!rollbackTarget) return;
+    setRollbackBusy(true);
+    try {
+      const updated = await studentService.rollback(rollbackTarget.id);
+      toast.success(`${rollbackTarget.firstName} ${rollbackTarget.lastName} reactivated`);
+      patchStudent(updated);
+      setSelected((prev) => (prev?.id === updated.id ? updated : prev));
+      setRollbackTarget(null);
+      reload();
+    } catch (err: any) { toast.error(err?.response?.data?.message ?? 'Failed to reactivate student'); } finally { setRollbackBusy(false); }
   };
 
   const handleFormSubmit = useCallback(async (values: StudentFormValues, photoFile?: File | null): Promise<boolean> => {
@@ -116,6 +133,8 @@ export default function StudentsPage() {
         onEdit={isReadOnly ? undefined : openEdit}
         onDelete={isReadOnly ? undefined : setDeleteTarget}
         onPassedOut={isReadOnly ? undefined : setPassTarget}
+        onTc={isReadOnly ? undefined : setTcTarget}
+        onRollback={isReadOnly ? undefined : setRollbackTarget}
       />
 
       <StudentFormModal key={formMode === 'create' ? 'create' : formStudent?.id ?? 'none'} open={formMode !== null} onClose={() => { setFormMode(null); setFormStudent(null); }} classes={classes} mode={formMode === 'create' ? 'create' : 'edit'} student={formStudent} onSubmit={handleFormSubmit} />
@@ -127,6 +146,18 @@ export default function StudentsPage() {
       <ConfirmDialog open={!!passTarget} title="Mark as Passed Out?" message={`${passTarget ? `${passTarget.firstName} ${passTarget.lastName}` : 'Student'} is in the school's final class. Marking as Passed Out archives the record (fee/attendance history stays safe), and it can be reactivated anytime.`} confirmLabel="Passed Out" loading={passBusy} onConfirm={handlePassedOut} onCancel={() => setPassTarget(null)} />
 
       <ConfirmDialog open={!!deleteTarget} title="Delete student?" message={`Permanently delete ${deleteTarget ? `${deleteTarget.firstName} ${deleteTarget.lastName}` : 'this student'}? This cannot be undone.`} confirmLabel="Delete" loading={deleteBusy} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />
+
+      <IssueTCModal open={!!tcTarget} student={tcTarget} onClose={() => setTcTarget(null)} onIssued={() => { setTcTarget(null); reload(); }} />
+
+      <ConfirmDialog
+        open={!!rollbackTarget}
+        title="Reactivate Student?"
+        message={`Restore ${rollbackTarget ? `${rollbackTarget.firstName} ${rollbackTarget.lastName}` : 'this student'} to ACTIVE status? This undoes the ${rollbackTarget?.status?.toLowerCase() === 'graduated' ? 'Passed Out' : rollbackTarget?.status?.toLowerCase() === 'dropped_out' ? 'Drop Out' : 'Transfer'} action.`}
+        confirmLabel="Reactivate"
+        loading={rollbackBusy}
+        onConfirm={handleRollback}
+        onCancel={() => setRollbackTarget(null)}
+      />
     </div>
   );
 }
