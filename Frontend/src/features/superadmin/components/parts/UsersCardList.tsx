@@ -30,7 +30,7 @@ const UserCard = memo(function UserCard({
     <div className="p-4 flex flex-col gap-3 hover:bg-gray-50/50 transition-colors">
       <button type="button" className="flex items-start justify-between gap-3 text-left" onClick={() => onView(member)}>
         <div className="flex items-center gap-3 min-w-0">
-          <UserAvatar src={member.avatarUrl} orgLogoUrl={member.organization?.logoUrl} name={member.name} size="md" />
+           <UserAvatar src={member.avatarUrl} name={member.name} size="md" />
           <div className="min-w-0">
             <p className="font-semibold text-gray-900 truncate">{member.name}</p>
             <p className="text-xs text-gray-500 truncate">{member.email ?? '—'}</p>

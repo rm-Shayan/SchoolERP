@@ -38,7 +38,7 @@ function UserRowBase({
     >
       <td className="py-3.5 px-4">
           <div className="flex items-center gap-3">
-            <UserAvatar src={member.avatarUrl} orgLogoUrl={member.organization?.logoUrl} name={member.name} size="sm" />
+             <UserAvatar src={member.avatarUrl} name={member.name} size="sm" />
           <div className="min-w-0">
             <p className="font-semibold text-gray-900 truncate">{member.name}</p>
             <p className="text-xs text-gray-500 truncate">{member.email ?? '—'}</p>

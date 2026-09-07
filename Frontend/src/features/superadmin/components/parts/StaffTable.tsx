@@ -88,7 +88,7 @@ export default function StaffTable({ staff }: StaffTableProps) {
               <tr key={s.id} className={cn('border-b border-gray-50 transition-colors hover:bg-violet-50/40', i % 2 ? 'bg-gray-50/30' : 'bg-white')}>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-3">
-                    <UserAvatar src={s.avatarUrl} orgLogoUrl={s.schoolLogoUrl} name={s.name} size="sm" />
+                     <UserAvatar src={s.avatarUrl} name={s.name} size="sm" />
                     <span className="font-semibold text-gray-900">{s.name}</span>
                   </div>
                 </td>

@@ -2,7 +2,6 @@ import { cn, getInitials } from '@/lib/utils';
 
 interface UserAvatarProps {
   src?: string | null;
-  orgLogoUrl?: string | null;
   name: string;
   size?: 'xs' | 'sm' | 'md' | 'lg';
   className?: string;
@@ -30,25 +29,15 @@ function getGradient(name: string) {
 
 /**
  * User avatar with fallback chain:
- *   user profile picture → org logo → colored initials
+ *   user profile picture → colored initials
  */
-export default function UserAvatar({ src, orgLogoUrl, name, size = 'md', className }: UserAvatarProps) {
+export default function UserAvatar({ src, name, size = 'md', className }: UserAvatarProps) {
   if (src) {
     return (
       <img
         src={src}
         alt={name}
         className={cn(sizes[size], 'rounded-full object-cover bg-white border border-gray-200 shrink-0', className)}
-      />
-    );
-  }
-
-  if (orgLogoUrl) {
-    return (
-      <img
-        src={orgLogoUrl}
-        alt={name}
-        className={cn(sizes[size], 'rounded-full object-contain bg-white border border-gray-200 shrink-0 p-0.5', className)}
       />
     );
   }

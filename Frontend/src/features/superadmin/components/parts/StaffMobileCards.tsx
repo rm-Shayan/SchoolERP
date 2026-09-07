@@ -27,7 +27,7 @@ export default function StaffMobileCards({ staff }: { staff: OrgStaffRow[] }) {
       {staff.map((member) => (
         <article key={member.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="flex min-w-0 items-center gap-3 p-4">
-            <UserAvatar src={member.avatarUrl} orgLogoUrl={member.schoolLogoUrl} name={member.name} size="md" />
+             <UserAvatar src={member.avatarUrl} name={member.name} size="md" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-slate-900">{member.name}</p>
               <span className="mt-0.5 truncate text-xs text-slate-500 flex items-center gap-1.5">
