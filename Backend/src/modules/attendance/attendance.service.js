@@ -382,12 +382,22 @@ class AttendanceService {
   /**
    * POST /attendance/sync — offline gate scans ka bulk replay.
    * Har scan ko normal processScan se chalao (school isolation + status + cache).
+   * IMPORTANT: scannedAt mandatory hai — offline device se actual scan time ki zaroorat
+   * hoti hai taake cutoff (e.g. 08:30) ke hisaab se PRESENT/LATE sahi determine ho sake.
+   * Agar scannedAt nahi hai to skip — time pata nahi isliye status confirm nahi kar sakte.
    */
   async syncOfflineScans(schoolId, scans = []) {
     let synced = 0;
     let failed = 0;
     for (const s of scans) {
       try {
+        // scannedAt mandatory — offline sync me actual scan time ki zaroorat
+        // hoti hai taake cutoff (e.g. 08:30) ke hisaab se PRESENT/LATE sahi determine ho.
+        // scannedAt nahi hai to skip — time pata nahi isliye status confirm nahi kar sakte.
+        if (!s.scannedAt) {
+          failed += 1;
+          continue;
+        }
         const result = await attendanceService.processScan(schoolId, {
           identifierCode: s.identifierCode,
           deviceId: s.deviceId,
@@ -460,6 +470,11 @@ class AttendanceService {
    * Bulk-mark attendance for all students of a section on a given date
    * (create-or-update per `[studentId, date]` unique key). Used by the
    * section attendance UI (Global Section Day Card / teacher & receptionist).
+   *
+   * IMPORTANT: Ye manual bulk mark hai — cutoff time ke hisaab se auto-check nahi hota.
+   * Teacher/receptionist ko explicitly status choose karna hoga (PRESENT/LATE/Absent).
+   * System down ke baad bulk PRESENT mark karna galat ho sakta hai — un students ko
+   * jo 8:30 cutoff se baad aaye, LATE mark karna chahiye.
    */
   async markSectionBulkAttendance(schoolId, { sectionId, date, records }) {
     if (!sectionId || !date || !Array.isArray(records) || records.length === 0) {
@@ -478,6 +493,12 @@ class AttendanceService {
       select: { id: true },
     });
     const allowed = new Set(sectionStudents.map((s) => s.id));
+
+    // Bulk mark ke hisaab se cutoff check — agar record already hai aur status PRESENT hai
+    // par cutoff time ke baad scan hua tha, to warning log karo (admin ko pata chale).
+    const cutoffTimeStr = "08:30"; // default cutoff — school ka saved cutoff use karna better
+    const [cutH, cutM] = cutoffTimeStr.split(":").map(Number);
+    const cutoffMinutes = (cutH || 8) * 60 + (cutM || 30);
 
     const results = await prisma.$transaction(
       records.map((r) => {
