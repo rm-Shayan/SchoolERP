@@ -37,7 +37,7 @@ export function useBranchModeration(
   }, [school, org, router]);
 
   const confirmBlock = useCallback(
-    async (reason: string) => {
+    async (reason?: string) => {
       if (!school) return;
       setBlocking(true);
       try {

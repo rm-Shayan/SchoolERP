@@ -24,6 +24,7 @@ export function useBranchesPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [branchToDelete, setBranchToDelete] = useState<School | null>(null);
   const [blockTarget, setBlockTarget] = useState<School | null>(null);
+  const [blockReason, setBlockReason] = useState('');
   const [unblockTarget, setUnblockTarget] = useState<School | null>(null);
   const [busy, setBusy] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -71,8 +72,11 @@ export function useBranchesPage() {
       setSchools((prev) => prev.filter((s) => s.id !== branchToDelete.id));
       toast.success('Branch deleted');
       setBranchToDelete(null);
-    } catch (err: any) { toast.error(errMsg(err, 'Failed to delete branch')); }
-    finally { setDeletingId(null); }
+    } catch (err: any) {
+      toast.error(errMsg(err, 'Failed to delete branch'));
+    } finally {
+      setDeletingId(null);
+    }
   }, [branchToDelete]);
 
   const handleExport = useCallback(async () => {
@@ -81,21 +85,28 @@ export function useBranchesPage() {
       const blob = await schoolService.exportExcel();
       downloadBlob(blob, `branches-${new Date().toISOString().slice(0, 10)}.xlsx`);
       toast.success('Branches exported');
-    } catch (err: any) { toast.error(errMsg(err, 'Export failed')); }
-    finally { setExporting(false); }
+    } catch (err: any) {
+      toast.error(errMsg(err, 'Export failed'));
+    } finally {
+      setExporting(false);
+    }
   }, []);
 
-  const confirmBlock = useCallback(async (reason: string) => {
+  const confirmBlock = useCallback(async () => {
     if (!blockTarget) return;
     setBusy(true);
     try {
-      await moderationService.blockSchool(blockTarget.id, reason);
+      await moderationService.blockSchool(blockTarget.id, blockReason.trim() || undefined);
       toast.success(`${blockTarget.name} blocked`);
       setBlockTarget(null);
+      setBlockReason('');
       await loadBranches();
-    } catch (err: any) { toast.error(errMsg(err, 'Failed to block branch')); }
-    finally { setBusy(false); }
-  }, [blockTarget, loadBranches]);
+    } catch (err: any) {
+      toast.error(errMsg(err, 'Failed to block branch'));
+    } finally {
+      setBusy(false);
+    }
+  }, [blockTarget, blockReason, loadBranches]);
 
   const confirmUnblock = useCallback(async () => {
     if (!unblockTarget) return;
@@ -105,24 +116,31 @@ export function useBranchesPage() {
       toast.success(`${unblockTarget.name} unblocked`);
       setUnblockTarget(null);
       await loadBranches();
-    } catch (err: any) { toast.error(errMsg(err, 'Failed to unblock branch')); }
-    finally { setBusy(false); }
+    } catch (err: any) {
+      toast.error(errMsg(err, 'Failed to unblock branch'));
+    } finally {
+      setBusy(false);
+    }
   }, [unblockTarget, loadBranches]);
 
-  const clearUnblockTarget = useCallback(() => setUnblockTarget(null), []);
-
-  const handleCreateBranch = useCallback(async (v: BranchFormValues & { organizationId: string }): Promise<boolean> => {
-    try {
-      const result = await schoolService.create(branchCreatePayload(v, v.organizationId));
-      if (result.warnings?.length) {
-        toast.success(`Branch created — warnings: ${result.warnings.join('; ')}`, { duration: 8000 });
-      } else {
-        toast.success('Branch created');
+  const handleCreateBranch = useCallback(
+    async (v: BranchFormValues & { organizationId: string }): Promise<boolean> => {
+      try {
+        const result = await schoolService.create(branchCreatePayload(v, v.organizationId));
+        if (result.warnings?.length) {
+          toast.success(`Branch created — warnings: ${result.warnings.join('; ')}`, { duration: 8000 });
+        } else {
+          toast.success('Branch created');
+        }
+        await loadBranches();
+        return true;
+      } catch (err: any) {
+        toast.error(err?.response?.data?.message ?? 'Failed to create branch');
+        return false;
       }
-      await loadBranches();
-      return true;
-    } catch (err: any) { toast.error(err?.response?.data?.message ?? 'Failed to create branch'); return false; }
-  }, [loadBranches]);
+    },
+    [loadBranches]
+  );
 
   const handleUpdateBranch = useCallback((updated: School) => {
     setSchools((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
@@ -132,7 +150,7 @@ export function useBranchesPage() {
     schools, loading, loadError, search, setSearch, statusFilter, setStatusFilter,
     orgFilter, setOrgFilter, orgOptions, filtered, pageItems, totalPages, page, setPage,
     statusCounts, exporting, handleExport, deletingId, branchToDelete, setBranchToDelete,
-    handleDeleteBranch, blockTarget, setBlockTarget, unblockTarget, setUnblockTarget,
+    handleDeleteBranch, blockTarget, setBlockTarget, setBlockReason, unblockTarget, setUnblockTarget,
     busy, confirmBlock, confirmUnblock, reload: loadBranches,
     addModalOpen, setAddModalOpen, editTarget, setEditTarget,
     handleCreateBranch, handleUpdateBranch,

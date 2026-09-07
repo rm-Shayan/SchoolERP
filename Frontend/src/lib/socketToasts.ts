@@ -22,6 +22,13 @@ export function registerSocketHandlers(s: Socket) {
   const ts = (msg: string) => toast.success(msg);
   const on = (e: string, fn: (p: any) => void) => s.on(e, fn);
 
+  on('user_blocked', (p: any) => { toast.success(`${p?.name ?? 'User'} blocked`); });
+  on('user_unblocked', (p: any) => { toast.success(`${p?.name ?? 'User'} unblocked`); });
+  on('student_blocked', (p: any) => { toast.success(`${p?.name ?? 'Student'} blocked`); });
+  on('student_unblocked', (p: any) => { toast.success(`${p?.name ?? 'Student'} unblocked`); });
+  on('parent_blocked', (p: any) => { toast.success(`${p?.name ?? 'Parent'} blocked`); });
+  on('parent_unblocked', (p: any) => { toast.success(`${p?.name ?? 'Parent'} unblocked`); });
+
   on('fee_payment_recorded', (p) => { if (isMySchool(p)) ts(`Fee payment: ${p.studentName ?? 'Student'} — ${p.status ?? 'recorded'}`); });
   on('admission_approved', (p) => { if (isMySchool(p)) ts('Admission approved'); });
   on('admission_enrolled', (p) => { if (isMySchool(p)) ts(`${p.studentName ?? 'Student'} enrolled successfully`); });

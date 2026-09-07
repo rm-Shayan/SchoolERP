@@ -17,7 +17,7 @@ export function useOrganizationModeration({ id, reload }: UseOrganizationModerat
       if (!id) return false;
       try {
         await moderationService.blockOrganization(id, reason);
-        toast.success(`${id} organization blocked — all branches and users locked out`);
+        toast.success('Organization blocked — all branches and users locked out');
         await reload();
         return true;
       } catch (err: any) {
@@ -69,7 +69,7 @@ export function useOrganizationModeration({ id, reload }: UseOrganizationModerat
       }
     },
     [reload]
-  )
+  );
 
   return { handleBlockOrg, handleUnblockOrg, handleBlockSchool, handleUnblockSchool };
 }

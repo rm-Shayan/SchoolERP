@@ -39,8 +39,7 @@ export function useOrganizationsPage() {
     load();
   }, [load]);
 
-  // Realtime: org created / delivered on login / blocked / unblocked / imported —
-  // overview_updated event triggers a live list refresh (Delivered pill updates).
+  // Realtime: org created / delivered on login / blocked / unblocked / imported
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
@@ -62,19 +61,10 @@ export function useOrganizationsPage() {
     });
   }, [allOrgs, search, statusFilter]);
 
-  // Search/filter changed → reset to page 1
-  useEffect(() => {
-    setPage(1);
-  }, [search, statusFilter]);
+  useEffect(() => { setPage(1); }, [search, statusFilter]);
 
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(filtered.length / ORGS_PAGE_SIZE)),
-    [filtered.length]
-  );
-  const pageItems = useMemo(
-    () => filtered.slice((page - 1) * ORGS_PAGE_SIZE, page * ORGS_PAGE_SIZE),
-    [filtered, page]
-  );
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filtered.length / ORGS_PAGE_SIZE)), [filtered.length]);
+  const pageItems = useMemo(() => filtered.slice((page - 1) * ORGS_PAGE_SIZE, page * ORGS_PAGE_SIZE), [filtered, page]);
 
   const chipOptions = useMemo(
     () => [
@@ -99,7 +89,7 @@ export function useOrganizationsPage() {
     }
   }, []);
 
-  const confirmBlock = useCallback(async (reason: string) => {
+  const confirmBlock = useCallback(async (reason?: string) => {
     if (!blockTarget) return;
     setBusy(true);
     try {
@@ -107,8 +97,11 @@ export function useOrganizationsPage() {
       toast.success(`${blockTarget.name} blocked`);
       setBlockTarget(null);
       await load();
-    } catch (err: any) { toast.error(errMsg(err, 'Failed to block organization')); }
-    finally { setBusy(false); }
+    } catch (err: any) {
+      toast.error(errMsg(err, 'Failed to block organization'));
+    } finally {
+      setBusy(false);
+    }
   }, [blockTarget, load]);
 
   const confirmUnblock = useCallback(async () => {
@@ -119,11 +112,13 @@ export function useOrganizationsPage() {
       toast.success(`${unblockTarget.name} unblocked`);
       setUnblockTarget(null);
       await load();
-    } catch (err: any) { toast.error(errMsg(err, 'Failed to unblock organization')); }
-    finally { setBusy(false); }
+    } catch (err: any) {
+      toast.error(errMsg(err, 'Failed to unblock organization'));
+    } finally {
+      setBusy(false);
+    }
   }, [unblockTarget, load]);
 
-  // Keep unblock target cleared on success (hook clears it, but parent also clears)
   const clearUnblockTarget = useCallback(() => setUnblockTarget(null), []);
 
   return {
@@ -131,5 +126,6 @@ export function useOrganizationsPage() {
     page, setPage, totalPages, pageItems, view, setView, filtered, chipOptions,
     exporting, handleExport, blockTarget, setBlockTarget, unblockTarget, setUnblockTarget,
     busy, confirmBlock, confirmUnblock, reload: load,
+    clearUnblockTarget,
   };
 }

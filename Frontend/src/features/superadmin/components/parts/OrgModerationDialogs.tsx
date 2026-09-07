@@ -2,8 +2,8 @@
 
 import { forwardRef, useCallback, useImperativeHandle, useState } from 'react';
 import { ConfirmDialog } from '@/features/shared/components';
-import type { Organization, School } from '@/types';
 import BlockReasonDialog from './BlockReasonDialog';
+import type { Organization, School } from '@/types';
 
 export interface OrgModerationDialogsHandle {
   openBlockOrg: () => void;
@@ -43,6 +43,7 @@ const OrgModerationDialogs = forwardRef<OrgModerationDialogsHandle, OrgModeratio
         try {
           await onBlockOrg(blockOrgReason.trim() || undefined);
           setBlockOrgOpen(false);
+          setBlockOrgReason('');
         } finally {
           setBlocking(false);
         }
@@ -67,6 +68,7 @@ const OrgModerationDialogs = forwardRef<OrgModerationDialogsHandle, OrgModeratio
         try {
           await onBlockSchool(blockSchoolTarget.id, blockSchoolReason.trim() || undefined);
           setBlockSchoolTarget(null);
+          setBlockSchoolReason('');
         } finally {
           setBlocking(false);
         }
@@ -100,8 +102,8 @@ const OrgModerationDialogs = forwardRef<OrgModerationDialogsHandle, OrgModeratio
         />
         <BlockReasonDialog
           open={blockSchoolTarget !== null}
-          memberName={blockSchoolTarget?.name}
           title="Block branch"
+          memberName={blockSchoolTarget?.name}
           message={
             blockSchoolTarget
               ? `Blocking ${blockSchoolTarget.name} will lock out its admin, staff, students, and parents. Other branches keep working.`
@@ -120,7 +122,7 @@ const OrgModerationDialogs = forwardRef<OrgModerationDialogsHandle, OrgModeratio
           confirmLabel="Unblock"
           variant="primary"
           loading={blocking}
-          onConfirm={async () => { await confirmUnblockOrg(); setUnblockOrgOpen(false); }}
+          onConfirm={confirmUnblockOrg}
           onCancel={() => setUnblockOrgOpen(false)}
         />
         <ConfirmDialog
@@ -130,7 +132,7 @@ const OrgModerationDialogs = forwardRef<OrgModerationDialogsHandle, OrgModeratio
           confirmLabel="Unblock"
           variant="primary"
           loading={blocking}
-          onConfirm={async () => { await confirmUnblockSchool(); setUnblockTarget(null); }}
+          onConfirm={confirmUnblockSchool}
           onCancel={() => setUnblockTarget(null)}
         />
       </>
