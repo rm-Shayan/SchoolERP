@@ -1279,8 +1279,7 @@ class FeeService {
     }
     // Reminder bhejne ke baad reminderSentAt update karo taake agle din dobara nahi jaye
     if (sendRemindersNotifiedIds.length) {
-  }
-      });
+      await feeRepository.markReminderSent(sendRemindersNotifiedIds);
     }
     return { remindersSent: sent };
   }
