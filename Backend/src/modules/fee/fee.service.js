@@ -1266,12 +1266,20 @@ class FeeService {
       record._pending = pending;
       emailRecords.push(record);
       sent++;
-    }
     // Batched: ek parent ko sirf ek email (sare bachon ka combined).
+    const sendRemindersNotifiedIds = [];
+    for (const rec of emailRecords) {
+      sendRemindersNotifiedIds.push(rec.id);
+    }
     if (emailRecords.length) {
       await this._sendBatchedFeeReminders(emailRecords, {
         title: "Fee Due Reminder",
         withStatus: true,
+      });
+    }
+    // Reminder bhejne ke baad reminderSentAt update karo taake agle din dobara nahi jaye
+    if (sendRemindersNotifiedIds.length) {
+  }
       });
     }
     return { remindersSent: sent };
