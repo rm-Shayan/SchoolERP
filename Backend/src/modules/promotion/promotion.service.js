@@ -215,10 +215,81 @@ class PromotionService {
   }
 
   /**
+   * PRD §9 — Bulk graduation: graduate all (or selected) ACTIVE students
+   * from a section. Used for last-class pass-out.
+   */
+  async bulkGraduate(user, { academicYearId, sectionId, studentIds, remarks }) {
+    const year = await this._assertAcademicYear(user, academicYearId);
+
+    let students = await promotionRepository.activeStudentsBySection(sectionId);
+    if (studentIds?.length) {
+      const requested = new Set(studentIds);
+      students = students.filter((s) => requested.has(s.id));
+    }
+
+    if (!students.length) {
+      throw ApiError.badRequestError("No active students to graduate in this section");
+    }
+
+    const results = [];
+    for (const student of students) {
+      try {
+        const record = await this._setLifecycleStatus(user, year.id, student.id, "GRADUATED", remarks);
+        results.push({ studentId: student.id, success: true, recordId: record.id });
+      } catch (err) {
+        results.push({ studentId: student.id, success: false, error: err.message });
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length;
+    emitToRoom(`school:${students[0]?.schoolId}`, "promotions_created", {
+      action: "GRADUATED",
+      count: successCount,
+    });
+
+    return { graduated: successCount, total: students.length, results };
+  }
+
+  /**
    * PRD §9 — Dropout / withdrawal (mid-year or year-end). Archived, never deleted.
    */
   async dropout(user, { academicYearId, studentId, remarks }) {
     return this._setLifecycleStatus(user, academicYearId, studentId, "DROPPED_OUT", remarks);
+  }
+
+  /**
+   * PRD §9 — Bulk dropout: drop all (or selected) ACTIVE students from a section.
+   */
+  async bulkDropout(user, { academicYearId, sectionId, studentIds, remarks }) {
+    const year = await this._assertAcademicYear(user, academicYearId);
+
+    let students = await promotionRepository.activeStudentsBySection(sectionId);
+    if (studentIds?.length) {
+      const requested = new Set(studentIds);
+      students = students.filter((s) => requested.has(s.id));
+    }
+
+    if (!students.length) {
+      throw ApiError.badRequestError("No active students to mark as dropped out in this section");
+    }
+
+    const results = [];
+    for (const student of students) {
+      try {
+        const record = await this._setLifecycleStatus(user, year.id, student.id, "DROPPED_OUT", remarks);
+        results.push({ studentId: student.id, success: true, recordId: record.id });
+      } catch (err) {
+        results.push({ studentId: student.id, success: false, error: err.message });
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length;
+    emitToRoom(`school:${students[0]?.schoolId}`, "promotions_created", {
+      action: "DROPPED_OUT",
+      count: successCount,
+    });
+
+    return { droppedOut: successCount, total: students.length, results };
   }
 
   async _setLifecycleStatus(user, academicYearId, studentId, status, remarks) {

@@ -17,7 +17,6 @@ export interface PromotionRecord {
 }
 
 export const promotionService = {
-  // POST /promotions/bulk-promote — MANAGEMENT
   bulkPromote: async (data: {
     fromSectionId: string;
     toSectionId: string;
@@ -28,37 +27,41 @@ export const promotionService = {
     return res.data.data;
   },
 
-  // POST /promotions/repeat — MANAGEMENT
   markRepeat: async (data: { studentIds: string[]; academicYearId: string; remarks?: string }): Promise<{ updated: number }> => {
     const res = await api.post<ApiResponse<{ updated: number }>>('/promotions/repeat', data);
     return res.data.data;
   },
 
-  // POST /promotions/transfer-section — MANAGEMENT
   transferSection: async (data: { studentId: string; toSectionId: string; remarks?: string }): Promise<PromotionRecord> => {
     const res = await api.post<ApiResponse<PromotionRecord>>('/promotions/transfer-section', data);
     return res.data.data;
   },
 
-  // POST /promotions/graduate — MANAGEMENT
   graduate: async (data: { studentIds: string[]; remarks?: string }): Promise<{ graduated: number }> => {
     const res = await api.post<ApiResponse<{ graduated: number }>>('/promotions/graduate', data);
     return res.data.data;
   },
 
-  // POST /promotions/dropout — MANAGEMENT
+  bulkGraduate: async (data: { sectionId: string; academicYearId: string; studentIds?: string[]; remarks?: string }): Promise<{ graduated: number; total: number }> => {
+    const res = await api.post<ApiResponse<{ graduated: number; total: number }>>('/promotions/bulk-graduate', data);
+    return res.data.data;
+  },
+
   dropout: async (data: { studentIds: string[]; reason?: string }): Promise<{ updated: number }> => {
     const res = await api.post<ApiResponse<{ updated: number }>>('/promotions/dropout', data);
     return res.data.data;
   },
 
-  // GET /promotions — ALL_STAFF (paginated envelope)
+  bulkDropout: async (data: { sectionId: string; academicYearId: string; studentIds?: string[]; remarks?: string }): Promise<{ droppedOut: number; total: number }> => {
+    const res = await api.post<ApiResponse<{ droppedOut: number; total: number }>>('/promotions/bulk-dropout', data);
+    return res.data.data;
+  },
+
   getAll: async (params?: { schoolId?: string; action?: string; academicYearId?: string; page?: number; pageSize?: number }): Promise<{ items: PromotionRecord[]; total: number }> => {
     const res = await api.get<ApiResponse<{ items: PromotionRecord[]; total: number }>>('/promotions', { params });
     return res.data.data;
   },
 
-  // GET /promotions/:id — ALL_STAFF
   getById: async (id: string): Promise<PromotionRecord> => {
     const res = await api.get<ApiResponse<PromotionRecord>>(`/promotions/${id}`);
     return res.data.data;

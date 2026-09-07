@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { academicService, promotionService, studentService } from '@/lib/api';
 import type { AcademicYear, Class, Student } from '@/types';
-import { Button, Card, EmptyState, Select } from '@/features/shared/components';
+import { Button, Card, ConfirmDialog, EmptyState, Select } from '@/features/shared/components';
 import toast from 'react-hot-toast';
 import { PromotionHistory } from './parts/PromotionHistory';
 import { StudentChecklist } from './parts/StudentChecklist';
@@ -12,12 +12,12 @@ import PromotionHero from './parts/PromotionHero';
 
 const classOptions = (classes: Class[]) => classes.map((c) => ({ value: c.id, label: c.name }));
 const yearOptions = (years: AcademicYear[]) => years.map((y) => ({ value: y.id, label: y.name }));
-// Section dropdown shows student count — so the admin can see which sections have students.
 const sectionOptions = (sections: { id: string; name: string; _count?: { students: number } }[]) =>
   sections.map((s) => ({ value: s.id, label: (s._count?.students ?? 0) > 0 ? `${s.name} (${s._count?.students})` : s.name }));
 
+type GradAction = 'graduate' | 'dropout' | null;
+
 export default function PromotionsPage() {
-  // If school is null, fall back to user.schoolId — otherwise dropdowns stay empty
   const { school, user } = useAppSelector((s) => s.auth);
   const schoolId = school?.id ?? user?.schoolId;
   const [years, setYears] = useState<AcademicYear[]>([]);
@@ -33,6 +33,9 @@ export default function PromotionsPage() {
   const [loading, setLoading] = useState(false);
   const [promoting, setPromoting] = useState(false);
   const [historyKey, setHistoryKey] = useState(0);
+  const [gradAction, setGradAction] = useState<GradAction>(null);
+  const [gradRemarks, setGradRemarks] = useState('');
+  const [gradBusy, setGradBusy] = useState(false);
 
   useEffect(() => {
     if (!schoolId) return;
@@ -45,18 +48,23 @@ export default function PromotionsPage() {
   const sortedClasses = useMemo(() => [...classes].sort((a, b) => a.order - b.order), [classes]);
   const fromSections = useMemo(() => classes.find((c) => c.id === fromClassId)?.sections ?? [], [classes, fromClassId]);
   const toSections = useMemo(() => classes.find((c) => c.id === toClassId)?.sections ?? [], [classes, toClassId]);
-  const ready = !!yearId && !!fromSectionId && !!toSectionId;
 
-  // When class changes, first auto-select the POPULATED section (so students
-  // appear immediately). If none is populated, the first section is selected.
+  // Detect last class
+  const lastClassIds = useMemo(() => {
+    const maxOrder = sortedClasses.reduce((max, c) => Math.max(max, c.order), -1);
+    return new Set(sortedClasses.filter((c) => c.order === maxOrder).map((c) => c.id));
+  }, [sortedClasses]);
+  const isLastClass = fromClassId ? lastClassIds.has(fromClassId) : false;
+
+  const ready = isLastClass ? !!yearId && !!fromSectionId : !!yearId && !!fromSectionId && !!toSectionId;
+
   useEffect(() => {
     const sections = classes.find((c) => c.id === fromClassId)?.sections ?? [];
     setFromSectionId(sections.find((s) => (s._count?.students ?? 0) > 0)?.id ?? sections[0]?.id ?? '');
-  }, [fromClassId, classes]);
+    if (!isLastClass) { setToClassId(''); setToSectionId(''); }
+  }, [fromClassId, classes, isLastClass]);
   useEffect(() => { setToSectionId(''); }, [toClassId]);
 
-  // Load all ACTIVE students — get total from page 1, then fetch remaining pages
-  // in parallel (sequential loop was slow — 10 pages = 10 round trips).
   const loadStudents = useCallback(async () => {
     if (!schoolId || !fromSectionId) { setStudents([]); setSelected(new Set()); return; }
     setLoading(true);
@@ -81,7 +89,7 @@ export default function PromotionsPage() {
     setSelected(students.length && selected.size === students.length ? new Set() : new Set(students.map((s) => s.id))),
   [students, selected]);
 
-  // ids = null → promote ALL (backend default), ids = Set → only selected.
+  // Promote
   const handlePromote = async (ids?: Set<string>) => {
     if (!ready || (ids && !ids.size)) return;
     setPromoting(true);
@@ -95,30 +103,69 @@ export default function PromotionsPage() {
     } finally { setPromoting(false); }
   };
 
+  // Graduate / Dropout
+  const handleGradAction = async () => {
+    if (!yearId || !fromSectionId || !gradAction) return;
+    setGradBusy(true);
+    try {
+      const studentIds = selected.size > 0 ? [...selected] : undefined;
+      if (gradAction === 'graduate') {
+        const res = await promotionService.bulkGraduate({ academicYearId: yearId, sectionId: fromSectionId, studentIds, remarks: gradRemarks || undefined });
+        toast.success(`${res.graduated} students graduated`);
+      } else {
+        const res = await promotionService.bulkDropout({ academicYearId: yearId, sectionId: fromSectionId, studentIds, remarks: gradRemarks || undefined });
+        toast.success(`${res.droppedOut} students marked as dropped out`);
+      }
+      setHistoryKey((k) => k + 1);
+      setGradAction(null);
+      setGradRemarks('');
+      loadStudents();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Action failed');
+    } finally { setGradBusy(false); }
+  };
+
+  const gradLabel = gradAction === 'graduate' ? 'Graduate' : 'Drop Out';
+  const gradDesc = gradAction === 'graduate'
+    ? `This will graduate ${selected.size > 0 ? selected.size : students.length} student(s) from this section. Their records will be archived and photos moved to cold storage. This action creates a PromotionRecord for history tracking.`
+    : `This will mark ${selected.size > 0 ? selected.size : students.length} student(s) as dropped out. Their records will be archived. This action creates a PromotionRecord for history tracking.`;
+
   return (
     <div className="space-y-6">
-      {/* Hero */}
       <PromotionHero />
 
       {/* Setup */}
       <Card className="overflow-hidden">
-        <div className="border-b border-gray-100 bg-gray-50/70 px-5 py-3"><h3 className="text-sm font-semibold text-gray-900">1 · Promotion Setup</h3></div>
+        <div className="border-b border-gray-100 bg-gray-50/70 px-5 py-3">
+          <h3 className="text-sm font-semibold text-gray-900">1 · {isLastClass ? 'Graduation Setup' : 'Promotion Setup'}</h3>
+        </div>
         <div className="p-5">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className={`grid gap-4 sm:grid-cols-2 ${isLastClass ? 'lg:grid-cols-3' : 'lg:grid-cols-5'}`}>
             <Select label="Target Academic Year" placeholder="Select year" loading={metaLoading} options={yearOptions(years)} value={yearId} onChange={(e) => setYearId(e.target.value)} />
             <Select label="From Class" placeholder="Current class" loading={metaLoading} options={classOptions(sortedClasses)} value={fromClassId} onChange={(e) => setFromClassId(e.target.value)} />
             <Select label="From Section" placeholder="Current section" loading={metaLoading || !fromClassId} options={sectionOptions(fromSections)} value={fromSectionId} onChange={(e) => setFromSectionId(e.target.value)} />
-            <Select label="To Class" placeholder="Next class" loading={metaLoading} options={classOptions(sortedClasses)} value={toClassId} onChange={(e) => setToClassId(e.target.value)} />
-            <Select label="To Section" placeholder="Next section" loading={metaLoading || !toClassId} options={sectionOptions(toSections)} value={toSectionId} onChange={(e) => setToSectionId(e.target.value)} />
+            {!isLastClass && (
+              <>
+                <Select label="To Class" placeholder="Next class" loading={metaLoading} options={classOptions(sortedClasses)} value={toClassId} onChange={(e) => setToClassId(e.target.value)} />
+                <Select label="To Section" placeholder="Next section" loading={metaLoading || !toClassId} options={sectionOptions(toSections)} value={toSectionId} onChange={(e) => setToSectionId(e.target.value)} />
+              </>
+            )}
           </div>
-          <p className="mt-3 text-xs text-gray-500">Create the target year in Academic Setup → 1. Academic Year first. Leave repeaters unchecked in the list.</p>
+          {isLastClass ? (
+            <p className="mt-3 text-xs text-amber-600 font-medium">This is the school's final class. Students here will be graduated (passed out) instead of promoted.</p>
+          ) : (
+            <p className="mt-3 text-xs text-gray-500">Create the target year in Academic Setup first. Leave repeaters unchecked in the list.</p>
+          )}
         </div>
       </Card>
 
       {/* Students */}
       <Card className="overflow-hidden">
         <div className="flex items-center justify-between gap-3 border-b border-gray-100 bg-gray-50/70 px-5 py-3">
-          <h3 className="text-sm font-semibold text-gray-900">2 · Students to Promote <span className="ml-1 inline-flex rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">{selected.size}/{students.length} selected</span></h3>
+          <h3 className="text-sm font-semibold text-gray-900">
+            2 · {isLastClass ? 'Students to Graduate' : 'Students to Promote'}
+            <span className="ml-1 inline-flex rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">{selected.size}/{students.length} selected</span>
+          </h3>
           {students.length > 0 && (
             <button onClick={toggleAll} className="text-sm font-medium text-primary-600 hover:text-primary-700">{selected.size === students.length ? 'Unselect all' : 'Select all'}</button>
           )}
@@ -137,17 +184,46 @@ export default function PromotionsPage() {
         ) : students.length === 0 ? (
           <EmptyState
             title={fromSectionId ? 'No active students in this section' : 'Select a source section'}
-            description={fromSectionId ? 'This section has no ACTIVE students — pick another (dropdown shows each section\'s count).' : 'Select a source class + section — its ACTIVE students will appear here.'}
+            description={fromSectionId ? 'This section has no ACTIVE students.' : 'Select a source class + section.'}
           />
         ) : (
           <StudentChecklist students={students} selected={selected} onToggle={toggle} />
         )}
 
         <div className="flex flex-wrap gap-2 border-t border-gray-100 bg-gray-50/40 px-5 py-3">
-          <Button disabled={!ready || !students.length} loading={promoting} onClick={() => handlePromote()}>Promote All ({students.length})</Button>
-          <Button variant="outline" disabled={!ready || !selected.size || selected.size === students.length} loading={promoting} onClick={() => handlePromote(selected)}>Promote Selected ({selected.size})</Button>
+          {isLastClass ? (
+            <>
+              <Button disabled={!ready || !students.length} loading={gradBusy} onClick={() => setGradAction('graduate')}>
+                Graduate All ({students.length})
+              </Button>
+              <Button variant="outline" disabled={!ready || !selected.size} loading={gradBusy} onClick={() => setGradAction('graduate')}>
+                Graduate Selected ({selected.size})
+              </Button>
+              <div className="w-px bg-gray-200 mx-1" />
+              <Button variant="danger" disabled={!ready || !students.length} loading={gradBusy} onClick={() => setGradAction('dropout')}>
+                Drop Out All ({students.length})
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button disabled={!ready || !students.length} loading={promoting} onClick={() => handlePromote()}>Promote All ({students.length})</Button>
+              <Button variant="outline" disabled={!ready || !selected.size || selected.size === students.length} loading={promoting} onClick={() => handlePromote(selected)}>Promote Selected ({selected.size})</Button>
+            </>
+          )}
         </div>
       </Card>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        open={!!gradAction}
+        title={`${gradLabel} ${selected.size > 0 ? selected.size : students.length} students?`}
+        message={gradDesc}
+        confirmLabel={gradLabel}
+        variant={gradAction === 'dropout' ? 'danger' : 'primary'}
+        loading={gradBusy}
+        onConfirm={handleGradAction}
+        onCancel={() => { setGradAction(null); setGradRemarks(''); }}
+      />
 
       <PromotionHistory schoolId={schoolId} refreshKey={historyKey} />
     </div>

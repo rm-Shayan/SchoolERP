@@ -8,6 +8,7 @@ import {
   repeatStudentSchema,
   transferSectionSchema,
   lifecycleSchema,
+  bulkLifecycleSchema,
   listPromotionsSchema,
   getPromotionSchema,
 } from "./promotion.validation.js";
@@ -73,6 +74,28 @@ router.post(
   authorize(ROLE_GROUPS.MANAGEMENT),
   validate(lifecycleSchema),
   promotionController.dropout
+);
+
+/**
+ * POST /api/v1/promotions/bulk-graduate
+ * Bulk graduation — pass out entire last-class section.
+ */
+router.post(
+  "/bulk-graduate",
+  authorize(ROLE_GROUPS.MANAGEMENT),
+  validate(bulkLifecycleSchema),
+  promotionController.bulkGraduate
+);
+
+/**
+ * POST /api/v1/promotions/bulk-dropout
+ * Bulk dropout — withdraw entire section.
+ */
+router.post(
+  "/bulk-dropout",
+  authorize(ROLE_GROUPS.MANAGEMENT),
+  validate(bulkLifecycleSchema),
+  promotionController.bulkDropout
 );
 
 /**

@@ -38,39 +38,51 @@ const OrgModerationDialogs = forwardRef<OrgModerationDialogsHandle, OrgModeratio
     }));
 
     const confirmBlockOrg = useCallback(
-      async (reason: string) => {
+      async () => {
         setBlocking(true);
-        await onBlockOrg(reason);
-        setBlocking(false);
-        setBlockOrgOpen(false);
+        try {
+          await onBlockOrg(blockOrgReason.trim() || undefined);
+          setBlockOrgOpen(false);
+        } finally {
+          setBlocking(false);
+        }
       },
-      [onBlockOrg]
+      [onBlockOrg, blockOrgReason]
     );
 
     const confirmUnblockOrg = useCallback(async () => {
       setBlocking(true);
-      await onUnblockOrg();
-      setBlocking(false);
-      setUnblockOrgOpen(false);
+      try {
+        await onUnblockOrg();
+      } finally {
+        setBlocking(false);
+        setUnblockOrgOpen(false);
+      }
     }, [onUnblockOrg]);
 
     const confirmBlockSchool = useCallback(
-      async (reason: string) => {
+      async () => {
         if (!blockSchoolTarget) return;
         setBlocking(true);
-        await onBlockSchool(blockSchoolTarget.id, reason);
-        setBlocking(false);
-        setBlockSchoolTarget(null);
+        try {
+          await onBlockSchool(blockSchoolTarget.id, blockSchoolReason.trim() || undefined);
+          setBlockSchoolTarget(null);
+        } finally {
+          setBlocking(false);
+        }
       },
-      [blockSchoolTarget, onBlockSchool]
+      [blockSchoolTarget, onBlockSchool, blockSchoolReason]
     );
 
     const confirmUnblockSchool = useCallback(async () => {
       if (!unblockTarget) return;
       setBlocking(true);
-      await onUnblockSchool(unblockTarget.id);
-      setBlocking(false);
-      setUnblockTarget(null);
+      try {
+        await onUnblockSchool(unblockTarget.id);
+      } finally {
+        setBlocking(false);
+        setUnblockTarget(null);
+      }
     }, [unblockTarget, onUnblockSchool]);
 
     return (

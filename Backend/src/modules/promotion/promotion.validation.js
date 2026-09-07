@@ -50,6 +50,15 @@ export const lifecycleSchema = z.object({
   }),
 });
 
+export const bulkLifecycleSchema = z.object({
+  body: z.object({
+    ...promotionCommon,
+    sectionId: uuid("sectionId"),
+    studentIds: z.array(uuid("studentId")).max(1000, "Too many students").optional(),
+    remarks: z.string().max(500, "remarks too long").optional(),
+  }),
+});
+
 export const listPromotionsSchema = z.object({
   query: z.object({
     schoolId: uuid("schoolId").optional(),

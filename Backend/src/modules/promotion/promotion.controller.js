@@ -50,6 +50,24 @@ class PromotionController {
   });
 
   /**
+   * POST /api/v1/promotions/bulk-graduate
+   * Bulk graduation — pass out entire last-class section.
+   */
+  bulkGraduate = asyncHandler(async (req, res) => {
+    const result = await promotionService.bulkGraduate(req.user, req.body);
+    return res.status(200).json(ApiResponse.ok("Students graduated successfully", result));
+  });
+
+  /**
+   * POST /api/v1/promotions/bulk-dropout
+   * Bulk dropout — withdraw entire section.
+   */
+  bulkDropout = asyncHandler(async (req, res) => {
+    const result = await promotionService.bulkDropout(req.user, req.body);
+    return res.status(200).json(ApiResponse.ok("Students marked as dropped out", result));
+  });
+
+  /**
    * GET /api/v1/promotions
    * Promotion / lifecycle history (filters optional).
    */
