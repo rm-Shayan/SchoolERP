@@ -13,7 +13,7 @@ export function cn(...inputs: ClassValue[]) {
 export function getApiErrorMessage(err: unknown, fallback = 'Something went wrong. Please try again.'): string {
   const e = err as { response?: { data?: { message?: unknown } }; message?: unknown };
   const msg = e?.response?.data?.message ?? e?.message;
-  if (typeof msg === 'string' && msg.trim() !== '' && !/^Request failed with status code/.test(msg)) {
+  if (typeof msg === 'string' && msg.trim() !== '' && !msg.startsWith('Request failed with status code')) {
     return msg;
   }
   return fallback;

@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { type AuthVariant } from './authLayoutTheme';
@@ -33,7 +34,8 @@ const cardMotion = {
 export default function AuthLayout({
   variant = 'primary', themeColor, compact = false, fullWidth = false,
   brandIcon, brandLabel, brandSub, badge, heading, description, features, children, footerNote,
-}: AuthLayoutProps) {
+  resolvedSlug,
+}: AuthLayoutProps & { resolvedSlug?: string }) {
   const branded = Boolean(themeColor);
 
   return (
@@ -73,22 +75,11 @@ export default function AuthLayout({
             )}
           >
             <div className={cn('w-full', fullWidth ? 'max-w-2xl' : 'max-w-md')}>
-              <MobileHeader branded={branded} compact={compact} brandIcon={brandIcon} brandSub={brandSub} brandLabel={brandLabel} themeColor={themeColor} />
+              <MobileHeader branded={branded} compact={compact} brandIcon={brandIcon} brandSub={brandSub} brandLabel={brandLabel} themeColor={themeColor} resolvedSlug={resolvedSlug} />
               {children}
               {footerNote && (
                 <div className="mt-4 sm:mt-6 text-center text-xs sm:text-sm">
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
-                    {resolvedSlug && (
-                      <Link
-                        href={`/o/${encodeURIComponent(resolvedSlug)}`}
-                        className="text-sm font-semibold transition hover:opacity-80"
-                        style={themeColor ? { color: themeColor } : undefined}
-                      >
-                        ← Back to school page
-                      </Link>
-                    )}
-                    <p className="text-xs sm:text-sm text-slate-500">Having trouble signing in? Contact your school office.</p>
-                  </div>
+                  <p className="text-xs sm:text-sm text-slate-500">Having trouble signing in? Contact your school office.</p>
                 </div>
               )}
             </div>
@@ -99,10 +90,11 @@ export default function AuthLayout({
   );
 }
 
-function MobileHeader({ branded, compact, brandIcon, brandSub, brandLabel, themeColor }: {
+function MobileHeader({ branded, compact, brandIcon, brandSub, brandLabel, themeColor, resolvedSlug }: {
   branded: boolean; compact: boolean;
   brandIcon: ReactNode; brandSub: string; brandLabel: string;
   themeColor?: string;
+  resolvedSlug?: string;
 }) {
   return (
     <motion.div initial={false} className={cn('text-center lg:hidden', compact ? 'mb-3' : 'mb-4 sm:mb-6')}>
@@ -115,6 +107,15 @@ function MobileHeader({ branded, compact, brandIcon, brandSub, brandLabel, theme
         </>
       ) : (
         <div className="mx-auto flex justify-center [&_img]:h-14 sm:[&_img]:h-20 [&_img]:w-auto [&_img]:object-contain [&_img]:bg-transparent">{brandIcon}</div>
+      )}
+      {resolvedSlug && (
+        <Link
+          href={`/o/${encodeURIComponent(resolvedSlug)}`}
+          className="mt-3 sm:mt-4 block text-xs sm:text-sm font-semibold text-center transition hover:opacity-80"
+          style={themeColor ? { color: themeColor } : undefined}
+        >
+          ← Back to school page
+        </Link>
       )}
     </motion.div>
   );

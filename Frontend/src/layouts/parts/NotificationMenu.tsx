@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   setPortalNotifications, removePortalNotification, setPortalUnread,
-  markAllPortalRead, markPortalRead, addPortalNotification,
+  markAllPortalRead, markPortalRead,
 } from '@/store/slices/notificationsSlice';
 import {
   usePortalNotificationsQuery,
@@ -79,22 +79,10 @@ export default function NotificationMenu() {
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
-    const onCreated = (n: any) => {
-      dispatch(addPortalNotification(n));
-      refetchUnread();
-    };
-    const onDeleted = ({ ids }: { ids: string[] }) => {
-      ids.forEach((id: string) => dispatch(removePortalNotification(id)));
-      refetchUnread();
-    };
-    const onRead = ({ ids }: { ids: string[] }) => {
-      dispatch(markPortalRead(ids));
-      refetchUnread();
-    };
-    const onAllRead = () => {
-      dispatch(markAllPortalRead());
-      refetchUnread();
-    };
+    const onCreated = () => { refetchUnread(); };
+    const onDeleted = () => { refetchUnread(); };
+    const onRead = () => { refetchUnread(); };
+    const onAllRead = () => { refetchUnread(); };
     socket.on('portal_notification_created', onCreated);
     socket.on('portal_notifications_deleted', onDeleted);
     socket.on('portal_notifications_read', onRead);
@@ -105,7 +93,7 @@ export default function NotificationMenu() {
       socket.off('portal_notifications_read', onRead);
       socket.off('portal_all_read', onAllRead);
     };
-  }, [dispatch, refetchUnread, socketStatus]);
+  }, [refetchUnread, socketStatus]);
 
   return (
     <div className="relative">

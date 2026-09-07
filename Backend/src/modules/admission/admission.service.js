@@ -685,21 +685,16 @@ class AdmissionService {
 
     // Branch admins ko visible entry — NotificationLog mein (delivery logs page)
     try {
-      await prisma.notificationLog.create({
-        data: {
-          schoolId: data.schoolId,
-          recipient: "Branch Office",
-          channel: "PORTAL",
-          message: `New admission inquiry: ${data.firstName} ${data.lastName} (${cls.name})`,
-          status: "SENT",
-        },
-      });
-      emitToRoom(`school:${data.schoolId}`, "portal_notification_created", {
-        recipient: "Branch Office",
-        channel: "PORTAL",
-        title: "New Admission Inquiry",
-        status: "SENT",
-      });
+      portalNotificationService.create({
+        schoolId: data.schoolId,
+        senderId: null,
+        senderName: "System",
+        title: "ADMISSION",
+        body: `New admission inquiry: ${data.firstName} ${data.lastName} (${cls.name})`,
+        category: "ADMISSION",
+        refType: "ADMISSION",
+        refId: null,
+      }).catch(() => {});
     } catch (err) {
       // Non-blocking — applicant ban chuka hai, log fail ho to koi masla nahi
     }

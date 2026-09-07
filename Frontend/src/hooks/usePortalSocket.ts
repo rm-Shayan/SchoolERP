@@ -10,16 +10,20 @@ import {
   addHomeworkEvent,
   addCircularEvent,
   clearPortalEvents,
-  addPortalNotificationEvent,
   type PortalAttendanceEvent,
   type PortalHomeworkEvent,
   type PortalCircularEvent,
-  type PortalNotificationEvent,
 } from '@/store/slices/portalSocketSlice';
+import {
+  addPortalNotification,
+  removePortalNotification,
+  markPortalRead,
+  markAllPortalRead,
+} from '@/store/slices/notificationsSlice';
 /**
  * Connects a socket for portal (parent/student) users.
  * Joins section:{id} rooms for the child's sections and school:{id} room.
- * Dispatches real-time events to the portalSocket Redux slice.
+ * Dispatches real-time events to the portalSocket + notifications Redux slices.
  */
 export function usePortalSocket(sectionIds: string[], schoolId?: string) {
   const dispatch = useAppDispatch();
@@ -29,7 +33,6 @@ export function usePortalSocket(sectionIds: string[], schoolId?: string) {
     if (!sectionIds.length || !schoolId) return;
 
     const url = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
-    // Parent/student portals store tokens under different keys.
     const portalToken = typeof window !== 'undefined'
       ? localStorage.getItem('studentToken') || localStorage.getItem('parentToken') || getAccessToken()
       : null;
@@ -41,9 +44,7 @@ export function usePortalSocket(sectionIds: string[], schoolId?: string) {
 
     socket.on('connect', () => {
       dispatch(setPortalConnected(true));
-      // Join section rooms for scoped data (homework, attendance)
       sectionIds.forEach((id) => socket.emit('join_room', `section:${id}`));
-      // Join school room for school-wide data (circulars)
       socket.emit('join_room', `school:${schoolId}`);
     });
 
@@ -62,8 +63,20 @@ export function usePortalSocket(sectionIds: string[], schoolId?: string) {
       dispatch(addCircularEvent(payload));
     });
 
-    socket.on('portal_notification_created', (payload: PortalNotificationEvent) => {
-      dispatch(addPortalNotificationEvent(payload));
+    socket.on('portal_notification_created', (payload: any) => {
+      dispatch(addPortalNotification(payload));
+    });
+
+    socket.on('portal_notifications_deleted', (payload: { ids: string[] }) => {
+      payload.ids.forEach((id: string) => dispatch(removePortalNotification(id)));
+    });
+
+    socket.on('portal_notifications_read', (payload: { ids: string[] }) => {
+      dispatch(markPortalRead(payload.ids));
+    });
+
+    socket.on('portal_all_read', () => {
+      dispatch(markAllPortalRead());
     });
 
     return () => {

@@ -14,7 +14,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', loading, children, disabled, themeColor, style, ...props }, ref) => {
     const hasTheme = Boolean(themeColor);
     const themeStyle = hasTheme
-      ? { background: themeColor, boxShadow: `0 4px 14px ${themeColor}40`, ...(style ?? {}) }
+      ? { background: themeColor, boxShadow: `0 4px 14px ${themeColor}40`, ...style }
       : style;
 
     return (
