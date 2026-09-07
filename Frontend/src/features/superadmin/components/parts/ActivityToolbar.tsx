@@ -22,7 +22,7 @@ const ENTITY_OPTIONS = [
   { value: 'AUTH', label: 'Auth' },
 ];
 
-// Server-side search hai — har keystroke par API call na jaye (250ms debounce).
+// Server-side search — debounced to avoid an API call on every keystroke (250ms).
 export default function ActivityToolbar({
   search,
   action,

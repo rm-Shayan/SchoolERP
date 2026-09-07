@@ -8,8 +8,8 @@ export interface SectionFormValues {
 }
 
 /**
- * Per-class Section CRUD (ClassCard ke Add/Edit/Delete section buttons).
- * `onChanged` = list reload callback taake change ke baad UI refresh ho.
+ * Per-class Section CRUD (for ClassCard's Add/Edit/Delete section buttons).
+ * `onChanged` = list reload callback so the UI refreshes after a change.
  */
 export function useSections(onChanged: () => void) {
   const createSection = async (classId: string, v: SectionFormValues) => {

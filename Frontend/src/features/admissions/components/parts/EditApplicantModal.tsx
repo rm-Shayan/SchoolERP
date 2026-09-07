@@ -18,7 +18,7 @@ export default function EditApplicantModal({ applicant, onClose, onSaved }: Edit
   const { user, school } = useAppSelector((s) => s.auth);
   const schoolId = school?.id ?? user?.schoolId;
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
-  // Approve pehle, fee baad — advance fee sirf APPROVED/FEE_PENDING ke baad editable.
+  // Approval first, fee later — advance fee is only editable after APPROVED/FEE_PENDING.
   const feeEditable = applicant.status === 'APPROVED' || applicant.status === 'FEE_PENDING';
 
   const { values, errors, isSubmitting, handleChange, handleBlur, handleSubmit } = useForm({

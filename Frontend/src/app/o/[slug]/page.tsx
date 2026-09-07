@@ -1,7 +1,7 @@
 import OrgLandingPage from '@/features/public/components/OrgLandingPage';
 import { getServerOrgPublic, getAllOrgSlugs } from '@/lib/server/orgPublic';
 
-// ISR: built static HTML 5 min baad background me refresh hota hai.
+// ISR: built static HTML refreshes in the background every 5 minutes.
 export const revalidate = 300;
 
 export async function generateStaticParams() {

@@ -10,7 +10,7 @@ interface BranchState {
 
 const initialState: BranchState = {
   activeBranch: null,
-  // SSR-safe: prerender ke waqt localStorage exist nahi karta
+  // SSR-safe: localStorage does not exist during prerender
   activeBranchId: typeof window !== 'undefined' ? localStorage.getItem('activeBranchId') : null,
 };
 

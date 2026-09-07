@@ -21,7 +21,7 @@ export const STATUS_OPTIONS: { value: AttendanceStatus; label: string; classes: 
 ];
 
 export async function fetchSectionOptions(schoolId: string): Promise<SectionOption[]> {
-  // Backend listClassesBySchool nested sections include karta hai — ek hi request
+  // Backend listClassesBySchool includes nested sections — single request
   const classes = await academicService.getClassesBySchool(schoolId);
   const opts: SectionOption[] = [];
   for (const c of classes) {
@@ -32,7 +32,7 @@ export async function fetchSectionOptions(schoolId: string): Promise<SectionOpti
   return opts;
 }
 
-/** Class list (unique) marking dropdown ke liye — SectionOption se banata hai. */
+/** Unique class list for the marking dropdown — derived from SectionOption. */
 export function groupSectionOptions(sections: SectionOption[]) {
   const map = new Map<string, { id: string; name: string }>();
   for (const s of sections) if (!map.has(s.classId)) map.set(s.classId, { id: s.classId, name: s.className });

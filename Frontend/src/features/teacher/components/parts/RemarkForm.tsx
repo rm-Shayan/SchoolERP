@@ -31,7 +31,7 @@ export default function RemarkForm({ editing, onSaved, onCancel }: Props) {
   const { values, errors, isSubmitting, setValue, handleChange, handleBlur, handleSubmit } = useForm({
     initialValues: { sectionId: '', studentId: '', type: 'POSITIVE', title: '', description: '' },
     validators: {
-      // Edit mode me student/section locked hota hai — sirf type/comment badalte hain.
+      // In edit mode, student/section are locked — only type/comment can be changed.
       sectionId: editing ? noop : required('Select a section'),
       studentId: editing ? noop : required('Select a student'),
       type: required('Select a remark type'),

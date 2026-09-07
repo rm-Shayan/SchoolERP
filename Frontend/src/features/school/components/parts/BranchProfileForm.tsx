@@ -15,7 +15,7 @@ export function BranchProfileForm() {
   } = useBranchProfile();
 
   if (!school) return null;
-  // Jab branch ka apna logo na ho — organization ka logo default dikhe
+  // Show organization logo as default when branch has no logo
   const displayLogo = logoUrl || school.logoUrl || '';
 
   return (
@@ -34,11 +34,11 @@ export function BranchProfileForm() {
       </div>
       <Input label="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
 
-      {/* Bank Details — is branch ke fee vouchers par yahi print hoga */}
+      {/* Bank Details — printed on this branch's fee vouchers */}
       <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50/60 to-white p-5">
         <h3 className="text-sm font-bold text-gray-900 mb-1">Bank Details (optional)</h3>
         <p className="text-xs text-gray-400 mb-4">
-          Fee vouchers par yahan ka account print hoga. Khali chhora to organization ka default use hoga.
+          This account will be printed on fee vouchers. If left blank, the organization default will be used.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Bank Name" placeholder="e.g. Meezan Bank" value={bankName} onChange={(e) => setBankName(e.target.value)} />

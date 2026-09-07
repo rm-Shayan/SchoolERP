@@ -107,7 +107,7 @@ export default function StaffEditModal({ open, member, onClose, onUpdated }: Sta
           <StaffAssignmentManager teacherId={member.id} schoolId={schoolId} />
         )}
 
-        {/* Password reset — admin naya password set kare, isi se staff login karega */}
+        {/* Password reset — admin sets a new password for the staff member to log in with */}
         <StaffPasswordReset member={member} />
 
         <div className="flex items-center gap-3 pt-2 border-t border-slate-100">

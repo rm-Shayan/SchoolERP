@@ -61,12 +61,12 @@ export default function BranchSwitcherSection() {
   return (
     <div className="max-w-2xl space-y-4">
       <p className="text-xs text-gray-400">
-        Bilkul wahi account, bilkul wahi credentials — bas branch portal badal jata hai. SMTP/Cloudinary
-        settings bhi isi branch ke secrets tab se manage hote hain (agar set na hon to organization wale use hote hain).
+        Same account, same credentials — only the branch portal changes. SMTP/Cloudinary
+        settings are also managed from this branch&apos;s secrets tab (organization defaults are used if not set).
       </p>
 
       {branches.length === 0 && (
-        <p className="text-sm text-gray-500 py-2">Koi aur branch is account se link nahi hai.</p>
+        <p className="text-sm text-gray-500 py-2">No other branches are linked to this account.</p>
       )}
 
       <div className="space-y-3">

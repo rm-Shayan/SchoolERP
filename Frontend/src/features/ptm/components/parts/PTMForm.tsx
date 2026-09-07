@@ -68,7 +68,7 @@ export default function PTMForm({ open, schoolId, school, classes, session, onCl
           scope,
           classFromId: scope === 'CLASS_RANGE' ? audience.classFromId : undefined,
           classToId: scope === 'CLASS_RANGE' ? audience.classToId : undefined,
-          // CLASS_RANGE: sectionIds optional narrowing hai (single-class scene)
+          // CLASS_RANGE: sectionIds are an optional narrowing (single-class scenario)
           sectionIds: scope === 'SECTIONS' || scope === 'CLASS_RANGE' ? audience.sectionIds : [],
           studentId: scope === 'STUDENT' ? audience.student!.id : undefined,
           teacherIds,

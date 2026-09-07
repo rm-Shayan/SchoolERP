@@ -5,10 +5,11 @@ import { applyPortalThemeToRoot, clearPortalThemeFromRoot } from '@/lib/theme';
 import { getOrgThemeColor } from '@/lib/utils/orgTheme';
 
 /**
- * Org admin portal jaisa hi portal-wide theming: organization ka color root
- * CSS vars par lagta hai (blue + primary scale), taake student/parent portal
- * ke cards, buttons, chips — sab brand color mein aa jayen. Profile aane par
- * caller `setOrgTheme(hex)` bhejta hai; localStorage fallback se flicker nahi.
+ * Portal-wide theming just like the org admin portal: the organization's color
+ * is applied to root CSS vars (blue + primary scale), so the student/parent
+ * portal's cards, buttons, chips — everything matches the brand color.
+ * The caller passes `setOrgTheme(hex)` when the profile loads; localStorage
+ * fallback prevents flicker.
  */
 export function usePortalTheme() {
   const [orgTheme, setOrgTheme] = useState<string | undefined>(getOrgThemeColor);

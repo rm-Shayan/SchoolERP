@@ -7,7 +7,7 @@ import { portalLoginRedirect } from '@/lib/utils/orgTheme';
 
 const API_BASE_URL = '/api/v1';
 
-/** Window event — profile (photo etc.) update hone par dashboard refresh ke liye. */
+/** Window event — triggers dashboard refresh when profile (photo etc.) is updated. */
 export const PARENT_PROFILE_UPDATED_EVENT = 'parent:profile-updated';
 
 export interface ParentChild {

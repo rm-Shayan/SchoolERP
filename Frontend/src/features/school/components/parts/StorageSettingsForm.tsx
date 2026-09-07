@@ -77,7 +77,7 @@ export default function StorageSettingsForm({
       {!isOwn && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
           <p className="text-xs text-amber-700 font-medium">
-            Uploads platform ke shared storage par ja rahe hain — apne creds add karein taake aapka data aapke apne account par ho.
+            Uploads go to the platform&apos;s shared storage — add your own credentials so your data stays on your own account.
           </p>
         </div>
       )}

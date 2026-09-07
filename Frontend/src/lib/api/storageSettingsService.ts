@@ -3,8 +3,8 @@ import type { ApiResponse, StorageSettingsStatus, StorageSettingsPayload } from 
 
 /**
  * Per-tenant Cloudinary (media storage) credentials.
- * Backend: /api/v1/storage/settings — SUPER_ADMIN kisi bhi org ke liye,
- * ADMIN sirf apni org ke liye. Save se pehle backend real API ping karta hai.
+ * Backend: /api/v1/storage/settings — SUPER_ADMIN can manage any org,
+ * ADMIN only for their own org. Before saving, the backend pings the real API.
  */
 export const storageSettingsService = {
   getStatus: async (organizationId?: string | null, schoolId?: string | null): Promise<StorageSettingsStatus> => {

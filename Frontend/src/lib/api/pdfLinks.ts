@@ -5,8 +5,8 @@ import api from './client';
 /**
  * Fetch a PDF via the authed axios client (Authorization header attached) and
  * open it in a new tab. Raw `<a href="/api/v1/...">` links fail with 401
- * because a browser navigation carries no token — ye helper wohi bug fix
- * karta hai (voucher / receipt / admission slip).
+ * because a browser navigation carries no token — this helper fixes that bug
+ * (voucher / receipt / admission slip).
  */
 export async function openPdf(path: string): Promise<void> {
   const res = await api.get(path, { responseType: 'blob' });
@@ -18,8 +18,8 @@ export async function openPdf(path: string): Promise<void> {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  // New tab ko PDF render karne ka waqt do — turant revoke karne par kuch
-  // browsers blank page dikha dete hain.
+  // Give the new tab time to render the PDF — revoking immediately causes
+  // some browsers to show a blank page.
   setTimeout(() => URL.revokeObjectURL(url), 2_000);
 }
 

@@ -11,8 +11,8 @@ export function persistAuth(user: User | null, org: Organization | null | undefi
   if (school) localStorage.setItem('school', JSON.stringify(school));
 }
 
-// Har staff user apni branch se hi juda hota hai — nested school hi active
-// school hai. fallback sirf tab use hota hai jab profile mein school na ho.
+// Every staff user is linked to their own branch — the nested school is the
+// active school. Fallback is only used when the profile has no school.
 export const pickActiveSchool = (user: User, fallback?: School | null): School | null => {
   const nested = getNestedSchool(user);
   if (nested) return nested;

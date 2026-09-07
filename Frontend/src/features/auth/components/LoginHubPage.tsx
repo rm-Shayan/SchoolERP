@@ -34,10 +34,10 @@ export default function LoginHubPage({ orgSlug, code, initialBranding }: LoginHu
   // already collapses school→org into logoUrl, so we use branding.logoUrl.
   const themeColor = branding?.themeColor || undefined;
 
-  // DB se aayi theme (query param org/school/code → branding) ko poore hub UI
-  // par laga do — root CSS vars override se har primary-* element (buttons,
-  // links, focus rings, chips, background blobs) org ka color use karta hai,
-  // sirf left panel/tab nahi. Branding na ho to default violet (clear).
+  // Apply the theme from the database (query param org/school/code → branding)
+  // to the entire hub UI — root CSS vars override so every primary-* element
+  // (buttons, links, focus rings, chips, background blobs) uses the org color,
+  // not just the left panel/tabs. If no branding, clear to default violet.
   useEffect(() => {
     if (themeColor) applyOrgThemeToRoot(themeColor);
     else clearOrgThemeFromRoot();

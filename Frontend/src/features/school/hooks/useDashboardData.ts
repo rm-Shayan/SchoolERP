@@ -54,7 +54,7 @@ function buildClassStrength(students: Student[]): ClassStrengthDatum[] {
     .map(([name, count]) => ({ name, Students: count }));
 }
 
-/** Org-admin dashboard ka poora data load + derived chart datasets. */
+/** Full org-admin dashboard data load + derived chart datasets. */
 export function useDashboardData(schoolId?: string) {
   const [data, setData] = useState<DashboardData>(EMPTY);
   const [loading, setLoading] = useState(true);
@@ -117,7 +117,7 @@ export function useDashboardData(schoolId?: string) {
         }));
         setHydrating(false);
       } catch {
-        // silent — dashboard defaults dikhta hai
+        // silent — dashboard defaults are shown
       } finally {
         if (alive) setLoading(false);
       }

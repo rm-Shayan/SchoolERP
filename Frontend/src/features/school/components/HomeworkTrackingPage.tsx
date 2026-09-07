@@ -52,7 +52,7 @@ export default function HomeworkTrackingPage() {
     load();
   }, [load]);
 
-  // Teacher-wise grouping — ek card mein us teacher ke saare homework
+  // Teacher-wise grouping — all homework from a teacher grouped into one card
   const groups: TeacherGroup[] = useMemo(() => {
     const map = new Map<string, TeacherGroup>();
     for (const hw of items) {
@@ -91,7 +91,7 @@ export default function HomeworkTrackingPage() {
     <div className="space-y-6">
       <PageHeader
         title="Homework Tracking"
-        description="Teacher-wise homework tracking — admin bhi teacher ki taraf se post/edit/delete kar sakta hai. Academic year end par purani homework auto-delete."
+        description="Teacher-wise homework tracking — admins can also post, edit, or delete on behalf of teachers. Old homework auto-deletes at the end of the academic year."
         actions={<Button size="sm" onClick={() => { setEditing(null); setShowForm(true); }}>New Homework</Button>}
       />
 
@@ -138,7 +138,7 @@ export default function HomeworkTrackingPage() {
       <ConfirmDialog
         open={Boolean(deleting)}
         title="Delete homework?"
-        message={`"${deleting?.title}" permanently delete ho jayega. Parents ko is baare mein koi notification nahi jayega.`}
+        message={`"${deleting?.title}" will be permanently deleted. Parents will not receive any notification about this.`}
         confirmLabel="Delete"
         loading={deleteBusy}
         onConfirm={handleDeleteConfirm}

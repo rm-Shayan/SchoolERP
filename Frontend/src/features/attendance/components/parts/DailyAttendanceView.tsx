@@ -60,7 +60,7 @@ export default function DailyAttendanceView() {
   const isWeekend = weeklyOff.includes(new Date(date).getDay());
   const offDay = (data?.offDays ?? []).find((o) => o.date === date);
 
-  // Har section ka node pehle se (records se independent), phir records bharo.
+  // Each section's node is pre-created (independent of records), then records are filled in.
   const groups = useMemo<SectionGroup[]>(() => {
     const map = new Map<string, SectionGroup>();
     for (const c of scaffold) {
@@ -90,7 +90,7 @@ export default function DailyAttendanceView() {
 
   const filtered = useMemo(() => classFilter === 'ALL' ? groups : groups.filter((g) => g.className === classFilter), [groups, classFilter]);
 
-  // Filter/date badle to wapas page 1 (warna user purane page par atka reh jata).
+  // When filter/date changes, reset to page 1 (otherwise the user stays on an old page).
   useEffect(() => { setPage(1); }, [date, classFilter]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / CARDS_PER_PAGE));
   const safePage = Math.min(page, totalPages);

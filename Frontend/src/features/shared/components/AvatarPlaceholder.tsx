@@ -6,7 +6,7 @@ interface AvatarPlaceholderProps {
 }
 
 /** Generic avatar placeholder — soft neutral gradient + person silhouette.
- *  Jab koi photo nahi hai (ya load fail ho jaye) to profile/child tiles ke liye. */
+ *  Used for profile/child tiles when no photo is available (or load fails). */
 export default function AvatarPlaceholder({ className, style }: AvatarPlaceholderProps) {
   return (
     <div

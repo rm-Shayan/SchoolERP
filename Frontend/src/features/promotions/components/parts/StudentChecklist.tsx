@@ -13,8 +13,8 @@ interface StudentChecklistProps {
 const ROW_HEIGHT = 44;
 const initials = (s: Student) => `${s.firstName.charAt(0)}${s.lastName.charAt(0)}`.toUpperCase();
 
-// Virtualized — 1000+ students par bhi sirf visible rows DOM me (smooth scroll
-// + checkbox toggles). Pehle saari rows render hoti thin — isi se UI slow lagti thi.
+// Virtualized — even with 1000+ students, only visible rows are in the DOM (smooth scroll
+// + checkbox toggles). Previously all rows were rendered, which caused UI slowness.
 function StudentChecklistInner({ students, selected, onToggle }: StudentChecklistProps) {
   return (
     <VirtualizedList

@@ -24,7 +24,7 @@ export default function SettingsPage() {
 
   const handleLogout = async () => {
     await dispatch(logoutAction());
-    // Whole app: logout par org slug ke saath unified login par le jao
+    // On logout, redirect to unified login with the org slug
     router.push(organization?.slug ? `/login?org=${organization.slug}` : '/login');
   };
 

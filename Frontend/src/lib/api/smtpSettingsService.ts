@@ -3,8 +3,8 @@ import type { ApiResponse, SmtpSettingsStatus, SmtpSettingsPayload, SmtpTestResu
 
 /**
  * Per-tenant SMTP (outgoing mail) settings — PRIMARY + SECONDARY failover.
- * Backend: /api/v1/smtp/settings — SUPER_ADMIN kisi bhi org/branch ke liye,
- * ADMIN sirf apni org/branch ke liye.
+ * Backend: /api/v1/smtp/settings — SUPER_ADMIN can manage any org/branch,
+ * ADMIN only for their own org/branch.
  */
 export const smtpSettingsService = {
   getStatus: async (organizationId?: string | null, schoolId?: string | null): Promise<SmtpSettingsStatus> => {

@@ -13,7 +13,7 @@ export interface Organization {
   instagramUrl?: string | null;
   twitterUrl?: string | null;
   youtubeUrl?: string | null;
-  bankName?: string | null; // fee voucher par print hota hai
+  bankName?: string | null; // printed on fee voucher
   bankAccountTitle?: string | null;
   bankAccountNumber?: string | null;
   adminUsername?: string | null;
@@ -77,11 +77,11 @@ export interface School {
   logoUrl?: string | null;
   themeColor?: string | null;
   status?: SchoolStatus;
-  monthlyFeeDueDay?: number; // har month voucher ka default due day (e.g. 10 = 10th)
+  monthlyFeeDueDay?: number; // default due day for monthly voucher (e.g. 10 = 10th)
   attendanceStartTime?: string; // attendance marking start (HH:MM, 24hr)
-  attendanceCutoffTime?: string; // late cutoff — iske baad unmarked students LATE (HH:MM, 24hr)
-  attendanceAbsentTime?: string; // absent cutoff — iske baad unmarked students ABSENT (HH:MM, 24hr)
-  attendanceAlertTime?: string; // jab attendance alerts messages jayen (HH:MM, 24hr)
+  attendanceCutoffTime?: string; // late cutoff — unmarked students after this are marked LATE (HH:MM, 24hr)
+  attendanceAbsentTime?: string; // absent cutoff — unmarked students after this are marked ABSENT (HH:MM, 24hr)
+  attendanceAlertTime?: string; // when attendance alert messages are sent (HH:MM, 24hr)
   bankName?: string | null; // branch bank override — null = org default
   bankAccountTitle?: string | null;
   bankAccountNumber?: string | null;

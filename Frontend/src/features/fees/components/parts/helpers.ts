@@ -20,7 +20,7 @@ export const MONTH_OPTIONS = [
   { value: '12', label: 'December' },
 ];
 
-// Module-level (render mein nahi) — session ke liye stable.
+// Module-level (not in render) — stable across the session.
 const CURRENT_YEAR = new Date().getFullYear();
 export const YEAR_OPTIONS = Array.from({ length: 8 }, (_, i) => {
   const y = CURRENT_YEAR - 3 + i;

@@ -64,10 +64,10 @@ export default function OrgFormFields({
         </div>
       </div>
 
-      {/* Bank details — fee vouchers par print hota hai */}
+      {/* Bank details — printed on fee vouchers */}
       <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4">
         <h4 className="text-sm font-semibold text-gray-900 mb-3">Bank Details *</h4>
-        <BankFields values={values} errors={errors} onChange={onChange} hint="Fee vouchers par print hoga — branches apna account baad mein override kar sakti hain." />
+        <BankFields values={values} errors={errors} onChange={onChange} hint="Will be printed on fee vouchers — branches can override with their own account details later." />
       </div>
     </div>
   );

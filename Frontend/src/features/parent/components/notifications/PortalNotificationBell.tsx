@@ -33,9 +33,9 @@ export default function PortalNotificationBell() {
   const openBell = () => {
     const next = !open;
     setOpen(next);
-    // Bell click par badge chahe open ho ya close — count hamesha hide karo.
-    // (Open karne par saare visible items read kar dete hain, closed state bhi count
-    //  wapas nahi laana chahiye.)
+    // On bell click, always hide the badge count — whether opening or closing.
+    // (When opening, all visible items are marked as read; even in closed state
+    //  the count should not reappear.)
     setUnread(0);
   };
 

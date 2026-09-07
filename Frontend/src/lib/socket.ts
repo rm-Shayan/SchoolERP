@@ -26,7 +26,7 @@ function toLiveScanEvent(payload: any): LiveScanEvent {
 }
 
 /**
- * Real-time scope guard — hamesha mirror the server's list()/unreadCount()
+ * Real-time scope guard — always mirror the server's list()/unreadCount()
  * rules so no socket event leaks another person's/another branch's
  * notification into this client's store.
  */
@@ -36,7 +36,7 @@ function canReceive(n: PortalNotification): boolean {
 
   if (user.role === 'SUPER_ADMIN') return n.senderId !== user.id;
 
-  // Branch scope check first — kisi aur org/branch ka event na aaye.
+  // Branch scope check first — prevent events from other orgs/branches.
   if (n.schoolId && user.schoolId && n.schoolId !== user.schoolId) return false;
   if (n.organizationId && user.organizationId && n.organizationId !== user.organizationId) return false;
 
@@ -46,8 +46,8 @@ function canReceive(n: PortalNotification): boolean {
   }
 
   // Teacher / receptionist:
-  //   - sirf apni targeted notifications
-  //   - ya school/org broadcast (recipientId null)
+  //   - only their own targeted notifications
+  //   - or school/org broadcast (recipientId null)
   if (n.recipientId) return n.recipientId === user.id;
   return true;
 }

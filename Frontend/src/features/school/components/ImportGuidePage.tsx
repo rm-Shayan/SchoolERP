@@ -32,25 +32,25 @@ const TAB_META: Record<ImportType, { label: string; icon: string }> = {
 
 const TIPS: Record<ImportType, string[]> = {
   students: [
-    'Class Name / Section Name Academic Setup ke existing classes se exact match hone chahiye.',
-    'Roll Number har section mein unique hona zaroori hai.',
-    'Parent email di gayi to login credentials email par bhej diye jate hain.',
+    'Class Name / Section Name must exactly match existing classes in the Academic Setup.',
+    'Roll Number must be unique within each section.',
+    'If a parent email is provided, login credentials are sent via email.',
   ],
   staff: [
-    'Role sirf ye values accept karta hai: TEACHER, STAFF, ACCOUNTANT, NURSE, LIBRARIAN.',
-    'Password blank chhorein to system khud generate karke email karta hai.',
-    'Email duplicate nahi hona chahiye — har staff ka unique account banta hai.',
+    'Role only accepts these values: TEACHER, STAFF, ACCOUNTANT, NURSE, LIBRARIAN.',
+    'Leave Password blank and the system will auto-generate and email it.',
+    'Email must be unique — each staff member gets a unique account.',
   ],
   'staff-attendance': [
-    'Staff Name ya Email se match hota hai — exact name ya email dena zaroori hai.',
-    'Date format YYYY-MM-DD hona chahiye (e.g. 2026-08-27).',
-    'Status sirf ye values accept karta hai: PRESENT, ABSENT, LATE, LEAVE.',
-    'Agar same staff + same date ka record pehle se hai, to overwrite ho jayega.',
+    'Matches by Staff Name or Email — exact name or email is required.',
+    'Date format must be YYYY-MM-DD (e.g. 2026-08-27).',
+    'Status only accepts these values: PRESENT, ABSENT, LATE, LEAVE.',
+    'If a record for the same staff + date already exists, it will be overwritten.',
   ],
   timetable: [
-    'Har row ek section ke liye hoti hai — Section column mein "Class 5 - A" format use karein.',
-    'Day column mein day name (Monday) ya number (1-7) dono chalta hai.',
-    'Teacher column mein teacher ka exact name dena zaroori hai jo staff list mein maujood ho.',
+    'Each row is for one section — use the "Class 5 - A" format in the Section column.',
+    'The Day column accepts both day names (Monday) and numbers (1-7).',
+    'The Teacher column requires the exact name as it appears in the staff list.',
   ],
 };
 
@@ -86,7 +86,7 @@ export default function ImportGuidePage() {
     <div className="space-y-6">
       <PageHeader
         title="Import Guide"
-        description="Excel format samjhein, sample template download karein aur bulk import shuru karein."
+        description="Understand the Excel format, download a sample template, and start bulk importing."
       />
 
       <ImportSteps />

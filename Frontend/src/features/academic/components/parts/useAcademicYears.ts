@@ -25,7 +25,7 @@ export function useAcademicYears() {
     if (!schoolId) return;
     try {
       setLoading(true);
-      // Backend listAcademicYearsBySchool terms nested include karta hai — ek hi request
+      // Backend listAcademicYearsBySchool includes nested terms — single request
       const data = await academicService.getYearsBySchool(schoolId);
       setYears(data);
       const terms: Record<string, Term[]> = {};

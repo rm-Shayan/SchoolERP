@@ -16,7 +16,7 @@ import { OverviewSkeleton } from './parts/PortalSkeletonsA';
 
 type SchoolInfo = { themeColor?: string | null; logoUrl?: string | null; slug?: string | null };
 
-/** Org branding (theme + logo + slug) localStorage me save — logout par login?org= mile. */
+/** Save org branding (theme + logo + slug) to localStorage — so logout redirects to login?org=. */
 function saveOrgBranding(school?: SchoolInfo | null) {
   if (typeof window === 'undefined' || !school?.themeColor && !school?.logoUrl) return;
   let prev: Record<string, unknown> = {};
@@ -50,7 +50,7 @@ export default function PortalDashboard() {
           const p = await parentService.getMe();
           setParent(p);
           localStorage.setItem('parentProfile', JSON.stringify(p));
-          // Last-selected child restore karo (child switcher), warna pehla bacha.
+          // Restore the last-selected child (child switcher), otherwise use the first child.
           const saved = localStorage.getItem('activeChildId');
           const initial = p.children.some((c) => c.id === saved) ? saved : p.children[0]?.id;
           if (initial) {
@@ -63,7 +63,7 @@ export default function PortalDashboard() {
     })();
   }, [isStudent, router]);
 
-  // Parent photo/name update (header/upload) hone par profile refresh.
+  // Refresh the parent profile when photo/name is updated (header/upload).
   useEffect(() => {
     if (isStudent) return;
     const reload = () => {

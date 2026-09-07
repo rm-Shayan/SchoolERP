@@ -31,8 +31,8 @@ interface PortalTabHostProps {
   onChildChange?: (id: string) => void;
 }
 
-/** Active tab render karta hai. Key me selected child bhi hota hai taake
- *  child switch par tab remount ho aur naye child ka data fetch ho. */
+/** Renders the active tab. The key includes the selected child so the tab
+ *  remounts on child switch and fetches the new child's data. */
 export default function PortalTabHost({ tab, activeChildId, children, onChildChange }: PortalTabHostProps) {
   if (tab === 'leave') {
     return (

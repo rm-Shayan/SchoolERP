@@ -5,8 +5,9 @@ import { attendanceService } from '@/lib/api/attendanceService';
 import { getOfflineBuffer, clearOfflineBuffer } from '@/features/attendance/utils/offlineBuffer';
 
 export default function OfflineSyncButton({ dark = true }: { dark?: boolean }) {
-  // SSR-safe: navigator sirf browser me hai — pehla render dono jagah false,
-  // phir effect actual status sync karta hai (hydration mismatch se bachne ke liye).
+  // SSR-safe: navigator is only available in the browser — the first render
+  // is false in both environments, then the effect syncs the actual status
+  // (prevents hydration mismatch).
   const [isOnline, setIsOnline] = useState(false);
   const [bufferCount, setBufferCount] = useState(0);
   const [syncing, setSyncing] = useState(false);

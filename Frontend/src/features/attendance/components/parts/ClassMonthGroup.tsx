@@ -28,7 +28,7 @@ const DnIcon = ({ title, onClick }: { title: string; onClick: () => void }) => (
   </button>
 );
 
-/** Monthly overview me 1 class ka group — header par class CSV, har section row par section CSV. */
+/** Monthly overview — one class group: class CSV in the header, section CSV on each row. */
 export default function ClassMonthGroup({ cls, slug, offDays, weeklyOff, year, month }: Props) {
   const exportClass = () => {
     if (cls.sections.every((s) => s.students.length === 0 && s.records.length === 0)) {

@@ -5,15 +5,15 @@ import { memo } from 'react';
 const STEPS = [
   {
     title: 'Download Template',
-    description: 'Sample .xlsx file download karein — sahi column headers already included hain.',
+    description: 'Download a sample .xlsx file — correct column headers are already included.',
   },
   {
     title: 'Fill Your Data',
-    description: 'Rows bharein. Red-marked columns zaroori hain, baaki optional hain.',
+    description: 'Fill in rows. Red-marked columns are required, the rest are optional.',
   },
   {
     title: 'Upload & Import',
-    description: 'Filled file Super Admin → Import Data se upload karein. Results live show hote hain.',
+    description: 'Upload the filled file via Super Admin → Import Data. Results are shown live.',
   },
 ];
 

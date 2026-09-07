@@ -25,7 +25,7 @@ function monthCells(year: number, month: number, weeklyOff: number[]) {
 function pad2(n: number) { return n < 10 ? `0${n}` : String(n); }
 const key = (studentId: string, date: string) => `${studentId}:${String(date).split('T')[0]}`;
 
-/** Monthly matrix CSV — har student ki har date ki status (P/L/A/LV/HD/W/H) + counts. */
+/** Monthly matrix CSV — each student's daily status (P/L/A/LV/HD/W/H) + counts. */
 export function exportSectionMatrixCsv(params: {
   students: StudentLite[];
   records: AttendanceRecord[];
@@ -95,7 +95,7 @@ export function exportSchoolMonthlyCsv(params: {
   toCsv(header, rows, filename || `school-attendance-${year}-${pad2(month)}`);
 }
 
-/** Single-student monthly detail — ek row per din (status + check in/out + remarks). */
+/** Single-student monthly detail — one row per day (status + check in/out + remarks). */
 export function exportStudentMonthCsv(params: {
   student: StudentLite;
   records: AttendanceRecord[];

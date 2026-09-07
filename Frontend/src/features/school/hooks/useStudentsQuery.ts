@@ -109,7 +109,7 @@ export function useStudentsQuery(schoolId?: string): UseStudentsQueryResult {
     setTotal((t) => Math.max(0, t - 1));
   }, []);
 
-  // Current filters ke saath CSV download (backend /students/export).
+  // CSV download with current filters (backend /students/export).
   const exportCsv = useCallback(() => {
     if (!schoolId) return;
     studentService.exportCsv({

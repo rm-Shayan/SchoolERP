@@ -11,7 +11,7 @@ interface PTMTeacherPickerProps {
   onChange: (ids: string[]) => void;
 }
 
-/** Multi-select list of the school's active teachers — PTM me kaun-kaun honge. */
+/** Multi-select list of the school's active teachers — who will attend the PTM. */
 export default function PTMTeacherPicker({ schoolId, value, onChange }: PTMTeacherPickerProps) {
   const [teachers, setTeachers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);

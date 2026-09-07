@@ -22,7 +22,7 @@ interface StudentDetailsProps {
 }
 
 const MAX_PHOTO_MB = 5;
-// HEIC/HEIF (iPhone) bhi — backend sharp se JPEG me convert karta hai.
+// HEIC/HEIF (iPhone) too — backend converts to JPEG using sharp.
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 
 export function StudentDetails({ student, lastClassIds, onClose, onUpdated, onEdit, onDeleted }: StudentDetailsProps) {
@@ -32,8 +32,8 @@ export function StudentDetails({ student, lastClassIds, onClose, onUpdated, onEd
 
   const handlePhoto = async (file: File) => {
     if (!student) return;
-    // Client-side pehle — bina request ke clear feedback (HEIC/oversized photos
-    // backend reject karta tha; ab 5MB tak + JPG/PNG/WebP allow hain).
+    // Client-side validation first — clear feedback without a request (HEIC/oversized photos
+    // used to be rejected by backend; now up to 5MB + JPG/PNG/WebP are allowed).
     if (!ALLOWED_TYPES.includes(file.type)) {
       toast.error('Only JPG, PNG, WebP or HEIC (iPhone) photos are allowed');
       return;

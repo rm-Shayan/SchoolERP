@@ -25,8 +25,8 @@ export function hasBranchCloud(v: BranchSecretsValues): boolean {
   return Boolean(v.cloudName?.trim() && v.cloudApiKey?.trim() && v.cloudApiSecret?.trim());
 }
 
-// Naya admin → SMTP + Cloudinary required (koi previous account nahi jisse
-// inherit kare). Existing admin → optional; provided field to wahi use honge.
+// New admin → SMTP + Cloudinary required (no previous account to inherit from).
+// Existing admin → optional; provided fields will be used as-is.
 export function branchCreatePayload(values: BranchFormValues, organizationId: string) {
   const existingEmail = values.existingAdminEmail?.trim();
   return {

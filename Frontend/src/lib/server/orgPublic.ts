@@ -18,9 +18,9 @@ export async function getServerOrgPublic(slug: string): Promise<OrgPublicData | 
 }
 
 /**
- * All public org slugs — generateStaticParams ke liye (ISR).
- * Build par backend up na ho to [] return hota hai → koi static page nahi,
- * bas on-demand dynamic rendering chalta rahta hai.
+ * All public org slugs — used for generateStaticParams (ISR).
+ * If the backend is down at build time, [] is returned → no static pages,
+ * only on-demand dynamic rendering continues.
  */
 export async function getAllOrgSlugs(): Promise<string[]> {
   try {

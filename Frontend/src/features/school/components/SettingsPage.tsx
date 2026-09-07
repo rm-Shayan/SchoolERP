@@ -38,7 +38,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const handleLogout = async () => {
     await dispatch(logoutAction());
-    // Whole app: logout par org slug ke saath unified login par le jao
+    // Redirect to unified login with org slug on logout
     router.push(organization?.slug ? `/login?org=${organization.slug}` : '/login');
   };
   const tabs = BASE_TABS.filter(
@@ -92,7 +92,7 @@ export default function SettingsPage() {
               {isAdminLevel && (
                 <div className="border-t border-gray-100 pt-8">
                   <h3 className="text-sm font-bold text-gray-900 mb-1">Branch Branding</h3>
-                  <p className="text-xs text-gray-400 mb-4">Organization ka logo default mein dikhega jab tak branch ka apna logo set na ho.</p>
+                  <p className="text-xs text-gray-400 mb-4">The organization logo is shown by default until the branch has its own logo set.</p>
                   <BranchBrandingForm key={school?.id} />
                 </div>
               )}
@@ -103,9 +103,9 @@ export default function SettingsPage() {
           {tab === 'secrets' && isAdminLevel && (
             <div className="max-w-2xl space-y-10">
               {/* Secrets = tenant credentials: outgoing email + media storage.
-                  Single-branch org org-level creds use karta hai; naye branch
-                  ke admin apne branch override (Apply To) se apne creds de
-                  sakte hain. */}
+                  Single-branch organizations use org-level credentials; branch
+                  admins can provide their own credentials via branch override
+                  (Apply To). */}
               <SmtpSettingsSection />
               <div className="border-t border-gray-100" />
               <StorageSettingsSection />

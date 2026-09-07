@@ -97,7 +97,7 @@ export default function StaffConductRemarksPage() {
         )}
       </div>
 
-      <ConfirmDialog open={Boolean(deleting)} title="Delete remark?" message={`"${deleting?.comment}" permanently delete ho jayega.`}
+      <ConfirmDialog open={Boolean(deleting)} title="Delete remark?" message={`"${deleting?.comment}" will be permanently deleted.`}
         confirmLabel="Delete" loading={deleteBusy} onConfirm={handleDeleteConfirm} onCancel={() => setDeleting(null)} />
     </div>
   );

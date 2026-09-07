@@ -18,7 +18,7 @@ export default function BranchBrandingForm() {
   const [uploading, setUploading] = useState(false);
   const [themeColor, setThemeColor] = useState(school?.themeColor ?? organization?.themeColor ?? '');
   const [logoUrl, setLogoUrl] = useState(school?.logoUrl ?? '');
-  // Jab branch ka apna logo na ho — organization ka logo default dikhe (sidebar jaisa hi)
+  // Show organization logo as default when branch has no logo (same as sidebar)
   const displayLogo = logoUrl || organization?.logoUrl || '';
 
   if (!school) return null;

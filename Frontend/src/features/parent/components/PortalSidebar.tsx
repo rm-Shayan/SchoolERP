@@ -75,7 +75,7 @@ export default function PortalSidebar({
   const content = (
     <>
       <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full opacity-25 blur-3xl" style={{ backgroundColor: colors.activeAccent }} />
-      {/* Org branding — portal logo + school details (parent info ab header me hai) */}
+      {/* Org branding — portal logo + school details (parent info is now in the header) */}
       <div className="flex items-center gap-3 border-b px-5 py-5" style={{ borderColor: colors.border }}>
         {orgLogoUrl && !logoFailed ? (
           <img src={orgLogoUrl} alt={orgName} onError={() => setLogoFailed(true)}

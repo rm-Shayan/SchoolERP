@@ -14,7 +14,7 @@ interface Props {
   month: number;
 }
 
-/** Section monthly view ke liye CSV export — poora matrix ya ek student ki detail. */
+/** Section monthly view CSV export — full matrix or a single student's detail. */
 export default function SectionMonthExportBar({ sectionLabel, students, records, offDays, weeklyOff, year, month }: Props) {
   const [studentId, setStudentId] = useState('');
 
@@ -33,7 +33,7 @@ export default function SectionMonthExportBar({ sectionLabel, students, records,
       <select
         value={studentId}
         onChange={(e) => setStudentId(e.target.value)}
-        title="Student (blank = poora section matrix)"
+        title="Student (blank = whole section matrix)"
         className="h-8 max-w-[180px] rounded-lg border border-gray-200 bg-white px-2 text-xs outline-none focus:ring-2 focus:ring-primary-300"
       >
         <option value="">Whole section (matrix)</option>

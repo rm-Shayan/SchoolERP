@@ -14,7 +14,7 @@ interface ApplicantDetailsProps {
 export function ApplicantDetails({ applicant, busy, onPhoto }: ApplicantDetailsProps) {
   const photoRef = useRef<HTMLInputElement>(null);
   const name = `${applicant.firstName} ${applicant.lastName}`;
-  // Approve pehle, fee baad — advance fee sirf APPROVED ke baad hi dikhta hai.
+  // Approval first, fee later — advance fee is only visible after APPROVED status.
   const stageShowFee = applicant.status === 'APPROVED' || applicant.status === 'FEE_PENDING' || applicant.status === 'ENROLLED';
   const showFee = stageShowFee && applicant.advanceFeeAmount != null;
 

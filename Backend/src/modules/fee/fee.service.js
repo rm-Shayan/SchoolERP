@@ -809,13 +809,13 @@ class FeeService {
         schoolId: record.student.schoolId,
         parentEmail: record.student.parent?.email,
         parentPhone: record.student.parent?.phone,
-        message: `Dear Parent, we have received Rs. ${paidAmount.toFixed(2)} for ${studentName}'s ${monthLabel} fee. This has been fully cleared (balance Rs. 0.00). Your receipt is attached.`,
-        title: `Fee Receipt — ${monthLabel} (Paid in Full)`,
+        message: `Dear Parent, we have received Rs. ${paidAmount.toFixed(2)} for ${studentName}'s ${monthLabel} fee. This has been fully cleared (balance Rs. 0.00). Your fee voucher is attached.`,
+        title: `Fee Voucher — ${monthLabel} (Paid in Full)`,
         details: paymentDetails,
         attachments: [{
-          filename: `fee-receipt-${record.id.slice(0, 8)}.pdf`,
+          filename: `fee-voucher-${record.id.slice(0, 8)}.pdf`,
           content: receipt,
-          caption: `Fee Receipt — ${monthLabel} (${studentName})`,
+          caption: `Fee Voucher — ${monthLabel} (${studentName})`,
         }],
       }).catch(() => {});
     } else {

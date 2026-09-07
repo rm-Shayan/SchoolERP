@@ -108,7 +108,7 @@ export default function CreateOrganizationPage() {
           </div>
           {adminMode === 'new' ? (
             <>
-              <p className="text-sm text-gray-500 mb-2">First branch ka Principal (Admin) account.</p>
+              <p className="text-sm text-gray-500 mb-2">Principal (Admin) account for the first branch.</p>
               <AdminFields values={values} errors={errors} onChange={onFieldChange} showUsername />
             </>
           ) : (
@@ -123,12 +123,12 @@ export default function CreateOrganizationPage() {
         {adminMode === 'new' && (
           <>
             <SectionCard step={3} title="Email Configuration" defaultOpen={false}>
-              <p className="text-sm text-gray-500">Gmail App Password — notifications isi se jayengi.</p>
+              <p className="text-sm text-gray-500">Gmail App Password — notifications will be sent through it.</p>
               <SmtpFields values={values} errors={errors} onChange={onFieldChange} />
             </SectionCard>
             <SectionCard step={4} title="Cloud Storage" defaultOpen={false}>
-              <p className="text-sm text-gray-500">Organization ki apni Cloudinary.</p>
-              <CloudFields values={values} errors={errors} onChange={onFieldChange} hint="Agar chhod dein to platform storage use hogi." />
+              <p className="text-sm text-gray-500">Organization's own Cloudinary.</p>
+              <CloudFields values={values} errors={errors} onChange={onFieldChange} hint="Leave empty to use platform storage." />
             </SectionCard>
           </>
         )}

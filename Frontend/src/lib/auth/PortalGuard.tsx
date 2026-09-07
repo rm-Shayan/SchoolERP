@@ -7,9 +7,9 @@ import { loadUser } from '@/store/slices/authSlice';
 import { getRoleHomePath } from '@/lib/utils';
 import PageLoader from '@/components/PageLoader';
 
-// Har portal ka apna role-set. Isi se decide hota hai kein role is portal
-// tak pohunch sakta hai — guard har layout mein reuse hota hai taake ek
-// jagah authorization rahe (staff/admin/teacher cross-access na kar saken).
+// Each portal has its own role-set. This determines which roles can access
+// the portal — the guard is reused in every layout so authorization stays
+// in one place (staff/admin/teacher cannot cross-access).
 export const PORTAL_ROLES: Record<string, string[]> = {
   admin: ['SUPER_ADMIN'],
   branch: ['ADMIN', 'RECEPTIONIST', 'SUPER_ADMIN'],

@@ -20,7 +20,7 @@ interface ClassFormProps {
   onClose: () => void;
   onSubmit: (v: { name: string; order: string; sections: AssignedSection[] }) => void | Promise<void>;
   initial?: { name: string; order: string };
-  /** School section pool — checkboxes se class ko assign karo. */
+  /** School section pool — assign sections to the class via checkboxes. */
   sectionOptions: SectionOption[];
   /** Already-assigned sections (edit mode) with their per-class capacity/room. */
   initialSections?: AssignedSection[];

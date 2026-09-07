@@ -1,9 +1,10 @@
 import type { OrgPublicData } from '@/lib/api/orgService';
 
 /**
- * Org public pages par har "Sign In / Login" link branded login screen par
- * le jaana chahiye: /login?org=<slug>. Single branch ho to school code bhi
- * bhejo taake hub branch-specific branding dikhaye aur code prefill ho.
+ * Every "Sign In / Login" link on the org's public pages should point to the
+ * branded login screen: /login?org=<slug>. If there is a single branch, also
+ * include the school code so the hub shows branch-specific branding and
+ * pre-fills the code.
  */
 export function buildOrgLoginHref(org: OrgPublicData): string {
   const params = new URLSearchParams();

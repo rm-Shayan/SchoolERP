@@ -30,8 +30,8 @@ export default function BranchSecretsFields({ values, errors, onChange, required
 
       <p className="text-xs text-gray-500">
         {required
-          ? 'Naya admin account ban raha hai — koi previous credentials nahi hain, isliye SMTP aur Cloudinary zaroori hain.'
-          : 'Khoali chhorein to previous admin/organization ke hi SMTP aur Cloudinary use honge. Daal diye to siraf isi branch ke liye use honge.'}
+          ? 'A new admin account is being created — there are no previous credentials to inherit, so SMTP and Cloudinary are required.'
+          : 'Leave empty to inherit SMTP and Cloudinary from the previous admin/organization. If provided, they will only apply to this branch.'}
       </p>
 
       <div>

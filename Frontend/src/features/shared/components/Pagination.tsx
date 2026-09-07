@@ -27,8 +27,9 @@ export function Pagination({ page, totalPages, total, pageSize, onPageChange }: 
   const to = Math.min(page * pageSize, total);
   const pages = getPageNumbers(totalPages, page);
 
-  // Page badalte hi viewport top par le aao — warna user scroll ki wajah se
-  // naya page miss kar deta hai (list pages par common UX bug).
+  // Scroll to the top of the viewport when the page changes — otherwise the
+  // user may miss the new content due to their previous scroll position
+  // (a common UX bug on list pages).
   const goTo = (n: number) => {
     onPageChange(n);
     window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -4,22 +4,22 @@ import { useState, type ReactNode } from 'react';
 
 interface VirtualizedListProps<T> {
   items: T[];
-  /** Fixed row height in px — windowing ko isi se calculate hota hai. */
+  /** Fixed row height in px — used to calculate windowing. */
   rowHeight: number;
   getKey: (item: T, index: number) => string;
   renderRow: (item: T, index: number) => ReactNode;
   /** Scroll container height in px. */
   height?: number;
-  /** Viewport ke upar/neeche extra rows (scroll flicker se bachata hai). */
+  /** Extra rows above/below viewport (prevents scroll flicker). */
   overscan?: number;
   className?: string;
   empty?: ReactNode;
 }
 
 /**
- * Lightweight virtualization — koi library nahi. Bade lists (10,000+ records)
- * mein sirf visible slice DOM mein hoti hai (scrollTop se window calculate),
- * baaki rows sirf spacer height — isliye render 100 nodes ki jagah ~20 rahta hai.
+ * Lightweight virtualization — no library needed. For large lists (10,000+ records),
+ * only the visible slice is in the DOM (window calculated from scrollTop); the
+ * remaining rows are just spacer height — so instead of rendering ~100 nodes, ~20 are rendered.
  */
 export function VirtualizedList<T>({
   items,

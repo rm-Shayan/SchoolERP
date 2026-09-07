@@ -29,7 +29,7 @@ const TrashIcon = () => (
   </svg>
 );
 
-/** Ek teacher ka grouped card — us ke saare homework ek compact table ki tarah. */
+/** A grouped card for one teacher — all their homework in a compact table layout. */
 const HomeworkTeacherCard = memo(function HomeworkTeacherCard({ name, items, onEdit, onDelete }: HomeworkTeacherCardProps) {
   return (
     <Card className="overflow-hidden p-0">

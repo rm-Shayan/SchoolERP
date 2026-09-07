@@ -11,7 +11,7 @@ interface BankFieldsProps {
   hint?: string;
 }
 
-/** Org/branch bank details — fee voucher par print hota hai. */
+/** Org/branch bank details — printed on fee vouchers. */
 export default function BankFields({ values, errors, onChange, hint }: BankFieldsProps) {
   return (
     <div>

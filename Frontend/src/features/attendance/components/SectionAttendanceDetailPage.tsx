@@ -32,7 +32,7 @@ export default function SectionAttendanceDetailPage() {
 
   const backPath = slug ? `/o/${slug}/branch/attendance/records` : '/branch/attendance/records';
 
-  // Detail page par Monthly tab kholne ki zaroorat nahi — chosen month ka matrix CSV turant.
+  // On the detail page, no need to open the Monthly tab — export the chosen month's CSV immediately.
   const downloadMonthlyCsv = async () => {
     if (!schoolId) { toast.error('No school context'); return; }
     setCsvBusy(true);

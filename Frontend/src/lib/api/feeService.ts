@@ -52,19 +52,19 @@ export const feeService = {
     await api.delete(`/fees/structures/${id}`);
   },
 
-  // POST /fees/generate-monthly — FINANCE (dueDay optional: saved default use hota hai)
+  // POST /fees/generate-monthly — FINANCE (dueDay optional: uses saved default)
   generateMonthly: async (data: GenerateMonthlyPayload): Promise<GenerateMonthlyResult> => {
     const res = await api.post<ApiResponse<GenerateMonthlyResult>>('/fees/generate-monthly', data);
     return res.data.data;
   },
 
-  // GET /fees/records/summary — FINANCE (month ka total/collected/outstanding + counts)
+  // GET /fees/records/summary — FINANCE (monthly total/collected/outstanding + counts)
   getSummary: async (params: { schoolId: string; month?: number; year?: number }): Promise<FeeSummary> => {
     const res = await api.get<ApiResponse<FeeSummary>>('/fees/records/summary', { params });
     return res.data.data;
   },
 
-  // GET /fees/records/export — FINANCE (month ka poora fee record CSV download)
+  // GET /fees/records/export — FINANCE (download full monthly fee records as CSV)
   exportCsv: async (params: { schoolId: string; month?: number; year?: number; status?: string }): Promise<void> => {
     const res = await api.get<string>('/fees/records/export', { params, responseType: 'text' });
     downloadBlob(new Blob([res.data], { type: 'text/csv;charset=utf-8;' }), `fee-records-${new Date().toISOString().slice(0, 10)}.csv`);
@@ -76,13 +76,13 @@ export const feeService = {
     return res.data.data;
   },
 
-  // PUT /fees/schools/:schoolId/due-day — FINANCE (school ka default monthly due day)
+  // PUT /fees/schools/:schoolId/due-day — FINANCE (set school's default monthly due day)
   setSchoolDueDay: async (schoolId: string, dueDay: number): Promise<SchoolDueDay> => {
     const res = await api.put<ApiResponse<SchoolDueDay>>(`/fees/schools/${schoolId}/due-day`, { dueDay });
     return res.data.data;
   },
 
-  // PATCH /fees/records/:id/due-date — FINANCE (ek student ka is month ka due date extend)
+  // PATCH /fees/records/:id/due-date — FINANCE (extend a student's due date for this month)
   updateRecordDueDate: async (feeRecordId: string, dueDate: string): Promise<FeeRecord> => {
     const res = await api.patch<ApiResponse<FeeRecord>>(`/fees/records/${feeRecordId}/due-date`, { dueDate });
     return res.data.data;
@@ -94,8 +94,8 @@ export const feeService = {
     return res.data.data.items;
   },
 
-  // GET /fees/records/bulk — FINANCE (N+1 eliminate: saare students ke records ek query)
-  // studentIds optional: agar empty → school ke saare students
+  // GET /fees/records/bulk — FINANCE (eliminate N+1: fetch all students' records in one query)
+  // studentIds optional: if empty → all students in the school
   getBulkRecords: async (params: { schoolId: string; studentIds?: string[]; status?: string }): Promise<Record<string, FeeRecord[]>> => {
     const res = await api.get<ApiResponse<Record<string, FeeRecord[]>>>('/fees/records/bulk', { params });
     return res.data.data;
@@ -172,7 +172,7 @@ export const feeService = {
     return res.data.data;
   },
 
-  // GET /fees/records/bulk-vouchers — class ke selected students ka ek PDF
+  // GET /fees/records/bulk-vouchers — single PDF for selected students in a class
   getBulkVouchersPdf: async (params: { classId?: string; month?: number; year?: number; status?: string; studentIds?: string[] }): Promise<void> => {
     const qs = new URLSearchParams();
     if (params.classId) qs.set('classId', params.classId);

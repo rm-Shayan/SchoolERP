@@ -28,7 +28,7 @@ export default function SectionAttendancePage() {
   const [percentages, setPercentages] = useState<Record<string, number>>({});
   const [view, setView] = useState<'mark' | 'compare'>('mark');
 
-  // ADMIN/SUPER_ADMIN → school ki saari classes×sections; TEACHER → assigned sections.
+  // ADMIN/SUPER_ADMIN → all classes×sections in the school; TEACHER → assigned sections only.
   useEffect(() => {
     if (!schoolId) return;
     (async () => {

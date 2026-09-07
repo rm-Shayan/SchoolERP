@@ -118,7 +118,7 @@ export default function BranchConductRemarksPage() {
         </>
       )}
 
-      <ConfirmDialog open={Boolean(deleting)} title="Delete remark?" message={`"${deleting?.comment}" permanently delete ho jayega.`}
+      <ConfirmDialog open={Boolean(deleting)} title="Delete remark?" message={`"${deleting?.comment}" will be permanently deleted.`}
         confirmLabel="Delete" loading={deleteBusy} onConfirm={handleDelete} onCancel={() => setDeleting(null)} />
     </div>
   );

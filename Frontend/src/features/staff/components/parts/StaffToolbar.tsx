@@ -1,7 +1,7 @@
 import { Input, Select } from '@/features/shared/components';
 import { getRoleLabel } from '@/lib/utils';
 
-// Staff roles only — branch admin (Principal) staff list mein dikhta hi nahi.
+// Staff roles only — branch admin (Principal) does not appear in the staff list.
 const ROLES = ['TEACHER', 'RECEPTIONIST'];
 
 interface StaffToolbarProps {

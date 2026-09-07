@@ -28,7 +28,7 @@ export function useClasses() {
     if (!schoolId) return;
     try {
       setLoading(true);
-      // Backend listClassesBySchool nested sections+subjects include karta hai — ek hi request
+      // Backend listClassesBySchool includes nested sections+subjects — single request
       const [data, tpls] = await Promise.all([
         academicService.getClassesBySchool(schoolId),
         academicService.getSectionTemplates(schoolId),

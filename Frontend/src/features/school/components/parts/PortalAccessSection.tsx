@@ -7,7 +7,7 @@ import { useForm, composeValidators, minLength, required } from '@/lib/utils';
 import { Button, Card, CardContent, Input } from '@/features/shared/components';
 import toast from 'react-hot-toast';
 
-/** Shared parent/student portal password — branch admin set/reset karta hai. */
+/** Shared parent/student portal password — managed by branch admin. */
 export default function PortalAccessSection() {
   const { user, school } = useAppSelector((s) => s.auth);
   const schoolId = school?.id ?? user?.schoolId ?? '';

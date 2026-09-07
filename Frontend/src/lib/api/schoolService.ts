@@ -7,14 +7,14 @@ export interface SchoolCreatePayload {
   code: string;
   address?: string;
   phone?: string;
-  // Har branch ka apna ADMIN (Principal) hota hai — adminEmail zaroori hai.
+  // Each branch has its own ADMIN (Principal) — adminEmail is required.
   adminEmail?: string;
   adminName?: string;
   adminPassword?: string;
-  // Same org ka existing ADMIN — no new credentials; wo account is branch ko
-  // bhi manage karega (Settings → My Branches se switch karega).
+  // Existing ADMIN from the same org — no new credentials; that account will
+  // also manage this branch (switch via Settings → My Branches).
   existingAdminEmail?: string;
-  // Naya admin → required; existing admin → optional (inherit hota hai).
+  // New admin → required; existing admin → optional (inherited).
   smtp?: { host: string; port: number; secure: boolean; username: string; password: string };
   cloudinary?: { cloudName: string; apiKey: string; apiSecret: string };
 }

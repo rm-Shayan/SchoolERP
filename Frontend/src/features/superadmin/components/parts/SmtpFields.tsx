@@ -10,17 +10,17 @@ interface SmtpFieldsProps {
 }
 
 /**
- * Optional SMTP intake for org creation — sirf Gmail email + App Password.
- * Khali chhoda to emails platform transport se jati hain; baad mein org admin
- * Settings > Email se apna SMTP add/update kar sakta hai.
+ * Optional SMTP intake for org creation — Gmail email + App Password only.
+ * If left empty, emails are sent via the platform transport; the org admin
+ * can add/update their SMTP later from Settings > Email.
  */
 export default function SmtpFields({ values, errors, onChange }: SmtpFieldsProps) {
   return (
     <div className="space-y-4">
       <div className="p-3 bg-blue-50 rounded-xl border border-blue-200/60">
         <p className="text-xs text-blue-700 font-medium">
-          Optional — abhi chhod dein. Apni Gmail se bhejne ke liye: Google Account → Security →
-          2-Step Verification ON → App Passwords se 16-character code generate karein.
+          Optional — you can skip this for now. To send from your Gmail: Google Account → Security →
+          enable 2-Step Verification → generate a 16-character code from App Passwords.
         </p>
       </div>
       <Input

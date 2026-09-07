@@ -11,7 +11,7 @@ export interface SmtpSettingInfo {
   secure: boolean;
   username: string;
   fromName: string | null;
-  /** Gmail free ~500/day, Workspace 2000+ — outbox isi se transport skip karta hai */
+  /** Gmail free ~500/day, Workspace 2000+ — outbox uses this to skip transport */
   dailyLimit?: number | null;
   isVerified: boolean;
   lastVerifiedAt: string | null;
@@ -20,7 +20,7 @@ export interface SmtpSettingInfo {
   updatedAt: string;
 }
 
-/** Ek scope ke dono tiers */
+/** Both tiers for a single scope */
 export interface SmtpTierPair {
   primary: SmtpSettingInfo | null;
   secondary: SmtpSettingInfo | null;
@@ -29,7 +29,7 @@ export interface SmtpTierPair {
 export interface SmtpSettingsStatus {
   /** Org-level defaults (schoolId null) */
   organization: SmtpTierPair;
-  /** Branch-level overrides — sirf tab jab schoolId query mein diya ho */
+  /** Branch-level overrides — only when schoolId is provided in query */
   branch?: SmtpTierPair;
 }
 
@@ -41,10 +41,10 @@ export interface SmtpSettingsPayload {
   port?: number;
   secure?: boolean;
   username: string;
-  /** Update par optional — khali chhodo to purana password rehta hai */
+  /** Optional on update — leave empty to keep the existing password */
   password?: string;
   fromName?: string;
-  /** Clamp 100..5000 backend par */
+  /** Clamped to 100..5000 on the backend */
   dailyLimit?: number;
 }
 

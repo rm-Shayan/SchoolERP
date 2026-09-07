@@ -23,8 +23,8 @@ interface LinkedChildrenCardProps {
   onChildChange: (id: string) => void;
 }
 
-/** Linked Children — har row clickable: jis child par click karo wo ACTIVE
- *  ho jata hai (same scene child switcher jaisa). */
+/** Linked Children — each row is clickable: clicking a child makes them ACTIVE
+ *  (same as the child switcher). */
 export default function LinkedChildrenCard({ children: kids, activeChildId, onChildChange }: LinkedChildrenCardProps) {
   const color = getOrgThemeColor() || '#6366f1';
   if (kids.length === 0) return null;

@@ -37,9 +37,9 @@ export default function DashboardLayout({ links, title, children }: DashboardLay
   const themeColor = organization?.themeColor ?? school?.themeColor ?? null;
   const themeStyle = orgThemeStyle(themeColor);
 
-  // Theme ko :root par bhi apply karo — inline style sirf wrapper tak simit
-  // rehta hai; yeh guarantee deta hai ke HAR UI component (header, sidebar,
-  // cards, modals) org ka color use kare. Unmount par default wapas.
+  // Apply the theme to :root as well — inline styles are limited to the wrapper;
+  // this guarantees that every UI component (header, sidebar, cards, modals)
+  // uses the org color. Reverts to default on unmount.
   useEffect(() => {
     applyOrgThemeToRoot(themeColor);
     return () => clearOrgThemeFromRoot();

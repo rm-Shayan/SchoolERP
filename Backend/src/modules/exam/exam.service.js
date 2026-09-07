@@ -223,8 +223,8 @@ class ExamService {
   }
 
   /**
-   * Publish results for an exam → email each parent a subject-wise summary
-   * (PRD §5 — results WhatsApp/Email; §6 — marks bulk entry).
+   * Publish results for an exam → portal notification only (NO email).
+   * Parents results portal me view karenge, email par result PDF/shayan nahi jata.
    */
   async publishResults(user, examId) {
     const exam = await this.getExam(user, examId);
@@ -242,36 +242,17 @@ class ExamService {
       return acc;
     }, {});
 
-    // Build individualized messages per parent + filter active students.
-    // Siblings (2 bachay, 1 parent email) → EK email me dono ke results.
-    const byEmail = new Map();
-    for (const { student, results: studentResults } of Object.values(byStudent)) {
-      if (!student.parent || student.status !== "ACTIVE") continue;
-      const email = student.parent.email?.trim().toLowerCase();
-      if (!email) continue;
-      if (!byEmail.has(email)) byEmail.set(email, []);
-      const lines = studentResults.map(
-        (r) => `- ${r.subject.name}: ${Number(r.marksObtained)}/${Number(r.maxMarks)}${r.remarks ? ` (${r.remarks})` : ""}`
-      );
-      const block = `Results for ${student.firstName} ${student.lastName} (${student.section?.class?.name || ""} ${student.section?.name || ""}) — ${exam.name}:\n\n${lines.join("\n")}`;
-      byEmail.get(email).push(block);
-    }
-    const recipients = [...byEmail.entries()].map(([email, blocks]) => ({
-      email,
-      message: blocks.join("\n\n"),
-    }));
+    const activeCount = Object.values(byStudent).filter(({ student }) => student.status === "ACTIVE").length;
 
-    const result = await notificationService.sendBulkIndividualEmails(exam.schoolId, `Results Published — ${exam.name}`, recipients);
-
-    // Portal notification to admin
+    // Portal notification to admin — sirf in-app
     portalNotificationService.create({
       schoolId: exam.schoolId, senderId: user.id, senderName: user.name,
-      title: "EXAM_PUBLISHED", body: `Results for "${exam.name}" published — ${result.sent} parent(s) notified.`,
+      title: "EXAM_PUBLISHED", body: `Results for "${exam.name}" published — ${activeCount} student(s) ke results ab portal me available hain.`,
       category: "EXAM", refType: "EXAM", refId: examId, link: "/exams",
     }).catch(() => {});
 
-    emitToRoom(`school:${exam.schoolId}`, "exam_results_published", { examId, notified: result.sent });
-    return { examId, notified, students: Object.keys(byStudent).length };
+    emitToRoom(`school:${exam.schoolId}`, "exam_results_published", { examId, notified: activeCount });
+    return { examId, notified: activeCount, students: Object.keys(byStudent).length };
   }
 
   /**

@@ -9,8 +9,8 @@ interface WelcomeHeaderProps {
 }
 
 export default function WelcomeHeader({ firstName }: WelcomeHeaderProps) {
-  // SSR-safe: date sirf mount ke baad — server UTC aur client PKT ka time alag
-  // hota hai, warna greeting/date text hydration mismatch karta hai.
+  // SSR-safe: date only after mount — server UTC and client PKT times differ,
+  // otherwise the greeting/date text causes a hydration mismatch.
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => { setNow(new Date()); }, []);
 

@@ -71,7 +71,7 @@ export default function StaffScanCheckinPage({ embedded }: StaffScanCheckinProps
       {!embedded && (
         <PageHeader
           title="Staff Scan Check-in"
-          description="Gate/table par staff ID card ka QR scan karke attendance mark karein."
+          description="Scan the QR code on a staff ID card at the gate/table to mark attendance."
         />
       )}
 
@@ -97,7 +97,7 @@ export default function StaffScanCheckinPage({ embedded }: StaffScanCheckinProps
               <Input
                 value={manual}
                 onChange={(e: any) => setManual(e.target.value)}
-                placeholder="Camera na ho to QR token paste karein"
+                placeholder="Paste QR token if camera is unavailable"
               />
               <Button type="submit" disabled={busy || !manual.trim()}>
                 Check in
@@ -110,7 +110,7 @@ export default function StaffScanCheckinPage({ embedded }: StaffScanCheckinProps
           <CardContent>
             <h3 className="mb-3 text-sm font-semibold text-gray-700">Recent Scans</h3>
             {results.length === 0 ? (
-              <p className="text-sm text-gray-400">Abhi koi scan nahi hui.</p>
+              <p className="text-sm text-gray-400">No scans yet.</p>
             ) : (
               <ul className="space-y-2">
                 {results.map((r) => (

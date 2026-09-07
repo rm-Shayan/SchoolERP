@@ -9,7 +9,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Backend ka clean message nikalo — error code/status kabhi nahi, fallback bhi sath.
+// Extract the clean error message from the backend — never expose error codes/status, with fallback included.
 export function getApiErrorMessage(err: unknown, fallback = 'Something went wrong. Please try again.'): string {
   const e = err as { response?: { data?: { message?: unknown } }; message?: unknown };
   const msg = e?.response?.data?.message ?? e?.message;
@@ -131,9 +131,9 @@ export function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-// Slug-maintained home paths: org ke saare portal URLs /o/{slug}/... par
-// chalein taake branded URL poore session mein bana rahe (slug kabhi drop na ho).
-// SUPER_ADMIN sirf platform owner hai (1 hi) — hamesha platform console par jata hai.
+// Slug-maintained home paths: all org portal URLs use /o/{slug}/... format
+// so the branded URL persists throughout the session (slug is never dropped).
+// SUPER_ADMIN is the sole platform owner (only one) — always navigates to the platform console.
 export function getRoleHomePath(role?: string, _organizationId?: string, slug?: string): string {
   const base = slug ? `/o/${slug}` : '';
   switch (role) {

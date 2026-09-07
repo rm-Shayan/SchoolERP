@@ -118,7 +118,7 @@ export default function AssignAdminModal({ open, schoolId, onClose, onAssigned }
               error={errors.existingEmail}
               required
             />
-            <p className="text-xs text-gray-500 -mt-2">No new credentials — wahi account/branch subject hai. Previous principal deactivate nahi hota; wo bhi mast ek aur branch manage kar sakta hai.</p>
+            <p className="text-xs text-gray-500 -mt-2">No new credentials — the same account is assigned to this branch. The previous principal is not deactivated; they can still manage another branch.</p>
           </>
         )}
 

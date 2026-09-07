@@ -1,5 +1,5 @@
 // Per-tenant media storage (Cloudinary) credentials.
-// Row mojood = org apne account par upload karta hai; row absent = platform.
+// Row present = org uploads to their own account; row absent = platform.
 
 export interface StorageSettingInfo {
   id: string;
@@ -15,7 +15,7 @@ export interface StorageSettingInfo {
 }
 
 export interface StorageSettingsStatus {
-  /** "organization" = org ke apne creds, "platform" = super admin fallback */
+  /** "organization" = org's own credentials, "platform" = super admin fallback */
   source: 'organization' | 'platform';
   setting: StorageSettingInfo | null;
 }
@@ -25,6 +25,6 @@ export interface StorageSettingsPayload {
   schoolId?: string | null;
   cloudName: string;
   apiKey: string;
-  /** Update par optional — khali chhodo to purana secret rehta hai */
+  /** Optional on update — leave empty to keep the existing secret */
   apiSecret?: string;
 }

@@ -10,7 +10,7 @@ interface StaffPasswordResetProps {
   member: User;
 }
 
-/** Admin naya login password set kare — isi se wo staff member login karega. */
+/** Admin sets a new login password — the staff member will use it to log in. */
 export default function StaffPasswordReset({ member }: StaffPasswordResetProps) {
   const [newPassword, setNewPassword] = useState('');
   const [resetting, setResetting] = useState(false);
@@ -20,7 +20,7 @@ export default function StaffPasswordReset({ member }: StaffPasswordResetProps) 
       toast.error('Password must be at least 6 characters');
       return;
     }
-    if (!confirm(`Set "${member.name}" ke liye new password?`)) return;
+    if (!confirm(`Set new password for "${member.name}"?`)) return;
     setResetting(true);
     try {
       await staffService.resetPassword(member.id, newPassword.trim());

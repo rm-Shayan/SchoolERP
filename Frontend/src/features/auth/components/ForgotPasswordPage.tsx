@@ -16,8 +16,8 @@ export default function ForgotPasswordPage({ branding }: ForgotPasswordPageProps
   const [sent, setSent] = useState(false);
   const themeColor = branding?.themeColor || undefined;
 
-  // Login hub ki tarah org theme yahan bhi apply karo — forgot-password page
-  // bhi branded rehto hai jab org/school query param se aaya ho.
+  // Apply the org theme on this page too, like the login hub — the
+  // forgot-password page stays branded when accessed via org/school query param.
   useEffect(() => {
     if (themeColor) applyOrgThemeToRoot(themeColor);
     else clearOrgThemeFromRoot();

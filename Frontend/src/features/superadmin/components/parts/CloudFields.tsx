@@ -13,7 +13,7 @@ interface CloudFieldsProps {
   hint?: string;
 }
 
-/** Cloudinary credentials — org ke apne storage par uploads. */
+/** Cloudinary credentials — uploads stored on the org's own cloud storage. */
 export default function CloudFields({ values, errors, onChange, hint }: CloudFieldsProps) {
   return (
     <div className="space-y-4">

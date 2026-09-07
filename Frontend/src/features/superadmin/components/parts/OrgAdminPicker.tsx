@@ -51,14 +51,14 @@ export default function OrgAdminPicker({ organizationId, value, onSelect }: OrgA
     return <p className="text-xs text-gray-400 py-1">Loading admins…</p>;
   }
   if (error) {
-    return <p className="text-xs text-red-500 py-1">Admins load nahi ho sakay — email khud type karein.</p>;
+    return <p className="text-xs text-red-500 py-1">Could not load admins — please type the email manually.</p>;
   }
 
   const sorted = [...admins].sort((a, b) => a.name.localeCompare(b.name));
   const hasAny = sorted.length > 0 || unassigned.length > 0;
 
   if (!hasAny) {
-    return <p className="text-xs text-gray-400 py-1">Koi admin nahi mila. Naya admin create karein ya email khud type karein.</p>;
+    return <p className="text-xs text-gray-400 py-1">No admins found. Create a new admin or type the email manually.</p>;
   }
 
   return (
@@ -66,7 +66,7 @@ export default function OrgAdminPicker({ organizationId, value, onSelect }: OrgA
       {unassigned.length > 0 && (
         <div>
           <p className="text-xs font-medium text-amber-600 mb-1.5">
-            Unassigned Admins — bina branch ke hain, inhein select karein:
+            Unassigned Admins — not linked to any branch; select one:
           </p>
           <div className="max-h-36 overflow-y-auto border border-amber-200 bg-amber-50 rounded-lg divide-y divide-amber-100">
             {unassigned.map((u) => {

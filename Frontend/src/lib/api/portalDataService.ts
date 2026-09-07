@@ -20,9 +20,9 @@ function createPortalAxios(tokenKey: string) {
   instance.interceptors.request.use((cfg: InternalAxiosRequestConfig) => {
     const t = localStorage.getItem(tokenKey);
     if (t && cfg.headers) cfg.headers.Authorization = `Bearer ${t}`;
-    // Parent portal: selected child (child switcher) ka studentId har GET par
-    // bhejo — backend data ko us child par scope karta hai. Student portal
-    // single child hota hai, koi param nahi.
+    // Parent portal: send the selected child's studentId (child switcher) on
+    // every GET request — the backend scopes data to that child. The student
+    // portal has a single child, so no param is needed.
     if (tokenKey === 'parentToken' && (cfg.method ?? 'get').toLowerCase() === 'get') {
       const activeChildId = localStorage.getItem('activeChildId');
       if (activeChildId) cfg.params = { ...(cfg.params as Record<string, unknown> | undefined), studentId: activeChildId };

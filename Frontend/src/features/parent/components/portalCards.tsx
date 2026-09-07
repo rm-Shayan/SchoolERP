@@ -9,7 +9,7 @@ export const PortalBrandIcon = () => (
   <img src="/screen.png" alt="Logo" className="h-6 w-6 object-contain" />
 );
 
-/** Shared avatar tile — photo available ho to dikhati hai (load fail ho to bhi), warna generic placeholder. */
+/** Shared avatar tile — shows photo if available (even if load fails), otherwise a generic placeholder. */
 export function PortalAvatar({ src, name, color, className = '' }: { src?: string | null; name: string; color?: string; className?: string }) {
   const [imgFailed, setImgFailed] = useState(false);
   useEffect(() => setImgFailed(false), [src]);

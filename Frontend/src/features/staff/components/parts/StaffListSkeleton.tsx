@@ -1,6 +1,6 @@
 const shimmer = 'animate-pulse rounded-lg bg-slate-200/70';
 
-/** Staff page-shaped skeleton — initial data load par spinner ki jagah. */
+/** Staff page-shaped skeleton — replaces the spinner during initial data load. */
 export default function StaffListSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">

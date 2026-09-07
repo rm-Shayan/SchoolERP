@@ -8,14 +8,14 @@ export interface SectionOption {
   label: string;
 }
 
-/** School ki saari classes ke sections — `Class — Section` labels ke sath flatten. */
+/** All class sections for a school — flattened with "Class — Section" labels. */
 export default function useSectionOptions(schoolId?: string | null) {
   const [sections, setSections] = useState<SectionOption[]>([]);
 
   useEffect(() => {
     if (!schoolId) return;
     let cancelled = false;
-    // Backend listClassesBySchool nested sections include karta hai — ek hi request
+    // Backend listClassesBySchool includes nested sections — single request
     academicService
       .getClassesBySchool(schoolId)
       .then((classes) => {

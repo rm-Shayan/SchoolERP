@@ -8,12 +8,12 @@ import { setActiveSchool } from '@/store/slices/authSlice';
 import { validateAttendanceOrder } from './attendanceTimeSlots';
 
 /**
- * Branch profile form ka saara state + logic.
+ * Branch profile form state and logic.
  *
- * FIX: login/auth-me snapshot mein school ke sirf kuch fields hote hain
- * (id/name/code/logo/times) — address/phone kabhi populate nahi hote the,
- * isliye form khali dikhta tha. Ab mount par poora record
- * GET /schools/:id se load hota hai.
+ * FIX: The login/auth-me snapshot only contains a few school fields
+ * (id/name/code/logo/times) — address/phone were never populated,
+ * so the form appeared empty. Now the full record is loaded on mount
+ * via GET /schools/:id.
  */
 export function useBranchProfile() {
   const dispatch = useAppDispatch();
@@ -35,7 +35,7 @@ export function useBranchProfile() {
   const [bankAccountTitle, setBankAccountTitle] = useState('');
   const [bankAccountNumber, setBankAccountNumber] = useState('');
 
-  // Poora branch record — snapshot incomplete hota hai (upar wala FIX).
+  // Full branch record — snapshot is incomplete (see FIX above).
   useEffect(() => {
     if (!school?.id) return;
     let cancelled = false;
@@ -57,7 +57,7 @@ export function useBranchProfile() {
         setBankAccountTitle(fresh.bankAccountTitle ?? '');
         setBankAccountNumber(fresh.bankAccountNumber ?? '');
       })
-      .catch(() => {}); // fallback: jo snapshot mojood hai wahi dikhega
+      .catch(() => {}); // fallback: show existing snapshot data
     return () => { cancelled = true; };
   }, [school?.id]);
 

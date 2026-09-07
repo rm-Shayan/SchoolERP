@@ -11,9 +11,9 @@ import SmtpSettingsForm from './SmtpSettingsForm';
 import { pickExisting, type Scope, type Tier } from './smtpShared';
 
 interface SmtpSettingsSectionProps {
-  /** Super-admin override — kisi bhi org ki settings manage karne ke liye */
+  /** Super-admin override — manage settings for any organization */
   organizationId?: string;
-  /** Branch-specific mode — is branch ke liye lock (Apply To selector hidden) */
+  /** Branch-specific mode — locked to this branch (Apply To selector hidden) */
   schoolId?: string;
 }
 

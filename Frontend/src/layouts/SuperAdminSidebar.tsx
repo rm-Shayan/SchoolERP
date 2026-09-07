@@ -121,7 +121,7 @@ export default function SuperAdminSidebar({ links, collapsed, onToggle, mobileOp
           ))}
         </nav>
 
-        {/* Powered by — app logo ke saath */}
+        {/* Powered by — with app logo */}
         {expanded && (
           <div className="mx-2.5 mb-2 flex items-center gap-2.5 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-3.5 py-3">
             <img src="/screen.png" alt="SchoolERP" className="h-8 w-8 shrink-0 rounded-full bg-white/10 object-contain p-1 ring-1 ring-white/10" />

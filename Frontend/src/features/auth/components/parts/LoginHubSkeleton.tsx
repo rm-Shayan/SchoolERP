@@ -1,6 +1,6 @@
 const shimmer = 'animate-pulse rounded-lg bg-slate-200/70';
 
-/** Login hub page-shaped skeleton — server HTML me spinner ki jagah. */
+/** Login hub page-shaped skeleton — replaces the spinner in server HTML. */
 export default function LoginHubSkeleton() {
   return (
     <div className="relative min-h-screen grid lg:grid-cols-2 animate-pulse">

@@ -39,7 +39,7 @@ export default function SuperAdminNavbar({ title, onMenuClick }: SuperAdminNavba
               </svg>
             </button>
           )}
-          {/* App logo — mobile pe sidebar chhupi hoti hai, wahan logo yahan dikhta hai */}
+          {/* App logo — on mobile the sidebar is hidden, so the logo appears here */}
           <img src="/screen.png" alt="SchoolERP" className="h-10 w-10 rounded-xl object-contain bg-white ring-1 ring-primary-200/60 lg:hidden" />
           <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Workspace</p><h2 className="text-base sm:text-lg font-bold text-slate-900 truncate tracking-tight">{title}</h2></div>
         </div>

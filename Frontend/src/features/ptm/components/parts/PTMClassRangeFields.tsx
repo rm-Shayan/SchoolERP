@@ -17,7 +17,7 @@ export default function PTMClassRangeFields({ classes, value, onChange }: PTMCla
   const [loadingSections, setLoadingSections] = useState(false);
 
   const fromIdx = classes.findIndex((c) => c.id === value.classFromId);
-  // To Class From Class ke baad wali classes tak limit hai (same class allowed — single-class scene)
+  // To Class is limited to classes after the From Class (same class allowed — single-class scenario)
   const toClasses = fromIdx >= 0 ? classes.slice(fromIdx) : classes;
   const singleClass = Boolean(value.classFromId && value.classFromId === value.classToId);
 

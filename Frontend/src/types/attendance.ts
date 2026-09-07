@@ -36,12 +36,12 @@ export interface DailyAttendanceReport {
   offDays?: OffDay[];
   /** which weekdays are off — [0..6] (0=Sun .. 6=Sat). Default [0,6]. */
   weeklyOff?: number[];
-  /** Har section me enrolled ACTIVE students (unmarked sections ke counts dikhane ke liye). */
+  /** Enrolled ACTIVE students per section (used to show counts for unmarked sections). */
   sectionStats?: { sectionId: string; totalStudents: number; marked: number }[];
 }
 
-/** Archived yearly attendance rollup — AttendanceYearSummary (365 din purani
- *  raw attendance yahan move hoti hai, raw records delete ho jate hain). */
+/** Archived yearly attendance rollup — AttendanceYearSummary (raw attendance
+ *  older than 365 days is moved here; raw records are deleted). */
 export interface AttendanceYearSummary {
   id: string;
   studentId: string;

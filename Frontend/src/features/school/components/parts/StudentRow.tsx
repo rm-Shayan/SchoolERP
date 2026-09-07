@@ -16,8 +16,8 @@ interface StudentRowProps {
 }
 
 function StudentRowInner({ student, lastClassIds, onView, onEdit, onDelete, onPassedOut }: StudentRowProps) {
-  // "Passed Out" sirf school ki last class (e.g. Class 10 / Matric) ke ACTIVE
-  // students ke liye — baqi classes promote hoti hain, pass nahi.
+  // "Passed Out" is only for ACTIVE students in the school's last class
+  // (e.g., Class 10 / Matric) — other classes are promoted, not passed out.
   const showPassedOut = student.status === 'ACTIVE' && !!onPassedOut && isLastClassStudent(student, lastClassIds ?? new Set());
   return (
     <tr className="group hover:bg-primary-50/40 transition-colors">

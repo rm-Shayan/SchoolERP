@@ -5,7 +5,7 @@ interface AuthFormHeaderProps {
   subtitle?: string;
 }
 
-/** Shared auth form header — ek hi typography/spacing har portal form ke liye. */
+/** Shared auth form header — consistent typography/spacing for every portal form. */
 export default function AuthFormHeader({ title, subtitle }: AuthFormHeaderProps) {
   return (
     <div className="mb-5">

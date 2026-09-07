@@ -31,8 +31,8 @@ export function getInitials(student: Student): string {
   return `${student.firstName.charAt(0)}${student.lastName.charAt(0)}`.toUpperCase();
 }
 
-// School ki LAST class (max `order`) — sirf uske students "Passed Out" hote hain
-// (e.g. Matric/Class 10). Doosri classes ke students promote hote hain, pass nahi.
+// School's LAST class (max order) — only its students are marked "Passed Out"
+// (e.g., Matric/Class 10). Students from other classes are promoted, not passed out.
 export function getLastClassIds(classes: { id: string; order: number }[]): Set<string> {
   const maxOrder = classes.reduce((max, c) => Math.max(max, c.order), -1);
   return new Set(classes.filter((c) => c.order === maxOrder).map((c) => c.id));

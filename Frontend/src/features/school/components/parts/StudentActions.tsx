@@ -16,7 +16,7 @@ interface StudentActionsProps {
   onDeleted: (id: string) => void;
 }
 
-// "Passed Out" (graduate) sirf school ki last class ke liye — baqi classes promote hoti hain.
+// "Passed Out" (graduate) only for the school's last class — other classes are promoted.
 const LIFECYCLE: { status: StudentStatus; label: string; hint: string }[] = [
   { status: 'GRADUATED', label: 'Passed Out', hint: 'Student has completed the school\'s final class — record stays archived and can be reactivated anytime.' },
   { status: 'DROPPED_OUT', label: 'Drop Out', hint: 'Student left school — record stays archived and can be reactivated anytime.' },
@@ -26,7 +26,7 @@ const LIFECYCLE: { status: StudentStatus; label: string; hint: string }[] = [
 export function StudentActions({ student, lastClassIds, onUpdated, onDeleted }: StudentActionsProps) {
   const canPassOut = isLastClassStudent(student, lastClassIds ?? new Set());
   const lifecycle = LIFECYCLE.filter((l) => l.status !== 'GRADUATED' || canPassOut);
-  // Permanent delete = platform correction power — sirf SUPER_ADMIN (branch admin archive karta hai, wipe nahi).
+  // Permanent delete = platform correction power — only SUPER_ADMIN (branch admins archive, not wipe).
   const { user } = useAppSelector((s) => s.auth);
   const canDelete = user?.role === 'SUPER_ADMIN';
   const [busy, setBusy] = useState(false);

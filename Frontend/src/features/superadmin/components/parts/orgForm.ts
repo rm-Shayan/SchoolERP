@@ -88,7 +88,7 @@ const orgTheme: Validator = (value) => {
     : undefined;
 };
 
-// SMTP pair optional hai — dono ya koi ek nahi. Gmail App Password = 16 chars.
+// SMTP pair is optional — both or neither, not just one. Gmail App Password = 16 chars.
 const smtpUsername: Validator = (value, all) => {
   const u = String(value || '').trim();
   const passFilled = String((all as Record<string, unknown>)?.smtpPassword || '').trim() !== '';

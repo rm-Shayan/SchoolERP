@@ -12,12 +12,12 @@ import PromotionHero from './parts/PromotionHero';
 
 const classOptions = (classes: Class[]) => classes.map((c) => ({ value: c.id, label: c.name }));
 const yearOptions = (years: AcademicYear[]) => years.map((y) => ({ value: y.id, label: y.name }));
-// Section dropdown me student count — admin ko dikhe kis section me students hain.
+// Section dropdown shows student count — so the admin can see which sections have students.
 const sectionOptions = (sections: { id: string; name: string; _count?: { students: number } }[]) =>
   sections.map((s) => ({ value: s.id, label: (s._count?.students ?? 0) > 0 ? `${s.name} (${s._count?.students})` : s.name }));
 
 export default function PromotionsPage() {
-  // school null ho to user.schoolId fallback — warna dropdowns khali reh jate hain
+  // If school is null, fall back to user.schoolId — otherwise dropdowns stay empty
   const { school, user } = useAppSelector((s) => s.auth);
   const schoolId = school?.id ?? user?.schoolId;
   const [years, setYears] = useState<AcademicYear[]>([]);
@@ -47,16 +47,16 @@ export default function PromotionsPage() {
   const toSections = useMemo(() => classes.find((c) => c.id === toClassId)?.sections ?? [], [classes, toClassId]);
   const ready = !!yearId && !!fromSectionId && !!toSectionId;
 
-  // Class badla → sabse pehle POPULATED section auto-select (students turant
-  // dikhein). Koi populated na ho to pehla section select ho jata hai.
+  // When class changes, first auto-select the POPULATED section (so students
+  // appear immediately). If none is populated, the first section is selected.
   useEffect(() => {
     const sections = classes.find((c) => c.id === fromClassId)?.sections ?? [];
     setFromSectionId(sections.find((s) => (s._count?.students ?? 0) > 0)?.id ?? sections[0]?.id ?? '');
   }, [fromClassId, classes]);
   useEffect(() => { setToSectionId(''); }, [toClassId]);
 
-  // Saare ACTIVE students load karo — page 1 se total nikal kar baqi pages
-  // PARALLEL me (sequential loop slow tha — 10 pages = 10 round trips).
+  // Load all ACTIVE students — get total from page 1, then fetch remaining pages
+  // in parallel (sequential loop was slow — 10 pages = 10 round trips).
   const loadStudents = useCallback(async () => {
     if (!schoolId || !fromSectionId) { setStudents([]); setSelected(new Set()); return; }
     setLoading(true);
@@ -81,7 +81,7 @@ export default function PromotionsPage() {
     setSelected(students.length && selected.size === students.length ? new Set() : new Set(students.map((s) => s.id))),
   [students, selected]);
 
-  // ids = null → SAB promote (backend default), ids = Set → sirf selected.
+  // ids = null → promote ALL (backend default), ids = Set → only selected.
   const handlePromote = async (ids?: Set<string>) => {
     if (!ready || (ids && !ids.size)) return;
     setPromoting(true);

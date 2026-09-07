@@ -40,7 +40,7 @@ export function useOrganizationsPage() {
   }, [load]);
 
   // Realtime: org created / delivered on login / blocked / unblocked / imported —
-  // overview_updated aata hai → list live refresh (Delivered pill update ho).
+  // overview_updated event triggers a live list refresh (Delivered pill updates).
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
@@ -62,7 +62,7 @@ export function useOrganizationsPage() {
     });
   }, [allOrgs, search, statusFilter]);
 
-  // Search/filter badle → wapas page 1 se
+  // Search/filter changed → reset to page 1
   useEffect(() => {
     setPage(1);
   }, [search, statusFilter]);

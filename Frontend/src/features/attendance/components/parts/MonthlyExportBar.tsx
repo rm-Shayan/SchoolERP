@@ -5,11 +5,11 @@ interface Props {
   onExport: () => void;
 }
 
-/** Monthly view ka CSV export bar — poora school matrix (har section × student × din). */
+/** Monthly view CSV export bar — full school matrix (every section × student × day). */
 export default function MonthlyExportBar({ disabled, onExport }: Props) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-gray-100 bg-white px-4 py-2.5 shadow-sm">
-      <p className="text-xs font-medium text-gray-500">Monthly CSV: har section ka har student — har din ki status (P/L/A/LV/HD) ke saath</p>
+      <p className="text-xs font-medium text-gray-500">Monthly CSV: every student in every section — daily status (P/L/A/LV/HD)</p>
       <button onClick={onExport} disabled={disabled}
         className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-primary-600 px-3.5 text-xs font-semibold text-white transition hover:bg-primary-700 disabled:opacity-40">
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>

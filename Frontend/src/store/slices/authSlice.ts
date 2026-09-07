@@ -140,7 +140,7 @@ const authSlice = createSlice({
         state.organization = action.payload.organization || state.organization;
         state.school = action.payload.school || state.school;
       })
-      // Interceptor hi genuine 401/403 par logout karta hai — transient getMe failure par session mat girao.
+      // Interceptor handles logout on genuine 401/403 — do not invalidate session on transient getMe failure.
       .addCase(loadUser.rejected, (state) => { state.loading = false; })
       .addCase(logoutAction.fulfilled, (state) => { Object.assign(state, { ...initialState, loading: false }); });
   },

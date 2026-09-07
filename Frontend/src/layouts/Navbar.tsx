@@ -28,7 +28,7 @@ export default function Navbar({ title, onMenuClick }: NavbarProps) {
 
   const handleLogout = async () => {
     await dispatch(logoutAction());
-    // Whole app: logout par org slug ke saath unified login par le jao
+    // On logout, redirect to the unified login page with the org slug
     router.push(organization?.slug ? `/login?org=${organization.slug}` : '/login');
   };
 

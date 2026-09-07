@@ -17,8 +17,8 @@ export interface FeeRecord {
   paidAmount: number;
   dueCharges: number; // late fee charges — auto-calculated from fee structure line items
   status: FeeStatus;
-  periods?: FeePeriod[]; // month-wise itemization — har mahina apni row
-  reminderSentAt?: string; // overdue message ek dafa bhejne ka marker
+  periods?: FeePeriod[]; // month-wise itemization — each month has its own row
+  reminderSentAt?: string; // marker for overdue message sent once
   student?: Student;
   payments?: FeePayment[];
 }
@@ -35,9 +35,9 @@ export interface FeePayment {
 export interface FeeStructure {
   id: string;
   schoolId: string;
-  // m2m migration ke baad FeeStructure `classes[]` relation use karta hai
-  // (ek structure kai classes par apply). classId sirf create/edit form
-  // payload ke liye legacy hai — response mein classes[] aata hai.
+  // After m2m migration, FeeStructure uses the `classes[]` relation
+  // (one structure applied to many classes). classId is legacy, used only
+  // in create/edit form payloads — the response includes classes[] instead.
   classId?: string;
   classes?: { id: string; name: string }[];
   academicYearId: string;
@@ -50,8 +50,8 @@ export interface FeeLineItem {
   feeStructureId: string;
   title: string;
   amount: number;
-  isLateFee?: boolean; // agar true hai to due date cross hone par auto-add hota hai
-  lateFeeDays?: number; // grace period: kitne din baad late fee lage
+  isLateFee?: boolean; // when true, auto-added once the due date is crossed
+  lateFeeDays?: number; // grace period: number of days after which late fee applies
 }
 
 export interface FeeStructurePayload {
@@ -68,7 +68,7 @@ export interface FeePaymentPayload {
   paidAt?: string;
   allocateOpenRecords?: boolean;
   periodMonths?: { year: number; month: number }[];
-  recordIds?: string[]; // specific monthly records (months) pay karne ke liye
+  recordIds?: string[]; // specific monthly records (months) to pay
   allocations?: { recordId: string; amount: number }[];
 }
 

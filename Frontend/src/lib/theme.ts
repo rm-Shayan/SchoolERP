@@ -44,10 +44,10 @@ export function orgThemeStyle(themeColor?: string | null): CSSProperties | undef
 export const PRIMARY_STEPS = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'] as const;
 
 /**
- * Org theme ko <html> (:root) par set karo — taake sirf layout wrapper nahi,
- * BALKE har component (modals, dropdowns, portals, sab) themed ho.
- * DashboardLayout ke effect se call hota hai; null/invalid color par overrides
- * clear ho jate hain (default violet wapas).
+ * Apply org theme to <html> (:root) — not just the layout wrapper,
+ * but every component (modals, dropdowns, portals, everything) gets themed.
+ * Called from DashboardLayout's effect; null/invalid color clears overrides
+ * (reverts to default violet).
  */
 export function applyOrgThemeToRoot(themeColor?: string | null): void {
   if (typeof document === 'undefined') return;
@@ -71,11 +71,11 @@ export function clearOrgThemeFromRoot(): void {
 }
 
 /**
- * Portal (parent/student) theming — org admin portal jaisa hi: org ka color
- * poore portal par lage. Primary scale ke saath blue scale bhi org color par
- * remap hota hai kyunke parent/student content components blue utilities
- * (bg-blue-*, text-blue-*, ring-blue-*, …) use karte hain — isse har card,
- * button, chip aur link ekdum brand color mein aa jata hai.
+ * Portal (parent/student) theming — same as org admin portal: apply the org
+ * color across the entire portal. The blue scale is also remapped to the org
+ * color alongside the primary scale, because parent/student content components
+ * use blue utilities (bg-blue-*, text-blue-*, ring-blue-*, etc.) — this ensures
+ * every card, button, chip, and link matches the brand color exactly.
  */
 const BLUE_STEPS = PRIMARY_STEPS;
 

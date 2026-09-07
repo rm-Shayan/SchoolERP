@@ -129,7 +129,7 @@ export default function AddBranchModal({ open, onClose, organizationId, onCreate
             <>
               <OrgAdminPicker organizationId={effectiveOrgId} value={values.existingAdminEmail} onSelect={(e) => setValue('existingAdminEmail', e)} />
               <Input label="Existing Admin Email" name="existingAdminEmail" type="email" placeholder="admin@yourorg.com" value={values.existingAdminEmail} onChange={handleChange} error={errors.existingAdminEmail} required />
-              <p className="text-xs text-gray-500">No new credentials — wahi email/password/username use hoga, bas Settings → My Branches se is branch par switch karega.</p>
+              <p className="text-xs text-gray-500">No new credentials — the same email/password/username will be used; they can switch to this branch from Settings → My Branches.</p>
             </>
           )}
         </div>

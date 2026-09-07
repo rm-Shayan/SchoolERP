@@ -37,7 +37,7 @@ export interface LeaveListResponse {
 }
 
 export const leaveService = {
-  /** Parent: leave request bhejo */
+  /** Parent: submit a leave request */
   requestLeave(data: {
     studentId: string;
     dateFrom: string;
@@ -47,12 +47,12 @@ export const leaveService = {
     return client.post<{ data: LeaveRequest }>('/leave/request', data);
   },
 
-  /** Admin: saari leave requests */
+  /** Admin: list all leave requests */
   listAll(params?: { status?: string; page?: number; limit?: number }) {
     return client.get<{ data: LeaveListResponse }>('/leave', { params });
   },
 
-  /** Admin: approve ya reject */
+  /** Admin: approve or reject */
   review(leaveId: string, data: { status: 'APPROVED' | 'REJECTED'; remarks?: string }) {
     return client.patch<{ data: LeaveRequest }>(`/leave/${leaveId}/review`, data);
   },

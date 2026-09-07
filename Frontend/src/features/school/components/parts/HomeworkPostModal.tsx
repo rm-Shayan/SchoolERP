@@ -93,8 +93,8 @@ export default function HomeworkPostModal({ open, editing = null, onClose, onSav
     <Modal open={open} onClose={onClose} title={editing ? 'Edit Homework' : 'Post Homework'}>
       <p className="text-[13px] text-gray-500 mb-4 leading-relaxed">
         {editing
-          ? 'Title ya details update karein — section change nahi hoga.'
-          : 'Section chuno, subject chuno (ya All rakho), title + details likho. Parents ko email notification jayega.'}
+          ? 'Update the title or details — the section cannot be changed.'
+          : 'Select a section, choose a subject (or keep All), then add a title and details. Parents will receive an email notification.'}
       </p>
       <HomeworkForm
         key={editing?.id ?? 'new'}

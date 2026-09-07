@@ -102,8 +102,8 @@ export const attendanceService = {
   },
 
   // GET /attendance/daily — ALL_STAFF
-  // Backend returns { summary, records } — pehle type array tha (galat),
-  // AdminDashboard us par .filter() karta tha → silent crash, sab cards 0.
+  // Backend returns { summary, records } — previously the type was an array (incorrect),
+  // AdminDashboard called .filter() on it → silent crash, all cards showed 0.
   getDailyReport: async (params?: { schoolId?: string; sectionId?: string; date?: string }): Promise<DailyAttendanceReport> => {
     const res = await api.get<ApiResponse<DailyAttendanceReport>>('/attendance/daily', { params });
     return res.data.data;

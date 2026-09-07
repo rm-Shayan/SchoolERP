@@ -121,7 +121,7 @@ export default function EditOrgModal({ open, org, onClose, onSave }: EditOrgModa
             {openSections.bank && (
               <div className="px-4 pb-4 pt-1">
                 <BankFields values={values} errors={errors} onChange={handleChange}
-                  hint="Fee vouchers par default print hoga — branches apna account override kar sakti hain." />
+                  hint="Printed on fee vouchers by default — branches can override with their own account details." />
               </div>
             )}
           </div>
