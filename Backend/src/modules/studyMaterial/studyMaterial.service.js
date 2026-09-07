@@ -3,8 +3,92 @@ import ApiError from "../../lib/utils/ApiError.js";
 import { assertOwnSchool, assertSchoolAccess } from "../../lib/scope.js";
 import { emitToRoom } from "../../config/websocket.js";
 import portalNotificationService from "../notification/notification.portalService.js";
+import prisma from "../../config/db.js";
 
 class StudyMaterialService {
+  /**
+   * Targeted notification — material kis scope ke liye hai is hisaab se recipients decide karte hain.
+   * - sectionId null → whole school ki staff ko notification jani chahiye
+   * - sectionId specific → us section ke teachers/staff ko notification jani chahiye
+   */
+  async sendStudyMaterialNotification({ schoolId, sectionId, title, action, user }) {
+    const bodyMap = {
+      CREATED: `"${title}" uploaded by ${user.name}.`,
+      UPDATED: `"${title}" updated by ${user.name}.`,
+      DELETED: `"${title}" deleted by ${user.name}.`,
+    };
+    const titleMap = {
+      CREATED: "STUDY_MATERIAL_CREATED",
+      UPDATED: "STUDY_MATERIAL_UPDATED",
+      DELETED: "STUDY_MATERIAL_DELETED",
+    };
+
+    try {
+      // Target recipients fetch karo
+      const recipients = await this._getStudyMaterialRecipients(schoolId, sectionId);
+      const promises = recipients.map((recipient) =>
+        portalNotificationService.create({
+          schoolId,
+          senderId: user.id,
+          senderName: user.name,
+          recipientId: recipient.id,
+          title: titleMap[action] || "STUDY_MATERIAL_CREATED",
+          body: bodyMap[action] || bodyMap.CREATED,
+          category: "ACADEMIC",
+          refType: "STUDY_MATERIAL",
+          refId: null,
+          link: "/study-material",
+        }).catch(() => {})
+      );
+      await Promise.allSettled(promises);
+
+      // School-wide feed notification bhi jaye (recipientId null)
+      portalNotificationService.create({
+        schoolId,
+        senderId: user.id,
+        senderName: user.name,
+        title: titleMap[action] || "STUDY_MATERIAL_CREATED",
+        body: bodyMap[action] || bodyMap.CREATED,
+        category: "ACADEMIC",
+        refType: "STUDY_MATERIAL",
+        refId: null,
+        link: "/study-material",
+      }).catch(() => {});
+    } catch (err) {
+      console.warn(`[study-material] Notification dispatch failed: ${err.message}`);
+    }
+  }
+
+  /**
+   * Section ke teachers + school ke saare active staff
+   */
+  async _getStudyMaterialRecipients(schoolId, sectionId) {
+    if (!sectionId) {
+      // Whole school — saare active staff
+      return prisma.user.findMany({
+        where: { schoolId, isActive: true, role: { in: ["ADMIN", "TEACHER", "ACCOUNTANT", "LIBRARY"] } },
+        select: { id: true, name: true },
+      });
+    }
+    // Specific section — us section ke teachers, plus school ke saare active staff
+    const sectionTeachers = await prisma.teacherSection.findMany({
+      where: { sectionId, teacher: { isActive: true } },
+      select: { teacher: { select: { id: true, name: true } } },
+    });
+    const teacherIds = sectionTeachers.map((ts) => ts.teacher.id);
+
+    // Section ke teachers + school ke saare staff
+    return prisma.user.findMany({
+      where: {
+        schoolId,
+        isActive: true,
+        role: { in: ["ADMIN", "TEACHER", "ACCOUNTANT", "LIBRARY"] },
+        ...(teacherIds.length ? { id: { in: teacherIds } } : { id: null }),
+      },
+      select: { id: true, name: true },
+    });
+  }
+
   /**
    * Admin and teachers can create study material.
    * Teachers can only upload for their assigned sections.
@@ -31,17 +115,14 @@ class StudyMaterialService {
       createdBy: user.name,
     });
 
-    portalNotificationService.create({
+    // Portal notification — section ke hisaab se targeted
+    await this.sendStudyMaterialNotification({
       schoolId,
-      senderId: user.id,
-      senderName: user.name,
-      title: "STUDY_MATERIAL_CREATED",
-      body: `"${data.title}" uploaded by ${user.name}.`,
-      category: "ACADEMIC",
-      refType: "STUDY_MATERIAL",
-      refId: material.id,
-      link: "/study-material",
-    }).catch(() => {});
+      sectionId: material.sectionId,
+      title: material.title,
+      action: "CREATED",
+      user,
+    });
 
     return material;
   }
@@ -94,7 +175,19 @@ class StudyMaterialService {
     if (data.sectionId !== undefined) patch.sectionId = data.sectionId;
     if (data.subjectId !== undefined) patch.subjectId = data.subjectId;
 
-    return studyMaterialRepository.update(id, patch);
+    const updated = await studyMaterialRepository.update(id, patch);
+
+    // Notification — section ke hisaab se targeted
+    const effectiveSectionId = data.sectionId !== undefined ? data.sectionId : material.sectionId;
+    await this.sendStudyMaterialNotification({
+      schoolId: material.schoolId,
+      sectionId: effectiveSectionId,
+      title: patch.title || material.title,
+      action: "UPDATED",
+      user,
+    });
+
+    return updated;
   }
 
   async delete(user, id) {
@@ -108,6 +201,16 @@ class StudyMaterialService {
     }
 
     emitToRoom(`school:${material.schoolId}`, "study_material_deleted", { id });
+
+    // Notification — section ke hisaab se targeted
+    await this.sendStudyMaterialNotification({
+      schoolId: material.schoolId,
+      sectionId: material.sectionId,
+      title: material.title,
+      action: "DELETED",
+      user,
+    });
+
     await studyMaterialRepository.delete(id);
     return true;
   }

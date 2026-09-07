@@ -253,6 +253,31 @@ class PromotionService {
       status,
     });
 
+    // Portal notification: status change ke baare me
+    const statusText = status === "GRADUATED" ? "graduated" : "dropped out";
+    portalNotificationService.create({
+      schoolId: student.schoolId, senderId: user.id, senderName: user.name,
+      title: status === "GRADUATED" ? "STUDENT_GRADUATED" : "STUDENT_WITHDRAWN",
+      body: `${student.firstName} ${student.lastName} ${statusText} — ${year.name}.${remarks ? ` Remarks: ${remarks}` : ""}`,
+      category: "ADMISSION",
+      refType: "STUDENT_LIFECYCLE",
+      refId: record.id,
+      link: "/students",
+    }).catch(() => {});
+
+    // Parent ko bhi portal notification jaye
+    if (student.parent) {
+      portalNotificationService.create({
+        schoolId: student.schoolId, senderName: "System",
+        title: status === "GRADUATED" ? "STUDENT_GRADUATED" : "STUDENT_WITHDRAWN",
+        body: `${student.firstName} ${student.lastName} ${status === "GRADUATED" ? "apne class me graduate hua hai" : "school se withdraw ho gaya hai"} — ${year.name}.${remarks ? ` Remarks: ${remarks}` : ""}`,
+        category: "ADMISSION",
+        refType: "STUDENT_LIFECYCLE",
+        refId: record.id,
+        link: "/student",
+      }).catch(() => {});
+    }
+
     return record;
   }
 

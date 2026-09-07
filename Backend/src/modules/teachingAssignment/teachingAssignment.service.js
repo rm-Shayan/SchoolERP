@@ -2,6 +2,8 @@ import teachingAssignmentRepository from "./repository.js";
 import ApiError from "../../lib/utils/ApiError.js";
 import { getEffectiveSchoolId, assertOwnSchool, assertSchoolAccess, assertSchoolExists } from "../../lib/scope.js";
 import { emitToRoom } from "../../config/websocket.js";
+import portalNotificationService from "../notification/notification.portalService.js";
+import prisma from "../../config/db.js";
 
 class TeachingAssignmentService {
   /**
@@ -40,6 +42,52 @@ class TeachingAssignmentService {
     });
 
     emitToRoom(`school:${targetSchoolId}`, "assignment_updated", { id: assignment.id });
+
+    // Notification: sirf us teacher ko + pro org admin ko
+    const teacher = await prisma.user.findUnique({
+      where: { id: data.teacherId, role: "TEACHER" },
+      select: { id: true, name: true, email: true, schoolId: true, organizationId: true },
+    });
+
+    if (teacher) {
+      portalNotificationService.create({
+        schoolId: targetSchoolId,
+        senderId: user.id,
+        senderName: user.name,
+        recipientId: teacher.id,
+        title: "TEACHER_ASSIGNED",
+        body: `${user.name} ne aapko ${assignment.class.name}${assignment.section ? ` - ${assignment.section.name}` : ""}${assignment.subject ? ` (${assignment.subject.name})` : ""} ke liye assign kiya hai.`,
+        category: "ACADEMIC",
+        refType: "TEACHING_ASSIGNMENT",
+        refId: assignment.id,
+        link: "/teaching-assignment",
+      }).catch(() => {});
+
+      // Pro org admin ko bhi notification jaye
+      const orgAdmins = await prisma.user.findMany({
+        where: {
+          organizationId: teacher.organizationId,
+          role: "ADMIN",
+          isActive: true,
+        },
+        select: { id: true, name: true },
+      });
+      for (const admin of orgAdmins) {
+        portalNotificationService.create({
+          schoolId: targetSchoolId,
+          senderId: user.id,
+          senderName: user.name,
+          recipientId: admin.id,
+          title: "TEACHER_ASSIGNED",
+          body: `${user.name} ne ${teacher.name} ko ${assignment.class.name}${assignment.section ? ` - ${assignment.section.name}` : ""}${assignment.subject ? ` (${assignment.subject.name})` : ""} ke liye assign kiya hai.`,
+          category: "ACADEMIC",
+          refType: "TEACHING_ASSIGNMENT",
+          refId: assignment.id,
+          link: "/teaching-assignment",
+        }).catch(() => {});
+      }
+    }
+
     return assignment;
   }
 
@@ -63,7 +111,53 @@ class TeachingAssignmentService {
     const assignment = await teachingAssignmentRepository.findById(id);
     if (!assignment) throw ApiError.notFoundError("Assignment not found");
     assertOwnSchool(user, assignment.class.schoolId);
+    const teacherId = assignment.teacherId;
     await teachingAssignmentRepository.deleteAssignment(id);
+
+    // Notification: sirf us teacher ko + pro org admin ko
+    const teacher = await prisma.user.findUnique({
+      where: { id: teacherId, role: "TEACHER" },
+      select: { id: true, name: true, schoolId: true, organizationId: true },
+    });
+
+    if (teacher) {
+      portalNotificationService.create({
+        schoolId: assignment.class.schoolId,
+        senderId: user.id,
+        senderName: user.name,
+        recipientId: teacher.id,
+        title: "TEACHER_UNASSIGNED",
+        body: `${user.name} ne aapka assignment ${assignment.class.name}${assignment.section ? ` - ${assignment.section.name}` : ""}${assignment.subject ? ` (${assignment.subject.name})` : ""} se remove kar diya hai.`,
+        category: "ACADEMIC",
+        refType: "TEACHING_ASSIGNMENT",
+        refId: id,
+        link: "/teaching-assignment",
+      }).catch(() => {});
+
+      const orgAdmins = await prisma.user.findMany({
+        where: {
+          organizationId: teacher.organizationId,
+          role: "ADMIN",
+          isActive: true,
+        },
+        select: { id: true, name: true },
+      });
+      for (const admin of orgAdmins) {
+        portalNotificationService.create({
+          schoolId: assignment.class.schoolId,
+          senderId: user.id,
+          senderName: user.name,
+          recipientId: admin.id,
+          title: "TEACHER_UNASSIGNED",
+          body: `${user.name} ne ${teacher.name} ka assignment ${assignment.class.name}${assignment.section ? ` - ${assignment.section.name}` : ""}${assignment.subject ? ` (${assignment.subject.name})` : ""} se remove kar diya hai.`,
+          category: "ACADEMIC",
+          refType: "TEACHING_ASSIGNMENT",
+          refId: id,
+          link: "/teaching-assignment",
+        }).catch(() => {});
+      }
+    }
+
     return true;
   }
 }

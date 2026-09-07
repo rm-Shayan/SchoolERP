@@ -52,7 +52,7 @@ class FeeService {
     }
 
     cacheInvalidatePrefix(`fee:structures:${targetSchoolId}:`);
-    return feeRepository.createFeeStructure({
+    const structure = await feeRepository.createFeeStructure({
       schoolId: targetSchoolId,
       classIds: classIdList,
       academicYearId: data.academicYearId,
@@ -64,6 +64,14 @@ class FeeService {
         lateFeeDays: li.lateFeeDays || 0,
       })),
     });
+
+    portalNotificationService.create({
+      schoolId: targetSchoolId, senderId: user.id, senderName: user.name,
+      title: "FEE_STRUCTURE_CREATED", body: `Fee structure "${data.name}" created for ${classIdList.length} class(es) — ${data.lineItems.length} line item(s).`,
+      category: "FEE", refType: "FEE_STRUCTURE", refId: structure.id, link: "/fees/structures",
+    }).catch(() => {});
+
+    return structure;
   }
 
   async listFeeStructures(user, schoolId, { classId, academicYearId }) {
@@ -123,7 +131,15 @@ class FeeService {
       );
     }
     cacheInvalidatePrefix(`fee:structures:${structure.schoolId}:`);
-    return feeRepository.findFeeStructureById(id);
+    const updated = await feeRepository.findFeeStructureById(id);
+
+    portalNotificationService.create({
+      schoolId: structure.schoolId, senderId: user.id, senderName: user.name,
+      title: "FEE_STRUCTURE_UPDATED", body: `Fee structure "${structure.name}" updated — ${(updated.classes || []).length} class(es), ${lineItems?.length || 0} line item(s) updated.`,
+      category: "FEE", refType: "FEE_STRUCTURE", refId: id, link: "/fees/structures",
+    }).catch(() => {});
+
+    return updated;
   }
 
   async getFeeStructure(user, id) {
@@ -136,8 +152,16 @@ class FeeService {
   async deleteFeeStructure(user, id) {
     const structure = await this.getFeeStructure(user, id);
     assertOwnSchool(user, structure.schoolId);
+    const name = structure.name;
     await feeRepository.deleteFeeStructure(id);
     cacheInvalidatePrefix(`fee:structures:${structure.schoolId}:`);
+
+    portalNotificationService.create({
+      schoolId: structure.schoolId, senderId: user.id, senderName: user.name,
+      title: "FEE_STRUCTURE_DELETED", body: `Fee structure "${name}" deleted.`,
+      category: "FEE", refType: "FEE_STRUCTURE", refId: id, link: "/fees/structures",
+    }).catch(() => {});
+
     return true;
   }
 
@@ -296,6 +320,12 @@ class FeeService {
       structureId,
     });
 
+    portalNotificationService.create({
+      schoolId: targetSchoolId, senderName: "Fee System",
+      title: "FEES_GENERATED", body: `${created} fee record(s) generated for ${monthLabel} (skipped: ${skipped}, students in scope: ${studentsInScope}).`,
+      category: "FEE", refType: "FEE_GENERATE", refId: null, link: "/fees/records",
+    }).catch(() => {});
+
     return { monthLabel, dueDate, dueDay: effectiveDueDay, created, studentsInScope: students.length };
   }
 
@@ -387,7 +417,15 @@ class FeeService {
     if (!Number.isInteger(day) || day < 1 || day > 28) {
       throw ApiError.badRequestError("Due day must be between 1 and 28");
     }
-    return feeRepository.updateSchoolDueDay(targetSchoolId, day);
+    await feeRepository.updateSchoolDueDay(targetSchoolId, day);
+
+    portalNotificationService.create({
+      schoolId: targetSchoolId, senderId: user.id, senderName: user.name,
+      title: "FEE_DUE_DAY_UPDATED", body: `School ka monthly fee due day ${day} par set kiya gaya. Agle mahine se voucher isi date par generate hoga.`,
+      category: "FEE", refType: "SCHOOL_SETTING", refId: null, link: "/fees/settings",
+    }).catch(() => {});
+
+    return { success: true };
   }
 
   /**
@@ -413,6 +451,13 @@ class FeeService {
       feeRecordId: recordId,
       dueDate: newDue,
     });
+
+    portalNotificationService.create({
+      schoolId: record.student.schoolId, senderId: user.id, senderName: user.name,
+      title: "FEE_DUE_DATE_UPDATED", body: `${record.student.firstName} ${record.student.lastName} ki fee record ka due date ${newDue.toLocaleDateString("en-PK")} par update kiya gaya.`,
+      category: "FEE", refType: "FEE_RECORD", refId: recordId, link: "/fees/records",
+    }).catch(() => {});
+
     return updated;
   }
 

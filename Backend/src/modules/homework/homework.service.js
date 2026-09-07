@@ -106,7 +106,7 @@ class HomeworkService {
     if (data.content !== undefined) patch.content = data.content;
     if (data.mediaUrl !== undefined) patch.mediaUrl = data.mediaUrl || null;
 
-    return prisma.homeworkBroadcast.update({
+    const updated = await prisma.homeworkBroadcast.update({
       where: { id },
       data: patch,
       include: {
@@ -114,6 +114,14 @@ class HomeworkService {
         createdBy: { select: { id: true, name: true, role: true } },
       },
     });
+
+    portalNotificationService.create({
+      schoolId: updated.schoolId, senderId: user.id, senderName: user.name,
+      title: "HOMEWORK_UPDATED", body: `"${data.title || updated.title}" updated for ${updated.section.class.name} ${updated.section.name}.`,
+      category: "HOMEWORK", refType: "HOMEWORK_BROADCAST", refId: id, link: "/homework",
+    }).catch(() => {});
+
+    return updated;
   }
 
   async deleteBroadcast(user, id) {

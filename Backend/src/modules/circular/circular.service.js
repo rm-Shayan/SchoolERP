@@ -135,7 +135,43 @@ class CircularService {
     const circular = await this.getCircular(user, id);
     assertOwnSchool(user, circular.schoolId);
     await circularRepository.deleteCircular(id);
+
+    portalNotificationService.create({
+      schoolId: circular.schoolId, senderId: user.id, senderName: user.name,
+      title: "CIRCULAR_DELETED",
+      body: `"${circular.title}" circular delete kar di gayi.`,
+      category: "CIRCULAR",
+      refType: "CIRCULAR",
+      refId: id,
+      link: "/circulars",
+    }).catch(() => {});
+
     return true;
+  }
+
+  async updateCircular(user, id, data) {
+    const circular = await this.getCircular(user, id);
+    assertOwnSchool(user, circular.schoolId);
+
+    const patch = {};
+    if (data.title !== undefined) patch.title = data.title;
+    if (data.content !== undefined) patch.content = data.content;
+    if (data.audience !== undefined) patch.audience = data.audience;
+    if (data.mediaUrl !== undefined) patch.mediaUrl = data.mediaUrl || null;
+
+    const updated = await circularRepository.updateCircular(id, patch);
+
+    portalNotificationService.create({
+      schoolId: circular.schoolId, senderId: user.id, senderName: user.name,
+      title: "CIRCULAR_UPDATED",
+      body: `"${data.title || updated.title}" circular update kar di gayi.`,
+      category: "CIRCULAR",
+      refType: "CIRCULAR",
+      refId: id,
+      link: "/circulars",
+    }).catch(() => {});
+
+    return updated;
   }
 }
 
