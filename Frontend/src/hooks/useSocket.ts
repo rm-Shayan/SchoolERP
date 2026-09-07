@@ -26,5 +26,5 @@ export function useSocket() {
       disconnectSocket();
       dispatch(resetPortalStatus());
     };
-  }, [isAuthenticated, schoolId, organizationId, user?.organization?.status, user?.school?.status, dispatch]);
+  }, [isAuthenticated, schoolId, organizationId, dispatch]);
 }

@@ -119,6 +119,7 @@ class PortalNotificationService {
     const result = await prisma.notificationLog.updateMany({ where, data: { isRead: true } });
     emitToRoom("super_admins", "portal_notifications_read", { ids });
     if (user.schoolId) emitToRoom(`school:${user.schoolId}`, "portal_notifications_read", { ids });
+    if (user.organizationId) emitToRoom(`org:${user.organizationId}`, "portal_notifications_read", { ids });
     return { updated: result.count };
   }
 
@@ -143,6 +144,7 @@ class PortalNotificationService {
     const result = await prisma.notificationLog.updateMany({ where, data: { isRead: true } });
     emitToRoom("super_admins", "portal_all_read", { schoolId: user.schoolId || schoolId || null });
     if (user.schoolId) emitToRoom(`school:${user.schoolId}`, "portal_all_read", {});
+    if (user.organizationId) emitToRoom(`org:${user.organizationId}`, "portal_all_read", {});
     return { updated: result.count };
   }
 
@@ -158,6 +160,7 @@ class PortalNotificationService {
     const result = await prisma.notificationLog.deleteMany({ where });
     emitToRoom("super_admins", "portal_notifications_deleted", { ids });
     if (user.schoolId) emitToRoom(`school:${user.schoolId}`, "portal_notifications_deleted", { ids });
+    if (user.organizationId) emitToRoom(`org:${user.organizationId}`, "portal_notifications_deleted", { ids });
     return { deleted: result.count };
   }
 

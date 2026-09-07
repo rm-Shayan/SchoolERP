@@ -24,6 +24,7 @@ export default function NotificationMenu() {
   const user = useAppSelector((s) => s.auth.user);
   const { portalItems, portalUnread } = useAppSelector((s) => s.notifications);
   const dispatch = useAppDispatch();
+  const socketStatus = useAppSelector((s) => s.socket.status);
   const schoolId = school?.id;
   const organizationId = user?.organizationId;
 
@@ -104,7 +105,7 @@ export default function NotificationMenu() {
       socket.off('portal_notifications_read', onRead);
       socket.off('portal_all_read', onAllRead);
     };
-  }, [dispatch, refetchUnread]);
+  }, [dispatch, refetchUnread, socketStatus]);
 
   return (
     <div className="relative">

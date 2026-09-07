@@ -694,7 +694,7 @@ class AdmissionService {
           status: "SENT",
         },
       });
-      emitToRoom(`school:${data.schoolId}`, "notification_created", {
+      emitToRoom(`school:${data.schoolId}`, "portal_notification_created", {
         recipient: "Branch Office",
         channel: "PORTAL",
         title: "New Admission Inquiry",
