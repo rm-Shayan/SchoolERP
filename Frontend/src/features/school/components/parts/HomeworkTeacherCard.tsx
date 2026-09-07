@@ -3,7 +3,7 @@
 import { memo } from 'react';
 import type { Homework } from '@/lib/api/homeworkService';
 import { Card } from '@/features/shared/components';
-import { formatDate, getInitials } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 
 interface HomeworkTeacherCardProps {
   name: string;
@@ -34,8 +34,10 @@ const HomeworkTeacherCard = memo(function HomeworkTeacherCard({ name, items, onE
   return (
     <Card className="overflow-hidden p-0">
       <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 bg-gray-50/70">
-        <span className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 text-xs font-bold flex items-center justify-center shrink-0">
-          {getInitials(name)}
+        <span className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 flex items-center justify-center shrink-0 ring-1 ring-inset ring-white/70 shadow-sm">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="h-[52%] w-[52%] text-slate-400">
+            <path d="M12 2.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm0 14.5c-5.13 0-9.5 2.23-9.5 5.5v.5h19v-.5c0-3.27-4.37-5.5-9.5-5.5Z" />
+          </svg>
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold text-gray-900 truncate">{name}</h3>
