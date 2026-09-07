@@ -1266,6 +1266,7 @@ class FeeService {
       record._pending = pending;
       emailRecords.push(record);
       sent++;
+    }
     // Batched: ek parent ko sirf ek email (sare bachon ka combined).
     const sendRemindersNotifiedIds = [];
     for (const rec of emailRecords) {
