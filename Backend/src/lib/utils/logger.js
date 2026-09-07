@@ -17,7 +17,7 @@ const SERVICE_NAME = process.env.SERVICE_NAME || 'school-erp-api';
 const LOG_LEVEL = process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
 const LOG_TO_FILE = process.env.LOG_TO_FILE === 'true';
 const LOG_DIR = process.env.LOG_DIR || 'logs';
-const FILE_RETENTION = process.env.LOG_FILE_RETENTION_DAYS || '14d';
+const FILE_RETENTION = process.env.LOG_FILE_RETENTION_DAYS || '7d';
 
 const consoleFormat = winston.format.combine(
     winston.format.colorize(),
@@ -42,6 +42,7 @@ function buildTransports() {
                 dirname: LOG_DIR,
                 filename: 'error-%DATE%.log',
                 datePattern: 'YYYY-MM-DD',
+                maxSize: '50m',
                 maxFiles: FILE_RETENTION,
                 level: 'error',
                 zippedArchive: true,
@@ -51,6 +52,7 @@ function buildTransports() {
                 dirname: LOG_DIR,
                 filename: 'combined-%DATE%.log',
                 datePattern: 'YYYY-MM-DD',
+                maxSize: '100m',
                 maxFiles: FILE_RETENTION,
                 zippedArchive: true,
                 format: fileFormat,
