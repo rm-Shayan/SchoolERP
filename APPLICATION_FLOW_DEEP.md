@@ -380,9 +380,14 @@ branch logo → org logo fallback, **theme color org ka `themeColor`** (fallback
 taake generic login na dikhe, har school ka apna branded login lage.
 
 **Per-org theming (wired ✅):** `Organization.themeColor` (hex) — org create/edit form par
-**color picker** se set hota hai; `getBranding()` org ka color return karta hai; login screen
-us color ko use karti hai. Migration: `20260814120000_add_org_theme_color` (DB up hone par
-`prisma migrate deploy`).
+**color picker** se set hota hai; `getBranding()` org ka color return karta hai; `LoginHubPage`
+`applyOrgThemeToRoot(themeColor)` call karta hai jo CSS `--color-primary-*` vars override karta hai —
+poore login hub UI par theme apply hota hai. Jab `themeColor` null ho → `DEFAULT_THEME = '#6366f1'`
+(indigo) apply hota hai. BrandPanel left side par inline gradient use karta hai.
+
+**LinkedIn-style notifications:** Bell dropdown (`NotificationItem`), super admin notifications page,
+branch admin notifications page — sab jagah unread items par full theme color bg + white text,
+read items par subtle `rgba(themeColor, 0.06)` tint. Bell badge bhi theme color use karta hai.
 
 **Notification channel (notification.service.js):** primary **Email**, WhatsApp API budget
 nahi hai to email; har parent notification `notificationLog` mein bhi record hota hai
@@ -526,6 +531,10 @@ Har nested entity par `schoolId` scope check (`assertOwnSchool` / `assertSchoolA
 `bulk-promote` / `repeat` / `transfer-section` / `graduate` / `dropout` — student records
 par status change + `PromotionRecord` history. (Management role = SUPER_ADMIN, ADMIN)
 
+- `bulk-graduate` / `bulk-dropout` — bulk-set all ACTIVE students in a section to GRADUATED/DROPPED_OUT (for last-class sections)
+- `rollbackLifecycle` — reactivate GRADUATED/DROPPED_OUT/TRANSFERRED_OUT → ACTIVE, reopens parent portal, creates `REACTIVATED` PromotionRecord for audit trail. Management only.
+- `REACTIVATED` PromotionAction added for rollback audit trail
+
 ### 11.6 Organization Public Pages (slug ke saath) — Design Ready, Baqi
 
 > Har **organization with slug** ke **apne public pages** honge — log admission ke liye
@@ -610,15 +619,15 @@ gate live view, import progress sab live update hote hain.
 
 ## 14. Quick References
 
-**API surface (312 routes)** — `API_ROUTES.md` mein full table. Key groups:
-- Auth (34): login, refresh, me, logout(-all), change-password, users CRUD, parent/student OTP + direct login, switch-branch, assign-branch
-- Organizations (13), Schools (15) — SUPER_ADMIN / MANAGEMENT (incl. export, branding, logo, portal-password)
+**API surface (322 routes)** — `API_ROUTES.md` mein full table. Key groups:
+- Auth (35): login, refresh, me, logout(-all), change-password, users CRUD, parent/student OTP + direct login, switch-branch, assign-branch
+- Organizations (14), Schools (15) — SUPER_ADMIN / MANAGEMENT (incl. export, branding, logo, portal-password)
 - Academic (26) — years/terms/classes/sections/subjects
-- Students (11), Admissions (16), Fees (27), Attendance (18), Homework (5), Exams (10),
+- Students (12), Admissions (19), Fees (25), Attendance (19), Homework (5), Exams (10),
   Conduct (8), Circulars (4), PTM (5), Timetable (12), Activities (5), Notifications (8),
-  Moderation (10), Audit (2), Promotions (7), Leave (7), Teaching Assignments (5)
-- **Portal (15)** — parent/student dashboard routes (overview, attendance, fees, homework, materials, notices, results, exams, timetable, conduct, PTM, leave, study-material, timetable-pdf, exam-date-sheet)
-- SMTP (4), Storage (3), Staff Leave (8), Staff Attendance (11), Documents (5), Study Material (5)
+  Moderation (10), Audit (2), Promotions (10), Leave (7), Teaching Assignments (5)
+- **Portal (17)** — parent/student dashboard routes (overview, attendance, fees, homework, materials, notices, results, exams, timetable, conduct, PTM, leave, study-material, timetable-pdf, exam-date-sheet, profile)
+- SMTP (4), Storage (3), Staff Leave (8), Staff Attendance (11), Documents (6), Study Material (5)
 - Infra (3): `/health`, `/ready`, `/metrics`
 
 **Admin console pages (current):** Dashboard, Organizations (+ create/detail), Branches,

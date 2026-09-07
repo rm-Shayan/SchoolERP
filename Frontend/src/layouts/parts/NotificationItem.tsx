@@ -38,16 +38,19 @@ export default function NotificationItem({ n, themeColor, onRead, onDelete }: Pr
     <div
       onClick={() => !n.isRead && onRead(n.id)}
       className={cn(
-        'group cursor-pointer px-4 py-3 border-b border-gray-50 hover:bg-gray-50/60 transition-colors',
+        'group cursor-pointer px-4 py-3 border-b border-gray-50 transition-colors',
+        n.isRead ? 'hover:brightness-95' : 'hover:brightness-95',
       )}
-      style={!n.isRead ? { backgroundColor: tc, color: '#fff' } : undefined}
+      style={!n.isRead
+        ? { backgroundColor: tc, color: '#fff' }
+        : unreadBg ? { backgroundColor: unreadBg, color: tc } : undefined}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2.5 min-w-0">
           <span className="text-base mt-0.5 shrink-0">{CAT_ICON[n.category] || '🔔'}</span>
           <div className="min-w-0">
-            <p className={cn('text-sm', n.isRead ? 'text-gray-500' : 'font-semibold text-white')}>{n.title}</p>
-            <p className={cn('text-xs mt-0.5 line-clamp-2', n.isRead ? 'text-gray-400' : 'text-white/80')}>{n.body}</p>
+            <p className={cn('text-sm', n.isRead ? 'font-medium' : 'font-semibold text-white')} style={!n.isRead ? undefined : { color: tc }}>{n.title}</p>
+            <p className={cn('text-xs mt-0.5 line-clamp-2', n.isRead ? 'text-gray-500' : 'text-white/80')}>{n.body}</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">

@@ -40,7 +40,7 @@ export default function AuthLayout({
 
   return (
     <div className={cn(
-      'relative overflow-hidden bg-gradient-to-br from-gray-50 via-slate-50 to-violet-50/30 px-3 sm:px-4 sm:px-6 lg:px-8',
+      'relative overflow-hidden bg-gradient-to-br from-gray-50 via-slate-50 to-primary-50/30 px-3 sm:px-4 sm:px-6 lg:px-8',
       compact ? 'py-4' : 'py-6 sm:py-10',
     )}>
       {!fullWidth && (

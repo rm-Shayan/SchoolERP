@@ -243,6 +243,8 @@ Redux store. Used in `OverviewLiveEvents`, `AttendanceTab` (live feed), `Homewor
 - **Blocked parent/student:** login par standard message *"Admin deactivated your portal..."*
 - **Blocked school:** saare portal users locked
 - **Blocked org:** cascade — all schools → all portal users locked
+- **Student lifecycle auto-deactivation:** When student status changes to GRADUATED/DROPPED_OUT/TRANSFERRED_OUT (TC issued), parent portal is auto-deactivated if no other ACTIVE children remain
+- **Student lifecycle rollback reactivation:** When student is reactivated (rolled back from GRADUATED/DROPPED_OUT/TRANSFERRED_OUT → ACTIVE), parent portal is auto-reactivated
 - Token types strict: `authenticateParent` sirf `tokenType=parent`, `authenticateStudent` sirf `tokenType=student`
 - `authenticateAnyPortal` dono accept karta hai (portal module routes)
 - Branch isolation: `portal.studentIds` se scope enforce hota hai — apne bachon ka data

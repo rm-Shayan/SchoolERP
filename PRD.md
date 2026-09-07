@@ -290,6 +290,9 @@ Organization (tenant)
 - **PDF downloads:** timetable PDF, exam date sheet PDF
 - **Leave requests:** parent/student submits → validates student belongs to portal → checks overlapping approved leaves → notifies school admin via portal notification + WebSocket `leave_request_created`
 - **Portal notifications:** realtime inbox via WebSocket (`portal_notification_created`, `portal_all_read`)
+- **LinkedIn-style notifications:** unread items show full org theme color background with white text; read items show subtle theme-tinted background
+- **Notification bell badge:** uses org theme color
+- **Org-branded login hub:** theme color from DB applied via `applyOrgThemeToRoot` CSS variable overrides; falls back to indigo when no branding
 - **Org-branded portal pages** with theme color
 
 ### 4.18 Documents & PDF Generation

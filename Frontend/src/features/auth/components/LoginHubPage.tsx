@@ -21,6 +21,8 @@ interface LoginHubPageProps {
   initialBranding?: SchoolBranding | null;
 }
 
+const DEFAULT_THEME = '#6366f1';
+
 export default function LoginHubPage({ orgSlug, code, initialBranding }: LoginHubPageProps) {
   const { branding, setBranding } = useOrgBranding({ code, slug: orgSlug, initialBranding });
   const [group, setGroup] = useState<LoginGroup>('staff');
@@ -32,16 +34,15 @@ export default function LoginHubPage({ orgSlug, code, initialBranding }: LoginHu
   const brandSubValue = branding?.school?.name ?? '';
   // Logo priority: school logo → organization logo → default. The backend
   // already collapses school→org into logoUrl, so we use branding.logoUrl.
-  const themeColor = branding?.themeColor || undefined;
+  const themeColor = branding?.themeColor || DEFAULT_THEME;
 
   // Apply the theme from the database (query param org/school/code → branding)
   // to the entire hub UI — root CSS vars override so every primary-* element
   // (buttons, links, focus rings, chips, background blobs) uses the org color,
-  // not just the left panel/tabs. If no branding, clear to default violet.
+  // not just the left panel/tabs. Falls back to indigo when no branding.
   useEffect(() => {
-    if (themeColor) applyOrgThemeToRoot(themeColor);
-    else clearOrgThemeFromRoot();
-    return () => { if (themeColor) clearOrgThemeFromRoot(); };
+    applyOrgThemeToRoot(themeColor);
+    return () => { clearOrgThemeFromRoot(); };
   }, [themeColor]);
 
   const role = ROLES.find((r) => r.key === group) ?? ROLES[0];

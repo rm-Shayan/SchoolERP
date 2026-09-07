@@ -2,11 +2,10 @@ import type { ReactNode } from 'react';
 
 export const TYPE_CONFIG: Record<
   string,
-  { variant: 'info' | 'default' | 'success' | 'warning'; icon: ReactNode; color: string; label: string }
+  { variant: 'info' | 'default' | 'success' | 'warning'; icon: ReactNode; label: string }
 > = {
   DOCUMENT: {
     variant: 'info',
-    color: 'from-blue-500 to-blue-600',
     label: 'Document',
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -16,7 +15,6 @@ export const TYPE_CONFIG: Record<
   },
   VIDEO: {
     variant: 'default',
-    color: 'from-purple-500 to-purple-600',
     label: 'Video',
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -27,7 +25,6 @@ export const TYPE_CONFIG: Record<
   },
   IMAGE: {
     variant: 'success',
-    color: 'from-emerald-500 to-emerald-600',
     label: 'Image',
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -37,7 +34,6 @@ export const TYPE_CONFIG: Record<
   },
   LINK: {
     variant: 'warning',
-    color: 'from-amber-500 to-amber-600',
     label: 'External Link',
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

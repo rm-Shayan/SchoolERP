@@ -151,6 +151,9 @@ Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + port
 - [x] Super admin announcements → portal notifications + email to target admins
 - [x] Notification form with org/branch dropdown selectors
 - [x] Super admin notification list shows own actions
+- [x] LinkedIn-style notification items — full org theme color bg (unread) + subtle theme tint (read)
+- [x] Auto mark-all-read on bell dropdown open
+- [x] Notification bell badge uses org theme color
 
 ### Leave Management
 - [x] Student leave (parent request → admin review)
@@ -302,6 +305,21 @@ Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + port
 18. **Branch Settings Page** — Dedicated `/admin/branch-settings` page for SMTP/Cloudinary config per branch
 19. **SMTP/Cloudinary Org Form** — Org name immutable + branch dropdown selector on org detail page
 20. **Staff Avatar Fallback** — Org logo shows when staff/principal has no photo (user photo → org logo → initials)
+
+## Session Updates (7 Sep 2026)
+
+### UI & Branding — Completed Features
+
+1. **LinkedIn-style Notifications** — full org theme color bg (unread) + subtle theme tint (read) across bell dropdown, super admin page, branch admin page
+2. **Notification Bell Badge** — uses org theme color
+3. **Login Hub Theme Color** — org theme color from DB applied via `applyOrgThemeToRoot` CSS variable overrides; falls back to indigo when no branding
+4. **AuthLayout Background** — uses `primary-*` CSS variables (dynamic) instead of hardcoded violet
+5. **Branches Page Banner** — violet/indigo gradient (matches other super admin pages, was emerald/teal)
+6. **Branches Page Stats** — primary color scheme for icons, status filters, leaderboard bars
+7. **Org Public Pages** — theme color applied via inline styles (nav, hero, CTA, admission form)
+8. **Receptionist Portal** — dedicated nav links, branch layout detects RECEPTIONIST role
+9. **Student Lifecycle (TC, Rollback, Bulk)** — full end-to-end implementation
+10. **Access Control Tightened** — `PATCH /students/:id/status` restricted to MANAGEMENT only
 
 ---
 

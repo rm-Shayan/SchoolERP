@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { Button } from '@/features/shared/components';
+import { Button, Input } from '@/features/shared/components';
 import type { SectionOption } from '@/features/teacher/components/parts/HomeworkForm';
+import type { SubjectOption } from '@/features/teacher/components/parts/HomeworkForm';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 import FileUploadZone from './FileUploadZone';
@@ -14,11 +15,14 @@ export interface StudyMaterialFormValues {
   file: File | null;
   linkUrl: string;
   sectionId: string;
+  subjectId: string;
 }
 
 interface Props {
   sections: SectionOption[];
   sectionsLoading?: boolean;
+  subjects?: SubjectOption[];
+  subjectsLoading?: boolean;
   initialValues?: Partial<StudyMaterialFormValues>;
   onSubmit: (formData: FormData) => void | Promise<void>;
   onCancel: () => void;
@@ -40,6 +44,8 @@ type InputMode = 'file' | 'url';
 export default function StudyMaterialForm({
   sections,
   sectionsLoading,
+  subjects = [],
+  subjectsLoading = false,
   initialValues,
   onSubmit,
   onCancel,
@@ -52,6 +58,7 @@ export default function StudyMaterialForm({
   const [linkUrl, setLinkUrl] = useState(initialValues?.linkUrl ?? '');
   const [file, setFile] = useState<File | null>(initialValues?.file ?? null);
   const [sectionId, setSectionId] = useState(initialValues?.sectionId ?? '');
+  const [subjectId, setSubjectId] = useState(initialValues?.subjectId ?? '');
   const [mode, setMode] = useState<InputMode>(initialValues?.file ? 'file' : 'url');
   const [fileError, setFileError] = useState('');
 
@@ -62,7 +69,7 @@ export default function StudyMaterialForm({
     const ext = selected.name.split('.').pop()?.toLowerCase() ?? '';
     if (['mp4', 'webm', 'ogg', 'mov'].includes(ext)) {
       if (selected.size > MAX_VIDEO_BYTES) {
-        setFileError(`Video is too large (${(selected.size / (1024 * 1024)).toFixed(1)} MB). Maximum allowed is 50 MB. The backend will compress it automatically.`);
+        setFileError(`Video is too large (${(selected.size / (1024 * 1024)).toFixed(1)} MB). Maximum allowed is 50 MB.`);
         return;
       }
       setType('VIDEO');
@@ -76,6 +83,7 @@ export default function StudyMaterialForm({
     if (!title.trim()) { toast.error('Title is required'); return; }
     if (mode === 'file' && !file) { toast.error('Select a file or switch to URL'); return; }
     if (mode === 'url' && !linkUrl.trim()) { toast.error('Enter a URL or switch to file upload'); return; }
+    if (!sectionId) { toast.error('Select a section'); return; }
 
     const fd = new FormData();
     fd.append('title', title.trim());
@@ -84,6 +92,7 @@ export default function StudyMaterialForm({
     if (mode === 'file' && file) fd.append('file', file);
     if (mode === 'url' && linkUrl.trim()) fd.append('linkUrl', linkUrl.trim());
     if (sectionId) fd.append('sectionId', sectionId);
+    if (subjectId) fd.append('subjectId', subjectId);
 
     await onSubmit(fd);
   };
@@ -92,34 +101,71 @@ export default function StudyMaterialForm({
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-        <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Chapter 5 Notes" />
+        <Input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="e.g. Chapter 5 Notes"
+          className="w-full"
+        />
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-        <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Optional description" />
+        <textarea
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+          rows={2}
+          value={desc}
+          onChange={(e) => setDesc(e.target.value)}
+          placeholder="Optional description"
+        />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-          <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" value={type} onChange={(e) => { setType(e.target.value); setFile(null); setLinkUrl(''); setFileError(''); }}>
+          <select
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none"
+            value={type}
+            onChange={(e) => { setType(e.target.value); setFile(null); setLinkUrl(''); setFileError(''); }}
+          >
             {TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
-          <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" value={sectionId} onChange={(e) => setSectionId(e.target.value)}>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Section *</label>
+          <select
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none"
+            value={sectionId}
+            onChange={(e) => { setSectionId(e.target.value); setSubjectId(''); }}
+          >
             <option value="">All sections</option>
             {sectionsLoading ? <option disabled>Loading...</option> : sections.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
         </div>
       </div>
 
+      {subjectId && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+          <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
+            <option value="">All subjects</option>
+            {subjectsLoading ? <option disabled>Loading...</option> : subjects.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+        </div>
+      )}
+
       {/* File / URL toggle */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Source *</label>
         <div className="flex gap-1 p-1 bg-gray-100 rounded-lg mb-3">
           {(['file', 'url'] as const).map((m) => (
-            <button key={m} type="button" onClick={() => setMode(m)} className={cn('flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-all', mode === m ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-all',
+                mode === m ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700',
+              )}
+            >
               {m === 'file' ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
               ) : (
@@ -131,9 +177,21 @@ export default function StudyMaterialForm({
         </div>
 
         {mode === 'file' ? (
-          <FileUploadZone accept={accept} file={file} onFileSelect={handleFileSelect} onRemove={() => { setFile(null); setFileError(''); }} error={fileError} />
+          <FileUploadZone
+            accept={accept}
+            file={file}
+            onFileSelect={handleFileSelect}
+            onRemove={() => { setFile(null); setFileError(''); }}
+            error={fileError}
+          />
         ) : (
-          <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://youtube.com/watch?v=... or any URL" />
+          <input
+            type="url"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+            value={linkUrl}
+            onChange={(e) => setLinkUrl(e.target.value)}
+            placeholder="https://youtube.com/watch?v=..."
+          />
         )}
       </div>
 

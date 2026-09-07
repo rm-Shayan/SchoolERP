@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useAppSelector } from '@/store/hooks';
 import { Card, EmptyState } from '@/features/shared/components';
 import StudyMaterialCard from '@/features/shared/components/parts/StudyMaterialCard';
 import { TYPE_CONFIG } from '@/features/shared/components/parts/studyMaterialHelpers';
@@ -16,6 +17,8 @@ const FILTERS = [
 ];
 
 export default function StudyMaterialsTab() {
+  const { organization, school } = useAppSelector((s) => s.auth);
+  const themeColor = organization?.themeColor || school?.themeColor || undefined;
   const [items, setItems] = useState<StudyMaterial[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
@@ -58,11 +61,12 @@ export default function StudyMaterialsTab() {
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors ${
+            className="px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors"
+            style={
               filter === f.key
-                ? 'bg-primary-600 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
+                ? { backgroundColor: themeColor || undefined, color: themeColor ? '#fff' : undefined }
+                : { backgroundColor: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.6)' }
+            }
           >
             {f.label}
             {f.key !== 'ALL' && (

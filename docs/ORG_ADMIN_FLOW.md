@@ -125,6 +125,12 @@ server-component wrappers + client feature components):
 | Data scope | `lib/scope.js` — branch-scoped queries (har user apni branch par locked) | `Backend/src/lib/scope.js` |
 | Pages | dashboard, students, admissions, academic, staff (+ password reset), teaching-assignments, fees, attendance, exams, ptm, promotions, study-material, announcements, settings | `frontend/nextjs/src/features/school/*`, route wrappers `src/app/o/[slug]/branch/*` |
 
+**TC & Lifecycle Operations:** Branch ADMIN (Principal) can:
+- Issue Transfer Certificate (TC) for ACTIVE students → formal A4 PDF, student status → GRADUATED/DROPPED_OUT/TRANSFERRED_OUT
+- Rollback student lifecycle — reactivate GRADUATED/DROPPED_OUT/TRANSFERRED_OUT back to ACTIVE
+- Bulk graduate / bulk dropout for last-class sections
+- All lifecycle operations require ADMIN/SUPER_ADMIN role (RECEPTIONIST excluded)
+
 **Branch kahan se aata hai:** `/auth/me` → nested `school` (apni branch) → `pickActiveSchool`
 active branch. Ab koi branch switcher nahi — har staff user apni branch par locked hai.
 

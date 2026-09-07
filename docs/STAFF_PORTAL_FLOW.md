@@ -127,6 +127,8 @@ Teacher self-service ke liye `/teacher/leave` par jaake leave request kar sakta 
 
 ## 4. Receptionist Portal (`/branch/*`)
 
+> **2026-09-07 update:** Receptionist ka apna dedicated nav links hai (Front Desk, Finance, Attendance, Academics, Communication groups). Branch layout detects RECEPTIONIST role and shows `receptionistLinks` instead of `adminLinks`.
+
 ### 4.1 Admission Pipeline
 
 Receptionist ka main kaam — **admissions handle karna:**
@@ -169,6 +171,8 @@ INQUIRY → TEST_SCHEDULED → TEST_PASSED / TEST_FAILED → FORM_SUBMITTED
 | Fee Collection | `/branch/fees/collection` | ❌ FINANCE only |
 | Settings | `/branch/settings` | ❌ MANAGEMENT only |
 | Import Data | `/branch/import-guide` | ❌ MANAGEMENT only |
+| Issue TC / Rollback lifecycle | Student status changes | ❌ MANAGEMENT only (ADMIN/SUPER_ADMIN) |
+| Student status change | `PATCH /students/:id/status` | ❌ MANAGEMENT only |
 
 ---
 

@@ -370,7 +370,11 @@ school ka **naam + logo DB se load** kare (generic `/admin/login` nahi).
 
 - Org ka `themeColor` **DB mein store** hota hai (create/edit se set hota hai)
 - `GET /schools/branding?slug=` → `themeColor` return karta hai (fallback `#2563eb`)
-- Login screen (`LoginCard`) us color ko use karta hai (underline/bar)
+- Login hub (`LoginHubPage`) `applyOrgThemeToRoot(themeColor)` call karta hai — CSS `--color-primary-*` vars override hote hain, poore UI par theme apply hota hai
+- Jab `themeColor` null ho → `DEFAULT_THEME = '#6366f1'` (indigo) apply hota hai
+- BrandPanel left side par inline gradient `linear-gradient(135deg, themeColor, darkenHex(themeColor))` use karta hai
+- `AuthLayout` background `to-primary-50/30` use karta hai (CSS variable, dynamic)
+- Notifications: LinkedIn-style — unread par full theme color bg, read par subtle `rgba(themeColor, 0.06)` tint
 - Naya color lene ke liye: org create form ya EditOrgModal mein **color picker**
 
 ### 9.3 Cloudinary — Branch-Level Credentials
@@ -583,7 +587,7 @@ email to phir bhi chalegi (SMTP direct), lekin imports/caching fail ho sakte hai
 | "Blocked user ko kya dikhta hai?" | Standard message: *"Admin deactivated your portal. Please contact admin of this system."* |
 | "Org delete hone par admin account?" | Platform SUPER_ADMIN **bachta hai** (detach); baaki users cascade delete |
 | "Email kyun nahi jati jab khud org banata hun?" | Self-designation rule — apni hi email par credentials email skip hoti hai (khud bana rahe ho) |
-| "Har org ka apna color kahan se?" | `Organization.themeColor` — org create/edit par color picker se set hota hai; branded login + public pages us color par |
+| "Har org ka apna color kahan se?" | `Organization.themeColor` — org create/edit par color picker se set hota hai; branded login hub + public pages + notifications us color par |
 | "Admission slip / ID card / fee receipt email mein kahan?" | **PDF attach** hote hain — admission approve (`admission-slip`), enroll (`student-id`), fee payment (`fee-receipt`) |
 | "Notification logs kahan dekhen?" | Admin console `/admin/notifications` page + navbar bell (realtime WS) |
 | "Receptionist kya kar sakta hai?" | Students (create/edit/photo), admissions pipeline, gate scan + attendance (bulk/reports/override), staff attendance, view leave/announcements |

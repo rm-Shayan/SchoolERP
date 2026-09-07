@@ -203,3 +203,11 @@ Spec §4 optional optimization implemented: replacing an image now **reuses the 
 - **Prisma schema**: Added `REACTIVATED` to `PromotionAction` enum; pushed to DB.
 - **API_ROUTES.md** updated: 322 total routes (was 312). Added missing routes: TC, rollback, bulk-graduate, bulk-dropout, archive/auto, admissions/send-slip, portal profile routes, student/me, organizations DELETE.
 
+### 18. UI & Branding — Login Hub Theme, Notifications, Branches Banner
+
+- **Login Hub Theme Color**: `LoginHubPage` calls `applyOrgThemeToRoot(themeColor)` which overrides CSS `--color-primary-*` variables on `:root`. Falls back to `DEFAULT_THEME = '#6366f1'` (indigo) when no branding. `BrandPanel` uses inline gradient `linear-gradient(135deg, themeColor, darkenHex(themeColor))`.
+- **LinkedIn-style Notifications**: Bell dropdown (`NotificationItem.tsx`), super admin notifications page, branch admin notifications page — unread items show full org theme color background with white text; read items show subtle `rgba(themeColor, 0.06)` tint. Bell badge uses org theme color.
+- **AuthLayout Background**: Changed from hardcoded `to-violet-50/30` to `to-primary-50/30` (CSS variable, dynamic).
+- **Branches Page Banner**: Changed from emerald/teal/cyan gradient to violet/indigo gradient (matches other super admin pages). Stats icons, status filters, leaderboard bars all updated to primary color scheme.
+- **Notification Menu**: Auto mark-all-read on dropdown open (professional UX).
+

@@ -54,6 +54,11 @@
 | 23 | **Teaching assignments** — teacher-grouped cards, assign/remove | ✅ Done |
 | 24 | **RBAC enforced** — MANAGEMENT (ADMIN only), FINANCE (ACCOUNTANT), ADMISSIONS (RECEPTIONIST) | ✅ Done |
 | 25 | **Branch isolation** — `assertSchoolAccess` har service par | ✅ Done |
+| 26 | **Receptionist dedicated nav** — `receptionistLinks` in navLinks.ts, branch layout detects RECEPTIONIST role | ✅ Done |
+| 27 | **TC (Transfer Certificate)** — `POST /documents/tc/:id` generates formal A4 PDF, student status lifecycle change | ✅ Done |
+| 28 | **Lifecycle rollback** — `POST /students/:id/rollback` reactivates GRADUATED/DROPPED_OUT/TRANSFERRED_OUT students | ✅ Done |
+| 29 | **Bulk graduate/dropout** — admin bulk-sets all ACTIVE students in section to GRADUATED/DROPPED_OUT | ✅ Done |
+| 30 | **Access control tightened** — `PATCH /students/:id/status` restricted to MANAGEMENT only (RECEPTIONIST removed) | ✅ Done |
 
 ---
 
@@ -101,6 +106,19 @@
 |---|---|---|
 | 43 | **Substitute engine** — assign with free-slot overlap + WebSocket + delete | ✅ Backend Done |
 | 44 | **Leave module** — parent request + review API | ✅ Backend Done |
+
+---
+
+## ✅ UI & Branding (7 Sep 2026)
+
+| # | Item | Status |
+|---|---|---|
+| 48 | **LinkedIn-style Notifications** — full org theme color bg (unread) + subtle theme tint (read) across bell dropdown, super admin page, branch admin page | ✅ Done |
+| 49 | **Notification Bell Badge** — uses org theme color | ✅ Done |
+| 50 | **Login Hub Theme Color** — org theme color from DB applied via `applyOrgThemeToRoot` CSS variable overrides; falls back to indigo | ✅ Done |
+| 51 | **AuthLayout Background** — uses `primary-*` CSS variables (dynamic) instead of hardcoded violet | ✅ Done |
+| 52 | **Branches Page Banner** — violet/indigo gradient (matches other super admin pages) | ✅ Done |
+| 53 | **Branches Page Stats** — primary color scheme for icons, status filters, leaderboard bars | ✅ Done |
 
 ---
 
