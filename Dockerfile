@@ -2,6 +2,8 @@
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
 
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
 COPY Backend/package.json Backend/package-lock.json ./
 RUN npm ci --ignore-scripts && npm cache clean --force
 
@@ -14,6 +16,7 @@ RUN npx prisma generate
 FROM node:22-bookworm-slim AS production
 WORKDIR /app
 
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 RUN groupadd -r appuser && useradd -r -g appuser -d /app -s /sbin/nologin appuser
 
 COPY Backend/package.json Backend/package-lock.json ./
