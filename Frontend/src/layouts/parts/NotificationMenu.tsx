@@ -55,7 +55,7 @@ export default function NotificationMenu() {
   const [deleteApi] = useDeleteNotificationMutation();
 
   const handleMarkAllRead = useCallback(() => {
-    dispatch(markAllPortalRead());
+    dispatch(markAllPortalRead(schoolId || undefined));
     markAllReadApi(schoolId || undefined).catch(() => {});
   }, [schoolId, dispatch, markAllReadApi]);
 

@@ -93,7 +93,10 @@ export default function MyStudentsPage() {
           <Input label="Search" value={search} placeholder="Name, roll, identifier…" onChange={(e) => setSearch(e.target.value)} />
           <Select label="Class" value={classId} onChange={(e) => setClassId(e.target.value)} options={[{ value: '', label: 'All classes' }, ...classOptions]} />
           <Select label="Section" value={sectionId} onChange={(e) => setSectionId(e.target.value)} options={[{ value: '', label: 'All sections' }, ...sections.map((s) => ({ value: s.id, label: s.label }))]} />
-          <div className="flex items-end pb-1 text-sm font-semibold text-gray-600">{filtered.length} student{filtered.length === 1 ? '' : 's'}</div>
+          <div className="flex items-end justify-between gap-2 pb-1">
+            <div className="flex-1" />
+            <div className="flex items-center justify-end pb-1 text-sm font-semibold text-gray-600">{filtered.length} student{filtered.length === 1 ? '' : 's'}</div>
+          </div>
         </div>
       </Card>
       {loading ? (

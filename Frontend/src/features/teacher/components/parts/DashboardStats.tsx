@@ -29,7 +29,7 @@ const DashboardStats = memo(function DashboardStats({
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {items.map((item, i) => (
-        <StatsCard key={item.title} {...item} icon={<span className="text-lg">{i === 0 ? '📚' : i === 1 ? '🕐' : i === 2 ? '🤝' : '📝'}</span>} index={i} />
+        <StatsCard key={item.title} {...item} icon={<span className="text-base sm:text-lg">{i === 0 ? '📚' : i === 1 ? '🕐' : i === 2 ? '🤝' : '📝'}</span>} index={i} />
       ))}
     </div>
   );

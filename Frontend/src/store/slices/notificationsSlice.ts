@@ -42,9 +42,19 @@ const notificationsSlice = createSlice({
       });
       state.portalUnread = Math.max(0, state.portalUnread - decremented);
     },
-    markAllPortalRead(state) {
-      state.portalItems.forEach((n) => { n.isRead = true; });
-      state.portalUnread = 0;
+    markAllPortalRead(state, action: PayloadAction<string | undefined>) {
+      const filterSchoolId = action.payload;
+      let decremented = 0;
+      state.portalItems.forEach((n) => {
+        if (!n.isRead) {
+          if (filterSchoolId) {
+            if (n.schoolId === filterSchoolId || n.recipientId) return;
+          }
+          n.isRead = true;
+          decremented++;
+        }
+      });
+      state.portalUnread = Math.max(0, state.portalUnread - decremented);
     },
   },
   extraReducers: (builder) => {

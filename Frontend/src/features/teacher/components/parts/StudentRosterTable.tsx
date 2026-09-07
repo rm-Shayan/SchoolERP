@@ -19,8 +19,8 @@ function StudentRosterTable({ students }: StudentRosterTableProps) {
 
   return (
     <Card className="p-0 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[640px]">
+      <div className="overflow-x-auto -mx-4 sm:mx-0">
+        <table className="w-full text-sm min-w-[640px] border-x border-gray-100">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50/80 text-left text-xs font-semibold text-gray-500">
               <th className="px-4 py-3">Roll</th>

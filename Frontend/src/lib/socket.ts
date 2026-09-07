@@ -34,22 +34,30 @@ function canReceive(n: PortalNotification): boolean {
   const user = store.getState().auth.user;
   if (!user) return false;
 
+  // Super admin: sab dekh sakta hai apne actions ke alawa.
   if (user.role === 'SUPER_ADMIN') return n.senderId !== user.id;
 
-  // Branch scope check first — prevent events from other orgs/branches.
+  // Branch scope — other org/branch ki notifications nahi dikhni.
   if (n.schoolId && user.schoolId && n.schoolId !== user.schoolId) return false;
   if (n.organizationId && user.organizationId && n.organizationId !== user.organizationId) return false;
 
   if (user.role === 'ADMIN') {
-    // Branch head = principal: whole org + own targeted ones.
-    return n.recipientId === user.id || n.schoolId === user.schoolId || n.organizationId === user.organizationId;
+    // Targeted to me
+    if (n.recipientId === user.id) return true;
+    // School-wide broadcast (no recipient)
+    if (!n.recipientId && n.schoolId === user.schoolId) return true;
+    // Org-wide broadcast (no school, no recipient)
+    if (!n.recipientId && !n.schoolId && n.organizationId === user.organizationId) return true;
+    return false;
   }
 
-  // Teacher / receptionist:
-  //   - only their own targeted notifications
-  //   - or school/org broadcast (recipientId null)
+  // Teacher / staff / receptionist:
   if (n.recipientId) return n.recipientId === user.id;
-  return true;
+  // School-wide broadcast
+  if (!n.recipientId && n.schoolId === user.schoolId) return true;
+  // Org-wide broadcast (no school)
+  if (!n.recipientId && !n.schoolId && n.organizationId === user.organizationId) return true;
+  return false;
 }
 
 export function connectSocket(schoolId?: string, organizationId?: string) {
@@ -87,8 +95,8 @@ export function connectSocket(schoolId?: string, organizationId?: string) {
     store.dispatch(markPortalRead(payload.ids));
   });
 
-  socket.on('portal_all_read', () => {
-    store.dispatch(markAllPortalRead());
+  socket.on('portal_all_read', (payload: any) => {
+    store.dispatch(markAllPortalRead(payload?.schoolId ?? undefined));
   });
 
   registerSocketHandlers(socket);

@@ -75,8 +75,8 @@ export function usePortalSocket(sectionIds: string[], schoolId?: string) {
       dispatch(markPortalRead(payload.ids));
     });
 
-    socket.on('portal_all_read', () => {
-      dispatch(markAllPortalRead());
+    socket.on('portal_all_read', (payload: any) => {
+      dispatch(markAllPortalRead(payload?.schoolId ?? schoolId));
     });
 
     return () => {
