@@ -1,0 +1,32 @@
+# Frontend (deployed on Vercel)
+Frontend/
+
+# Git
+.git/
+.gitignore
+
+# Node modules
+**/node_modules/
+
+# Environment files
+**/.env
+**/.env.*
+!**/.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs
+*.md
+LICENSE
+docs/
+
+# Dev artifacts
+**/dist/
+**/build/
+**/coverage/
