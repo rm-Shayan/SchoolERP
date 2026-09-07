@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAppSelector } from '@/store/hooks';
 import Sidebar from './Sidebar';
@@ -76,14 +76,14 @@ export default function DashboardLayout({ links, title, children }: DashboardLay
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
       />
-      <div className={`transition-all duration-300 ${collapsed ? 'lg:ml-[70px]' : 'lg:ml-[260px]'}`}>
+      <div className={`transition-all duration-300 ${collapsed ? 'lg:ml-[70px]' : 'lg:ml-[260px]'} min-w-0`}>
         {blocked && (
           <div className="bg-red-600 text-white text-center text-sm font-medium px-4 py-2" role="alert">
             Admin deactivated your portal. Please contact admin of this system.
           </div>
         )}
         <Navbar title={title} onMenuClick={() => setMobileOpen(true)} />
-        <main className="p-4 md:p-6">
+        <main className="p-3 sm:p-4 md:p-6">
           <PortalErrorBoundary section="Page">
             {children}
           </PortalErrorBoundary>

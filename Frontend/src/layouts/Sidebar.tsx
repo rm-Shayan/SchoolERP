@@ -81,8 +81,8 @@ export default function Sidebar({ links, collapsed, onToggle, mobileOpen, onMobi
           <img src={logo} alt={title} className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-contain shrink-0 bg-white/95 p-0.5" />
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <h1 className="text-xs sm:text-[13px] font-semibold text-white truncate leading-tight">{title}</h1>
-              {subtitle && <p className="text-[10px] sm:text-[11px] text-white/50 truncate mt-0.5">{subtitle}</p>}
+              <h1 className="text-[11px] sm:text-xs sm:text-[13px] font-semibold text-white truncate leading-tight">{title}</h1>
+              {subtitle && <p className="text-[9px] sm:text-[10px] sm:text-[11px] text-white/50 truncate mt-0.5">{subtitle}</p>}
             </div>
           )}
           {!collapsed && (
@@ -112,8 +112,8 @@ export default function Sidebar({ links, collapsed, onToggle, mobileOpen, onMobi
           <div className="mx-3 mb-3 mt-auto flex items-center gap-2.5 rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.04)' }}>
             <img src="/screen.png" alt="SchoolERP" className="h-7 w-7 shrink-0 rounded-full object-contain" />
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-white/80">Powered by SchoolERP</p>
-              <p className="mt-0.5 truncate text-[10px]" style={{ color: colors.groupText }}>Digital campus suite</p>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-white/80">Powered by SchoolERP</p>
+              <p className="mt-0.5 truncate text-[9px] sm:text-[10px]" style={{ color: colors.groupText }}>Digital campus suite</p>
             </div>
           </div>
         )}

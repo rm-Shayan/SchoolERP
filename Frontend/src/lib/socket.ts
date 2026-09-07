@@ -37,26 +37,15 @@ function canReceive(n: PortalNotification): boolean {
   // Super admin: sab dekh sakta hai apne actions ke alawa.
   if (user.role === 'SUPER_ADMIN') return n.senderId !== user.id;
 
-  // Branch scope — other org/branch ki notifications nahi dikhni.
-  if (n.schoolId && user.schoolId && n.schoolId !== user.schoolId) return false;
-  if (n.organizationId && user.organizationId && n.organizationId !== user.organizationId) return false;
+  // Same school
+  if (n.schoolId && user.schoolId && n.schoolId === user.schoolId) return true;
 
-  if (user.role === 'ADMIN') {
-    // Targeted to me
-    if (n.recipientId === user.id) return true;
-    // School-wide broadcast (no recipient)
-    if (!n.recipientId && n.schoolId === user.schoolId) return true;
-    // Org-wide broadcast (no school, no recipient)
-    if (!n.recipientId && !n.schoolId && n.organizationId === user.organizationId) return true;
-    return false;
-  }
+  // Same org
+  if (n.organizationId && user.organizationId && n.organizationId === user.organizationId) return true;
 
-  // Teacher / staff / receptionist:
-  if (n.recipientId) return n.recipientId === user.id;
-  // School-wide broadcast
-  if (!n.recipientId && n.schoolId === user.schoolId) return true;
-  // Org-wide broadcast (no school)
-  if (!n.recipientId && !n.schoolId && n.organizationId === user.organizationId) return true;
+  // Targeted to me
+  if (n.recipientId === user.id) return true;
+
   return false;
 }
 

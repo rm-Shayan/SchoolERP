@@ -103,7 +103,7 @@ export default function SuperAdminSidebar({ links, collapsed, onToggle, mobileOp
           {expanded && (
             <div className="min-w-0 flex-1">
               <h1 className="text-sm font-bold leading-tight tracking-tight text-white">SchoolERP</h1>
-              <p className="text-[10px] font-medium text-indigo-200/60 uppercase tracking-[0.18em] mt-1">Control center</p>
+              <p className="text-[9px] sm:text-[10px] font-medium text-indigo-200/60 uppercase tracking-[0.18em] mt-1">Control center</p>
             </div>
           )}
           {expanded && (

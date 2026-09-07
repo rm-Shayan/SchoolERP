@@ -36,7 +36,7 @@ export default function Navbar({ title, onMenuClick }: NavbarProps) {
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm shadow-slate-100/30">
       <div className="absolute inset-x-0 top-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${themeColor}, ${themeColor}cc, ${themeColor})` }} />
 
-      <div className="flex h-20 items-center gap-2 md:gap-3 px-4 md:px-6">
+      <div className="flex h-14 sm:h-20 items-center gap-2 md:gap-3 px-3 sm:px-4 md:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
           {onMenuClick && (
             <button
@@ -53,15 +53,15 @@ export default function Navbar({ title, onMenuClick }: NavbarProps) {
             <img
               src={logo}
               alt={school?.name ?? organization?.name ?? 'logo'}
-              className="h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-lg object-contain"
+              className="h-8 w-8 sm:h-10 sm:w-10 shrink-0 rounded-lg object-contain"
             />
           )}
           <div className="min-w-0">
-            <h2 className="truncate text-base font-extrabold tracking-tight text-slate-900 md:text-lg">
+            <h2 className="truncate text-sm sm:text-base font-extrabold tracking-tight text-slate-900 md:text-lg">
               {school?.name ?? organization?.name ?? title}
             </h2>
             {!isSuperAdmin && organization?.name && school?.name !== organization.name && (
-              <p className="truncate text-xs font-semibold text-slate-400">{organization.name}</p>
+              <p className="truncate text-[10px] sm:text-xs font-semibold text-slate-400">{organization.name}</p>
             )}
           </div>
           {!isSuperAdmin && (
@@ -73,7 +73,7 @@ export default function Navbar({ title, onMenuClick }: NavbarProps) {
 
         <div className="flex shrink-0 items-center gap-1 md:gap-2">
           <NotificationMenu />
-          <div className="mx-1.5 hidden h-6 w-px bg-slate-200 sm:block" />
+          <div className="mx-1 sm:mx-1.5 h-6 w-px bg-slate-200 sm:block" />
 
           <div className="relative">
             <button

@@ -75,10 +75,9 @@ function ExpandedGroup({ group, collapsed, isActive, isExpanded, onToggleGroup, 
   if (collapsed) return <CollapsedGroupLink group={group} isActive={isActive} onMobileClose={onMobileClose} colors={colors} />;
 
   return (
-    <div className="mt-3 first:mt-1">
-      <button
+    <div className="mt-3 first:mt-1">            <button
         onClick={() => onToggleGroup(group.title)}
-        className="flex w-full items-center justify-between rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] transition-all duration-200 hover:bg-white/10 hover:text-white"
+        className="flex w-full items-center justify-between rounded-lg px-4 py-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.12em] transition-all duration-200 hover:bg-white/10 hover:text-white"
         style={{ color: anyActive ? colors.text : colors.groupText }}
       >
         <span className="flex items-center gap-2">
@@ -92,35 +91,34 @@ function ExpandedGroup({ group, collapsed, isActive, isExpanded, onToggleGroup, 
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
         </svg>
-      </button>
-      <div className={cn(
+      </button>          <div className={cn(
         'space-y-0.5 mt-1 overflow-hidden transition-all duration-300 ease-out',
         open ? 'opacity-100 max-h-[500px]' : 'opacity-0 max-h-0'
       )}>
-        {group.links.map((link) => {
-          const active = isActive(link.path);
-          return (
-            <Link
-              key={link.path}
-              href={link.path}
-              onClick={onMobileClose}
-              className="group relative flex items-center gap-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 pl-6 pr-3 py-2 hover:bg-white/10"
-              style={{
-                backgroundColor: active ? colors.activeBg : undefined,
-                color: active ? colors.activeText : colors.textMuted,
-              }}
-            >
-              {active && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full shadow-[0_0_8px]" style={{ backgroundColor: colors.activeAccent, opacity: 0.9 }} />
-              )}
-              <span className="shrink-0 w-4 h-4 transition-colors" style={{ color: active ? colors.activeText : undefined }}>
-                {link.icon}
-              </span>
-              <span className="truncate">{link.label}</span>
-            </Link>
-          );
-        })}
-      </div>
+            {group.links.map((link) => {
+              const active = isActive(link.path);
+              return (
+                <Link
+                  key={link.path}
+                  href={link.path}
+                  onClick={onMobileClose}
+                  className="group relative flex items-center gap-2.5 rounded-xl text-[12px] sm:text-[13px] font-medium transition-all duration-200 pl-6 pr-3 py-2 hover:bg-white/10"
+                  style={{
+                    backgroundColor: active ? colors.activeBg : undefined,
+                    color: active ? colors.activeText : colors.textMuted,
+                  }}
+                >
+                  {active && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full shadow-[0_0_8px]" style={{ backgroundColor: colors.activeAccent, opacity: 0.9 }} />
+                  )}
+                  <span className="shrink-0 w-4 h-4 transition-colors" style={{ color: active ? colors.activeText : undefined }}>
+                    {link.icon}
+                  </span>
+                  <span className="truncate">{link.label}</span>
+                </Link>
+              );
+            })}
+          </div>
     </div>
   );
 }

@@ -23,13 +23,14 @@ export default function NotificationMenu() {
   const user = useAppSelector((s) => s.auth.user);
   const { portalItems, portalUnread } = useAppSelector((s) => s.notifications);
   const dispatch = useAppDispatch();
+  const socketStatus = useAppSelector((s) => s.socket.status);
   const schoolId = school?.id;
   const organizationId = user?.organizationId;
 
-  // Server-side unread count — used to sync on mount and when dropdown opens.
+  // Poll every 30s as safety net (socket handles real-time, polling catches misses).
   const { data: unread, refetch: refetchUnread } = useUnreadCountQuery(
     { schoolId, organizationId },
-    { skip: !user },
+    { skip: !user, pollingInterval: 30000 },
   );
 
   // Sync server count to Redux on mount / refetch.
@@ -84,7 +85,7 @@ export default function NotificationMenu() {
       </button>
       {open && (<>
         <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] sm:w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
+        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] sm:w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden" style={{ maxHeight: 'calc(100vh - 120px)' }}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <p className="text-sm font-semibold text-gray-900">Notifications</p>
             <div className="flex items-center gap-3">

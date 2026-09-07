@@ -25,9 +25,9 @@ export default function SuperAdminNavbar({ title, onMenuClick }: SuperAdminNavba
   };
 
   return (
-    <header className="h-16 sm:h-[72px] bg-white/90 backdrop-blur-xl border-b border-slate-200/70 sticky top-0 z-30">
-      <div className="h-full px-4 sm:px-6 lg:px-8 flex items-center gap-3">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
+    <header className="h-14 sm:h-16 sm:h-[72px] bg-white/90 backdrop-blur-xl border-b border-slate-200/70 sticky top-0 z-30">
+      <div className="h-full px-3 sm:px-4 sm:px-6 lg:px-8 flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           {onMenuClick && (
             <button
               onClick={onMenuClick}
@@ -40,13 +40,13 @@ export default function SuperAdminNavbar({ title, onMenuClick }: SuperAdminNavba
             </button>
           )}
           {/* App logo — on mobile the sidebar is hidden, so the logo appears here */}
-          <img src="/screen.png" alt="SchoolERP" className="h-10 w-10 rounded-xl object-contain bg-white ring-1 ring-primary-200/60 lg:hidden" />
-          <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Workspace</p><h2 className="text-base sm:text-lg font-bold text-slate-900 truncate tracking-tight">{title}</h2></div>
+          <img src="/screen.png" alt="SchoolERP" className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl object-contain bg-white ring-1 ring-primary-200/60 lg:hidden" />
+          <div className="min-w-0"><p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Workspace</p><h2 className="text-sm sm:text-base sm:text-lg font-bold text-slate-900 truncate tracking-tight">{title}</h2></div>
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <NotificationMenu />
-          <div className="hidden sm:block w-px h-6 bg-gray-200/60 mx-1" aria-hidden="true" />
+          <div className="hidden sm:block h-6 w-px bg-gray-200/60 mx-1" aria-hidden="true" />
           <div className="relative">
             <button
               onClick={() => setOpen(!open)}
@@ -59,9 +59,8 @@ export default function SuperAdminNavbar({ title, onMenuClick }: SuperAdminNavba
                 <div className="h-8 w-8 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-sm font-semibold shadow-sm shadow-primary-500/20 transition-transform hover:scale-105">
                   {user ? getInitials(user.name) : '?'}
                 </div>
-              )}
-              <div className="text-left hidden md:block">
-                <p className="text-sm font-semibold text-gray-900 leading-tight">{user?.name}</p>
+              )}                <div className="text-left hidden md:block">
+                <p className="text-sm font-semibold text-gray-900 leading-tight truncate">{user?.name}</p>
               </div>
               <svg
                 className={cn('w-4 h-4 text-gray-400 hidden md:block transition-transform duration-200', open && 'rotate-180')}
