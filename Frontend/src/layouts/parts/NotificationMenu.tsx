@@ -15,7 +15,6 @@ import {
   useDeleteNotificationMutation,
 } from '@/store/api';
 import { cn } from '@/lib/utils';
-import { getSocket } from '@/lib/socket';
 import NotificationItem from './NotificationItem';
 
 export default function NotificationMenu() {
@@ -24,22 +23,21 @@ export default function NotificationMenu() {
   const user = useAppSelector((s) => s.auth.user);
   const { portalItems, portalUnread } = useAppSelector((s) => s.notifications);
   const dispatch = useAppDispatch();
-  const socketStatus = useAppSelector((s) => s.socket.status);
   const schoolId = school?.id;
   const organizationId = user?.organizationId;
 
-  // True unread count from server — always in sync (accurate on refresh, 0 when none).
+  // Server-side unread count — used to sync on mount and when dropdown opens.
   const { data: unread, refetch: refetchUnread } = useUnreadCountQuery(
     { schoolId, organizationId },
     { skip: !user },
   );
 
+  // Sync server count to Redux on mount / refetch.
   useEffect(() => {
     if (typeof unread === 'number') dispatch(setPortalUnread(unread));
   }, [unread, dispatch]);
 
   // Dropdown items — fetch list only when opened.
-  // Super admins don't have schoolId — pass empty params, backend scopes by JWT.
   const canFetch = !!open;
   const { data: portalData } = usePortalNotificationsQuery(
     { ...(schoolId && { schoolId }), ...(organizationId && { organizationId }), pageSize: 20 },
@@ -49,6 +47,11 @@ export default function NotificationMenu() {
   useEffect(() => {
     if (portalData) dispatch(setPortalNotifications(portalData.items));
   }, [portalData, dispatch]);
+
+  // Refetch unread count when dropdown opens (to stay in sync).
+  useEffect(() => {
+    if (open) refetchUnread();
+  }, [open, refetchUnread]);
 
   const [markReadApi] = useMarkReadMutation();
   const [markAllReadApi] = useMarkAllReadMutation();
@@ -70,30 +73,6 @@ export default function NotificationMenu() {
   }, [dispatch, deleteApi]);
 
   const toggle = useCallback(() => setOpen((o) => !o), []);
-
-  useEffect(() => {
-    if (!open) return;
-    handleMarkAllRead();
-  }, [open, handleMarkAllRead]);
-
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
-    const onCreated = () => { refetchUnread(); };
-    const onDeleted = () => { refetchUnread(); };
-    const onRead = () => { refetchUnread(); };
-    const onAllRead = () => { refetchUnread(); };
-    socket.on('portal_notification_created', onCreated);
-    socket.on('portal_notifications_deleted', onDeleted);
-    socket.on('portal_notifications_read', onRead);
-    socket.on('portal_all_read', onAllRead);
-    return () => {
-      socket.off('portal_notification_created', onCreated);
-      socket.off('portal_notifications_deleted', onDeleted);
-      socket.off('portal_notifications_read', onRead);
-      socket.off('portal_all_read', onAllRead);
-    };
-  }, [refetchUnread, socketStatus]);
 
   return (
     <div className="relative">

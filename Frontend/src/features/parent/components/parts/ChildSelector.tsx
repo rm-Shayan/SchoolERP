@@ -36,8 +36,9 @@ export default function ChildSelector({ children: items, activeChildId, onChange
       >
         <ChildAvatar child={active} size={32} />
         <div className="min-w-0 flex-1 text-left">
-          <p className="truncate text-white text-[13px]">{active.firstName} {active.lastName}</p>
-          <p className="truncate text-[10px]" style={{ color: colors.groupText }}>{active.className} · {active.sectionName}</p>
+          <p className="truncate text-white text-[12px] sm:text-[13px]">{active.firstName} {active.lastName}</p>
+          <p className="truncate text-[9px] sm:text-[10px]" style={{ color: colors.groupText }}>{active.className} · {active.sectionName}</p>
+          {!active.className && !active.sectionName && <p className="truncate text-[9px]" style={{ color: colors.groupText }}>Roll #{active.rollNumber}</p>}
         </div>
         <svg className={cn('h-4 w-4 shrink-0 transition-transform duration-200', open && 'rotate-180')} fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: colors.activeAccent }}>
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -54,8 +55,10 @@ export default function ChildSelector({ children: items, activeChildId, onChange
             >
               <ChildAvatar child={c} size={28} />
               <div className="min-w-0 text-left">
-                <p className="truncate font-medium">{c.firstName} {c.lastName}</p>
-                <p className="truncate text-[10px]" style={{ color: colors.groupText }}>{c.className} · {c.sectionName}</p>
+              <p className="truncate font-medium text-[12px] sm:text-[13px]">{c.firstName} {c.lastName}</p>
+              <p className="truncate text-[9px] sm:text-[10px]" style={{ color: colors.groupText }}>
+                {[c.className, c.sectionName].filter(Boolean).join(' · ') || 'Roll #' + c.rollNumber}
+              </p>
               </div>
             </button>
           ))}

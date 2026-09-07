@@ -84,7 +84,13 @@ export function connectSocket(schoolId?: string, organizationId?: string) {
   });
 
   socket.on('portal_notification_created', (payload: any) => {
-    if (canReceive(payload)) store.dispatch(addPortalNotification(payload));
+    const normalized = {
+      ...payload,
+      body: payload.body || payload.message || '',
+      senderName: payload.senderName || 'System',
+      createdAt: typeof payload.createdAt === 'string' ? payload.createdAt : String(payload.createdAt),
+    };
+    if (canReceive(normalized)) store.dispatch(addPortalNotification(normalized));
   });
 
   socket.on('portal_notifications_deleted', (payload: any) => {

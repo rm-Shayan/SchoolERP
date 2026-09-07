@@ -80,7 +80,7 @@ export default function PortalSettingsTab({ activeChildId, onChildChange }: Port
               <div className="h-1.5 bg-gradient-to-r from-gray-300 to-gray-100" />
               <CardContent className="p-5">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-4">Account Information</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
                   <InfoRow label="WhatsApp Number" value={parent.whatsappNo} accent={color} />
                   <InfoRow label="Phone" value={parent.phone} fallback="Not provided" accent={color} />
                   <InfoRow label="Email" value={parent.email} fallback="Not provided" accent={color} />
@@ -98,7 +98,7 @@ export default function PortalSettingsTab({ activeChildId, onChildChange }: Port
           <div className="h-1.5 bg-gradient-to-r from-gray-300 to-gray-100" />
           <CardContent className="p-5">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Account Information</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
               <InfoRow label="Roll Number" value={student?.rollNumber} accent={color} />
               <InfoRow label="School" value={student?.school?.name} accent={color} />
               <InfoRow label="Class" value={student?.class?.name} accent={color} />

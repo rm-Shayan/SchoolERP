@@ -1,3 +1,4 @@
+
 interface InfoRowProps {
   label: string;
   value?: string | null;
@@ -23,16 +24,17 @@ const FALLBACK_ICON = 'M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.7
 export default function InfoRow({ label, value, fallback, accent }: InfoRowProps) {
   const shown = value || fallback || '—';
   return (
-    <div className="flex items-center gap-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white" style={{ background: accent ? `${accent}cc` : undefined }}>
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div className="flex items-start gap-2.5">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-white" style={{ background: accent ? `${accent}cc` : undefined }}>
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={ROW_ICONS[label] ?? FALLBACK_ICON} />
         </svg>
       </span>
-      <div className="min-w-0">
-        <p className="text-[11px] text-gray-400 uppercase tracking-wide">{label}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] text-gray-400 uppercase tracking-wide">{label}</p>
         <p className="truncate text-sm font-semibold text-gray-900">{shown}</p>
       </div>
     </div>
   );
 }
+
