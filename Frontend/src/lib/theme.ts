@@ -31,80 +31,55 @@ export function buildPrimaryScale(hex: string): Record<string, string> | null {
   };
 }
 
-export function orgThemeStyle(themeColor?: string | null): CSSProperties | undefined {
-  const scale = themeColor ? buildPrimaryScale(themeColor) : null;
-  if (!scale) return undefined;
-  const vars: Record<string, string> = {};
-  for (const [step, value] of Object.entries(scale)) {
-    vars[`--color-primary-${step}`] = value;
-  }
-  return vars as CSSProperties;
-}
-
 export const PRIMARY_STEPS = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'] as const;
 
-const THEME_STYLE_ID = 'org-dynamic-theme';
-
-function injectThemeStyle(css: string): void {
-  if (typeof document === 'undefined') return;
-  let el = document.getElementById(THEME_STYLE_ID) as HTMLStyleElement | null;
-  if (!el) {
-    el = document.createElement('style');
-    el.id = THEME_STYLE_ID;
-    document.head.appendChild(el);
-  }
-  el.textContent = css;
-}
-
-function removeThemeStyle(): void {
-  if (typeof document === 'undefined') return;
-  const el = document.getElementById(THEME_STYLE_ID);
-  if (el) el.remove();
-}
-
-function buildThemeCss(scale: Record<string, string>, selectors: string): string {
-  const vars = PRIMARY_STEPS.map(
-    (step) => `  --color-primary-${step}: ${scale[step]};`
-  ).join('\n');
-  return `${selectors} {\n${vars}\n}`;
-}
-
-function buildBlueThemeCss(scale: Record<string, string>, selectors: string): string {
-  const vars = PRIMARY_STEPS.map(
-    (step) => `  --color-primary-${step}: ${scale[step]};\n  --color-blue-${step}: ${scale[step]};`
-  ).join('\n');
-  return `${selectors} {\n${vars}\n}`;
-}
-
 /**
- * Apply org theme to :root via injected <style> tag with !important.
- * This guarantees override of Tailwind v4's @theme block at every layer.
- * Used by org admin portal (DashboardLayout).
- */
-export function applyOrgThemeToRoot(themeColor?: string | null): void {
-  if (typeof document === 'undefined') return;
-  const scale = themeColor ? buildPrimaryScale(themeColor) : null;
-  if (!scale) { clearOrgThemeFromRoot(); return; }
-  injectThemeStyle(buildThemeCss(scale, ':root'));
-}
-
-export function clearOrgThemeFromRoot(): void {
-  removeThemeStyle();
-}
-
-/**
- * Portal theming — overrides both --color-primary-* and --color-blue-* via
- * injected <style> with !important, guaranteeing Tailwind v4 @theme override.
+ * Apply org theme to :root by setting --theme-primary-* CSS custom properties.
+ * The globals.css bridge (var(--theme-primary-*, <default>)) resolves these
+ * into --color-primary-* which Tailwind utilities reference. No <style> tag,
+ * no !important — pure CSS variable resolution.
  */
 export function applyPortalThemeToRoot(themeColor?: string | null): void {
   if (typeof document === 'undefined') return;
   const scale = themeColor ? buildPrimaryScale(themeColor) : null;
   if (!scale) { clearPortalThemeFromRoot(); return; }
-  injectThemeStyle(buildBlueThemeCss(scale, ':root'));
+  const root = document.documentElement;
+  for (const step of PRIMARY_STEPS) {
+    root.style.setProperty(`--theme-primary-${step}`, scale[step]);
+  }
 }
 
 export function clearPortalThemeFromRoot(): void {
-  removeThemeStyle();
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  for (const step of PRIMARY_STEPS) {
+    root.style.removeProperty(`--theme-primary-${step}`);
+  }
+}
+
+/**
+ * Alias — used by org admin portal (DashboardLayout).
+ */
+export function applyOrgThemeToRoot(themeColor?: string | null): void {
+  applyPortalThemeToRoot(themeColor);
+}
+
+export function clearOrgThemeFromRoot(): void {
+  clearPortalThemeFromRoot();
+}
+
+/**
+ * Returns inline CSS custom properties for the wrapper div.
+ * Sets --theme-primary-* which the globals.css bridge resolves to --color-primary-*.
+ */
+export function orgThemeStyle(themeColor?: string | null): CSSProperties | undefined {
+  const scale = themeColor ? buildPrimaryScale(themeColor) : null;
+  if (!scale) return undefined;
+  const vars: Record<string, string> = {};
+  for (const [step, value] of Object.entries(scale)) {
+    vars[`--theme-primary-${step}`] = value;
+  }
+  return vars as CSSProperties;
 }
 
 export interface SidebarColors {

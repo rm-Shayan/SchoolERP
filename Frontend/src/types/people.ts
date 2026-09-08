@@ -11,6 +11,7 @@ export interface Parent {
   address?: string;
   isBlocked?: boolean;
   blockedReason?: string;
+  remarks?: string;
 }
 
 export interface Student {
@@ -30,6 +31,7 @@ export interface Student {
   blockedByName?: string;
   blockedAt?: string;
   imageUrl?: string;
+  remarks?: string;
   createdAt: string;
   section?: Section;
   parent?: Parent;

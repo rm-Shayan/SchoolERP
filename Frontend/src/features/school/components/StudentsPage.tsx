@@ -21,8 +21,7 @@ import { getLastClassIds, studentCreatePayload, studentUpdatePayload } from './p
 
 export default function StudentsPage() {
   const { user, school } = useAppSelector((s) => s.auth);
-  const { role } = useRoleAccess();
-  const isReceptionist = role === 'RECEPTIONIST';
+  const { isAdmin, isReceptionist } = useRoleAccess();
   const schoolId = school?.id ?? user?.schoolId;
   const [classes, setClasses] = useState<Class[]>([]);
   const [classesLoading, setClassesLoading] = useState(true);
@@ -123,10 +122,14 @@ export default function StudentsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Students" description="Manage all enrolled students in this branch."
+      <PageHeader
+        title="Students"
+        description={isReceptionist
+          ? 'Front desk — view and search enrolled students.'
+          : 'Manage all enrolled students in this branch.'}
         actions={<StudentsHeaderActions onAdd={() => { setFormStudent(null); setFormMode('create'); }} onImport={isReceptionist ? undefined : () => setShowImport(true)} onExport={exportCsv} />} />
 
-      <StudentStats summary={summary} />
+      <StudentStats summary={summary} adminOnly={!isReceptionist} />
 
       <StudentToolbar search={search} onSearchChange={setSearch} statusFilter={statusFilter} onStatusChange={setStatusFilter} sectionFilter={sectionFilter} onSectionChange={setSectionFilter} classes={classes} classesLoading={classesLoading} resultCount={total} />
 
@@ -134,8 +137,8 @@ export default function StudentsPage() {
         onEdit={openEdit}
         onDelete={isReceptionist ? undefined : setDeleteTarget}
         onPassedOut={isReceptionist ? undefined : setPassTarget}
-        onTc={isReceptionist ? undefined : setTcTarget}
-        onRollback={isReceptionist ? undefined : setRollbackTarget}
+        onTc={setTcTarget}
+        onRollback={isAdmin ? setRollbackTarget : undefined}
       />
 
       <StudentFormModal key={formMode === 'create' ? 'create' : formStudent?.id ?? 'none'} open={formMode !== null} onClose={() => { setFormMode(null); setFormStudent(null); }} classes={classes} mode={formMode === 'create' ? 'create' : 'edit'} student={formStudent} onSubmit={handleFormSubmit} />
@@ -153,7 +156,7 @@ export default function StudentsPage() {
       <ConfirmDialog
         open={!!rollbackTarget}
         title="Reactivate Student?"
-        message={`Restore ${rollbackTarget ? `${rollbackTarget.firstName} ${rollbackTarget.lastName}` : 'this student'} to ACTIVE status? This undoes the ${rollbackTarget?.status?.toLowerCase() === 'graduated' ? 'Passed Out' : rollbackTarget?.status?.toLowerCase() === 'dropped_out' ? 'Drop Out' : 'Transfer'} action.`}
+        message={`Restore ${rollbackTarget ? `${rollbackTarget.firstName} ${rollbackTarget.lastName}` : 'this student'} to ACTIVE status? This undoes the ${rollbackTarget?.status?.toLowerCase() === 'graduated' ? 'Passed Out' : rollbackTarget?.status?.toLowerCase() === 'dropped_out' ? 'Drop Out' : rollbackTarget?.status?.toLowerCase() === 'transferred_out' ? 'Transfer' : 'status'} action. The student will regain portal access.`}
         confirmLabel="Reactivate"
         loading={rollbackBusy}
         onConfirm={handleRollback}

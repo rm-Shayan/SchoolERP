@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Primary = indigo/violet family from the screen.png logo (matches sa-brand-gradient) */
+  /* Primary tokens — defaults only; overridden at runtime via --theme-primary-* bridge */
   --color-primary-50: #f5f3ff;
   --color-primary-100: #ede9fe;
   --color-primary-200: #ddd6fe;
@@ -38,6 +38,24 @@
   --color-gray-950: #020617;
 
   --color-sidebar-width: 260px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   RUNTIME THEME BRIDGE — JS sets --theme-primary-*,
+   CSS resolves via var() → --color-primary-* for Tailwind
+   ═══════════════════════════════════════════════════════ */
+:root {
+  --color-primary-50: var(--theme-primary-50, #f5f3ff);
+  --color-primary-100: var(--theme-primary-100, #ede9fe);
+  --color-primary-200: var(--theme-primary-200, #ddd6fe);
+  --color-primary-300: var(--theme-primary-300, #c4b5fd);
+  --color-primary-400: var(--theme-primary-400, #a78bfa);
+  --color-primary-500: var(--theme-primary-500, #8b5cf6);
+  --color-primary-600: var(--theme-primary-600, #7c3aed);
+  --color-primary-700: var(--theme-primary-700, #6d28d9);
+  --color-primary-800: var(--theme-primary-800, #5b21b6);
+  --color-primary-900: var(--theme-primary-900, #4c1d95);
+  --color-primary-950: var(--theme-primary-950, #2e1065);
 }
 
 body {

@@ -23,6 +23,12 @@ function StudentRowInner({ student, lastClassIds, onView, onEdit, onDelete, onPa
   const showPassedOut = student.status === 'ACTIVE' && !!onPassedOut && isLastClassStudent(student, lastClassIds ?? new Set());
   const showTc = student.status === 'ACTIVE' && !!onTc;
   const isLifecycleInactive = (student.status === 'GRADUATED' || student.status === 'DROPPED_OUT' || student.status === 'TRANSFERRED_OUT') && !!onRollback;
+
+  // TC actions are role-restricted:
+  // - Receptionist sees Issue TC only for ACTIVE students.
+  // - Admin sees full lifecycle actions (reissue / reactivate) in StudentDetails.
+  // The row button stays simple: it only opens the TC modal for active students.
+  const tcAllowedForRole = true; // handled inside IssueTCModal + StudentDetails
   return (
     <tr className="group hover:bg-primary-50/40 transition-colors">
       <td className="px-4 py-3">
