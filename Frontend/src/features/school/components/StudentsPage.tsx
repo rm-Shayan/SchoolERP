@@ -133,12 +133,13 @@ export default function StudentsPage() {
 
       <StudentToolbar search={search} onSearchChange={setSearch} statusFilter={statusFilter} onStatusChange={setStatusFilter} sectionFilter={sectionFilter} onSectionChange={setSectionFilter} classes={classes} classesLoading={classesLoading} resultCount={total} />
 
-      <StudentList loading={loading} refetching={refetching} students={students} total={total} hasFilters={!!search.trim() || !!statusFilter || !!sectionFilter} page={page} pageSize={pageSize} totalPages={totalPages} lastClassIds={lastClassIds} onPageChange={setPage} onPageSizeChange={setPageSize}         onView={setSelected}
+      <StudentList loading={loading} refetching={refetching} students={students} total={total} hasFilters={!!search.trim() || !!statusFilter || !!sectionFilter} page={page} pageSize={pageSize} totalPages={totalPages} lastClassIds={lastClassIds} onPageChange={setPage} onPageSizeChange={setPageSize}
+        onView={setSelected}
         onEdit={openEdit}
         onDelete={isReceptionist ? undefined : setDeleteTarget}
         onPassedOut={isReceptionist ? undefined : setPassTarget}
         onTc={setTcTarget}
-        onRollback={isAdmin ? setRollbackTarget : undefined}
+        onRollback={setRollbackTarget}
       />
 
       <StudentFormModal key={formMode === 'create' ? 'create' : formStudent?.id ?? 'none'} open={formMode !== null} onClose={() => { setFormMode(null); setFormStudent(null); }} classes={classes} mode={formMode === 'create' ? 'create' : 'edit'} student={formStudent} onSubmit={handleFormSubmit} />

@@ -1,17 +1,18 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Badge, Button, Card, CardHeader, CardContent, Modal } from '@/features/shared/components';
-import AvatarPlaceholder from '@/features/shared/components/AvatarPlaceholder';
 import { documentsApi } from '@/lib/api/documents';
 import type { Student } from '@/types';
-import { studentService } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { StudentDetailsTable } from './StudentDetailsTable';
 import YearlyAttendanceHistory from './YearlyAttendanceHistory';
 import FeeYearlySummary from './FeeYearlySummary';
+import StudentPhotoHeader from './StudentPhotoHeader';
 
-interface StudentDetailsProps {
+const TC_REASON_LABELS: Record<string, string> = { TRANSFERRED_OUT: 'Transferred Out', DROPPED_OUT: 'Dropped Out', GRADUATED: 'Graduated' };
+
+interface Props {
   student: Student | null;
   lastClassIds?: Set<string>;
   onClose: () => void;
@@ -20,162 +21,53 @@ interface StudentDetailsProps {
   onDeleted?: (id: string) => void;
 }
 
-const MAX_PHOTO_MB = 5;
-// HEIC/HEIF (iPhone) too — backend converts to JPEG using sharp.
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-
-const TC_REASON_LABELS: Record<string, string> = {
-  TRANSFERRED_OUT: 'Transferred Out',
-  DROPPED_OUT: 'Dropped Out',
-  GRADUATED: 'Graduated',
-};
-
-interface StudentTcCardProps {
-  student: Student;
-}
-
-export function StudentTcCard({ student }: StudentTcCardProps) {
-  // TC info only meaningful once the student has left ACTIVE state.
+export function StudentTcCard({ student }: { student: Student }) {
   if (student.status === 'ACTIVE') return null;
-
-  const reasonLabel = TC_REASON_LABELS[student.status] ?? student.status.replace(/_/g, ' ');
-
+  const label = TC_REASON_LABELS[student.status] ?? student.status.replace(/_/g, ' ');
   return (
     <Card className="bg-gradient-to-br from-amber-50/80 to-white">
       <CardHeader className="border-amber-100/70 pb-2">
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider">Transfer Certificate</p>
-          <Badge variant="warning">{reasonLabel}</Badge>
+          <Badge variant="warning">{label}</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <p className="text-xs text-gray-400 uppercase tracking-wide">Status</p>
-            <p className="font-medium text-gray-800">Issued</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-400 uppercase tracking-wide">Issued For</p>
-            <p className="font-medium text-gray-800">{reasonLabel}</p>
-          </div>
+          <div><p className="text-xs text-gray-400 uppercase tracking-wide">Status</p><p className="font-medium text-gray-800">Issued</p></div>
+          <div><p className="text-xs text-gray-400 uppercase tracking-wide">Issued For</p><p className="font-medium text-gray-800">{label}</p></div>
         </div>
-
-        <div className="rounded-lg bg-amber-50 border border-amber-200/60 px-3 py-2 text-xs text-amber-700">
-          TC was issued when student status changed to {reasonLabel}. The TC PDF was downloaded at the time of issuance.
-        </div>
+        <div className="rounded-lg bg-amber-50 border border-amber-200/60 px-3 py-2 text-xs text-amber-700">TC was issued when student status changed to {label}.</div>
       </CardContent>
     </Card>
   );
 }
 
-export function StudentDetails({ student, lastClassIds, onClose, onUpdated, onEdit, onDeleted }: StudentDetailsProps) {
-  const photoRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
+export function StudentDetails({ student, onClose, onUpdated, onEdit }: Props) {
   const [idBusy, setIdBusy] = useState(false);
-
-  const handlePhoto = async (file: File) => {
-    if (!student) return;
-    // Client-side validation first — clear feedback without a request (HEIC/oversized photos
-    // used to be rejected by backend; now up to 5MB + JPG/PNG/WebP are allowed).
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      toast.error('Only JPG, PNG, WebP or HEIC (iPhone) photos are allowed');
-      return;
-    }
-    if (file.size > MAX_PHOTO_MB * 1024 * 1024) {
-      toast.error(`Photo must be ${MAX_PHOTO_MB}MB or smaller`);
-      return;
-    }
-    setBusy(true);
-    try {
-      const updated = await studentService.uploadPhoto(student.id, file);
-      toast.success('Photo updated successfully');
-      onUpdated?.(updated);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Failed to upload photo');
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const handleIdCard = async () => {
     if (!student) return;
     setIdBusy(true);
-    try {
-      await documentsApi.studentIdCard(student.id);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Failed to generate ID card');
-    } finally {
-      setIdBusy(false);
-    }
+    try { await documentsApi.studentIdCard(student.id); }
+    catch (err: any) { toast.error(err?.response?.data?.message ?? 'Failed to generate ID card'); }
+    finally { setIdBusy(false); }
   };
 
   return (
     <Modal open={!!student} onClose={onClose} title="Student Details">
       {student && (
         <div className="space-y-5">
-          {/* Header — photo + identity */}
-          <div className="flex items-center gap-4 rounded-xl border border-gray-100 bg-gradient-to-r from-primary-50/70 to-white p-4">
-            {student.imageUrl ? (
-              <img
-                src={student.imageUrl}
-                alt={`${student.firstName} ${student.lastName}`}
-                className="h-20 w-20 rounded-2xl object-cover ring-2 ring-white shadow-sm shrink-0"
-              />
-            ) : (
-              <AvatarPlaceholder className="h-20 w-20 rounded-2xl shrink-0" />
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-lg font-bold leading-tight text-gray-900">
-                {student.firstName} {student.lastName}
-              </p>
-              <p className="mt-0.5 text-sm text-gray-500">
-                {student.section?.class?.name ? `${student.section.class.name} — ${student.section.name} · ` : ''}Roll #{student.rollNumber}
-              </p>
-              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                <Badge variant={student.status === 'ACTIVE' ? 'success' : 'info'}>
-                  {student.status.replace('_', ' ')}
-                </Badge>
-                {student.isBlocked && <Badge variant="danger">Blocked</Badge>}
-              </div>
-            </div>
-            <input ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhoto(f); e.target.value = ''; }} />
-            <Button
-              size="sm"
-              variant="outline"
-              loading={busy}
-              className="self-end shrink-0"
-              onClick={() => photoRef.current?.click()}
-            >
-              {student.imageUrl ? 'Change Photo' : 'Upload Photo'}
-            </Button>
-          </div>
-
-          {/* Info table — labels left, values right */}
+          <StudentPhotoHeader student={student} onUpdated={onUpdated} />
           <StudentDetailsTable student={student} />
-
-          {/* Transfer Certificate info */}
-          {student.status !== 'ACTIVE' && (
-            <StudentTcCard student={student} />
-          )}
-
-          {/* Archived yearly attendance — 365-din purani attendance ka rollup */}
+          {student.status !== 'ACTIVE' && <StudentTcCard student={student} />}
           <YearlyAttendanceHistory studentId={student.id} />
-
-          {/* Yearly fee summary — per-year charged / paid / outstanding */}
           <FeeYearlySummary studentId={student.id} />
-
-          {/* Actions */}
           <div className="space-y-3 border-t border-gray-100 pt-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" loading={idBusy} onClick={handleIdCard}>
-                  Print / Re-issue ID Card
-                </Button>
-                {onEdit && (
-                  <Button size="sm" variant="outline" onClick={() => onEdit(student)}>
-                    Edit Details
-                  </Button>
-                )}
+                <Button size="sm" variant="outline" loading={idBusy} onClick={handleIdCard}>Print / Re-issue ID Card</Button>
+                {onEdit && <Button size="sm" variant="outline" onClick={() => onEdit(student)}>Edit Details</Button>}
               </div>
               <Button variant="outline" size="sm" onClick={onClose}>Close</Button>
             </div>
