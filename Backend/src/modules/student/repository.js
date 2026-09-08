@@ -1,4 +1,12 @@
 import prisma from "../../config/db.js";
+import redis from "../../config/redis.js";
+
+function redisGet(key) {
+  try { return redis.get(key).then(JSON.parse).catch(() => null); } catch { return null; }
+}
+function redisSetEx(key, ttl, value) {
+  try { return redis.setEx(key, ttl, JSON.stringify(value)).catch(() => {}); } catch { /* fail silently */ }
+}
 
 class StudentRepository {
   // ── Parents ────────────────────────────────────────────────────

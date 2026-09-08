@@ -487,6 +487,8 @@ model Student {
   @@index([sectionId])
   @@index([parentId])
   @@index([status])
+  @@index([schoolId, sectionId, status])
+  @@index([parentId, status])
 }
 
 // Tracks year-to-year movement: promotion, repeat, section transfer,
@@ -815,6 +817,7 @@ model FeeRecord {
   @@index([status])
   @@index([status, dueDate])
   @@index([dueDate])
+  @@index([dueDate, status])
 }
 
 model FeePayment {
@@ -829,6 +832,7 @@ model FeePayment {
 
   @@index([feeRecordId])
   @@index([paidAt])
+  @@index([feeRecordId, paidAt])
 }
 
 // Yearly fee rollup — attendance archive wala hi pattern. Saal khatam hone par

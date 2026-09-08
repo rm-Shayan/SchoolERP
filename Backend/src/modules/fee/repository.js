@@ -1,4 +1,12 @@
 import prisma from "../../config/db.js";
+import redis from "../../config/redis.js";
+
+function redisGet(key) {
+  try { return redis.get(key).then(JSON.parse).catch(() => null); } catch { return null; }
+}
+function redisSetEx(key, ttl, value) {
+  try { return redis.setEx(key, ttl, JSON.stringify(value)).catch(() => {}); } catch { /* fail silently */ }
+}
 
 class FeeRepository {
   /** School ka default monthly due day — generate ke liye fallback. */
@@ -53,7 +61,10 @@ class FeeRepository {
   }
 
   async findFeeStructureById(id) {
-    return prisma.feeStructure.findUnique({
+    const cacheKey = `fee:struct:${id}`;
+    const cached = await redisGet(cacheKey);
+    if (cached) return cached;
+    const struct = await prisma.feeStructure.findUnique({
       where: { id },
       include: {
         lineItems: true,
@@ -62,18 +73,25 @@ class FeeRepository {
         school: { select: { id: true, name: true } },
       },
     });
+    if (struct) redisSetEx(cacheKey, 300, struct);
+    return struct;
   }
 
   async listFeeStructuresBySchool(schoolId, { classId, academicYearId }) {
+    const cacheKey = `fee:structs:${schoolId}:${classId || "_"}:${academicYearId || "_"}`;
+    const cached = await redisGet(cacheKey);
+    if (cached) return cached;
     const where = { schoolId };
     if (classId) where.classes = { some: { id: classId } };
     if (academicYearId) where.academicYearId = academicYearId;
 
-    return prisma.feeStructure.findMany({
+    const result = await prisma.feeStructure.findMany({
       where,
       include: { lineItems: true, academicYear: true, classes: { select: { id: true, name: true } } },
       orderBy: { name: "asc" },
     });
+    redisSetEx(cacheKey, 300, result);
+    return result;
   }
 
   async deleteFeeStructure(id) {
@@ -216,7 +234,10 @@ class FeeRepository {
   }
 
   async findFeeRecordById(id) {
-    return prisma.feeRecord.findUnique({
+    const cacheKey = `fee:rec:${id}`;
+    const cached = await redisGet(cacheKey);
+    if (cached) return cached;
+    const rec = await prisma.feeRecord.findUnique({
       where: { id },
       include: {
         payments: true,
@@ -241,6 +262,8 @@ class FeeRepository {
         },
       },
     });
+    if (rec) redisSetEx(cacheKey, 60, rec);
+    return rec;
   }
 
   async findOpenRecordsForStudent(studentId, schoolId) {
