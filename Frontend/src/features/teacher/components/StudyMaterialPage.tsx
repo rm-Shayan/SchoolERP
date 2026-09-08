@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { studyMaterialService, academicService } from '@/lib/api';
 import type { StudyMaterial } from '@/lib/api/studyMaterialService';
-import type { SectionOption } from './parts/HomeworkForm';
-import { PageHeader, Button, Card, EmptyState, Modal, CardGridSkeleton, ConfirmDialog } from '@/features/shared/components';
+import type { SectionOption, SubjectOption } from '@/features/teacher/components/parts/HomeworkForm';
+import { PageHeader, Button, Card, EmptyState, Modal, CardGridSkeleton, ConfirmDialog, Select } from '@/features/shared/components';
 import StudyMaterialCard from '@/features/shared/components/parts/StudyMaterialCard';
 import StudyMaterialForm from '@/features/shared/components/parts/StudyMaterialForm';
 import toast from 'react-hot-toast';
@@ -15,6 +15,8 @@ export default function StudyMaterialPage() {
   const schoolId = school?.id ?? user?.schoolId;
   const [items, setItems] = useState<StudyMaterial[]>([]);
   const [sections, setSections] = useState<SectionOption[]>([]);
+  const [sectionId, setSectionId] = useState('');
+  const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<StudyMaterial | null>(null);
@@ -26,16 +28,25 @@ export default function StudyMaterialPage() {
     setLoading(true);
     try {
       const [list, classes] = await Promise.all([
-        studyMaterialService.getAll({ pageSize: 100 }),
+        studyMaterialService.getAll({ sectionId: sectionId || undefined, pageSize: 100 }),
         academicService.getClassesBySchool(schoolId ?? ''),
       ]);
       setItems(list.items);
       const opts: SectionOption[] = [];
       for (const c of classes) (c.sections ?? []).forEach((s) => opts.push({ id: s.id, label: `${c.name} — ${s.name}`, classId: c.id }));
       setSections(opts);
+
+      const classId = sections.find((s) => s.id === sectionId)?.classId ?? classes[0]?.id ?? '';
+      if (classId) {
+        const subjects = await academicService.getSubjectsByClass(classId);
+        const subjectOpts: SubjectOption[] = subjects.map((s) => ({ id: s.id, label: s.name }));
+        setSubjects(subjectOpts);
+      } else {
+        setSubjects([]);
+      }
     } catch (err: any) { toast.error(err?.response?.data?.message ?? 'Failed to load'); }
     finally { setLoading(false); }
-  }, [schoolId]);
+  }, [schoolId, sectionId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -68,9 +79,15 @@ export default function StudyMaterialPage() {
     <div className="space-y-6">
       <PageHeader title="Study Materials" description="Upload study material for your students." actions={<Button size="sm" onClick={openCreate}>New Material</Button>} />
       <Modal open={showForm} onClose={() => { if (!submitting) { setShowForm(false); setEditing(null); } }} title={editing ? 'Edit Material' : 'New Material'}>
-        <StudyMaterialForm sections={sections} initialValues={editing ? { title: editing.title, description: editing.description ?? '', type: editing.type, file: null, linkUrl: editing.linkUrl ?? '', sectionId: editing.sectionId ?? '' } : undefined} onSubmit={handleSubmit} onCancel={() => { setShowForm(false); setEditing(null); }} submitLabel={editing ? 'Update' : 'Create'} submitting={submitting} />
-      </Modal>
-      <ConfirmDialog open={!!deleting} title="Delete material?" message={`"${deleting?.title}" will be permanently deleted.`} confirmLabel="Delete" loading={deleteBusy} onConfirm={handleDelete} onCancel={() => setDeleting(null)} />
+        <StudyMaterialForm sections={sections} subjects={subjects} initialValues={editing ? { title: editing.title, description: editing.description ?? '', type: editing.type, file: null, linkUrl: editing.linkUrl ?? '', sectionId: editing.sectionId ?? '', subjectId: editing.subjectId ?? '' } : undefined} onSubmit={handleSubmit} onCancel={() => { setShowForm(false); setEditing(null); }} submitLabel={editing ? 'Update' : 'Create'} submitting={submitting} />
+      </Modal>      <ConfirmDialog open={!!deleting} title="Delete material?" message={`"${deleting?.title}" will be permanently deleted.`} confirmLabel="Delete" loading={deleteBusy} onConfirm={handleDelete} onCancel={() => setDeleting(null)} />      <div className="max-w-xs"><Select
+        label="Filter by Section"
+        placeholder="All sections"
+        options={sections.map((s) => ({ value: s.id, label: s.label }))}
+        value={sectionId}
+        onChange={(e) => { setSectionId(e.target.value); load(); }}
+      />
+</div>
       {loading ? <CardGridSkeleton count={4} /> : items.length === 0 ? (
         <Card><EmptyState title="No materials yet" description="Upload the first study material for your students." action={<Button size="sm" onClick={openCreate}>New Material</Button>} /></Card>
       ) : (

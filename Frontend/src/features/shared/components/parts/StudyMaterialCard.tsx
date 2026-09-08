@@ -19,22 +19,14 @@ export default function StudyMaterialCard({ item, onEdit, onDelete, showActions 
 
   const config = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.DOCUMENT;
   const mediaUrl = item.fileUrl || item.linkUrl;
-  const mediaType = getMediaType(mediaUrl);
+  const mediaType = typeof mediaUrl === 'string' ? getMediaType(mediaUrl) : null;
   const isYoutube = item.linkUrl && (item.linkUrl.includes('youtube.com') || item.linkUrl.includes('youtu.be'));
-  const embedUrl = isYoutube ? getYoutubeEmbedUrl(item.linkUrl) : null;
-
-  const themeGradient = themeColor
-    ? (() => {
-        const scale = buildPrimaryScale(themeColor);
-        if (!scale) return 'from-blue-500 to-blue-600';
-        return `from-[${scale['500']}] to-[${scale['600']}]`;
-      })()
-    : 'from-blue-500 to-blue-600';
+  const embedUrl = isYoutube && item.linkUrl ? getYoutubeEmbedUrl(item.linkUrl) : null;
 
   const themeStyle = themeColor ? { color: themeColor, background: `${themeColor}18`, borderColor: `${themeColor}30` } : undefined;
 
   return (
-    <Card className={`overflow-hidden group hover:shadow-lg transition-all duration-200 ${themeColor ? 'border-0' : 'border border-gray-200/70'}`} style={themeColor ? { borderColor: `${themeColor}20` } : undefined}>
+    <Card className={`overflow-hidden group hover:shadow-lg transition-all duration-200 ${themeColor ? 'border-0' : 'border border-gray-200/70'}`}>
       {/* Preview */}
       {mediaType === 'image' && mediaUrl ? (
         <div className="relative h-44 bg-gray-100 overflow-hidden">
@@ -42,7 +34,7 @@ export default function StudyMaterialCard({ item, onEdit, onDelete, showActions 
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
           <div className="absolute top-2 right-2 flex gap-1.5">
             <Badge variant={config.variant}>{config.label}</Badge>
-            {item.subject && <Badge variant="secondary">{item.subject.name}</Badge>}
+            {item.subject && <span className="ml-1 inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">{item.subject.name}</span>}
           </div>
           <div className="absolute bottom-2 left-2 flex items-center gap-1.5 text-white/80 text-xs">
             {item.section && <span className="bg-black/30 px-2 py-0.5 rounded">{item.section.class?.name} — {item.section.name}</span>}
@@ -50,8 +42,7 @@ export default function StudyMaterialCard({ item, onEdit, onDelete, showActions 
         </div>
       ) : mediaType === 'video' && mediaUrl ? (
         <div className="relative h-44 bg-gray-900 flex items-center justify-center overflow-hidden">
-          {embedUrl ? (
-            <iframe src={embedUrl} className="w-full h-full absolute inset-0" title={item.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullscreen loading="lazy" />
+          {embedUrl ? (              <iframe src={embedUrl} className="w-full h-full absolute inset-0" title={item.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen loading="lazy" />
           ) : (
             <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center gap-2 text-white">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm ring-1 ring-white/30 transition-colors group-hover:bg-white/30">
@@ -63,7 +54,7 @@ export default function StudyMaterialCard({ item, onEdit, onDelete, showActions 
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
           <div className="absolute top-2 right-2 flex gap-1.5">
             <Badge variant={config.variant}>{config.label}</Badge>
-            {item.subject && <Badge variant="secondary">{item.subject.name}</Badge>}
+            {item.subject && <span className="ml-1 inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">{item.subject.name}</span>}
           </div>
         </div>
       ) : item.type === 'LINK' && mediaUrl ? (
@@ -73,10 +64,9 @@ export default function StudyMaterialCard({ item, onEdit, onDelete, showActions 
               <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
               <span className="truncate max-w-[180px]">{mediaUrl.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0]}</span>
             </div>
-          </div>
-          <div className="absolute top-2 right-2 flex gap-1.5">
+          </div>          <div className="absolute top-2 right-2 flex gap-1.5">
             <Badge variant={config.variant}>{config.label}</Badge>
-            {item.subject && <Badge variant="secondary">{item.subject.name}</Badge>}
+            {item.subject && <span className="ml-1 inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">{item.subject.name}</span>}
           </div>
         </div>
       ) : (
@@ -90,8 +80,8 @@ export default function StudyMaterialCard({ item, onEdit, onDelete, showActions 
           <div className="absolute top-2 right-2">
             <Badge variant={config.variant}>{config.label}</Badge>
           </div>
-        )
-      }
+        </div>
+      )}
 
       {/* Content */}
       <div className="p-4">

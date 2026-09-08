@@ -55,3 +55,32 @@ export function getYoutubeEmbedUrl(url: string): string | null {
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/);
   return match ? `https://www.youtube.com/embed/${match[1]}` : null;
 }
+
+/**
+ * Accepted file extensions per material type. Used by the upload form to restrict
+ * what the file input accepts and to infer the material type from a selected file.
+ */
+export const TYPE_ACCEPT_MAP = {
+  DOCUMENT: ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.txt'],
+  VIDEO: ['.mp4', '.webm', '.ogg', '.mov'],
+  IMAGE: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
+  LINK: [],
+} as const;
+
+/**
+ * Per-type client-side size caps, kept in sync with the backend limits so the
+ * form can reject oversized files before upload.
+ */
+export const TYPE_OPTIONS = [
+  { value: 'DOCUMENT', label: 'Document' },
+  { value: 'VIDEO', label: 'Video' },
+  { value: 'IMAGE', label: 'Image' },
+  { value: 'LINK', label: 'External Link' },
+] as const;
+
+export const TYPE_MAX_BYTES_MAP = {
+  DOCUMENT: 25 * 1024 * 1024,
+  VIDEO: 50 * 1024 * 1024,
+  IMAGE: 10 * 1024 * 1024,
+  LINK: 0,
+} as const;
