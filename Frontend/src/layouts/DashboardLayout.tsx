@@ -6,7 +6,7 @@ import { useAppSelector } from '@/store/hooks';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { useSocket } from '@/hooks/useSocket';
-import { orgThemeStyle, applyOrgThemeToRoot, clearOrgThemeFromRoot } from '@/lib/theme';
+import { orgThemeStyle, applyPortalThemeToRoot, clearPortalThemeFromRoot } from '@/lib/theme';
 import { isNavGroup, filterLinksByRole, type SidebarNavItem } from '@/config/navLinks';
 import type { ReactNode } from 'react';
 import PortalErrorBoundary from '@/components/PortalErrorBoundary';
@@ -41,8 +41,8 @@ export default function DashboardLayout({ links, title, children }: DashboardLay
   // this guarantees that every UI component (header, sidebar, cards, modals)
   // uses the org color. Reverts to default on unmount.
   useEffect(() => {
-    applyOrgThemeToRoot(themeColor);
-    return () => clearOrgThemeFromRoot();
+    applyPortalThemeToRoot(themeColor);
+    return () => clearPortalThemeFromRoot();
   }, [themeColor]);
 
   const orgStatus = useAppSelector((s) => s.portalStatus.orgStatus);

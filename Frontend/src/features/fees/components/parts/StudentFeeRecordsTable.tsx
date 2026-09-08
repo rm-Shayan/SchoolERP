@@ -18,9 +18,9 @@ const ViewIcon = () => <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 
 const BellIcon = () => <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>;
 const SearchIcon = () => <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>;
 
-function StudentRow({ g, onCollect, onViewVoucher, onRemind }: {
+function StudentRow({ g, onCollect, onViewVoucher, onRemind, readOnly }: {
   g: StudentFeeGroup; onCollect: (g: StudentFeeGroup) => void;
-  onViewVoucher: (g: StudentFeeGroup) => void; onRemind: (r: FeeRecord) => void;
+  onViewVoucher: (g: StudentFeeGroup) => void; onRemind?: (r: FeeRecord) => void; readOnly?: boolean;
 }) {
   const tc = g.records.reduce((s, r) => s + Number(r.totalAmount || 0), 0);
   const pct = tc > 0 ? Math.round((g.totalPaid / tc) * 100) : 0;
@@ -40,18 +40,18 @@ function StudentRow({ g, onCollect, onViewVoucher, onRemind }: {
       </td>
       <td className="py-3.5 px-4">
         <div className="flex flex-wrap items-center justify-end gap-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
-          <Button size="sm" onClick={() => onCollect(g)}><CollectIcon />Collect</Button>
-          <Button size="sm" variant="outline" onClick={() => feeService.getVoucherPdf(g.records[0].id).catch(() => toast.error('Download failed'))}><DownloadIcon />Voucher</Button>
+          {!readOnly && <Button size="sm" onClick={() => onCollect(g)}><CollectIcon />Collect</Button>}
+          {!readOnly && <Button size="sm" variant="outline" onClick={() => feeService.getVoucherPdf(g.records[0].id).catch(() => toast.error('Download failed'))}><DownloadIcon />Voucher</Button>}
           <Button size="sm" variant="ghost" onClick={() => onViewVoucher(g)}><ViewIcon />View</Button>
-          <Button size="sm" variant="ghost" onClick={() => onRemind(g.records[0])}><BellIcon />Remind</Button>
+          {!readOnly && <Button size="sm" variant="ghost" onClick={() => onRemind?.(g.records[0])}><BellIcon />Remind</Button>}
         </div>
       </td>
     </tr>
   );
 }
 
-function StudentCard({ g, onCollect, onViewVoucher }: {
-  g: StudentFeeGroup; onCollect: (g: StudentFeeGroup) => void; onViewVoucher: (g: StudentFeeGroup) => void;
+function StudentCard({ g, onCollect, onViewVoucher, readOnly }: {
+  g: StudentFeeGroup; onCollect: (g: StudentFeeGroup) => void; onViewVoucher: (g: StudentFeeGroup) => void; readOnly?: boolean;
 }) {
   const openRecs = g.records.filter((r) => r.status !== 'PAID');
   const tc = g.records.reduce((s, r) => s + Number(r.totalAmount || 0), 0);
@@ -70,8 +70,8 @@ function StudentCard({ g, onCollect, onViewVoucher }: {
         <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Outstanding</p><p className="text-xl font-extrabold text-slate-900">{formatCurrency(g.outstanding)}</p>
           {g.totalPaid > 0 && <p className="text-[10px] text-emerald-600 font-semibold">{formatCurrency(g.totalPaid)} paid</p>}<ProgressBar paid={pct} status={g.records[0]?.status || 'UNPAID'} /></div>
         <div className="flex gap-1.5 shrink-0">
-          <Button size="sm" onClick={() => onCollect(g)}><CollectIcon />Collect</Button>
-          <Button size="sm" variant="outline" onClick={() => feeService.getVoucherPdf(g.records[0].id).catch(() => toast.error('Download failed'))}><DownloadIcon />Voucher</Button>
+          {!readOnly && <Button size="sm" onClick={() => onCollect(g)}><CollectIcon />Collect</Button>}
+          {!readOnly && <Button size="sm" variant="outline" onClick={() => feeService.getVoucherPdf(g.records[0].id).catch(() => toast.error('Download failed'))}><DownloadIcon />Voucher</Button>}
           <Button size="sm" variant="ghost" onClick={() => onViewVoucher(g)}>View</Button>
         </div>
       </div>
@@ -79,9 +79,9 @@ function StudentCard({ g, onCollect, onViewVoucher }: {
   );
 }
 
-interface Props { students: StudentFeeGroup[]; loading: boolean; onRemind: (r: FeeRecord) => void; onChanged: () => void; }
+interface Props { students: StudentFeeGroup[]; loading: boolean; onRemind?: (r: FeeRecord) => void; onChanged: () => void; readOnly?: boolean; }
 
-export default function StudentFeeRecordsTable({ students, loading, onRemind, onChanged }: Props) {
+export default function StudentFeeRecordsTable({ students, loading, onRemind, onChanged, readOnly }: Props) {
   const [payingStudent, setPayingStudent] = useState<StudentFeeGroup | null>(null);
   const [viewStudent, setViewStudent] = useState<StudentFeeGroup | null>(null);
   const [search, setSearch] = useState('');
@@ -123,7 +123,7 @@ export default function StudentFeeRecordsTable({ students, loading, onRemind, on
 
       {/* Mobile cards */}
       <div className="space-y-3 p-4 sm:hidden">
-        {filtered.map((g) => <StudentCard key={g.studentId} g={g} onCollect={setPayingStudent} onViewVoucher={setViewStudent} />)}
+        {filtered.map((g) => <StudentCard key={g.studentId} g={g} onCollect={setPayingStudent} onViewVoucher={setViewStudent} readOnly={readOnly} />)}
       </div>
 
       {/* Desktop table */}
@@ -133,9 +133,9 @@ export default function StudentFeeRecordsTable({ students, loading, onRemind, on
             <th className="py-3 px-4 font-bold w-[220px]">Student</th>
             <th className="py-3 px-4 font-bold">Open Months</th>
             <th className="py-3 px-4 font-bold text-right w-[140px]">Outstanding</th>
-            <th className="py-3 px-4 font-bold text-right w-[240px]">Actions</th>
+            {!readOnly && <th className="py-3 px-4 font-bold text-right w-[240px]">Actions</th>}
           </tr></thead>
-          <tbody>{filtered.map((g) => <StudentRow key={g.studentId} g={g} onCollect={setPayingStudent} onViewVoucher={setViewStudent} onRemind={onRemind} />)}</tbody>
+          <tbody>{filtered.map((g) => <StudentRow key={g.studentId} g={g} onCollect={setPayingStudent} onViewVoucher={setViewStudent} onRemind={onRemind} readOnly={readOnly} />)}</tbody>
         </table>
       </div>
 

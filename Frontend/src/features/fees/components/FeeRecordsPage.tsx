@@ -15,10 +15,13 @@ import type { FeeRecord } from '@/types';
 import BulkPrintVoucherModal from './parts/BulkPrintVoucherModal';
 import FeeRecordsHero from './parts/FeeRecordsHero';
 import { FeeTrendChart } from './parts/FeeTrendChart';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 
 export default function FeeRecordsPage() {
   const { user, school, organization } = useAppSelector((s) => s.auth);
   const schoolId = school?.id ?? user?.schoolId;
+  const { role } = useRoleAccess();
+  const isReadOnly = role === 'RECEPTIONIST';
   const [classId, setClassId] = useState('');
   const [showGenerate, setShowGenerate] = useState(false);
   const [showBulk, setShowBulk] = useState(false);
@@ -83,7 +86,7 @@ export default function FeeRecordsPage() {
 
   return (
     <div className="min-h-full space-y-5 pb-8">
-      <FeeRecordsHero summary={summary} dueDay={dueDay} themeColor={school?.themeColor || organization?.themeColor} logoUrl={school?.logoUrl || organization?.logoUrl} schoolName={school?.name} onGenerate={() => setShowGenerate(true)} onBulk={() => setShowBulk(true)} onDueDay={() => setEditDueDay(true)} />
+      <FeeRecordsHero summary={summary} dueDay={dueDay} themeColor={school?.themeColor || organization?.themeColor} logoUrl={school?.logoUrl || organization?.logoUrl} schoolName={school?.name} onGenerate={() => setShowGenerate(true)} onBulk={() => setShowBulk(true)} onDueDay={() => setEditDueDay(true)} readOnly={isReadOnly} />
 
       <div className="rounded-2xl border border-gray-200/60 bg-white p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -123,7 +126,7 @@ export default function FeeRecordsPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-primary-50 px-3 py-1 text-xs font-bold text-primary-700">{students.length} students</span>
-            {students.length > 0 && (
+            {students.length > 0 && !isReadOnly && (
               <>
                 <button onClick={remindAll} disabled={bulkBusy} className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors disabled:opacity-50">
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
@@ -137,7 +140,7 @@ export default function FeeRecordsPage() {
             )}
           </div>
         </div>
-        <StudentFeeRecordsTable students={students} loading={loading} onRemind={remind} onChanged={load} />
+        <StudentFeeRecordsTable students={students} loading={loading} onRemind={isReadOnly ? undefined : remind} onChanged={load} readOnly={isReadOnly} />
       </Card>
 
       {showGenerate && (

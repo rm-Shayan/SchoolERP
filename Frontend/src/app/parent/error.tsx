@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { applyPortalThemeToRoot, clearPortalThemeFromRoot } from '@/lib/theme';
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -9,6 +10,17 @@ interface ErrorProps {
 
 export default function ParentError({ error, reset }: ErrorProps) {
   useEffect(() => { console.error('Parent portal error:', error); }, [error]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('organization');
+      if (stored) {
+        const org = JSON.parse(stored);
+        if (org?.themeColor) applyPortalThemeToRoot(org.themeColor);
+      }
+    } catch { /* ignore */ }
+    return () => clearPortalThemeFromRoot();
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 text-center">
@@ -30,7 +42,7 @@ export default function ParentError({ error, reset }: ErrorProps) {
         <button onClick={reset} className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50">
           Try again
         </button>
-        <a href="/login" className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+        <a href="/login" className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700">
           Go to Login
         </a>
       </div>

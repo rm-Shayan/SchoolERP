@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { composeValidators, isEmail, required, useForm } from '@/lib/utils';
 import { authService } from '@/lib/api';
 import { AuthLayout, Button, Input } from '@/features/shared/components';
-import { applyOrgThemeToRoot, clearOrgThemeFromRoot } from '@/lib/theme';
+import { applyPortalThemeToRoot, clearPortalThemeFromRoot } from '@/lib/theme';
 import type { SchoolBranding } from '@/types';
 
 interface ForgotPasswordPageProps {
@@ -19,9 +19,9 @@ export default function ForgotPasswordPage({ branding }: ForgotPasswordPageProps
   // Apply the org theme on this page too, like the login hub — the
   // forgot-password page stays branded when accessed via org/school query param.
   useEffect(() => {
-    if (themeColor) applyOrgThemeToRoot(themeColor);
-    else clearOrgThemeFromRoot();
-    return () => { if (themeColor) clearOrgThemeFromRoot(); };
+    if (themeColor) applyPortalThemeToRoot(themeColor);
+    else clearPortalThemeFromRoot();
+    return () => { if (themeColor) clearPortalThemeFromRoot(); };
   }, [themeColor]);
 
   const { values, errors, isSubmitting, handleChange, handleBlur, handleSubmit } = useForm({

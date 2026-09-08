@@ -14,9 +14,10 @@ interface Props {
   subjects: Subject[];
   loading: boolean;
   onSaved: () => void;
+  readOnly?: boolean;
 }
 
-export default function ResultsWorkspace({ examId, students, subjects, loading, onSaved }: Props) {
+export default function ResultsWorkspace({ examId, students, subjects, loading, onSaved, readOnly }: Props) {
   const [values, setValues] = useState<Record<string, CellValue>>({});
   const [saving, setSaving] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
@@ -75,12 +76,14 @@ export default function ResultsWorkspace({ examId, students, subjects, loading, 
         ) : (
           <>
             <ResultGrid students={students} subjects={subjects} values={values} onChange={handleCell} />
-            <div className="mt-4 flex flex-col-reverse justify-end gap-3 border-t border-slate-100 pt-4 sm:flex-row">
-              <Button variant="outline" onClick={saveResults} loading={saving}>
-                Save Results
-              </Button>
-              <Button onClick={() => setPublishOpen(true)}>Publish to Parents</Button>
-            </div>
+            {!readOnly && (
+              <div className="mt-4 flex flex-col-reverse justify-end gap-3 border-t border-slate-100 pt-4 sm:flex-row">
+                <Button variant="outline" onClick={saveResults} loading={saving}>
+                  Save Results
+                </Button>
+                <Button onClick={() => setPublishOpen(true)}>Publish to Parents</Button>
+              </div>
+            )}
           </>
         )}
       </CardContent>

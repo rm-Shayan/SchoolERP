@@ -8,8 +8,8 @@ export function useRoleAccess() {
 
   return {
     isReadOnly: false,
-    canCreate: !isReceptionist || true,
-    canEdit: true,
+    canCreate: !isReceptionist,
+    canEdit: !isReceptionist,
     canDelete: role === 'SUPER_ADMIN' || role === 'ADMIN',
     isAdmin: role === 'ADMIN' || role === 'SUPER_ADMIN',
     isReceptionist,

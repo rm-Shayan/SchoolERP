@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { applyPortalThemeToRoot, clearPortalThemeFromRoot } from '@/lib/theme';
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -12,6 +13,17 @@ export default function OrgError({ error, reset }: ErrorProps) {
   useEffect(() => {
     console.error('Org page error:', error);
   }, [error]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('organization');
+      if (stored) {
+        const org = JSON.parse(stored);
+        if (org?.themeColor) applyPortalThemeToRoot(org.themeColor);
+      }
+    } catch { /* ignore */ }
+    return () => clearPortalThemeFromRoot();
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 text-center">
@@ -35,7 +47,7 @@ export default function OrgError({ error, reset }: ErrorProps) {
         </button>
         <Link
           href="/login"
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
         >
           Go to Login
         </Link>

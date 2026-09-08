@@ -10,6 +10,7 @@ interface Props {
   onGenerate: () => void;
   onBulk: () => void;
   onDueDay: () => void;
+  readOnly?: boolean;
 }
 
 function darken(hex: string, amt = 30) {
@@ -20,7 +21,7 @@ function darken(hex: string, amt = 30) {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
 
-export default function FeeRecordsHero({ summary, dueDay, themeColor, logoUrl, schoolName, onGenerate, onBulk, onDueDay }: Props) {
+export default function FeeRecordsHero({ summary, dueDay, themeColor, logoUrl, schoolName, onGenerate, onBulk, onDueDay, readOnly }: Props) {
   const pending = (summary?.counts.UNPAID || 0) + (summary?.counts.PARTIAL || 0) + (summary?.counts.OVERDUE || 0);
   const tc = themeColor || '#0f172a';
   return (
@@ -75,20 +76,22 @@ export default function FeeRecordsHero({ summary, dueDay, themeColor, logoUrl, s
         </div>
 
         {/* Action buttons */}
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-col">
-          <button onClick={onDueDay} className="flex items-center justify-center gap-2 rounded-xl border border-white/20 px-3 py-2.5 text-xs font-bold text-white/80 hover:bg-white/10 transition-colors">
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-            Due {dueDay}th
-          </button>
-          <button onClick={onBulk} className="flex items-center justify-center gap-2 rounded-xl border border-white/20 px-3 py-2.5 text-xs font-bold text-white/80 hover:bg-white/10 transition-colors">
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-            Bulk
-          </button>
-          <button onClick={onGenerate} className="col-span-2 flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-extrabold hover:bg-white/90 transition-colors" style={{ color: tc }}>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-            Generate Monthly
-          </button>
-        </div>
+        {!readOnly && (
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-col">
+            <button onClick={onDueDay} className="flex items-center justify-center gap-2 rounded-xl border border-white/20 px-3 py-2.5 text-xs font-bold text-white/80 hover:bg-white/10 transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              Due {dueDay}th
+            </button>
+            <button onClick={onBulk} className="flex items-center justify-center gap-2 rounded-xl border border-white/20 px-3 py-2.5 text-xs font-bold text-white/80 hover:bg-white/10 transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+              Bulk
+            </button>
+            <button onClick={onGenerate} className="col-span-2 flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-extrabold hover:bg-white/90 transition-colors" style={{ color: tc }}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+              Generate Monthly
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

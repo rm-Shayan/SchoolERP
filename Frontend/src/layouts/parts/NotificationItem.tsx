@@ -38,12 +38,12 @@ export default function NotificationItem({ n, themeColor, onRead, onDelete }: Pr
     <div
       onClick={() => !n.isRead && onRead(n.id)}
       className={cn(
-        'group cursor-pointer px-4 py-3 border-b border-gray-50 transition-colors',
-        n.isRead ? 'hover:brightness-95' : 'hover:brightness-95',
+        'group cursor-pointer px-4 py-3 border-b border-gray-50 transition-colors duration-200',
+        n.isRead ? 'hover:brightness-95' : 'hover:brightness-95 hover:bg-gray-50/50',
       )}
       style={!n.isRead
-        ? { backgroundColor: tc, color: '#fff' }
-        : unreadBg ? { backgroundColor: unreadBg, color: tc } : undefined}
+        ? { backgroundColor: tc, color: '#fff', transition: 'background-color 0.2s ease, color 0.2s ease' }
+        : unreadBg ? { backgroundColor: unreadBg, color: tc, transition: 'background-color 0.2s ease, color 0.2s ease' } : undefined}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2.5 min-w-0">

@@ -10,6 +10,7 @@ import type { AcademicYear, Exam, Student } from '@/types';
 import ResultsWorkspace from './parts/ResultsWorkspace';
 import ResultCardPicker from './parts/ResultCardPicker';
 import toast from 'react-hot-toast';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 
 interface ClassOption {
   id: string;
@@ -20,6 +21,8 @@ interface ClassOption {
 export default function ExamResultsPage() {
   const { user, school } = useAppSelector((s) => s.auth);
   const schoolId = school?.id ?? user?.schoolId;
+  const { role } = useRoleAccess();
+  const isReadOnly = role === 'RECEPTIONIST';
   const [years, setYears] = useState<AcademicYear[]>([]);
   const [yearId, setYearId] = useState('');
   const [exams, setExams] = useState<Exam[]>([]);
@@ -137,6 +140,7 @@ export default function ExamResultsPage() {
           subjects={subjects}
           loading={loading}
           onSaved={loadGrid}
+          readOnly={isReadOnly}
         />
       )}
       {examId && students.length > 0 && (

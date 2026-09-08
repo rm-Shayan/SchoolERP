@@ -41,7 +41,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
             </button>
             <a
               href="/"
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
             >
               Go to Home
             </a>

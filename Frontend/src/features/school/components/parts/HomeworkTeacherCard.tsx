@@ -8,8 +8,8 @@ import { formatDate } from '@/lib/utils';
 interface HomeworkTeacherCardProps {
   name: string;
   items: Homework[];
-  onEdit: (hw: Homework) => void;
-  onDelete: (hw: Homework) => void;
+  onEdit?: (hw: Homework) => void;
+  onDelete?: (hw: Homework) => void;
 }
 
 function sectionLabel(hw: Homework): string {
@@ -59,22 +59,26 @@ const HomeworkTeacherCard = memo(function HomeworkTeacherCard({ name, items, onE
               </div>
               <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1.5 shrink-0">
                 <span className="hidden sm:block text-[11px] text-gray-400 mr-1.5">{formatDate(hw.sentAt)}</span>
-                <button
-                  type="button"
-                  onClick={() => onEdit(hw)}
-                  aria-label={`Edit ${hw.title}`}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-                >
-                  <PencilIcon />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onDelete(hw)}
-                  aria-label={`Delete ${hw.title}`}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                >
-                  <TrashIcon />
-                </button>
+                {onEdit && (
+                  <button
+                    type="button"
+                    onClick={() => onEdit(hw)}
+                    aria-label={`Edit ${hw.title}`}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                  >
+                    <PencilIcon />
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    type="button"
+                    onClick={() => onDelete(hw)}
+                    aria-label={`Delete ${hw.title}`}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                  >
+                    <TrashIcon />
+                  </button>
+                )}
               </div>
             </div>
           </div>

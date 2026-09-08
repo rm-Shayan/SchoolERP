@@ -11,6 +11,7 @@ import TrackingStats from './parts/TrackingStats';
 import HomeworkPostModal from './parts/HomeworkPostModal';
 import HomeworkTeacherCard from './parts/HomeworkTeacherCard';
 import useSectionOptions from './parts/useSectionOptions';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import toast from 'react-hot-toast';
 
 interface TeacherGroup {
@@ -22,6 +23,8 @@ interface TeacherGroup {
 export default function HomeworkTrackingPage() {
   const { user, school } = useAppSelector((s) => s.auth);
   const schoolId = school?.id ?? user?.schoolId;
+  const { role } = useRoleAccess();
+  const isReadOnly = role === 'RECEPTIONIST';
   const [items, setItems] = useState<Homework[]>([]);
   const [total, setTotal] = useState(0);
   const sections = useSectionOptions(schoolId);
@@ -92,7 +95,7 @@ export default function HomeworkTrackingPage() {
       <PageHeader
         title="Homework Tracking"
         description="Teacher-wise homework tracking — admins can also post, edit, or delete on behalf of teachers. Old homework auto-deletes at the end of the academic year."
-        actions={<Button size="sm" onClick={() => { setEditing(null); setShowForm(true); }}>New Homework</Button>}
+        actions={!isReadOnly && <Button size="sm" onClick={() => { setEditing(null); setShowForm(true); }}>New Homework</Button>}
       />
 
       <HomeworkPostModal
@@ -128,8 +131,8 @@ export default function HomeworkTrackingPage() {
               key={g.id}
               name={g.name}
               items={g.items}
-              onEdit={(hw) => { setEditing(hw); setShowForm(true); }}
-              onDelete={setDeleting}
+              onEdit={isReadOnly ? undefined : (hw) => { setEditing(hw); setShowForm(true); }}
+              onDelete={isReadOnly ? undefined : setDeleting}
             />
           ))}
         </div>

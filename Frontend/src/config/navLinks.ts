@@ -127,7 +127,6 @@ export const receptionistLinks: SidebarNavItem[] = [
   {
     title: 'Finance',
     links: [
-      { label: 'Fee Collection', path: '/branch/fees/collection', icon: icon(I.wallet) },
       { label: 'Fee Records', path: '/branch/fees/records', icon: icon(I.banknotes) },
     ],
   },

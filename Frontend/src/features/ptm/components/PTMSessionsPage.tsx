@@ -18,7 +18,8 @@ type Tab = 'upcoming' | 'past';
 
 export default function PTMSessionsPage() {
   const { user, school } = useAppSelector((s) => s.auth);
-  const { isReadOnly } = useRoleAccess();
+  const { role } = useRoleAccess();
+  const isReadOnly = role === 'RECEPTIONIST';
   const schoolId = school?.id ?? user?.schoolId;
   const [sessions, setSessions] = useState<PTMEvent[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);

@@ -7,6 +7,7 @@ import type { OrgPublicData } from '@/lib/api/orgService';
 import Logo from '@/features/shared/components/Logo';
 import Loading from '@/features/shared/components/Loading';
 import { darkenHex } from '@/features/shared/components/authLayoutTheme';
+import { applyPortalThemeToRoot, clearPortalThemeFromRoot } from '@/lib/theme';
 import PublicAdmissionForm from './PublicAdmissionForm';
 
 export default function PublicAdmissionPage() {
@@ -51,6 +52,11 @@ export default function PublicAdmissionPage() {
   }
 
   const theme = org.themeColor || '#2563eb';
+
+  useEffect(() => {
+    applyPortalThemeToRoot(org.themeColor);
+    return () => clearPortalThemeFromRoot();
+  }, [org.themeColor]);
 
   return (
     <div className="min-h-screen bg-gray-50">

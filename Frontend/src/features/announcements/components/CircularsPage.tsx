@@ -13,7 +13,8 @@ import { useRoleAccess } from '@/hooks/useRoleAccess';
 
 export default function CircularsPage() {
   const { user, school } = useAppSelector((s) => s.auth);
-  const { isReadOnly } = useRoleAccess();
+  const { role } = useRoleAccess();
+  const isReadOnly = role === 'RECEPTIONIST';
   const schoolId = school?.id ?? user?.schoolId;
   const [circulars, setCirculars] = useState<Circular[]>([]);
   const [loading, setLoading] = useState(true);

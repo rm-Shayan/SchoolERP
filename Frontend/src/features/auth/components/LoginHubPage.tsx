@@ -12,7 +12,7 @@ import ParentLoginForms from '@/features/parent/components/ParentLoginForms';
 import StudentLoginForm from '@/features/parent/components/StudentLoginForm';
 import AdminLoginForm from '@/features/auth/components/parts/AdminLoginForm';
 import { useOrgBranding } from '@/hooks/useOrgBranding';
-import { applyOrgThemeToRoot, clearOrgThemeFromRoot } from '@/lib/theme';
+import { applyPortalThemeToRoot, clearPortalThemeFromRoot } from '@/lib/theme';
 import type { SchoolBranding } from '@/types';
 
 interface LoginHubPageProps {
@@ -41,8 +41,8 @@ export default function LoginHubPage({ orgSlug, code, initialBranding }: LoginHu
   // (buttons, links, focus rings, chips, background blobs) uses the org color,
   // not just the left panel/tabs. Falls back to indigo when no branding.
   useEffect(() => {
-    applyOrgThemeToRoot(themeColor);
-    return () => { clearOrgThemeFromRoot(); };
+    applyPortalThemeToRoot(themeColor);
+    return () => { clearPortalThemeFromRoot(); };
   }, [themeColor]);
 
   const role = ROLES.find((r) => r.key === group) ?? ROLES[0];

@@ -21,7 +21,8 @@ import { getLastClassIds, studentCreatePayload, studentUpdatePayload } from './p
 
 export default function StudentsPage() {
   const { user, school } = useAppSelector((s) => s.auth);
-  const { isReadOnly } = useRoleAccess();
+  const { role } = useRoleAccess();
+  const isReceptionist = role === 'RECEPTIONIST';
   const schoolId = school?.id ?? user?.schoolId;
   const [classes, setClasses] = useState<Class[]>([]);
   const [classesLoading, setClassesLoading] = useState(true);
@@ -123,23 +124,23 @@ export default function StudentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Students" description="Manage all enrolled students in this branch."
-        actions={!isReadOnly && <StudentsHeaderActions onAdd={() => { setFormStudent(null); setFormMode('create'); }} onImport={() => setShowImport(true)} onExport={exportCsv} />} />
+        actions={<StudentsHeaderActions onAdd={() => { setFormStudent(null); setFormMode('create'); }} onImport={isReceptionist ? undefined : () => setShowImport(true)} onExport={exportCsv} />} />
 
       <StudentStats summary={summary} />
 
       <StudentToolbar search={search} onSearchChange={setSearch} statusFilter={statusFilter} onStatusChange={setStatusFilter} sectionFilter={sectionFilter} onSectionChange={setSectionFilter} classes={classes} classesLoading={classesLoading} resultCount={total} />
 
       <StudentList loading={loading} refetching={refetching} students={students} total={total} hasFilters={!!search.trim() || !!statusFilter || !!sectionFilter} page={page} pageSize={pageSize} totalPages={totalPages} lastClassIds={lastClassIds} onPageChange={setPage} onPageSizeChange={setPageSize}         onView={setSelected}
-        onEdit={isReadOnly ? undefined : openEdit}
-        onDelete={isReadOnly ? undefined : setDeleteTarget}
-        onPassedOut={isReadOnly ? undefined : setPassTarget}
-        onTc={isReadOnly ? undefined : setTcTarget}
-        onRollback={isReadOnly ? undefined : setRollbackTarget}
+        onEdit={openEdit}
+        onDelete={isReceptionist ? undefined : setDeleteTarget}
+        onPassedOut={isReceptionist ? undefined : setPassTarget}
+        onTc={isReceptionist ? undefined : setTcTarget}
+        onRollback={isReceptionist ? undefined : setRollbackTarget}
       />
 
       <StudentFormModal key={formMode === 'create' ? 'create' : formStudent?.id ?? 'none'} open={formMode !== null} onClose={() => { setFormMode(null); setFormStudent(null); }} classes={classes} mode={formMode === 'create' ? 'create' : 'edit'} student={formStudent} onSubmit={handleFormSubmit} />
 
-      <StudentDetails student={selected} lastClassIds={lastClassIds} onClose={() => setSelected(null)} onUpdated={(updated) => { setSelected(updated); reload(); }} onEdit={isReadOnly ? undefined : openEdit} onDeleted={() => { setSelected(null); setFormStudent(null); reload(); }} />
+      <StudentDetails student={selected} lastClassIds={lastClassIds} onClose={() => setSelected(null)} onUpdated={(updated) => { setSelected(updated); reload(); }} onEdit={openEdit} onDeleted={() => { setSelected(null); setFormStudent(null); reload(); }} />
 
       <StudentImportModal open={showImport} schoolId={schoolId} onClose={() => setShowImport(false)} onImported={() => { setShowImport(false); reload(); }} />
 

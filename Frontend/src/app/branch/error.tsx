@@ -30,7 +30,7 @@ export default function BranchError({ error, reset }: ErrorProps) {
         <button onClick={reset} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
           Try again
         </button>
-        <a href="/branch/dashboard" className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+        <a href="/branch/dashboard" className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700">
           Go to Dashboard
         </a>
       </div>

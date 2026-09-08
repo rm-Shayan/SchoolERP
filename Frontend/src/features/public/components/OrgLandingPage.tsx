@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { orgService } from '@/lib/api';
 import type { OrgPublicData } from '@/lib/api/orgService';
 import { darkenHex } from '@/features/shared/components/authLayoutTheme';
+import { applyPortalThemeToRoot, clearPortalThemeFromRoot } from '@/lib/theme';
 import PageLoader from '@/components/PageLoader';
 import OrgNav from './parts/OrgNav';
 import OrgHero from './parts/OrgHero';
@@ -43,6 +44,11 @@ export default function OrgLandingPage({ initialOrg }: { initialOrg?: OrgPublicD
 
   const theme = org.themeColor || '#0f172a';
   const gradient = `linear-gradient(135deg, ${theme}, ${darkenHex(theme) ?? theme})`;
+
+  useEffect(() => {
+    applyPortalThemeToRoot(org.themeColor);
+    return () => clearPortalThemeFromRoot();
+  }, [org.themeColor]);
 
   return (
     <div className="bg-white text-gray-900">
