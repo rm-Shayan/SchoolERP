@@ -12,7 +12,7 @@ const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = 
   LATE: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
   ABSENT: { bg: 'bg-red-50', text: 'text-red-600', dot: 'bg-red-500' },
   LEAVE: { bg: 'bg-primary-50', text: 'text-primary-600', dot: 'bg-primary-500' },
-  HALF_DAY: { bg: 'bg-cyan-50', text: 'text-cyan-700', dot: 'bg-cyan-500' },
+  HALF_DAY: { bg: 'bg-primary-50', text: 'text-primary-700', dot: 'bg-primary-500' },
   MANUAL_OVERRIDE: { bg: 'bg-primary-50', text: 'text-primary-700', dot: 'bg-primary-500' },
 };
 
@@ -67,7 +67,7 @@ export default function SectionDayCard({ className, sectionName, sectionId, date
           <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">{l}L</span>
           <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">{a}A</span>
           <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-600">{lv}Lv</span>
-          {hd > 0 && <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[11px] font-semibold text-cyan-700">{hd}HD</span>}
+          {hd > 0 && <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700">{hd}HD</span>}
           <button type="button" onClick={handleExport} title="Export this section's CSV"
             className="rounded-lg p-1.5 text-gray-400 transition hover:bg-primary-50 hover:text-primary-700">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>

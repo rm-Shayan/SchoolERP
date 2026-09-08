@@ -83,7 +83,7 @@ export default function SectionMonthPanel({ sectionId }: Props) {
           { k: 'late', l: 'Late', c: 'text-amber-600' },
           { k: 'absent', l: 'Absent', c: 'text-red-500' },
           { k: 'leave', l: 'Leave', c: 'text-primary-600' },
-          { k: 'halfDay', l: 'Half', c: 'text-cyan-600' },
+          { k: 'halfDay', l: 'Half', c: 'text-primary-600' },
         ].map((it) => (
           <div key={it.k} className="flex items-center gap-1.5">
             <span className={cn('text-lg font-extrabold tabular-nums', it.c)}>{stats[it.k as keyof typeof stats] as number}</span>

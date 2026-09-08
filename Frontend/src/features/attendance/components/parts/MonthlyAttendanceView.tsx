@@ -81,7 +81,7 @@ export default function MonthlyAttendanceView() {
             { label: 'Late', value: s?.late ?? 0, accent: 'bg-amber-500' },
             { label: 'Absent', value: s?.absent ?? 0, accent: 'bg-red-500' },
             { label: 'Leave', value: s?.leave ?? 0, accent: 'bg-primary-500' },
-            ...((s?.halfDay ?? 0) > 0 ? [{ label: 'Half Day', value: s?.halfDay ?? 0, accent: 'bg-cyan-500' }] : []),
+            ...((s?.halfDay ?? 0) > 0 ? [{ label: 'Half Day', value: s?.halfDay ?? 0, accent: 'bg-primary-500' }] : []),
           ]} />
           <CalendarHeatmap records={allRecords} year={year} month={month} weeklyOff={data?.weeklyOff} />
 

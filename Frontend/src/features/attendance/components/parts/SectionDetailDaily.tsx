@@ -18,7 +18,7 @@ const ST: Record<string, { bg: string; text: string; dot: string }> = {
   LATE: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
   ABSENT: { bg: 'bg-red-50', text: 'text-red-600', dot: 'bg-red-500' },
   LEAVE: { bg: 'bg-primary-50', text: 'text-primary-600', dot: 'bg-primary-500' },
-  HALF_DAY: { bg: 'bg-cyan-50', text: 'text-cyan-700', dot: 'bg-cyan-500' },
+  HALF_DAY: { bg: 'bg-primary-50', text: 'text-primary-700', dot: 'bg-primary-500' },
 };
 
 function readDateFromUrl(): string {
@@ -105,7 +105,7 @@ export default function SectionDetailDaily({ sectionId }: Props) {
             { label: 'Late', value: s.late, accent: 'bg-amber-500' },
             { label: 'Absent', value: s.absent, accent: 'bg-red-500' },
             { label: 'Leave', value: s.leave, accent: 'bg-primary-500' },
-            ...(s.halfDay > 0 ? [{ label: 'Half Day', value: s.halfDay, accent: 'bg-cyan-500' }] : []),
+            ...(s.halfDay > 0 ? [{ label: 'Half Day', value: s.halfDay, accent: 'bg-primary-500' }] : []),
           ]} />
           <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
             <table className="w-full text-sm">

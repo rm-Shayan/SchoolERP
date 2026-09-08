@@ -22,7 +22,7 @@ const CARDS: CardDef[] = [
   {
     key: 'collected', label: 'Collected',
     get: (s) => formatCurrency(s.collected),
-    gradient: 'from-emerald-500 to-teal-600',
+    gradient: 'from-emerald-500 to-primary-600',
     tint: 'ring-1 ring-emerald-100',
     iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
   },

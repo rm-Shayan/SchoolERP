@@ -131,7 +131,7 @@ export default function MonthlyMatrixTable({ students, records, offDays, weeklyO
                   ))}
                   <td className="border-l border-gray-50 py-1.5 px-3 text-center">
                     <span className="text-[10px] font-semibold tabular-nums text-gray-400">
-                      <b className="text-emerald-600">{cnt.P}</b> · <b className="text-amber-600">{cnt.L}</b> · <b className="text-red-500">{cnt.A}</b> · <b className="text-cyan-600">{cnt.HD}</b>
+                      <b className="text-emerald-600">{cnt.P}</b> · <b className="text-amber-600">{cnt.L}</b> · <b className="text-red-500">{cnt.A}</b> · <b className="text-primary-600">{cnt.HD}</b>
                     </span>
                   </td>
                 </tr>

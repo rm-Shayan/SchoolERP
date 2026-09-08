@@ -15,7 +15,7 @@ export default function Badge({ children, variant = 'default' }: BadgeProps) {
           'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60 shadow-sm shadow-emerald-100/50': variant === 'success',
           'bg-amber-50 text-amber-700 ring-1 ring-amber-200/60 shadow-sm shadow-amber-100/50': variant === 'warning',
           'bg-rose-50 text-rose-700 ring-1 ring-rose-200/60 shadow-sm shadow-rose-100/50': variant === 'danger',
-          'bg-sky-50 text-sky-700 ring-1 ring-sky-200/60 shadow-sm shadow-sky-100/50': variant === 'info',
+          'bg-primary-50 text-primary-700 ring-1 ring-primary-200/60 shadow-sm shadow-primary-100/50': variant === 'info',
         }
       )}
     >

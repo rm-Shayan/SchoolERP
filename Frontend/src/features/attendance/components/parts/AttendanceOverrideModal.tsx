@@ -18,7 +18,7 @@ const STATUSES: { value: AttendanceStatus; label: string; color: string }[] = [
   { value: 'LATE', label: 'Late', color: 'bg-amber-100 border-amber-300 text-amber-800' },
   { value: 'ABSENT', label: 'Absent', color: 'bg-red-100 border-red-300 text-red-800' },
   { value: 'LEAVE', label: 'Leave', color: 'bg-primary-100 border-primary-300 text-primary-800' },
-  { value: 'HALF_DAY', label: 'Half Day', color: 'bg-cyan-100 border-cyan-300 text-cyan-800' },
+  { value: 'HALF_DAY', label: 'Half Day', color: 'bg-primary-100 border-primary-300 text-primary-800' },
   { value: 'MANUAL_OVERRIDE', label: 'Manual Override', color: 'bg-primary-100 border-primary-300 text-primary-800' },
 ];
 

@@ -21,7 +21,7 @@ const CARDS = [
   {
     label: 'Active',
     get: (s: StudentSummary) => s.ACTIVE,
-    chip: 'from-emerald-500 to-teal-600',
+    chip: 'from-emerald-500 to-primary-600',
     tint: 'ring-emerald-100',
     bg: 'bg-emerald-50',
     sub: 'Currently enrolled',
