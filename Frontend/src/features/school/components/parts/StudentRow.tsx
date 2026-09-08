@@ -118,7 +118,7 @@ function StudentRowInner({ student, lastClassIds, onView, onEdit, onDelete, onPa
             <button
               onClick={() => onRollback?.(student)}
               title={`Reactivate ${student.firstName} — undo ${student.status.toLowerCase()}`}
-              className="ml-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+              className="ml-1 rounded-lg border border-primary-200 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100 transition-colors"
             >
               Reactivate
             </button>

@@ -56,7 +56,7 @@ export default function IdCardDesign({ member, school, org }: Props) {
 
         <div className="relative flex-1 min-w-0 flex flex-col pb-[0.95in]">
           <p className="font-bold text-slate-900 text-[13px] leading-tight tracking-tight truncate">{member.name}</p>
-          <p className="text-[9px] font-semibold uppercase tracking-wider text-blue-700">{member.role}</p>
+          <p className="text-[9px] font-semibold uppercase tracking-wider text-primary-700">{member.role}</p>
           <div className="mt-1 space-y-[2px] text-[8px] text-slate-500">
             <p>
               <span className="font-semibold text-slate-600">ID:</span> {member.username || 'N/A'}

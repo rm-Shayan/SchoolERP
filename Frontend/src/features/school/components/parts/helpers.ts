@@ -72,7 +72,7 @@ export function statusDotClass(status: StudentStatus): string {
     case 'ACTIVE':
       return 'bg-green-500';
     case 'GRADUATED':
-      return 'bg-blue-500';
+      return 'bg-primary-500';
     case 'DROPPED_OUT':
       return 'bg-red-500';
     case 'TRANSFERRED_OUT':

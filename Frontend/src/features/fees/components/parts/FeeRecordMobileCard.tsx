@@ -31,7 +31,7 @@ export default function FeeRecordMobileCard({ record: r, onCollect, onExtend, on
           </div>
         </div>
         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${getStatusColor(r.status)}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${r.status === 'PAID' ? 'bg-emerald-500' : r.status === 'PARTIAL' ? 'bg-amber-500' : r.status === 'OVERDUE' ? 'bg-red-500' : 'bg-blue-500'}`} />
+          <span className={`w-1.5 h-1.5 rounded-full ${r.status === 'PAID' ? 'bg-emerald-500' : r.status === 'PARTIAL' ? 'bg-amber-500' : r.status === 'OVERDUE' ? 'bg-red-500' : 'bg-primary-500'}`} />
           {r.status}
         </span>
       </div>

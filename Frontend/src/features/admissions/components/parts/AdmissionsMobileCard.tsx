@@ -16,7 +16,7 @@ interface AdmissionsMobileCardProps {
 
 const stageBadge: Record<string, string> = {
   INQUIRY: 'bg-gray-100 text-gray-700',
-  TEST_SCHEDULED: 'bg-blue-100 text-blue-700',
+  TEST_SCHEDULED: 'bg-primary-100 text-primary-700',
   TEST_PASSED: 'bg-green-100 text-green-700',
   TEST_FAILED: 'bg-red-100 text-red-700',
   FORM_SUBMITTED: 'bg-indigo-100 text-indigo-700',

@@ -12,7 +12,7 @@ const DAY_COLORS: Record<number, string> = {
   1: 'bg-emerald-50 text-emerald-700',
   2: 'bg-amber-50 text-amber-700',
   3: 'bg-red-50 text-red-600',
-  4: 'bg-blue-50 text-blue-600',
+  4: 'bg-primary-50 text-primary-600',
   5: 'bg-cyan-50 text-cyan-700',
 };
 

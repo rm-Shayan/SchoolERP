@@ -10,7 +10,7 @@ import { AttendanceSkeleton } from './PortalSkeletonsA';
 import { usePortalEvents } from '@/hooks/usePortalEvents';
 
 const STATUS_COLORS: Record<string, string> = {
-  PRESENT: 'bg-green-400', LATE: 'bg-yellow-400', ABSENT: 'bg-red-400', LEAVE: 'bg-blue-400', HALF_DAY: 'bg-cyan-400', MANUAL_OVERRIDE: 'bg-gray-400',
+  PRESENT: 'bg-green-400', LATE: 'bg-yellow-400', ABSENT: 'bg-red-400', LEAVE: 'bg-primary-400', HALF_DAY: 'bg-cyan-400', MANUAL_OVERRIDE: 'bg-gray-400',
 };
 
 export default function AttendanceTab() {

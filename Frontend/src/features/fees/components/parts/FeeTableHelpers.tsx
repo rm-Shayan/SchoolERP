@@ -4,7 +4,7 @@ import { getStatusColor } from '@/lib/utils';
 import type { FeeRecord } from '@/types';
 
 export function StatusDot({ status }: { status: string }) {
-  const color = status === 'PAID' ? 'bg-emerald-500' : status === 'PARTIAL' ? 'bg-amber-500' : status === 'OVERDUE' ? 'bg-red-500' : 'bg-blue-500';
+  const color = status === 'PAID' ? 'bg-emerald-500' : status === 'PARTIAL' ? 'bg-amber-500' : status === 'OVERDUE' ? 'bg-red-500' : 'bg-primary-500';
   return <span className={`w-1.5 h-1.5 rounded-full ${color}`} />;
 }
 

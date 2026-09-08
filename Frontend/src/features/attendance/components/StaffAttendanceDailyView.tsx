@@ -16,7 +16,7 @@ const SBTN = [
   { v: 'PRESENT', l: 'P', f: 'Present', r: 'ring-emerald-400', bg: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100', on: 'bg-emerald-500 text-white shadow-sm' },
   { v: 'LATE', l: 'L', f: 'Late', r: 'ring-amber-400', bg: 'bg-amber-50 text-amber-700 hover:bg-amber-100', on: 'bg-amber-500 text-white shadow-sm' },
   { v: 'ABSENT', l: 'A', f: 'Absent', r: 'ring-red-400', bg: 'bg-red-50 text-red-600 hover:bg-red-100', on: 'bg-red-500 text-white shadow-sm' },
-  { v: 'LEAVE', l: 'Lv', f: 'Leave', r: 'ring-blue-400', bg: 'bg-blue-50 text-blue-600 hover:bg-blue-100', on: 'bg-blue-500 text-white shadow-sm' },
+  { v: 'LEAVE', l: 'Lv', f: 'Leave', r: 'ring-primary-400', bg: 'bg-primary-50 text-primary-600 hover:bg-primary-100', on: 'bg-primary-500 text-white shadow-sm' },
   { v: 'HALF_DAY', l: 'HD', f: 'Half Day', r: 'ring-cyan-400', bg: 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100', on: 'bg-cyan-500 text-white shadow-sm' },
 ];
 const STAT_DEFS = [
@@ -24,7 +24,7 @@ const STAT_DEFS = [
   { key: 'present', l: 'Present', a: 'bg-emerald-500' },
   { key: 'late', l: 'Late', a: 'bg-amber-500' },
   { key: 'absent', l: 'Absent', a: 'bg-red-500' },
-  { key: 'leave', l: 'Leave', a: 'bg-blue-500' },
+  { key: 'leave', l: 'Leave', a: 'bg-primary-500' },
   { key: 'halfDay', l: 'Half Day', a: 'bg-cyan-500' },
   { key: 'unmarked', l: 'Unmarked', a: 'bg-gray-300' },
 ];

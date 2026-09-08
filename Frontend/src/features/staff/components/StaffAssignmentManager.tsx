@@ -103,7 +103,7 @@ export default function StaffAssignmentManager({ teacherId, schoolId }: Props) {
                 <Badge>{a.class?.name ?? '—'}</Badge>
                 {a.section?.name && <Badge>{a.section.name}</Badge>}
                 {a.subject?.name ? (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700">{a.subject.name}</span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary-50 text-primary-700">{a.subject.name}</span>
                 ) : (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-50 text-green-700">Class Teacher</span>
                 )}

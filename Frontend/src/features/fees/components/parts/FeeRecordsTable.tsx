@@ -16,7 +16,7 @@ interface FeeRecordsTableProps {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const dot = status === 'PAID' ? 'bg-emerald-500' : status === 'PARTIAL' ? 'bg-amber-500' : status === 'OVERDUE' ? 'bg-red-500' : 'bg-blue-500';
+  const dot = status === 'PAID' ? 'bg-emerald-500' : status === 'PARTIAL' ? 'bg-amber-500' : status === 'OVERDUE' ? 'bg-red-500' : 'bg-primary-500';
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide ${getStatusColor(status)}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${dot} animate-pulse`} />

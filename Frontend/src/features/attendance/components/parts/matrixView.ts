@@ -16,7 +16,7 @@ export const CELL_STYLE: Record<string, string> = {
   PRESENT: 'bg-emerald-100 text-emerald-700',
   LATE: 'bg-amber-100 text-amber-700',
   ABSENT: 'bg-red-100 text-red-600',
-  LEAVE: 'bg-blue-100 text-blue-600',
+  LEAVE: 'bg-primary-100 text-primary-600',
   HALF_DAY: 'bg-cyan-100 text-cyan-700',
   MANUAL_OVERRIDE: 'bg-purple-100 text-purple-600',
 };

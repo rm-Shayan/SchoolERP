@@ -30,7 +30,7 @@ export function RecentEvents() {
         ))}
         {homeworkEvents.slice(0, 2).map((ev) => (
           <div key={`h${ev.id}`} className="flex items-center gap-2 text-sm">
-            <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-primary-400 shrink-0" />
             <span className="text-gray-700">New homework: <b>{ev.title}</b></span>
           </div>
         ))}

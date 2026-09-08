@@ -15,7 +15,7 @@ export interface AdmissionStage {
 // rejects it via updateStatus (dedicated /enroll endpoint creates the student).
 export const admissionStages: AdmissionStage[] = [
   { status: 'INQUIRY', label: 'Inquiry', dot: 'bg-gray-400', next: ['TEST_SCHEDULED'] },
-  { status: 'TEST_SCHEDULED', label: 'Test Scheduled', dot: 'bg-blue-400', next: ['TEST_PASSED', 'TEST_FAILED'] },
+  { status: 'TEST_SCHEDULED', label: 'Test Scheduled', dot: 'bg-primary-400', next: ['TEST_PASSED', 'TEST_FAILED'] },
   { status: 'TEST_PASSED', label: 'Test Passed', dot: 'bg-green-500', next: ['FORM_SUBMITTED'] },
   { status: 'FORM_SUBMITTED', label: 'Form Submitted', dot: 'bg-indigo-400', next: [] },
   { status: 'APPROVED', label: 'Approved', dot: 'bg-emerald-500', next: [] },

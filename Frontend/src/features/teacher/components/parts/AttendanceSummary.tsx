@@ -12,7 +12,7 @@ const STAT_CARDS = [
   { key: 'PRESENT', label: 'Present', emoji: '✅', bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-200' },
   { key: 'LATE', label: 'Late', emoji: '⏰', bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-200' },
   { key: 'ABSENT', label: 'Absent', emoji: '❌', bg: 'bg-red-50', text: 'text-red-700', ring: 'ring-red-200' },
-  { key: 'LEAVE', label: 'Leave', emoji: '🏖️', bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-blue-200' },
+  { key: 'LEAVE', label: 'Leave', emoji: '🏖️', bg: 'bg-primary-50', text: 'text-primary-700', ring: 'ring-primary-200' },
 ];
 
 const AttendanceSummary = memo(function AttendanceSummary({ counts, total }: Props) {

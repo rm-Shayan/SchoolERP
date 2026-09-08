@@ -82,7 +82,7 @@ export default function SectionMonthPanel({ sectionId }: Props) {
           { k: 'present', l: 'Present', c: 'text-emerald-600' },
           { k: 'late', l: 'Late', c: 'text-amber-600' },
           { k: 'absent', l: 'Absent', c: 'text-red-500' },
-          { k: 'leave', l: 'Leave', c: 'text-blue-600' },
+          { k: 'leave', l: 'Leave', c: 'text-primary-600' },
           { k: 'halfDay', l: 'Half', c: 'text-cyan-600' },
         ].map((it) => (
           <div key={it.k} className="flex items-center gap-1.5">

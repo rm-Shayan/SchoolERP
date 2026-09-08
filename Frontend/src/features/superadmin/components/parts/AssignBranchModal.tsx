@@ -59,8 +59,8 @@ export default function AssignBranchModal({ open, adminId, adminName, onClose, o
   return (
     <Modal open={open} onClose={onClose} title={`Assign ${adminName} to Branch`}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
-          <p className="text-xs text-blue-700">
+        <div className="rounded-lg bg-primary-50 border border-primary-200 p-3">
+          <p className="text-xs text-primary-700">
             If a branch already has an admin assigned, they will be automatically deactivated and the new admin will be assigned.
           </p>
         </div>

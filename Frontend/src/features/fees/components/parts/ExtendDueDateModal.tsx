@@ -82,11 +82,11 @@ export default function ExtendDueDateModal({ record, onClose, onExtended }: Exte
           value={String(values.dueDate)} onChange={handleChange}
           onBlur={() => handleBlur('dueDate')} error={errors.dueDate} />
 
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-start gap-2">
-          <svg className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="bg-primary-50 border border-primary-100 rounded-xl p-3 flex items-start gap-2">
+          <svg className="w-4 h-4 text-primary-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <p className="text-[11px] text-blue-700">Only this student's due date changes — others are unaffected.</p>
+          <p className="text-[11px] text-primary-700">Only this student's due date changes — others are unaffected.</p>
         </div>
 
         <div className="flex gap-3 pt-1">

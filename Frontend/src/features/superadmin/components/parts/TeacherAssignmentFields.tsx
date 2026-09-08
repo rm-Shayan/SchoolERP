@@ -58,9 +58,9 @@ export default function TeacherAssignmentFields({
   if (!schoolId) return null;
 
   return (
-    <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 space-y-3">
-      <p className="text-sm font-semibold text-blue-800">Teaching Assignment *</p>
-      <p className="text-xs text-blue-600">
+    <div className="rounded-xl border border-primary-200 bg-primary-50/60 p-4 space-y-3">
+      <p className="text-sm font-semibold text-primary-800">Teaching Assignment *</p>
+      <p className="text-xs text-primary-600">
         Assign this teacher to a class, section and subject.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

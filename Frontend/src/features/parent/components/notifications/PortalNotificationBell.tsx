@@ -80,7 +80,7 @@ export default function PortalNotificationBell() {
               {items.length === 0 ? (
                 <div className="px-4 py-10 text-center"><p className="text-sm text-gray-500">No notifications yet.</p></div>
               ) : items.map((n) => (
-                <div key={n.id} className={cn('px-4 py-3 border-b border-gray-50', !n.isRead && 'bg-blue-50/30')}>
+                <div key={n.id} className={cn('px-4 py-3 border-b border-gray-50', !n.isRead && 'bg-primary-50/30')}>
                   <div className="flex items-start justify-between gap-2">
                     <p className={cn('text-sm', n.isRead ? 'text-gray-700' : 'font-semibold text-gray-900')}>{n.title}</p>
                     <span className="text-[10px] text-gray-400 whitespace-nowrap">{formatDate(n.createdAt)}</span>

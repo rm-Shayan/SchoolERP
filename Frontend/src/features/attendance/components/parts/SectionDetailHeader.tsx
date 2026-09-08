@@ -20,7 +20,7 @@ const ITEMS = [
   { key: 'present' as const, label: 'Present', color: 'text-emerald-600' },
   { key: 'late' as const, label: 'Late', color: 'text-amber-600' },
   { key: 'absent' as const, label: 'Absent', color: 'text-red-500' },
-  { key: 'leave' as const, label: 'Leave', color: 'text-blue-600' },
+  { key: 'leave' as const, label: 'Leave', color: 'text-primary-600' },
 ];
 
 export default function SectionDetailHeader({ stats, view, year, month, onViewChange, onMonthYearChange }: Props) {

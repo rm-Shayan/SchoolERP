@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 interface Props { schoolId: string; onClose: () => void; }
 
 const SLOTS = [
-  { key: 'start', label: 'Scanning Opens', desc: 'QR gate scanning starts', color: 'bg-blue-500', defaultVal: '07:45', field: 'attendanceStartTime' as const },
+  { key: 'start', label: 'Scanning Opens', desc: 'QR gate scanning starts', color: 'bg-primary-500', defaultVal: '07:45', field: 'attendanceStartTime' as const },
   { key: 'cutoff', label: 'Late Cutoff', desc: 'Unmarked students → LATE', color: 'bg-amber-500', defaultVal: '08:30', field: 'attendanceCutoffTime' as const },
   { key: 'absent', label: 'Absent Cutoff', desc: 'Still no check-in → ABSENT', color: 'bg-red-500', defaultVal: '10:00', field: 'attendanceAbsentTime' as const },
   { key: 'alert', label: 'Alert Time', desc: 'Parents notified of late/absent', color: 'bg-purple-500', defaultVal: '09:30', field: 'attendanceAlertTime' as const },

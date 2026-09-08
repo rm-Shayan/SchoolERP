@@ -17,8 +17,8 @@ interface SmtpFieldsProps {
 export default function SmtpFields({ values, errors, onChange }: SmtpFieldsProps) {
   return (
     <div className="space-y-4">
-      <div className="p-3 bg-blue-50 rounded-xl border border-blue-200/60">
-        <p className="text-xs text-blue-700 font-medium">
+      <div className="p-3 bg-primary-50 rounded-xl border border-primary-200/60">
+        <p className="text-xs text-primary-700 font-medium">
           Optional — you can skip this for now. To send from your Gmail: Google Account → Security →
           enable 2-Step Verification → generate a 16-character code from App Passwords.
         </p>

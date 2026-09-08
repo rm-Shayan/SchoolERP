@@ -67,7 +67,7 @@ export default function ClassMonthGroup({ cls, slug, offDays, weeklyOff, year, m
                   <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">{sec.summary.present}P</span>
                   <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">{sec.summary.late}L</span>
                   <span className="rounded-full bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-600">{sec.summary.absent}A</span>
-                  <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600">{sec.summary.leave}Lv</span>
+                  <span className="rounded-full bg-primary-50 px-1.5 py-0.5 text-[10px] font-semibold text-primary-600">{sec.summary.leave}Lv</span>
                   {(sec.summary.halfDay ?? 0) > 0 && (
                     <span className="rounded-full bg-cyan-50 px-1.5 py-0.5 text-[10px] font-semibold text-cyan-700">{sec.summary.halfDay}HD</span>
                   )}

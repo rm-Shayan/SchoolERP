@@ -8,7 +8,7 @@ const STATUS_BTN = [
   { value: 'PRESENT', label: 'P', full: 'Present', ring: 'ring-emerald-400', bg: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100', active: 'bg-emerald-500 text-white shadow-sm' },
   { value: 'LATE', label: 'L', full: 'Late', ring: 'ring-amber-400', bg: 'bg-amber-50 text-amber-700 hover:bg-amber-100', active: 'bg-amber-500 text-white shadow-sm' },
   { value: 'ABSENT', label: 'A', full: 'Absent', ring: 'ring-red-400', bg: 'bg-red-50 text-red-600 hover:bg-red-100', active: 'bg-red-500 text-white shadow-sm' },
-  { value: 'LEAVE', label: 'Lv', full: 'Leave', ring: 'ring-blue-400', bg: 'bg-blue-50 text-blue-600 hover:bg-blue-100', active: 'bg-blue-500 text-white shadow-sm' },
+  { value: 'LEAVE', label: 'Lv', full: 'Leave', ring: 'ring-primary-400', bg: 'bg-primary-50 text-primary-600 hover:bg-primary-100', active: 'bg-primary-500 text-white shadow-sm' },
 ];
 
 interface Props {

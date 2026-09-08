@@ -14,7 +14,7 @@ interface PipelineSummaryProps {
 
 const STAGE_COLORS: Record<string, { bar: string; bg: string; text: string }> = {
   INQUIRY: { bar: 'bg-gray-400', bg: 'bg-gray-50', text: 'text-gray-700' },
-  TEST_SCHEDULED: { bar: 'bg-blue-500', bg: 'bg-blue-50', text: 'text-blue-700' },
+  TEST_SCHEDULED: { bar: 'bg-primary-500', bg: 'bg-primary-50', text: 'text-primary-700' },
   TEST_PASSED: { bar: 'bg-green-500', bg: 'bg-green-50', text: 'text-green-700' },
   TEST_FAILED: { bar: 'bg-red-400', bg: 'bg-red-50', text: 'text-red-600' },
   FORM_SUBMITTED: { bar: 'bg-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700' },

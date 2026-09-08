@@ -46,7 +46,7 @@ export function LeaveRequestForm({ studentId, studentName, onSuccess }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm text-blue-700">
+      <div className="bg-primary-50 border border-primary-100 rounded-xl p-3 text-sm text-primary-700">
         Requesting leave for: <span className="font-semibold">{studentName}</span>
       </div>
 

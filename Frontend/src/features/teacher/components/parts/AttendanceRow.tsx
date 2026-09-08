@@ -16,7 +16,7 @@ const STATUS_BG: Record<string, string> = {
   PRESENT: 'bg-emerald-50',
   LATE: 'bg-amber-50',
   ABSENT: 'bg-red-50',
-  LEAVE: 'bg-blue-50',
+  LEAVE: 'bg-primary-50',
 };
 
 const AttendanceRow = memo(function AttendanceRow({ student, status, pct, onToggle }: Props) {
@@ -25,7 +25,7 @@ const AttendanceRow = memo(function AttendanceRow({ student, status, pct, onTogg
     <tr className={cn('transition-colors', STATUS_BG[status] ?? 'hover:bg-gray-50')}>
       <td className="px-4 py-2.5 min-w-0">
         <div className="flex items-center gap-3">
-          <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0', status === 'PRESENT' ? 'bg-emerald-100 text-emerald-700' : status === 'LATE' ? 'bg-amber-100 text-amber-700' : status === 'ABSENT' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700')}>
+          <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0', status === 'PRESENT' ? 'bg-emerald-100 text-emerald-700' : status === 'LATE' ? 'bg-amber-100 text-amber-700' : status === 'ABSENT' ? 'bg-red-100 text-red-700' : 'bg-primary-100 text-primary-700')}>
             {student.firstName?.[0]}{student.lastName?.[0]}
           </div>
           <div className="min-w-0">
@@ -49,7 +49,7 @@ const AttendanceRow = memo(function AttendanceRow({ student, status, pct, onTogg
               onClick={() => onToggle(student.id, opt.value)}
               className={cn(
                 'w-9 h-8 rounded-lg text-[11px] font-bold transition-all',
-                status === opt.value ? cn(opt.classes, 'ring-2 ring-offset-1', opt.value === 'PRESENT' ? 'ring-emerald-300' : opt.value === 'LATE' ? 'ring-amber-300' : opt.value === 'ABSENT' ? 'ring-red-300' : 'ring-blue-300') : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600'
+                status === opt.value ? cn(opt.classes, 'ring-2 ring-offset-1', opt.value === 'PRESENT' ? 'ring-emerald-300' : opt.value === 'LATE' ? 'ring-amber-300' : opt.value === 'ABSENT' ? 'ring-red-300' : 'ring-primary-300') : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600'
               )}
             >
               {opt.label}

@@ -9,7 +9,7 @@ import { getOrgThemeColor } from '@/lib/utils/orgTheme';
 import { cn } from '@/lib/utils';
 
 const CAT_COLORS: Record<string, string> = {
-  HOMEWORK: 'bg-blue-100 text-blue-700', FEE_PAID: 'bg-green-100 text-green-700', FEE_DUE: 'bg-amber-100 text-amber-700',
+  HOMEWORK: 'bg-primary-100 text-primary-700', FEE_PAID: 'bg-green-100 text-green-700', FEE_DUE: 'bg-amber-100 text-amber-700',
   ATTENDANCE_LATE: 'bg-red-100 text-red-700', ATTENDANCE_ABSENT: 'bg-red-100 text-red-700',
   PTM_CREATED: 'bg-purple-100 text-purple-700', PTM_UPDATED: 'bg-purple-100 text-purple-700',
   EXAM_CREATED: 'bg-orange-100 text-orange-700', EXAM_PUBLISHED: 'bg-orange-100 text-orange-700',

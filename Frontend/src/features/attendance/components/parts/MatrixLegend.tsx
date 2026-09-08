@@ -4,7 +4,7 @@ const ITEMS = [
   ['bg-emerald-100 text-emerald-700', 'P', 'Present'],
   ['bg-amber-100 text-amber-700', 'L', 'Late'],
   ['bg-red-100 text-red-600', 'A', 'Absent'],
-  ['bg-blue-100 text-blue-600', 'LV', 'Leave'],
+  ['bg-primary-100 text-primary-600', 'LV', 'Leave'],
   ['bg-cyan-100 text-cyan-700', 'HD', 'Half Day'],
   ['bg-orange-50 text-orange-500', 'H', 'Off / Holiday'],
   ['bg-gray-50 text-gray-300', '·', 'Not marked'],

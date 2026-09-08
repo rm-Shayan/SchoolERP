@@ -11,7 +11,7 @@ const STAT_CONFIG: { label: string; key: keyof Summary; color: string }[] = [
   { label: 'Present', key: 'present', color: 'text-emerald-600' },
   { label: 'Late', key: 'late', color: 'text-amber-600' },
   { label: 'Absent', key: 'absent', color: 'text-red-600' },
-  { label: 'Unmarked', key: 'unmarked', color: 'text-blue-600' },
+  { label: 'Unmarked', key: 'unmarked', color: 'text-primary-600' },
 ];
 
 export default function AttendanceStatBoxes({ summary }: { summary: Summary }) {

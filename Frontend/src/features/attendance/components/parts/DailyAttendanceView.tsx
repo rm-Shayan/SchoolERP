@@ -129,7 +129,7 @@ export default function DailyAttendanceView() {
               { label: 'Present', value: data.summary.present, accent: 'bg-emerald-500' },
               { label: 'Late', value: data.summary.late, accent: 'bg-amber-500' },
               { label: 'Absent', value: data.summary.absent, accent: 'bg-red-500' },
-              { label: 'Leave', value: data.summary.leave, accent: 'bg-blue-500' },
+              { label: 'Leave', value: data.summary.leave, accent: 'bg-primary-500' },
               ...(data.summary.halfDay > 0 ? [{ label: 'Half Day', value: data.summary.halfDay, accent: 'bg-cyan-500' }] : []),
             ]} />
           )}

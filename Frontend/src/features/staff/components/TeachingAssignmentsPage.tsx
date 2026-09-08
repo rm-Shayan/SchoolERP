@@ -89,7 +89,7 @@ export default function TeachingAssignmentsPage() {
                       <span className="text-sm font-medium text-slate-800">{a.class?.name}</span>
                       {a.section && <span className="text-xs text-slate-400 ml-1.5">· Section {a.section.name}</span>}
                       {a.subject ? (
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700">Subject: {a.subject.name}</span>
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary-50 text-primary-700">Subject: {a.subject.name}</span>
                       ) : (
                         <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-50 text-green-700">Class Teacher</span>
                       )}

@@ -72,7 +72,7 @@ export default function StudyMaterialCard({ item, onEdit, onDelete, showActions 
       ) : (
         <div className={`h-44 flex items-center justify-center overflow-hidden ${themeColor ? 'bg-white' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`} style={themeColor ? { borderBottom: `1px solid ${themeColor}30` } : undefined}>
           <div className="flex flex-col items-center gap-2 text-center p-3">
-            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm ${themeColor ? 'text-white' : 'bg-blue-100 text-blue-600'}`} style={themeColor ? { background: `${themeColor}20` } : undefined}>
+            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm ${themeColor ? 'text-white' : 'bg-primary-100 text-primary-600'}`} style={themeColor ? { background: `${themeColor}20` } : undefined}>
               {config.icon}
             </div>
             <div className="text-xs font-medium text-gray-500">{config.label}</div>

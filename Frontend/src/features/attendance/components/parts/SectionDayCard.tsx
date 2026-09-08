@@ -11,7 +11,7 @@ const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = 
   PRESENT: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
   LATE: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
   ABSENT: { bg: 'bg-red-50', text: 'text-red-600', dot: 'bg-red-500' },
-  LEAVE: { bg: 'bg-blue-50', text: 'text-blue-600', dot: 'bg-blue-500' },
+  LEAVE: { bg: 'bg-primary-50', text: 'text-primary-600', dot: 'bg-primary-500' },
   HALF_DAY: { bg: 'bg-cyan-50', text: 'text-cyan-700', dot: 'bg-cyan-500' },
   MANUAL_OVERRIDE: { bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-500' },
 };
@@ -66,7 +66,7 @@ export default function SectionDayCard({ className, sectionName, sectionId, date
           <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">{p}P</span>
           <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">{l}L</span>
           <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">{a}A</span>
-          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-600">{lv}Lv</span>
+          <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-600">{lv}Lv</span>
           {hd > 0 && <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[11px] font-semibold text-cyan-700">{hd}HD</span>}
           <button type="button" onClick={handleExport} title="Export this section's CSV"
             className="rounded-lg p-1.5 text-gray-400 transition hover:bg-primary-50 hover:text-primary-700">

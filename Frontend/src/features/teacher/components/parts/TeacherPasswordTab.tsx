@@ -35,8 +35,8 @@ export default function TeacherPasswordTab() {
     if (/[a-z]/.test(val) && /[A-Z]/.test(val)) score += 1;
     if (/\d/.test(val)) score += 1;
     if (/[^A-Za-z0-9]/.test(val)) score += 1;
-    const bar = score <= 1 ? 'bg-red-500' : score === 2 ? 'bg-yellow-500' : score === 3 ? 'bg-blue-500' : 'bg-green-500';
-    const text = score <= 1 ? 'text-red-600' : score === 2 ? 'text-yellow-600' : score === 3 ? 'text-blue-600' : 'text-green-600';
+    const bar = score <= 1 ? 'bg-red-500' : score === 2 ? 'bg-yellow-500' : score === 3 ? 'bg-primary-500' : 'bg-green-500';
+    const text = score <= 1 ? 'text-red-600' : score === 2 ? 'text-yellow-600' : score === 3 ? 'text-primary-600' : 'text-green-600';
     const label = score <= 1 ? 'Weak' : score === 2 ? 'Fair' : score === 3 ? 'Good' : 'Strong';
     return { width: `${(score / 4) * 100}%`, bar, label, text };
   })();

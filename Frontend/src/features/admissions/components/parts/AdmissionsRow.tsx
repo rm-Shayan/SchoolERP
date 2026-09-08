@@ -17,7 +17,7 @@ interface AdmissionsRowProps {
 
 const stageBadge: Record<string, string> = {
   INQUIRY: 'bg-gray-100 text-gray-600 ring-gray-200',
-  TEST_SCHEDULED: 'bg-blue-50 text-blue-600 ring-blue-200',
+  TEST_SCHEDULED: 'bg-primary-50 text-primary-600 ring-primary-200',
   TEST_PASSED: 'bg-green-50 text-green-600 ring-green-200',
   TEST_FAILED: 'bg-red-50 text-red-600 ring-red-200',
   FORM_SUBMITTED: 'bg-indigo-50 text-indigo-600 ring-indigo-200',
@@ -29,7 +29,7 @@ const stageBadge: Record<string, string> = {
 
 const stageDots: Record<string, string> = {
   INQUIRY: 'bg-gray-400',
-  TEST_SCHEDULED: 'bg-blue-500',
+  TEST_SCHEDULED: 'bg-primary-500',
   TEST_PASSED: 'bg-green-500',
   TEST_FAILED: 'bg-red-400',
   FORM_SUBMITTED: 'bg-indigo-500',

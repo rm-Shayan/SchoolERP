@@ -16,7 +16,7 @@ export default function PaymentBalanceInfo({ totalAmount, paidAmount, due, enter
     <div className="relative overflow-hidden rounded-2xl border border-primary-100/50 p-5 space-y-4 bg-gradient-to-br from-primary-50/80 via-primary-50/50 to-primary-100/30 backdrop-blur-sm">
       {/* Decorative */}
       <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-primary-200/20 blur-xl" />
-      <div className="absolute -bottom-6 -left-6 w-16 h-16 rounded-full bg-blue-200/15 blur-lg" />
+      <div className="absolute -bottom-6 -left-6 w-16 h-16 rounded-full bg-primary-200/15 blur-lg" />
 
       <div className="relative flex items-start justify-between">
         <div>

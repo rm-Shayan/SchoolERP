@@ -16,7 +16,7 @@ export const STATUS_OPTIONS: { value: AttendanceStatus; label: string; classes: 
   { value: 'PRESENT', label: 'P', classes: 'bg-green-600 text-white' },
   { value: 'LATE', label: 'L', classes: 'bg-yellow-500 text-white' },
   { value: 'ABSENT', label: 'A', classes: 'bg-red-600 text-white' },
-  { value: 'LEAVE', label: 'LV', classes: 'bg-blue-500 text-white' },
+  { value: 'LEAVE', label: 'LV', classes: 'bg-primary-500 text-white' },
   { value: 'HALF_DAY', label: 'HD', classes: 'bg-cyan-600 text-white' },
 ];
 

@@ -12,7 +12,7 @@ const TYPE_STYLES: Record<string, { bg: string; text: string; icon: string }> = 
   NEGATIVE: { bg: 'bg-red-100', text: 'text-red-700', icon: '!' },
   NEUTRAL: { bg: 'bg-gray-100', text: 'text-gray-600', icon: '•' },
   WARNING: { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: '⚠' },
-  PRAISE: { bg: 'bg-blue-100', text: 'text-blue-700', icon: '★' },
+  PRAISE: { bg: 'bg-primary-100', text: 'text-primary-700', icon: '★' },
 };
 
 function getTypeStyle(type: string) {

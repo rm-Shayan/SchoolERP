@@ -39,7 +39,7 @@ export function getInitials(name: string) {
 export function getStatusColor(status: string) {
   const colors: Record<string, string> = {
     ACTIVE: 'bg-green-100 text-green-800',
-    GRADUATED: 'bg-blue-100 text-blue-800',
+    GRADUATED: 'bg-primary-100 text-primary-800',
     DROPPED_OUT: 'bg-red-100 text-red-800',
     TRANSFERRED_OUT: 'bg-yellow-100 text-yellow-800',
     PAID: 'bg-green-100 text-green-800',
@@ -49,10 +49,10 @@ export function getStatusColor(status: string) {
     PRESENT: 'bg-green-100 text-green-800',
     ABSENT: 'bg-red-100 text-red-800',
     LATE: 'bg-yellow-100 text-yellow-800',
-    LEAVE: 'bg-blue-100 text-blue-800',
+    LEAVE: 'bg-primary-100 text-primary-800',
     ENROLLED: 'bg-green-100 text-green-800',
     INQUIRY: 'bg-gray-100 text-gray-800',
-    TEST_SCHEDULED: 'bg-blue-100 text-blue-800',
+    TEST_SCHEDULED: 'bg-primary-100 text-primary-800',
     TEST_PASSED: 'bg-green-100 text-green-800',
     TEST_FAILED: 'bg-red-100 text-red-800',
     FORM_SUBMITTED: 'bg-indigo-100 text-indigo-800',

@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 const DAY_NAMES = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_COLS = [1, 2, 3, 4, 5, 6, 7];
 const SUBJECT_COLORS = [
-  'bg-blue-100 text-blue-700 border-blue-200',
+  'bg-primary-100 text-primary-700 border-primary-200',
   'bg-emerald-100 text-emerald-700 border-emerald-200',
   'bg-violet-100 text-violet-700 border-violet-200',
   'bg-amber-100 text-amber-700 border-amber-200',

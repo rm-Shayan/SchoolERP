@@ -80,13 +80,13 @@ export default function TimetableImportModal({ open, sectionId, onClose, onImpor
               <p className="text-xs text-amber-800"><span className="font-semibold">Columns:</span> {cols.join(', ')}</p>
               <Button size="sm" variant="outline" onClick={downloadTemplate}>Download Sample</Button>
             </div>
-            <div className="flex items-center gap-3 rounded-lg bg-blue-50 border border-blue-200 p-3">
+            <div className="flex items-center gap-3 rounded-lg bg-primary-50 border border-primary-200 p-3">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={multiSection} onChange={(e) => setMultiSection(e.target.checked)}
                   className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-                <span className="text-sm font-medium text-blue-800">Import to multiple sections</span>
+                <span className="text-sm font-medium text-primary-800">Import to multiple sections</span>
               </label>
-              <span className="text-xs text-blue-600">— add a &quot;Section&quot; column in your Excel</span>
+              <span className="text-xs text-primary-600">— add a &quot;Section&quot; column in your Excel</span>
             </div>
             <div onClick={() => fileRef.current?.click()} className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-primary-400 hover:bg-primary-50/40 transition-colors">
               <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />

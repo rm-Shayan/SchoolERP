@@ -1,6 +1,6 @@
 /** Deterministic color palette for timetable subject cells. */
 const PALETTE = [
-  { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', sub: 'text-blue-500', dot: 'bg-blue-400' },
+  { bg: 'bg-primary-50', border: 'border-primary-200', text: 'text-primary-800', sub: 'text-primary-500', dot: 'bg-primary-400' },
   { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-800', sub: 'text-emerald-500', dot: 'bg-emerald-400' },
   { bg: 'bg-violet-50', border: 'border-violet-200', text: 'text-violet-800', sub: 'text-violet-500', dot: 'bg-violet-400' },
   { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800', sub: 'text-amber-500', dot: 'bg-amber-400' },

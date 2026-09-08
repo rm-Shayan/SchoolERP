@@ -112,7 +112,7 @@ export default function AdmissionActionsModal({ applicant, onClose, onChanged, o
         <StageProgress current={applicant.status} />
 
         {enrolled ? (
-          <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-700">
+          <div className="rounded-lg bg-primary-50 border border-primary-200 px-4 py-3 text-sm text-primary-700">
             <strong>Student enrolled.</strong> Go to the <em>Students</em> section for the photo and ID card.
           </div>
         ) : (
