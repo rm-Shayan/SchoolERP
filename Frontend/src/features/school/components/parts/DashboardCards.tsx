@@ -2,6 +2,7 @@
 
 import type { AdmissionFunnelStats } from '@/lib/api/admissionService';
 import { Card, CardHeader, CardContent, Badge } from '@/features/shared/components';
+import { getOrgThemeColor } from '@/lib/utils/orgTheme';
 
 export function Icon({ d }: { d: string }) {
   return (
@@ -23,10 +24,12 @@ function CardShimmer() {
 }
 
 export function FunnelCard({ funnel, loading }: { funnel: AdmissionFunnelStats | null; loading?: boolean }) {
+  const themeColor = getOrgThemeColor();
   const stages = Object.entries(funnel ?? {}).filter(([k]) => k !== 'total');
   const maxVal = Math.max(...stages.map(([, v]) => v as number), 1);
+  const cardBorder = themeColor ? 'border-0' : 'border border-gray-200/70';
   return (
-    <Card className="lg:col-span-6 relative flex flex-col min-h-[260px] sm:min-h-[320px]">
+    <Card className={`lg:col-span-6 relative flex flex-col min-h-[260px] sm:min-h-[320px] ${cardBorder}`}>
       {loading && !funnel && <CardShimmer />}
       <CardHeader className="flex items-center justify-between py-4">
         <h2 className="font-extrabold text-slate-900 tracking-tight">Admission Funnel</h2>
@@ -47,7 +50,7 @@ export function FunnelCard({ funnel, loading }: { funnel: AdmissionFunnelStats |
                     <span className="text-slate-900">{val} applicants</span>
                   </div>
                   <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full" style={{ width: `${pct}%` }} />
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: themeColor ? `linear-gradient(90deg, ${themeColor}, ${themeColor}cc)` : 'linear-gradient(90deg, #4f46e5, #4338ca)' }} />
                   </div>
                 </div>
               );

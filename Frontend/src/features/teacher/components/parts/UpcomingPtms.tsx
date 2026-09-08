@@ -5,12 +5,14 @@ import Link from 'next/link';
 import type { PTMEvent } from '@/lib/api/ptmService';
 import { Card, CardContent, EmptyState, Badge } from '@/features/shared/components';
 import { formatDate } from '@/lib/utils';
+import { getOrgThemeColor } from '@/lib/utils/orgTheme';
 
 interface UpcomingPtmsProps {
   sessions: PTMEvent[];
 }
 
 const UpcomingPtms = memo(function UpcomingPtms({ sessions }: UpcomingPtmsProps) {
+  const themeColor = getOrgThemeColor();
   const upcoming = useMemo(() => {
     const now = new Date();
     return sessions
@@ -29,15 +31,17 @@ const UpcomingPtms = memo(function UpcomingPtms({ sessions }: UpcomingPtmsProps)
     );
   }
 
+  const cardBorder = themeColor ? `border-[${themeColor}20]` : 'border-gray-200/70';
+  const itemStyle = themeColor ? `bg-[${themeColor}08] border-[${themeColor}18]` : 'bg-gray-50 border-gray-100';
   return (
-    <Card>
+    <Card className={`${themeColor ? 'border-0' : cardBorder}`}>
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-900">Upcoming PTMs</h3>
           <Link href="/teacher/ptm" className="text-xs text-primary-600 hover:text-primary-700 font-medium">View all</Link>
         </div>
         {upcoming.map((s) => (
-          <div key={s.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+          <div key={s.id} className={`flex items-center justify-between gap-3 p-3 rounded-xl border transition-colors ${itemStyle}`}>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-gray-900 truncate">{s.title}</p>
               <p className="text-xs text-gray-500 mt-0.5">{formatDate(s.scheduledAt)}{s.venue ? ` · ${s.venue}` : ''}</p>

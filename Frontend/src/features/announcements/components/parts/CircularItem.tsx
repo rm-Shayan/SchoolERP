@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Badge, Button } from '@/features/shared/components';
 import type { Circular } from '@/lib/api/circularService';
 import { formatDate } from '@/lib/utils';
+import { getOrgThemeColor } from '@/lib/utils/orgTheme';
 import { AUDIENCE_BADGE, AUDIENCE_LABEL, AUDIENCE_ICON } from './audienceMeta';
 
 interface CircularItemProps {
@@ -13,14 +14,19 @@ interface CircularItemProps {
 }
 
 export default function CircularItem({ circular: c, deleting, onDelete }: CircularItemProps) {
+  const themeColor = getOrgThemeColor();
+  const iconBg = themeColor
+    ? `bg-gradient-to-br from-[${themeColor}15] to-[${themeColor}25] text-[${themeColor}] ring-[${themeColor}30]`
+    : 'bg-gradient-to-br from-primary-50 to-primary-100 text-primary-600 ring-1 ring-primary-100';
   return (
     <motion.li
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="group relative flex gap-4 rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-200/70 hover:shadow-[0_10px_30px_rgba(124,58,237,0.09)]"
+      className="group relative flex gap-4 rounded-2xl border bg-white p-4 sm:p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(124,58,237,0.09)]"
+      style={themeColor ? { borderColor: `${themeColor}30`, boxShadow: `0 1px 3px ${themeColor}08` } : { borderColor: '#e2e8f0' }}
     >
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 text-primary-600 ring-1 ring-primary-100">
+      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ${iconBg}`}>
         {AUDIENCE_ICON[c.audience]}
       </div>
 
