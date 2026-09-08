@@ -1,10 +1,18 @@
 import homeworkRepository from "./repository.js";
 import prisma from "../../config/db.js";
+import redis from "../../config/redis.js";
 import ApiError from "../../lib/utils/ApiError.js";
 import { assertOwnSchool, assertSchoolAccess } from "../../lib/scope.js";
 import notificationService from "../../services/notification.service.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import { emitToRoom } from "../../config/websocket.js";
+
+function redisGet(key) {
+  try { return redis.get(key).then(JSON.parse).catch(() => null); } catch { return null; }
+}
+function redisSetEx(key, ttl, value) {
+  try { return redis.setEx(key, ttl, JSON.stringify(value)).catch(() => {}); } catch { /* fail silently */ }
+}
 
 class HomeworkService {
   /**
@@ -76,12 +84,18 @@ class HomeworkService {
     // Teachers sirf apne posts dekhein unless explicitly overridden
     const filterUserId = createdById || (user.role === "TEACHER" ? user.id : undefined);
 
-    return homeworkRepository.listBroadcastsBySchool(targetSchoolId, {
+    const cacheKey = `hw:broadcasts:${targetSchoolId}:${sectionId || "_"}:${filterUserId || "_"}:${page}:${pageSize}`;
+    const cached = await redisGet(cacheKey);
+    if (cached) return cached;
+
+    const result = await homeworkRepository.listBroadcastsBySchool(targetSchoolId, {
       sectionId,
       createdById: filterUserId,
       page: Math.max(1, parseInt(page, 10) || 1),
       pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50)),
     });
+    redisSetEx(cacheKey, 60, result);
+    return result;
   }
 
   async getBroadcast(user, id) {

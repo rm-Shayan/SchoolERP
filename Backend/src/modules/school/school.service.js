@@ -253,7 +253,14 @@ class SchoolService {
   }
 
   async getAnalytics(schoolId) {
-    return schoolRepository.branchAnalytics(schoolId, 12);
+    const cacheKey = `school:analytics:${schoolId}`;
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch (err) { /* fall through */ }
+    const result = await schoolRepository.branchAnalytics(schoolId, 12);
+    try { await redis.setEx(cacheKey, 300, JSON.stringify(result)); } catch (err) { /* non-blocking */ }
+    return result;
   }
 
   /**

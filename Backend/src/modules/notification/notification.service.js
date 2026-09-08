@@ -1,5 +1,13 @@
 import notificationRepository from "./repository.js";
+import redis from "../../config/redis.js";
 import { getEffectiveSchoolId, assertSchoolAccess } from "../../lib/scope.js";
+
+function redisGet(key) {
+  try { return redis.get(key).then(JSON.parse).catch(() => null); } catch { return null; }
+}
+function redisSetEx(key, ttl, value) {
+  try { return redis.setEx(key, ttl, JSON.stringify(value)).catch(() => {}); } catch { /* fail silently */ }
+}
 
 class NotificationModuleService {
   /**
@@ -40,14 +48,19 @@ class NotificationModuleService {
 
   async listLogs(user, { schoolId, status, channel, page = 1, pageSize = 50 }) {
     const scope = this._resolveScope(user, schoolId);
+    const cacheKey = `notif:log:${scope.schoolId || "platform"}:${scope.allBranches ? "all" : ""}:${status || "_"}:${channel || "_"}:${page}:${pageSize}`;
+    const cached = await redisGet(cacheKey);
+    if (cached) return cached;
 
-    return notificationRepository.listLogs(scope.schoolId, {
+    const result = await notificationRepository.listLogs(scope.schoolId, {
       allBranches: Boolean(scope.allBranches),
       status,
       channel,
       page: Math.max(1, parseInt(page, 10) || 1),
       pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50)),
     });
+    redisSetEx(cacheKey, 30, result);
+    return result;
   }
 }
 
