@@ -28,7 +28,7 @@ function StudentRow({ g, onCollect, onViewVoucher, onRemind, readOnly }: {
     <tr className="group transition-colors hover:bg-primary-50/30 border-b border-gray-50 last:border-0">
       <td className="py-3.5 px-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-indigo-600 text-xs font-bold text-white shadow-sm group-hover:scale-105 transition-transform">{g.firstName[0]}{g.lastName[0]}</div>
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-xs font-bold text-white shadow-sm group-hover:scale-105 transition-transform">{g.firstName[0]}{g.lastName[0]}</div>
           <div className="min-w-0"><p className="font-semibold text-gray-900 text-sm">{g.firstName} {g.lastName}</p><p className="text-[11px] text-gray-400 truncate">{g.className} {g.sectionName} {g.rollNumber ? `· #${g.rollNumber}` : ''}</p></div>
         </div>
       </td>

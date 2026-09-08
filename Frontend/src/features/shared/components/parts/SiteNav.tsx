@@ -36,7 +36,7 @@ export default function SiteNav() {
 >
   <BrandLogo />
 
-  <h3 className="bg-gradient-to-r from-primary-600 via-indigo-600 to-purple-600 bg-clip-text text-xl font-extrabold tracking-tight text-transparent">
+  <h3 className="bg-gradient-to-r from-primary-600 via-primary-600 to-primary-600 bg-clip-text text-xl font-extrabold tracking-tight text-transparent">
     SchoolERP
   </h3>
 </Link>

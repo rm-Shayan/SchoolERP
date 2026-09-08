@@ -20,7 +20,7 @@ export default function OrgNav({ org }: OrgNavProps) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const admissionHref = `/o/${org.slug}/admission`;
-  const theme = org.themeColor || '#2563eb';
+  const theme = org.themeColor || '#6366f1';
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);

@@ -18,7 +18,7 @@ export const CELL_STYLE: Record<string, string> = {
   ABSENT: 'bg-red-100 text-red-600',
   LEAVE: 'bg-primary-100 text-primary-600',
   HALF_DAY: 'bg-cyan-100 text-cyan-700',
-  MANUAL_OVERRIDE: 'bg-purple-100 text-purple-600',
+  MANUAL_OVERRIDE: 'bg-primary-100 text-primary-600',
 };
 
 export const DOW_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];

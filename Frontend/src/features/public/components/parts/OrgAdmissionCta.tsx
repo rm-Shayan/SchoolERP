@@ -36,7 +36,7 @@ export default function OrgAdmissionCta({ org, gradient }: OrgAdmissionCtaProps)
             <Link
               href={`/o/${org.slug}/admission`}
               className="group inline-flex items-center gap-2 rounded-full bg-white px-10 py-4 text-sm font-bold shadow-2xl shadow-black/15 transition-all duration-300 hover:scale-[1.03]"
-              style={{ color: org.themeColor || '#2563eb' }}
+              style={{ color: org.themeColor || '#6366f1' }}
             >
               Apply for Admission
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">

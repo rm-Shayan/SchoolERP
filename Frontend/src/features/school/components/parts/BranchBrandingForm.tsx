@@ -52,7 +52,7 @@ export default function BranchBrandingForm() {
     }
   };
 
-  const scale = buildPrimaryScale(themeColor || '#2563eb');
+  const scale = buildPrimaryScale(themeColor || '#6366f1');
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -63,7 +63,7 @@ export default function BranchBrandingForm() {
         </div>
         <div className="p-5">
           <div className="rounded-xl overflow-hidden border border-gray-100">
-            <div className="px-5 py-4" style={{ backgroundColor: scale?.['600'] || '#2563eb' }}>
+            <div className="px-5 py-4" style={{ backgroundColor: scale?.['600'] || '#6366f1' }}>
               <div className="flex items-center gap-3">
                 {displayLogo ? (
                   <img src={displayLogo} alt="Logo" className="h-8 w-8 rounded-full object-contain bg-white/10 p-0.5" />
@@ -99,7 +99,7 @@ export default function BranchBrandingForm() {
       {/* Theme Color */}
       <div className="space-y-3">
         <p className="text-sm font-semibold text-slate-700">Branch Theme Color</p>
-        <ThemeColorPicker value={themeColor || '#2563eb'} onChange={setThemeColor} />
+        <ThemeColorPicker value={themeColor || '#6366f1'} onChange={setThemeColor} />
         <p className="text-xs text-gray-400">
           Only this branch's theme will change — other branches won&apos;t be affected.
         </p>

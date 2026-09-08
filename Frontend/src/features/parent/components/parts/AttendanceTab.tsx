@@ -103,7 +103,7 @@ function SummaryCards({ summary }: { summary: PortalAttendanceSummary }) {
     { label: 'Present', value: summary.present, color: '#22c55e' },
     { label: 'Late', value: summary.late, color: '#f59e0b' },
     { label: 'Absent', value: summary.absent, color: '#ef4444' },
-    { label: 'Leave', value: summary.leave, color: '#3b82f6' },
+    { label: 'Leave', value: summary.leave, color: '#6366f1' },
     ...(summary.halfDay > 0 ? [{ label: 'Half Day', value: summary.halfDay, color: '#0891b2' }] : []),
   ];
   return (

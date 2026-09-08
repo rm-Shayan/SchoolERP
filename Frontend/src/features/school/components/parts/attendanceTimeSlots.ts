@@ -2,7 +2,7 @@ export const TIME_SLOTS = [
   { key: 'attendanceStartTime', label: 'Scan Start', desc: 'QR scanning opens', color: 'bg-primary-500', defaultVal: '07:45' },
   { key: 'attendanceCutoffTime', label: 'Late Cutoff', desc: 'Unmarked → LATE', color: 'bg-amber-500', defaultVal: '08:30' },
   { key: 'attendanceAbsentTime', label: 'Absent Cutoff', desc: 'Still late → ABSENT', color: 'bg-red-500', defaultVal: '10:00' },
-  { key: 'attendanceAlertTime', label: 'Alert Time', desc: 'Parent notifications', color: 'bg-purple-500', defaultVal: '09:30' },
+  { key: 'attendanceAlertTime', label: 'Alert Time', desc: 'Parent notifications', color: 'bg-primary-500', defaultVal: '09:30' },
 ] as const;
 
 export type TimeSlotKey = (typeof TIME_SLOTS)[number]['key'];

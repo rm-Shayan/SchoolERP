@@ -11,7 +11,7 @@ import Reveal from './Reveal';
 
 export default function PublicLandingPage() {
   return (
-    <div className="superadmin-theme min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-violet-50/20 text-slate-900">
+    <div className="superadmin-theme min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-primary-50/20 text-slate-900">
       <SiteNav />
       <main>
         <Hero />

@@ -59,7 +59,7 @@ export default function ExamSheetTab() {
             <CardContent className="p-4">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 flex-col items-center justify-center rounded-xl text-white shadow-sm" style={{ background: theme || '#2563eb' }}>
+                  <div className="flex h-12 w-12 flex-col items-center justify-center rounded-xl text-white shadow-sm" style={{ background: theme || '#6366f1' }}>
                     <span className="text-[8px] font-bold tracking-widest opacity-90">{MONTHS[start.getMonth()]}</span>
                     <span className="text-base font-black leading-none">{start.getDate()}</span>
                   </div>

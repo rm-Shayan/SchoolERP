@@ -32,7 +32,7 @@ export function PortalHeader({ title, subtitle, onLogout }: PortalHeaderProps) {
       className="sticky top-0 z-20 text-white shadow-lg"
       style={{ background: color ? `linear-gradient(135deg, ${color}, ${color}dd)` : undefined }}
     >
-      {!color && <div className="absolute inset-0 bg-gradient-to-r from-primary-600 to-indigo-600" />}
+      {!color && <div className="absolute inset-0 bg-gradient-to-r from-primary-600 to-primary-600" />}
       <div className="relative max-w-4xl mx-auto px-4 py-3.5 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold tracking-tight">{title}</h1>

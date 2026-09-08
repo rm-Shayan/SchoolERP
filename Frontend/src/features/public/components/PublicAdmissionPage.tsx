@@ -51,7 +51,7 @@ export default function PublicAdmissionPage() {
     );
   }
 
-  const theme = org.themeColor || '#2563eb';
+  const theme = org.themeColor || '#6366f1';
 
   useEffect(() => {
     applyPortalThemeToRoot(org.themeColor);

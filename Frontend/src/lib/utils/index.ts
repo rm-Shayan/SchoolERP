@@ -55,7 +55,7 @@ export function getStatusColor(status: string) {
     TEST_SCHEDULED: 'bg-primary-100 text-primary-800',
     TEST_PASSED: 'bg-green-100 text-green-800',
     TEST_FAILED: 'bg-red-100 text-red-800',
-    FORM_SUBMITTED: 'bg-indigo-100 text-indigo-800',
+    FORM_SUBMITTED: 'bg-primary-100 text-primary-800',
     APPROVED: 'bg-green-100 text-green-800',
     FEE_PENDING: 'bg-yellow-100 text-yellow-800',
     REJECTED: 'bg-red-100 text-red-800',

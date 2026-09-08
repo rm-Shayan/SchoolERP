@@ -9,7 +9,7 @@ export const BADGE: Record<string, string> = {
   ABSENT: 'bg-red-50 text-red-700 border-red-200',
   LEAVE: 'bg-primary-50 text-primary-700 border-primary-200',
   HALF_DAY: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-  MANUAL_OVERRIDE: 'bg-purple-50 text-purple-700 border-purple-200',
+  MANUAL_OVERRIDE: 'bg-primary-50 text-primary-700 border-primary-200',
 };
 
 export const DOT: Record<string, string> = {
@@ -18,7 +18,7 @@ export const DOT: Record<string, string> = {
   ABSENT: 'bg-red-400',
   LEAVE: 'bg-primary-400',
   HALF_DAY: 'bg-cyan-400',
-  MANUAL_OVERRIDE: 'bg-purple-400',
+  MANUAL_OVERRIDE: 'bg-primary-400',
 };
 
 export const time = (iso?: string) =>

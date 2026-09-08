@@ -57,7 +57,7 @@ function AttendanceRing({ percentage, summary }: { percentage: number; summary: 
           <StatChip label="Present" value={summary.present} color="#22c55e" />
           <StatChip label="Late" value={summary.late} color="#f59e0b" />
           <StatChip label="Absent" value={summary.absent} color="#ef4444" />
-          <StatChip label="Leave" value={summary.leave} color="#3b82f6" />
+          <StatChip label="Leave" value={summary.leave} color="#6366f1" />
         </div>
       </CardContent>
     </Card>
@@ -127,12 +127,12 @@ function QuickStats({ homeworkCount, circularCount, studyMaterialCount, outstand
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       {items.map((s) => (
         <Card key={s.label} className="p-4 text-center hover:shadow-md transition-shadow">
-          <div className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center" style={{ background: s.isAlert ? '#fef2f2' : theme ? `${theme}12` : '#eff6ff' }}>
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke={s.isAlert ? '#ef4444' : theme || '#3b82f6'}>
+          <div className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center" style={{ background: s.isAlert ? '#fef2f2' : theme ? `${theme}12` : '#eef2ff' }}>
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke={s.isAlert ? '#ef4444' : theme || '#6366f1'}>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={s.icon} />
             </svg>
           </div>
-          <p className="text-xl font-bold" style={{ color: s.isAlert ? '#ef4444' : theme || '#2563eb' }}>{s.value}</p>
+          <p className="text-xl font-bold" style={{ color: s.isAlert ? '#ef4444' : theme || '#6366f1' }}>{s.value}</p>
           <p className="text-[11px] text-gray-500 mt-0.5 font-medium">{s.label}</p>
         </Card>
       ))}

@@ -11,7 +11,7 @@ interface OrgHeroProps {
 }
 
 export default function OrgHero({ org, gradient }: OrgHeroProps) {
-  const theme = org.themeColor || '#2563eb';
+  const theme = org.themeColor || '#6366f1';
   const [copied, setCopied] = useState(false);
 
   const copyLink = () => {
