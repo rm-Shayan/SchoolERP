@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
@@ -23,6 +23,7 @@ export default function NotificationMenu() {
   const user = useAppSelector((s) => s.auth.user);
   const { portalItems, portalUnread } = useAppSelector((s) => s.notifications);
   const dispatch = useAppDispatch();
+  const menuRef = useRef<HTMLDivElement>(null);
   const schoolId = school?.id;
   const organizationId = user?.organizationId;
   const themeColor = organization?.themeColor || school?.themeColor || '#6366f1';
@@ -74,66 +75,92 @@ export default function NotificationMenu() {
 
   const toggle = useCallback(() => setOpen((o) => !o), []);
 
+  // Close on outside click (LinkedIn behavior)
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
   return (
-    <div className="relative">
+    <div className="relative" ref={menuRef}>
+      {/* Bell button — LinkedIn style: light bg when open, not solid color */}
       <button
         onClick={toggle}
         className={cn(
-          'relative p-2 rounded-lg transition-all duration-200',
+          'relative p-2 rounded-full transition-colors duration-150',
           open
-            ? 'text-white shadow-sm'
-            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50',
+            ? 'bg-black/[0.08] text-gray-900'
+            : 'text-gray-500 hover:bg-black/[0.06] hover:text-gray-700',
         )}
-        style={open ? { backgroundColor: themeColor } : undefined}
         aria-label="Notifications"
       >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         {portalUnread > 0 && (
           <span
-            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm"
+            className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 text-white text-[9px] font-bold rounded-full flex items-center justify-center"
             style={{ backgroundColor: themeColor }}
           >
-            {portalUnread > 9 ? '9+' : portalUnread}
+            {portalUnread > 99 ? '99+' : portalUnread > 9 ? '9+' : portalUnread}
           </span>
         )}
       </button>
-      {open && (<>
-        <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+
+      {/* Dropdown — LinkedIn style */}
+      {open && (
         <div
-          className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] sm:w-96 rounded-xl shadow-lg border z-50 overflow-hidden"
-          style={{
-            backgroundColor: '#fff',
-            borderColor: `${themeColor}18`,
-            boxShadow: `0 4px 24px ${themeColor}12, 0 2px 8px rgba(0,0,0,0.06)`,
-          }}
+          className="absolute right-0 mt-1 w-[380px] max-w-[calc(100vw-2rem)] bg-white rounded-lg border border-gray-200 z-50 overflow-hidden"
+          style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08)' }}
         >
-          <div
-            className="flex items-center justify-between px-4 py-3 border-b"
-            style={{ borderColor: `${themeColor}15`, backgroundColor: `${themeColor}06` }}
-          >
-            <p className="text-sm font-semibold text-gray-900">Notifications</p>
-            <div className="flex items-center gap-3">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <h3 className="text-base font-semibold text-gray-900">Notifications</h3>
+            <div className="flex items-center gap-2">
               {portalUnread > 0 && (
-                <button onClick={handleMarkAllRead} className="text-[11px] font-semibold hover:underline" style={{ color: themeColor }}>
-                  Mark all read
+                <button
+                  onClick={handleMarkAllRead}
+                  className="text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md transition-colors"
+                >
+                  Mark all as read
                 </button>
               )}
-              <Link href="/notifications" onClick={() => setOpen(false)} className="text-[11px] text-gray-500 hover:text-gray-700">
-                View all →
+              <Link
+                href="/notifications"
+                onClick={() => setOpen(false)}
+                className="text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md transition-colors"
+              >
+                View all
               </Link>
             </div>
           </div>
-          <div className="max-h-96 overflow-y-auto">
+
+          {/* Items */}
+          <div className="max-h-[480px] overflow-y-auto">
             {portalItems.length === 0 ? (
-              <div className="px-4 py-10 text-center"><p className="text-sm text-gray-500">No notifications yet.</p></div>
-            ) : portalItems.map((n) => (
-              <NotificationItem key={n.id} n={n} themeColor={themeColor} onRead={handleMarkRead} onDelete={handleDelete} />
-            ))}
+              <div className="px-4 py-16 text-center">
+                <p className="text-sm font-medium text-gray-500">No notifications yet</p>
+              </div>
+            ) : (
+              portalItems.map((n) => (
+                <NotificationItem
+                  key={n.id}
+                  n={n}
+                  themeColor={themeColor}
+                  onRead={handleMarkRead}
+                  onDelete={handleDelete}
+                />
+              ))
+            )}
           </div>
         </div>
-      </>)}
+      )}
     </div>
   );
 }

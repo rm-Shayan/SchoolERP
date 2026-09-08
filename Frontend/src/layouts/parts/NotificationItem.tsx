@@ -18,11 +18,6 @@ function timeAgo(iso: string) {
   return `${Math.floor(hrs / 24)}d`;
 }
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : null;
-}
-
 interface Props {
   n: PortalNotification;
   themeColor?: string | null;
@@ -30,62 +25,43 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
-export default function NotificationItem({ n, themeColor, onRead, onDelete }: Props) {
-  const tc = themeColor || '#6366f1';
-  const rgb = hexToRgb(tc);
-
-  // LinkedIn/YouTube style: subtle tint for unread, transparent for read
-  // On hover: slightly more prominent tint
-  const baseBg = n.isRead
-    ? 'transparent'
-    : rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.06)` : '#f8fafc';
-  const hoverBg = n.isRead
-    ? (rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.04)` : '#f8fafc')
-    : (rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.10)` : '#f1f5f9');
-
+/**
+ * LinkedIn-style notification item:
+ * - Unread: very subtle tinted background, bold title
+ * - Read: white background, regular text
+ * - Hover: light gray overlay (neutral, not themed)
+ * - Click on unread: marks as read, bg returns to white
+ */
+export default function NotificationItem({ n, onRead, onDelete }: Props) {
   return (
     <div
       onClick={() => !n.isRead && onRead(n.id)}
-      className="group cursor-pointer px-4 py-3 border-b border-gray-50 transition-all duration-150"
-      style={{
-        backgroundColor: baseBg,
-        // CSS hover via onMouseEnter/Leave for reliable inline style override
-      }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = hoverBg; }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = baseBg; }}
+      className={cn(
+        'flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors duration-100',
+        // LinkedIn: unread gets very subtle tint, hover is neutral gray
+        !n.isRead ? 'bg-sky-50/60 hover:bg-sky-100/70' : 'hover:bg-gray-100/80',
+        'border-b border-gray-100 last:border-b-0',
+      )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-2.5 min-w-0">
-          <span className="text-base mt-0.5 shrink-0">{CAT_ICON[n.category] || '🔔'}</span>
-          <div className="min-w-0">
-            <p
-              className={cn('text-sm', n.isRead ? 'font-medium text-gray-700' : 'font-semibold')}
-              style={!n.isRead ? { color: tc } : undefined}
-            >
-              {n.title}
-            </p>
-            <p className={cn('text-xs mt-0.5 line-clamp-2', n.isRead ? 'text-gray-500' : 'text-gray-600')}>
-              {n.body}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className={cn('text-[10px] whitespace-nowrap', n.isRead ? 'text-gray-400' : 'text-gray-500')}>
-            {timeAgo(n.createdAt)}
-          </span>
-          {!n.isRead && (
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: tc }} />
-          )}
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(n.id); }}
-            className="opacity-0 group-hover:opacity-100 p-0.5 transition-opacity text-gray-400 hover:text-red-500"
-            title="Delete"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+      {/* Category icon */}
+      <span className="text-lg mt-0.5 shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100">
+        {CAT_ICON[n.category] || '🔔'}
+      </span>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <p className={cn('text-[13px] leading-snug', !n.isRead ? 'font-semibold text-gray-900' : 'font-medium text-gray-700')}>
+          {n.title}
+        </p>
+        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2 leading-relaxed">{n.body}</p>
+        <span className="text-[11px] text-gray-400 mt-1 block">{timeAgo(n.createdAt)}</span>
+      </div>
+
+      {/* Unread dot */}
+      <div className="shrink-0 mt-2">
+        {!n.isRead && (
+          <span className="block w-2 h-2 rounded-full bg-blue-500" />
+        )}
       </div>
     </div>
   );
