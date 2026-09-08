@@ -19,7 +19,7 @@ const stageBadge: Record<string, string> = {
   TEST_SCHEDULED: 'bg-primary-100 text-primary-700',
   TEST_PASSED: 'bg-green-100 text-green-700',
   TEST_FAILED: 'bg-red-100 text-red-700',
-  FORM_SUBMITTED: 'bg-indigo-100 text-indigo-700',
+  FORM_SUBMITTED: 'bg-primary-100 text-primary-700',
   APPROVED: 'bg-emerald-100 text-emerald-700',
   FEE_PENDING: 'bg-yellow-100 text-yellow-700',
   ENROLLED: 'bg-green-100 text-green-800',

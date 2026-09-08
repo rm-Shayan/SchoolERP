@@ -37,11 +37,11 @@ export default function LandingPage() {
   if (!mounted) return null;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-white to-violet-50/30">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-white to-primary-50/30">
       {/* Background orbs */}
       <div className="pointer-events-none absolute -left-32 top-16 h-80 w-80 rounded-full bg-primary-200/40 blur-[120px] portal-orb-drift" />
       <div className="pointer-events-none absolute -right-32 bottom-20 h-80 w-80 rounded-full bg-secondary-200/40 blur-[120px] portal-orb-drift-2" />
-      <div className="pointer-events-none absolute left-1/2 top-1/3 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-200/25 blur-[140px] portal-orb-drift" style={{ animationDelay: '5s' }} />
+      <div className="pointer-events-none absolute left-1/2 top-1/3 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-200/25 blur-[140px] portal-orb-drift" style={{ animationDelay: '5s' }} />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center px-6 py-12">
         {/* Logo + brand */}
@@ -73,7 +73,7 @@ export default function LandingPage() {
           </span>
           <h1 className="mt-6 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">
             Choose your{' '}
-            <span className="bg-gradient-to-r from-primary-600 to-violet-600 bg-clip-text text-transparent">portal</span>
+            <span className="bg-gradient-to-r from-primary-600 to-primary-600 bg-clip-text text-transparent">portal</span>
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg leading-8 text-slate-500">
             Portals are provisioned by your platform administrator. Pick the one that matches your role to continue.

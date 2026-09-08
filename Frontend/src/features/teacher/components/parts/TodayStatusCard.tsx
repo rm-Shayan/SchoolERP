@@ -96,7 +96,7 @@ const TodayStatusCard = memo(function TodayStatusCard({ todayRecord, recordByDat
             </div>
           )}
           {bestStreak > streak && (
-            <div className="flex items-center gap-1.5 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full ring-1 ring-purple-200/60">
+            <div className="flex items-center gap-1.5 bg-primary-50 text-primary-700 px-3 py-1.5 rounded-full ring-1 ring-primary-200/60">
               <span className="text-sm">🏆</span>
               <span className="text-sm font-bold tabular-nums">{bestStreak}</span>
               <span className="text-[10px] font-medium uppercase">best</span>

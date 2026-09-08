@@ -10,7 +10,7 @@ const DAY_COLS = [1, 2, 3, 4, 5, 6, 7];
 const SUBJECT_COLORS = [
   'bg-primary-100 text-primary-700 border-primary-200',
   'bg-emerald-100 text-emerald-700 border-emerald-200',
-  'bg-violet-100 text-violet-700 border-violet-200',
+  'bg-primary-100 text-primary-700 border-primary-200',
   'bg-amber-100 text-amber-700 border-amber-200',
   'bg-rose-100 text-rose-700 border-rose-200',
   'bg-cyan-100 text-cyan-700 border-cyan-200',

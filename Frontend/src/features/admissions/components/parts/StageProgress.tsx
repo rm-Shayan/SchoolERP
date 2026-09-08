@@ -25,7 +25,7 @@ const STATUS_INDEX: Record<string, number> = {
 const STATUS_COLORS: Record<string, { dot: string; line: string }> = {
   TEST_SCHEDULED: { dot: 'bg-primary-500', line: 'bg-primary-400' },
   TEST_PASSED: { dot: 'bg-green-500', line: 'bg-green-400' },
-  FORM_SUBMITTED: { dot: 'bg-indigo-500', line: 'bg-indigo-400' },
+  FORM_SUBMITTED: { dot: 'bg-primary-500', line: 'bg-primary-400' },
   APPROVED: { dot: 'bg-emerald-500', line: 'bg-emerald-400' },
   FEE_PENDING: { dot: 'bg-amber-500', line: 'bg-amber-400' },
   ENROLLED: { dot: 'bg-green-600', line: 'bg-green-500' },

@@ -16,7 +16,7 @@ const ACTION_COLOR: Record<string, string> = {
   PROMOTED: 'bg-green-100 text-green-700',
   REPEATED: 'bg-amber-100 text-amber-700',
   TRANSFERRED_SECTION: 'bg-primary-100 text-primary-700',
-  GRADUATED: 'bg-violet-100 text-violet-700',
+  GRADUATED: 'bg-primary-100 text-primary-700',
   DROPPED_OUT: 'bg-red-100 text-red-700',
 };
 

@@ -43,63 +43,68 @@ export function orgThemeStyle(themeColor?: string | null): CSSProperties | undef
 
 export const PRIMARY_STEPS = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'] as const;
 
+const THEME_STYLE_ID = 'org-dynamic-theme';
+
+function injectThemeStyle(css: string): void {
+  if (typeof document === 'undefined') return;
+  let el = document.getElementById(THEME_STYLE_ID) as HTMLStyleElement | null;
+  if (!el) {
+    el = document.createElement('style');
+    el.id = THEME_STYLE_ID;
+    document.head.appendChild(el);
+  }
+  el.textContent = css;
+}
+
+function removeThemeStyle(): void {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById(THEME_STYLE_ID);
+  if (el) el.remove();
+}
+
+function buildThemeCss(scale: Record<string, string>, selectors: string): string {
+  const vars = PRIMARY_STEPS.map(
+    (step) => `  --color-primary-${step}: ${scale[step]};`
+  ).join('\n');
+  return `${selectors} {\n${vars}\n}`;
+}
+
+function buildBlueThemeCss(scale: Record<string, string>, selectors: string): string {
+  const vars = PRIMARY_STEPS.map(
+    (step) => `  --color-primary-${step}: ${scale[step]};\n  --color-blue-${step}: ${scale[step]};`
+  ).join('\n');
+  return `${selectors} {\n${vars}\n}`;
+}
+
 /**
- * Apply org theme to <html> (:root) — not just the layout wrapper,
- * but every component (modals, dropdowns, portals, everything) gets themed.
- * Called from DashboardLayout's effect; null/invalid color clears overrides
- * (reverts to default violet).
+ * Apply org theme to :root via injected <style> tag with !important.
+ * This guarantees override of Tailwind v4's @theme block at every layer.
+ * Used by org admin portal (DashboardLayout).
  */
 export function applyOrgThemeToRoot(themeColor?: string | null): void {
   if (typeof document === 'undefined') return;
-  const root = document.documentElement.style;
   const scale = themeColor ? buildPrimaryScale(themeColor) : null;
-  if (!scale) {
-    clearOrgThemeFromRoot();
-    return;
-  }
-  for (const step of PRIMARY_STEPS) {
-    root.setProperty(`--color-primary-${step}`, scale[step]);
-  }
+  if (!scale) { clearOrgThemeFromRoot(); return; }
+  injectThemeStyle(buildThemeCss(scale, ':root'));
 }
 
 export function clearOrgThemeFromRoot(): void {
-  if (typeof document === 'undefined') return;
-  const root = document.documentElement.style;
-  for (const step of PRIMARY_STEPS) {
-    root.removeProperty(`--color-primary-${step}`);
-  }
+  removeThemeStyle();
 }
 
 /**
- * Portal (parent/student) theming — same as org admin portal: apply the org
- * color across the entire portal. The blue scale is also remapped to the org
- * color alongside the primary scale, because parent/student content components
- * use blue utilities (bg-blue-*, text-blue-*, ring-blue-*, etc.) — this ensures
- * every card, button, chip, and link matches the brand color exactly.
+ * Portal theming — overrides both --color-primary-* and --color-blue-* via
+ * injected <style> with !important, guaranteeing Tailwind v4 @theme override.
  */
-const BLUE_STEPS = PRIMARY_STEPS;
-
 export function applyPortalThemeToRoot(themeColor?: string | null): void {
   if (typeof document === 'undefined') return;
-  const root = document.documentElement.style;
   const scale = themeColor ? buildPrimaryScale(themeColor) : null;
-  if (!scale) {
-    clearPortalThemeFromRoot();
-    return;
-  }
-  for (const step of BLUE_STEPS) {
-    root.setProperty(`--color-blue-${step}`, scale[step]);
-    root.setProperty(`--color-primary-${step}`, scale[step]);
-  }
+  if (!scale) { clearPortalThemeFromRoot(); return; }
+  injectThemeStyle(buildBlueThemeCss(scale, ':root'));
 }
 
 export function clearPortalThemeFromRoot(): void {
-  if (typeof document === 'undefined') return;
-  const root = document.documentElement.style;
-  for (const step of BLUE_STEPS) {
-    root.removeProperty(`--color-blue-${step}`);
-    root.removeProperty(`--color-primary-${step}`);
-  }
+  removeThemeStyle();
 }
 
 export interface SidebarColors {
@@ -126,8 +131,6 @@ export function sidebarColors(themeColor?: string | null): SidebarColors {
   if (!themeColor) return DEFAULT_SIDEBAR;
   const rgb = hexToRgb(themeColor);
   if (!rgb) return DEFAULT_SIDEBAR;
-  // Darken the theme color just enough for white text readability,
-  // but keep it clearly tinted so the org brand is unmistakable.
   const bg = mix(rgb, 0, 0.42);
   const bgHover = mix(rgb, 0, 0.3);
   const activeBg = `${themeColor}35`;
@@ -138,8 +141,6 @@ export function sidebarColors(themeColor?: string | null): SidebarColors {
     activeBg,
     activeText: '#ffffff',
     activeAccent,
-    // Bright, readable text on the tinted themed background — group headers
-    // and dropdown items must stay clearly visible.
     text: mix(rgb, 255, 0.82),
     textMuted: mix(rgb, 255, 0.78),
     textHover: '#ffffff',

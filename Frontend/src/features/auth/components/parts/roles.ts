@@ -55,11 +55,11 @@ export const ROLES: RoleOption[] = [
       features: ['Section attendance', 'Homework posts', 'Conduct remarks', 'Timetable'],
     },
     card: {
-      iconBox: 'bg-indigo-100 text-indigo-700 group-hover:bg-indigo-600 group-hover:text-white',
-      border: 'hover:border-indigo-300',
-      arrow: 'group-hover:text-indigo-600',
+      iconBox: 'bg-primary-100 text-primary-700 group-hover:bg-primary-600 group-hover:text-white',
+      border: 'hover:border-primary-300',
+      arrow: 'group-hover:text-primary-600',
     },
-    chip: 'bg-indigo-100 text-indigo-700',
+    chip: 'bg-primary-100 text-primary-700',
   },
   {
     key: 'admin',

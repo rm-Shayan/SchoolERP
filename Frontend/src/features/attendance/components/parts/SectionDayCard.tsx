@@ -13,7 +13,7 @@ const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = 
   ABSENT: { bg: 'bg-red-50', text: 'text-red-600', dot: 'bg-red-500' },
   LEAVE: { bg: 'bg-primary-50', text: 'text-primary-600', dot: 'bg-primary-500' },
   HALF_DAY: { bg: 'bg-cyan-50', text: 'text-cyan-700', dot: 'bg-cyan-500' },
-  MANUAL_OVERRIDE: { bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-500' },
+  MANUAL_OVERRIDE: { bg: 'bg-primary-50', text: 'text-primary-700', dot: 'bg-primary-500' },
 };
 
 interface Props {

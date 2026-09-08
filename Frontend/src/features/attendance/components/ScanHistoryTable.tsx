@@ -6,14 +6,14 @@ interface Props { scans: LiveScanEvent[]; dark?: boolean; }
 
 const DOT: Record<string, string> = {
   PRESENT: 'bg-emerald-400', LATE: 'bg-amber-400', ABSENT: 'bg-red-400',
-  MANUAL_OVERRIDE: 'bg-purple-400',
+  MANUAL_OVERRIDE: 'bg-primary-400',
 };
 
 const BADGE: Record<string, string> = {
   PRESENT: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
   LATE: 'bg-amber-500/15 text-amber-400 border-amber-500/20',
   ABSENT: 'bg-red-500/15 text-red-400 border-red-500/20',
-  MANUAL_OVERRIDE: 'bg-purple-500/15 text-purple-400 border-purple-500/20',
+  MANUAL_OVERRIDE: 'bg-primary-500/15 text-primary-400 border-primary-500/20',
 };
 
 function ScanRow({ scan, dark }: { scan: LiveScanEvent; dark: boolean }) {

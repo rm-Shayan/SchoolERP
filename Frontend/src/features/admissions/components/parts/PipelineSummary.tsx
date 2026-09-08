@@ -17,7 +17,7 @@ const STAGE_COLORS: Record<string, { bar: string; bg: string; text: string }> = 
   TEST_SCHEDULED: { bar: 'bg-primary-500', bg: 'bg-primary-50', text: 'text-primary-700' },
   TEST_PASSED: { bar: 'bg-green-500', bg: 'bg-green-50', text: 'text-green-700' },
   TEST_FAILED: { bar: 'bg-red-400', bg: 'bg-red-50', text: 'text-red-600' },
-  FORM_SUBMITTED: { bar: 'bg-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700' },
+  FORM_SUBMITTED: { bar: 'bg-primary-500', bg: 'bg-primary-50', text: 'text-primary-700' },
   APPROVED: { bar: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700' },
   FEE_PENDING: { bar: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700' },
   ENROLLED: { bar: 'bg-green-600', bg: 'bg-green-50', text: 'text-green-800' },

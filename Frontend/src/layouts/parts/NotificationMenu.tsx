@@ -93,7 +93,7 @@ export default function NotificationMenu() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <p className="text-sm font-semibold text-gray-900">Notifications</p>
             <div className="flex items-center gap-3">
-              {portalUnread > 0 && <button onClick={handleMarkAllRead} className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800">Mark all read</button>}
+              {portalUnread > 0 && <button onClick={handleMarkAllRead} className="text-[11px] font-semibold text-primary-600 hover:text-primary-800">Mark all read</button>}
               <Link href="/notifications" onClick={() => setOpen(false)} className="text-[11px] text-gray-500 hover:text-gray-700">View all →</Link>
             </div>
           </div>

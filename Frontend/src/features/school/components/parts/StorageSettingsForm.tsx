@@ -38,8 +38,8 @@ export default function StorageSettingsForm({
 }: Props) {
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-3">
-        <p className="text-xs text-violet-700 font-medium">
+      <div className="rounded-xl border border-primary-200 bg-primary-50/60 p-3">
+        <p className="text-xs text-primary-700 font-medium">
           cloudinary.com → Dashboard → &quot;Product Environment&quot; — copy Cloud Name, API Key, and API Secret from here.
         </p>
       </div>
@@ -47,8 +47,8 @@ export default function StorageSettingsForm({
       {isOwn && setting && (
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100">
-              <svg className="w-4 h-4 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100">
+              <svg className="w-4 h-4 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v1H3V7z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 13h18v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4z" />
               </svg>
@@ -85,7 +85,7 @@ export default function StorageSettingsForm({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-4">
           <div className="flex items-center gap-2 mb-1">
-            <svg className="w-4 h-4 text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-4 h-4 text-primary-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
             <span className="text-sm font-semibold text-gray-900">Credentials</span>

@@ -14,7 +14,7 @@ const statusCols: { key: keyof Pick<AttendanceYearSummary, 'daysPresent' | 'days
   { key: 'daysLate', label: 'Late', cls: 'text-amber-600' },
   { key: 'daysAbsent', label: 'Absent', cls: 'text-rose-600' },
   { key: 'daysLeave', label: 'Leave', cls: 'text-sky-600' },
-  { key: 'daysManual', label: 'Manual', cls: 'text-violet-600' },
+  { key: 'daysManual', label: 'Manual', cls: 'text-primary-600' },
 ];
 
 export default function YearlyAttendanceHistory({ studentId }: Props) {

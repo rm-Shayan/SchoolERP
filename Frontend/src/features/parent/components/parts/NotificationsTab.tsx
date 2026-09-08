@@ -11,9 +11,9 @@ import { cn } from '@/lib/utils';
 const CAT_COLORS: Record<string, string> = {
   HOMEWORK: 'bg-primary-100 text-primary-700', FEE_PAID: 'bg-green-100 text-green-700', FEE_DUE: 'bg-amber-100 text-amber-700',
   ATTENDANCE_LATE: 'bg-red-100 text-red-700', ATTENDANCE_ABSENT: 'bg-red-100 text-red-700',
-  PTM_CREATED: 'bg-purple-100 text-purple-700', PTM_UPDATED: 'bg-purple-100 text-purple-700',
+  PTM_CREATED: 'bg-primary-100 text-primary-700', PTM_UPDATED: 'bg-primary-100 text-primary-700',
   EXAM_CREATED: 'bg-orange-100 text-orange-700', EXAM_PUBLISHED: 'bg-orange-100 text-orange-700',
-  LEAVE_REQUEST: 'bg-indigo-100 text-indigo-700', LEAVE_APPROVED: 'bg-green-100 text-green-700',
+  LEAVE_REQUEST: 'bg-primary-100 text-primary-700', LEAVE_APPROVED: 'bg-green-100 text-green-700',
   LEAVE_REJECTED: 'bg-red-100 text-red-700', CIRCULAR: 'bg-teal-100 text-teal-700',
   CONDUCT_REMARK: 'bg-pink-100 text-pink-700',
 };
