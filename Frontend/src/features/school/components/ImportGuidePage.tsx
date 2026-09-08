@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
+import { useRouter } from 'next/navigation';
 import { PageHeader, Card, Button } from '@/features/shared/components';
 import { studentService, staffService, staffAttendanceService } from '@/lib/api';
 import ImportSteps from './parts/ImportSteps';
@@ -55,6 +57,9 @@ const TIPS: Record<ImportType, string[]> = {
 };
 
 export default function ImportGuidePage() {
+  const { isAdmin } = useRoleAccess();
+  const router = useRouter();
+  if (!isAdmin) { router.replace('/branch/dashboard'); return null; }
   const [activeTab, setActiveTab] = useState<ImportType>('students');
   const columns = activeTab === 'students' ? STUDENT_COLUMNS : activeTab === 'staff' ? STAFF_COLUMNS : activeTab === 'staff-attendance' ? STAFF_ATTENDANCE_COLUMNS : TIMETABLE_MULTI_COLUMNS;
   const requiredCount = columns.filter((c) => c.req).length;

@@ -33,6 +33,7 @@ export default function SettingsPage() {
   const user = useAppSelector((s) => s.auth.user);
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const isAdminLevel = isSuperAdmin || user?.role === 'ADMIN';
+  const isReceptionist = user?.role === 'RECEPTIONIST';
   const [tab, setTab] = useState<TabKey>('profile');
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -96,7 +97,9 @@ export default function SettingsPage() {
                   <BranchBrandingForm key={school?.id} />
                 </div>
               )}
-              {!isAdminLevel && <BranchBrandingForm key={school?.id} />}
+              {!isAdminLevel && user?.role === 'RECEPTIONIST' && (
+                <p className="text-sm text-gray-500">Branding can only be changed by admin.</p>
+              )}
             </div>
           )}
           {tab === 'access' && <PortalAccessSection />}

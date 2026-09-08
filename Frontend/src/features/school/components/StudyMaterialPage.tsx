@@ -13,8 +13,8 @@ import { useRoleAccess } from '@/hooks/useRoleAccess';
 
 export default function StudyMaterialPage() {
   const { user, school } = useAppSelector((s) => s.auth);
-  const { role } = useRoleAccess();
-  const isReadOnly = role === 'RECEPTIONIST';
+  const { isReceptionist } = useRoleAccess();
+  const isReadOnly = isReceptionist;
   const schoolId = school?.id ?? user?.schoolId;
   const [items, setItems] = useState<StudyMaterial[]>([]);
   const [sections, setSections] = useState<SectionOption[]>([]);

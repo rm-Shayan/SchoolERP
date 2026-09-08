@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { StatsCard, Reveal } from '@/features/shared/components';
 import { formatCurrency } from '@/lib/utils';
 import DashboardSkeleton from './parts/DashboardSkeleton';
@@ -9,11 +10,20 @@ import { AttendanceChart, FeeStatusPie } from './parts/DashboardCharts';
 import { FunnelCard, Icon } from './parts/DashboardCards';
 import { LiveScansCard } from './parts/DashboardScans';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { EmptyState, Card } from '@/features/shared/components';
+import { useRouter } from 'next/navigation';
+import { useEffect as useEffect2 } from 'react';
 
 const FADE_MS = 400;
 
 export default function AdminDashboard() {
   const { user, school, organization } = useAppSelector((s) => s.auth);
+  const { isAdmin } = useRoleAccess();
+  const router = useRouter();
+  if (!isAdmin) {
+    router.replace('/branch/dashboard');
+    return null;
+  }
   const schoolId = school?.id ?? user?.schoolId;
   const scanHistory = useAppSelector((s) => s.socket.scanHistory);
   const { data, loading, hydrating } = useDashboardData(schoolId);

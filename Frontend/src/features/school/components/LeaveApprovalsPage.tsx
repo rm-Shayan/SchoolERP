@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { Card, PageHeader, Button, EmptyState, Modal, ListSkeleton } from '@/features/shared/components';
 import { leaveService, type LeaveRequest } from '@/lib/api/leaveService';
 import toast from 'react-hot-toast';
@@ -10,6 +11,8 @@ import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 type Filter = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL';
 
 export default function LeaveApprovalsPage() {
+  const { isAdmin } = useRoleAccess();
+  const isReadOnly = !isAdmin;
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [filter, setFilter] = useState<Filter>('PENDING');
   const [loading, setLoading] = useState(true);
@@ -89,15 +92,16 @@ export default function LeaveApprovalsPage() {
                 key={req.id}
                 req={req}
                 reviewingId={reviewing}
-                onApprove={(id) => handleReview(id, 'APPROVED')}
-                onReject={(id) => setRemarksModal({ id, action: 'REJECTED' })}
+                onApprove={isAdmin ? (id) => handleReview(id, 'APPROVED') : undefined}
+                onReject={isAdmin ? (id) => setRemarksModal({ id, action: 'REJECTED' }) : undefined}
               />
             ))}
           </div>
         )}
       </Card>
 
-      {/* Reject Remarks Modal — shared Modal component */}
+      {/* Reject Remarks Modal — admin only */}
+      {isAdmin && (
       <Modal open={!!remarksModal} onClose={() => { setRemarksModal(null); setRemarks(''); }} title="Reject Leave Request" size="sm">
         <textarea
           className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-red-100 focus:border-red-400"
@@ -117,6 +121,7 @@ export default function LeaveApprovalsPage() {
           </Button>
         </div>
       </Modal>
+      )}
     </div>
   );
 }

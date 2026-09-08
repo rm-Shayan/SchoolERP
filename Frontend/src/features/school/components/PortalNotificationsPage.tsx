@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { notificationService } from '@/lib/api';
 import type { PortalNotification } from '@/lib/api/notificationService';
 import { useAppSelector } from '@/store/hooks';
@@ -29,6 +30,7 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
 }
 
 export default function PortalNotificationsPage() {
+  const { isAdmin } = useRoleAccess();
   const { school, organization } = useAppSelector((s) => s.auth);
   const [items, setItems] = useState<PortalNotification[]>([]);
   const [total, setTotal] = useState(0);
@@ -138,9 +140,11 @@ export default function PortalNotificationsPage() {
                     {n.category !== 'GENERAL' && <span className={cn('text-xs px-1.5 py-0.5 rounded', n.isRead ? 'bg-white/60' : 'bg-white/20 text-white')}>{n.category}</span>}
                   </div>
                 </div>
-                <button onClick={(e) => { e.stopPropagation(); handleDelete(n.id); }} className={cn('opacity-0 group-hover:opacity-100 p-1 transition-opacity shrink-0', n.isRead ? 'text-gray-400 hover:text-red-500' : 'text-white/60 hover:text-white')} title="Delete">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
+                {isAdmin && (
+                  <button onClick={(e) => { e.stopPropagation(); handleDelete(n.id); }} className={cn('opacity-0 group-hover:opacity-100 p-1 transition-opacity shrink-0', n.isRead ? 'text-gray-400 hover:text-red-500' : 'text-white/60 hover:text-white')} title="Delete">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                )}
               </div>
             ))}
           </div>

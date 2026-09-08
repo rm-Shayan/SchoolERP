@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { conductService, staffService } from '@/lib/api';
 import type { ConductRemark } from '@/lib/api/conductService';
 import type { User } from '@/types';
@@ -20,6 +21,8 @@ const TYPE_FILTERS = [
 
 export default function BranchConductRemarksPage() {
   const { school } = useAppSelector((s) => s.auth);
+  const { isAdmin } = useRoleAccess();
+  const isReadOnly = !isAdmin;
   const schoolId = school?.id;
   const [remarks, setRemarks] = useState<ConductRemark[]>([]);
   const [total, setTotal] = useState(0);
@@ -79,7 +82,7 @@ export default function BranchConductRemarksPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader title={editing ? 'Edit Remark' : 'Conduct Remarks'}
           description={editing ? 'Update the remark below.' : 'Record conduct remarks — yourself or on behalf of a teacher.'} />
-        {!showForm && (
+        {!showForm && isAdmin && (
           <Button onClick={openNew} className="shrink-0">
             <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
             New Remark
@@ -113,7 +116,7 @@ export default function BranchConductRemarksPage() {
         <Card><CardContent><div className="animate-pulse space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 rounded-xl bg-gray-100" />)}</div></CardContent></Card>
       ) : (
         <>
-          <OrgConductRemarkList remarks={remarks} onEdit={openEdit} onDelete={setDeleting} />
+          <OrgConductRemarkList remarks={remarks} onEdit={isAdmin ? openEdit : undefined} onDelete={isAdmin ? setDeleting : undefined} />
           {totalPages > 1 && <Pagination page={page} totalPages={totalPages} total={total} pageSize={20} onPageChange={setPage} />}
         </>
       )}

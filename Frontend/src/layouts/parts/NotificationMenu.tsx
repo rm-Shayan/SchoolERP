@@ -23,23 +23,19 @@ export default function NotificationMenu() {
   const user = useAppSelector((s) => s.auth.user);
   const { portalItems, portalUnread } = useAppSelector((s) => s.notifications);
   const dispatch = useAppDispatch();
-  const socketStatus = useAppSelector((s) => s.socket.status);
   const schoolId = school?.id;
   const organizationId = user?.organizationId;
   const themeColor = organization?.themeColor || school?.themeColor || '#6366f1';
 
-  // Poll every 30s as safety net (socket handles real-time, polling catches misses).
   const { data: unread, refetch: refetchUnread } = useUnreadCountQuery(
     { schoolId, organizationId },
     { skip: !user, pollingInterval: 30000 },
   );
 
-  // Sync server count to Redux on mount / refetch.
   useEffect(() => {
     if (typeof unread === 'number') dispatch(setPortalUnread(unread));
   }, [unread, dispatch]);
 
-  // Dropdown items — fetch list only when opened.
   const canFetch = !!open;
   const { data: portalData } = usePortalNotificationsQuery(
     { ...(schoolId && { schoolId }), ...(organizationId && { organizationId }), pageSize: 20 },
@@ -50,7 +46,6 @@ export default function NotificationMenu() {
     if (portalData) dispatch(setPortalNotifications(portalData.items));
   }, [portalData, dispatch]);
 
-  // Auto mark all read when dropdown opens (professional UX — count hides instantly).
   useEffect(() => {
     if (open && portalUnread > 0) {
       dispatch(markAllPortalRead(schoolId || undefined));
@@ -81,25 +76,61 @@ export default function NotificationMenu() {
 
   return (
     <div className="relative">
-      <button onClick={toggle} className={cn('relative p-2 rounded-lg transition-colors', open ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50')} aria-label="Notifications">
+      <button
+        onClick={toggle}
+        className={cn(
+          'relative p-2 rounded-lg transition-all duration-200',
+          open
+            ? 'text-white shadow-sm'
+            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50',
+        )}
+        style={open ? { backgroundColor: themeColor } : undefined}
+        aria-label="Notifications"
+      >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
-        {portalUnread > 0 && <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm" style={{ backgroundColor: themeColor }}>{portalUnread > 9 ? '9+' : portalUnread}</span>}
+        {portalUnread > 0 && (
+          <span
+            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm"
+            style={{ backgroundColor: themeColor }}
+          >
+            {portalUnread > 9 ? '9+' : portalUnread}
+          </span>
+        )}
       </button>
       {open && (<>
         <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] sm:w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden" style={{ maxHeight: 'calc(100vh - 120px)' }}>
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        <div
+          className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] sm:w-96 rounded-xl shadow-lg border z-50 overflow-hidden"
+          style={{
+            backgroundColor: '#fff',
+            borderColor: `${themeColor}18`,
+            boxShadow: `0 4px 24px ${themeColor}12, 0 2px 8px rgba(0,0,0,0.06)`,
+          }}
+        >
+          <div
+            className="flex items-center justify-between px-4 py-3 border-b"
+            style={{ borderColor: `${themeColor}15`, backgroundColor: `${themeColor}06` }}
+          >
             <p className="text-sm font-semibold text-gray-900">Notifications</p>
             <div className="flex items-center gap-3">
-              {portalUnread > 0 && <button onClick={handleMarkAllRead} className="text-[11px] font-semibold text-primary-600 hover:text-primary-800">Mark all read</button>}
-              <Link href="/notifications" onClick={() => setOpen(false)} className="text-[11px] text-gray-500 hover:text-gray-700">View all →</Link>
+              {portalUnread > 0 && (
+                <button onClick={handleMarkAllRead} className="text-[11px] font-semibold hover:underline" style={{ color: themeColor }}>
+                  Mark all read
+                </button>
+              )}
+              <Link href="/notifications" onClick={() => setOpen(false)} className="text-[11px] text-gray-500 hover:text-gray-700">
+                View all →
+              </Link>
             </div>
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {portalItems.length === 0 ? <div className="px-4 py-10 text-center"><p className="text-sm text-gray-500">No notifications yet.</p></div>
-              : portalItems.map((n) => <NotificationItem key={n.id} n={n} themeColor={themeColor} onRead={handleMarkRead} onDelete={handleDelete} />)}
+            {portalItems.length === 0 ? (
+              <div className="px-4 py-10 text-center"><p className="text-sm text-gray-500">No notifications yet.</p></div>
+            ) : portalItems.map((n) => (
+              <NotificationItem key={n.id} n={n} themeColor={themeColor} onRead={handleMarkRead} onDelete={handleDelete} />
+            ))}
           </div>
         </div>
       </>)}

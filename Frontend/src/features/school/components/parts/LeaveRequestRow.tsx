@@ -12,8 +12,8 @@ const badgeMap: Record<string, string> = {
 interface LeaveRequestRowProps {
   req: LeaveRequest;
   reviewingId: string | null;
-  onApprove: (id: string) => void;
-  onReject: (id: string) => void;
+  onApprove?: (id: string) => void;
+  onReject?: (id: string) => void;
 }
 
 export default function LeaveRequestRow({ req, reviewingId, onApprove, onReject }: LeaveRequestRowProps) {
@@ -44,12 +44,16 @@ export default function LeaveRequestRow({ req, reviewingId, onApprove, onReject 
 
         {req.status === 'PENDING' && (
           <div className="flex gap-2 shrink-0">
-            <Button size="sm" variant="primary" loading={reviewingId === req.id} onClick={() => onApprove(req.id)}>
-              Approve
-            </Button>
-            <Button size="sm" variant="danger" loading={reviewingId === req.id} onClick={() => onReject(req.id)}>
-              Reject
-            </Button>
+            {onApprove && (
+              <Button size="sm" variant="primary" loading={reviewingId === req.id} onClick={() => onApprove(req.id)}>
+                Approve
+              </Button>
+            )}
+            {onReject && (
+              <Button size="sm" variant="danger" loading={reviewingId === req.id} onClick={() => onReject(req.id)}>
+                Reject
+              </Button>
+            )}
           </div>
         )}
       </div>

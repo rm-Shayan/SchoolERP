@@ -4,7 +4,8 @@ import { cn } from '@/lib/utils';
 import type { PortalNotification } from '@/lib/api/notificationService';
 
 const CAT_ICON: Record<string, string> = {
-  PTM: '📅', HOMEWORK: '📝', EXAM: '📋', STAFF: '👤', STUDENT: '🎓', FEE: '💰', CIRCULAR: '📢', GENERAL: '🔔', ADMISSION: '🎓', LEAVE: '🏖️', ATTENDANCE: '✅', CONDUCT: '⭐',
+  PTM: '📅', HOMEWORK: '📝', EXAM: '📋', STAFF: '👤', STUDENT: '🎓', FEE: '💰',
+  CIRCULAR: '📢', GENERAL: '🔔', ADMISSION: '🎓', LEAVE: '🏖️', ATTENDANCE: '✅', CONDUCT: '⭐',
 };
 
 function timeAgo(iso: string) {
@@ -32,36 +33,57 @@ interface Props {
 export default function NotificationItem({ n, themeColor, onRead, onDelete }: Props) {
   const tc = themeColor || '#6366f1';
   const rgb = hexToRgb(tc);
-  const unreadBg = rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.06)` : undefined;
+
+  // LinkedIn/YouTube style: subtle tint for unread, transparent for read
+  // On hover: slightly more prominent tint
+  const baseBg = n.isRead
+    ? 'transparent'
+    : rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.06)` : '#f8fafc';
+  const hoverBg = n.isRead
+    ? (rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.04)` : '#f8fafc')
+    : (rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.10)` : '#f1f5f9');
 
   return (
     <div
       onClick={() => !n.isRead && onRead(n.id)}
-      className={cn(
-        'group cursor-pointer px-4 py-3 border-b border-gray-50 transition-colors duration-200',
-        n.isRead ? 'hover:brightness-95' : 'hover:brightness-95 hover:bg-gray-50/50',
-      )}
-      style={!n.isRead
-        ? { backgroundColor: tc, color: '#fff', transition: 'background-color 0.2s ease, color 0.2s ease' }
-        : unreadBg ? { backgroundColor: unreadBg, color: tc, transition: 'background-color 0.2s ease, color 0.2s ease' } : undefined}
+      className="group cursor-pointer px-4 py-3 border-b border-gray-50 transition-all duration-150"
+      style={{
+        backgroundColor: baseBg,
+        // CSS hover via onMouseEnter/Leave for reliable inline style override
+      }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = hoverBg; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = baseBg; }}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2.5 min-w-0">
           <span className="text-base mt-0.5 shrink-0">{CAT_ICON[n.category] || '🔔'}</span>
           <div className="min-w-0">
-            <p className={cn('text-sm', n.isRead ? 'font-medium' : 'font-semibold text-white')} style={!n.isRead ? undefined : { color: tc }}>{n.title}</p>
-            <p className={cn('text-xs mt-0.5 line-clamp-2', n.isRead ? 'text-gray-500' : 'text-white/80')}>{n.body}</p>
+            <p
+              className={cn('text-sm', n.isRead ? 'font-medium text-gray-700' : 'font-semibold')}
+              style={!n.isRead ? { color: tc } : undefined}
+            >
+              {n.title}
+            </p>
+            <p className={cn('text-xs mt-0.5 line-clamp-2', n.isRead ? 'text-gray-500' : 'text-gray-600')}>
+              {n.body}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <span className={cn('text-[10px] whitespace-nowrap', n.isRead ? 'text-gray-400' : 'text-white/60')}>{timeAgo(n.createdAt)}</span>
-          {!n.isRead && <span className="w-2 h-2 rounded-full shrink-0 bg-white" />}
+          <span className={cn('text-[10px] whitespace-nowrap', n.isRead ? 'text-gray-400' : 'text-gray-500')}>
+            {timeAgo(n.createdAt)}
+          </span>
+          {!n.isRead && (
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: tc }} />
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(n.id); }}
-            className={cn('opacity-0 group-hover:opacity-100 p-0.5 transition-opacity', n.isRead ? 'text-gray-400 hover:text-red-500' : 'text-white/60 hover:text-white')}
+            className="opacity-0 group-hover:opacity-100 p-0.5 transition-opacity text-gray-400 hover:text-red-500"
             title="Delete"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
       </div>

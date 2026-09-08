@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { schoolService } from '@/lib/api';
 import { useForm, composeValidators, minLength, required } from '@/lib/utils';
 import { Button, Card, CardContent, Input } from '@/features/shared/components';
@@ -9,6 +10,7 @@ import toast from 'react-hot-toast';
 
 /** Shared parent/student portal password — managed by branch admin. */
 export default function PortalAccessSection() {
+  const { isAdmin } = useRoleAccess();
   const { user, school } = useAppSelector((s) => s.auth);
   const schoolId = school?.id ?? user?.schoolId ?? '';
   const [status, setStatus] = useState<{ hasCustomPassword: boolean; schoolCode: string } | null>(null);
@@ -84,8 +86,8 @@ export default function PortalAccessSection() {
           <Input label="Confirm Password" name="confirm" type="password" placeholder="Repeat password"
             value={values.confirm as string} onChange={handleChange} onBlur={() => handleBlur('confirm')} error={errors.confirm} required />
           <div className="sm:col-span-2 flex flex-wrap gap-3">
-            <Button type="submit" loading={isSubmitting}>Save Password</Button>
-            <Button type="button" variant="outline" onClick={resetToDefault}>Reset to Default</Button>
+            <Button type="submit" loading={isSubmitting} disabled={!isAdmin}>Save Password</Button>
+            <Button type="button" variant="outline" onClick={resetToDefault} disabled={!isAdmin}>Reset to Default</Button>
           </div>
         </form>
 

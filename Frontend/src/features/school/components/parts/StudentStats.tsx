@@ -2,6 +2,7 @@ import type { StudentSummary } from '@/lib/api/studentService';
 
 interface StudentStatsProps {
   summary: StudentSummary | null;
+  adminOnly?: boolean;
 }
 
 const CARDS = [
@@ -59,10 +60,11 @@ const CARDS = [
   },
 ];
 
-export function StudentStats({ summary }: StudentStatsProps) {
+export function StudentStats({ summary, adminOnly = false }: StudentStatsProps) {
+  const cards = adminOnly ? CARDS : CARDS.slice(0, 2);
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      {CARDS.map((card) => (
+      {cards.map((card) => (
         <div
           key={card.label}
           className={`relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm ring-1 ${card.tint} transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}

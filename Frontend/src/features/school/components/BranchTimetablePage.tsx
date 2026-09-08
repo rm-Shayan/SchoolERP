@@ -2,6 +2,8 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
+import { useRouter } from 'next/navigation';
 import { useGetBySectionQuery, useDeleteSlotMutation, useClearAllSlotsMutation } from '@/store/api';
 import { timetableService } from '@/lib/api';
 import { PageHeader, Card, CardContent, EmptyState, Select, Button, ConfirmDialog, TableSkeleton } from '@/features/shared/components';
@@ -20,6 +22,9 @@ const DAY_COLS = [1, 2, 3, 4, 5, 6, 7];
 
 export default function BranchTimetablePage() {
   const { user, school } = useAppSelector((s) => s.auth);
+  const { isAdmin } = useRoleAccess();
+  const router = useRouter();
+  if (!isAdmin) { router.replace('/branch/dashboard'); return null; }
   const schoolId = school?.id ?? user?.schoolId;
   const sections = useSectionOptions(schoolId);
   const [sectionId, setSectionId] = useState('');

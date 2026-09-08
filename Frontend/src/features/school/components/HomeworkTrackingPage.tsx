@@ -23,8 +23,8 @@ interface TeacherGroup {
 export default function HomeworkTrackingPage() {
   const { user, school } = useAppSelector((s) => s.auth);
   const schoolId = school?.id ?? user?.schoolId;
-  const { role } = useRoleAccess();
-  const isReadOnly = role === 'RECEPTIONIST';
+  const { isReceptionist } = useRoleAccess();
+  const isReadOnly = isReceptionist;
   const [items, setItems] = useState<Homework[]>([]);
   const [total, setTotal] = useState(0);
   const sections = useSectionOptions(schoolId);

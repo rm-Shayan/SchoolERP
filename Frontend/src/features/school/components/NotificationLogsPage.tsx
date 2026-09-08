@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
+import { useRouter } from 'next/navigation';
 import { notificationService } from '@/lib/api';
 import { useAppSelector } from '@/store/hooks';
 import type { NotificationLogsResponse } from '@/types';
@@ -12,6 +14,9 @@ import NotificationLogsPagination from '@/features/superadmin/components/parts/N
 const PAGE_SIZE = 25;
 
 export default function NotificationLogsPage() {
+  const { isAdmin } = useRoleAccess();
+  const router = useRouter();
+  if (!isAdmin) { router.replace('/branch/dashboard'); return null; }
   const { school } = useAppSelector((s) => s.auth);
   const [data, setData] = useState<NotificationLogsResponse | null>(null);
   const [loading, setLoading] = useState(true);
