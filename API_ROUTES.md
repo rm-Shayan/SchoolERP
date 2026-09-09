@@ -366,6 +366,13 @@
 | 18 | POST | `/attendance/archive` | SUPER_ADMIN, ADMIN (summarize + delete raw) |
 | 19 | POST | `/attendance/archive/auto` | SUPER_ADMIN (auto-archive across all schools) |
 
+### Phantom Cleanup (old timezone-bug artifacts)
+
+| # | Method | Route | Role |
+|---|--------|-------|------|
+| 20 | GET | `/attendance/phantoms?dateFrom&dateTo` | SUPER_ADMIN, ADMIN (preview only — deletes nothing) |
+| 21 | POST | `/attendance/phantoms/cleanup` | SUPER_ADMIN, ADMIN (body `{ ids: [...] }` — re-verified server-side) |
+
 ---
 
 ## Homework (5)

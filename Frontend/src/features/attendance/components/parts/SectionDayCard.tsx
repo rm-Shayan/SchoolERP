@@ -1,18 +1,20 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useAppSelector } from '@/store/hooks';
 import { cn } from '@/lib/utils';
 import type { AttendanceRecord } from '@/types';
 import { exportToCsv } from './attendanceExport';
+import AttendanceOverrideModal from './AttendanceOverrideModal';
 import toast from 'react-hot-toast';
 
 const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
   PRESENT: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
   LATE: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
   ABSENT: { bg: 'bg-red-50', text: 'text-red-600', dot: 'bg-red-500' },
-  LEAVE: { bg: 'bg-primary-50', text: 'text-primary-600', dot: 'bg-primary-500' },
-  HALF_DAY: { bg: 'bg-primary-50', text: 'text-primary-700', dot: 'bg-primary-500' },
+  LEAVE: { bg: 'bg-blue-50', text: 'text-blue-600', dot: 'bg-blue-500' },
+  HALF_DAY: { bg: 'bg-cyan-50', text: 'text-cyan-700', dot: 'bg-cyan-500' },
   MANUAL_OVERRIDE: { bg: 'bg-primary-50', text: 'text-primary-700', dot: 'bg-primary-500' },
 };
 
@@ -25,16 +27,19 @@ interface Props {
   totalStudents?: number;
   isOpen: boolean;
   onToggle: () => void;
+  /** Called after a successful override so the parent reloads the report. */
+  onChanged?: () => void;
 }
 
 const safeFile = (s: string) => s.trim().replace(/\s+/g, '-').replace(/[^A-Za-z0-9_-]/g, '') || 'section';
 
-export default function SectionDayCard({ className, sectionName, sectionId, date, records, totalStudents, isOpen, onToggle }: Props) {
+export default function SectionDayCard({ className, sectionName, sectionId, date, records, totalStudents, isOpen, onToggle, onChanged }: Props) {
   const { organization } = useAppSelector((s) => s.auth);
   const slug = organization?.slug;
   const detailPath = slug
     ? `/o/${slug}/branch/attendance/records/${sectionId}?date=${date}`
     : `/branch/attendance/records/${sectionId}?date=${date}`;
+  const [ov, setOv] = useState<AttendanceRecord | null>(null);
 
   const p = records.filter((r) => r.status === 'PRESENT').length;
   const l = records.filter((r) => r.status === 'LATE').length;
@@ -66,8 +71,8 @@ export default function SectionDayCard({ className, sectionName, sectionId, date
           <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">{p}P</span>
           <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">{l}L</span>
           <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">{a}A</span>
-          <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-600">{lv}Lv</span>
-          {hd > 0 && <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700">{hd}HD</span>}
+          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">{lv}Lv</span>
+          {hd > 0 && <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[11px] font-semibold text-cyan-700">{hd}HD</span>}
           <button type="button" onClick={handleExport} title="Export this section's CSV"
             className="rounded-lg p-1.5 text-gray-400 transition hover:bg-primary-50 hover:text-primary-700">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -84,41 +89,59 @@ export default function SectionDayCard({ className, sectionName, sectionId, date
       </div>
       {isOpen && (
         <div className="border-t border-gray-100">
-          <table className="w-full text-sm">
-            <thead><tr className="bg-gray-50/80">
-              <th className="px-4 py-2 text-left text-[11px] font-bold uppercase text-gray-500">Student</th>
-              <th className="px-4 py-2 text-center text-[11px] font-bold uppercase text-gray-500">Status</th>
-              <th className="px-4 py-2 text-center text-[11px] font-bold uppercase text-gray-500">Check In</th>
-            </tr></thead>
-            <tbody>{records.map((r) => {
-              const st = STATUS_STYLE[r.status] ?? STATUS_STYLE.PRESENT;
-              return (
-                <tr key={r.id} className="border-t border-gray-50 hover:bg-gray-50/50">
-                  <td className="px-4 py-2">
-                    <p className="text-xs font-semibold text-gray-900">{r.student?.firstName} {r.student?.lastName}</p>
-                    <p className="text-[10px] text-gray-400">#{r.student?.rollNumber}</p>
-                  </td>
-                  <td className="px-4 py-2 text-center">
-                    <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold', st.bg, st.text)}>
-                      <span className={cn('h-1.5 w-1.5 rounded-full', st.dot)} />{r.status.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2 text-center text-xs text-gray-500 tabular-nums">
-                    {r.checkIn ? new Date(r.checkIn).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' }) : '—'}
-                  </td>
-                </tr>
-              );
-            })}</tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-gray-50/80">
+                <th className="px-4 py-2 text-left text-[11px] font-bold uppercase text-gray-500">Student</th>
+                <th className="px-4 py-2 text-center text-[11px] font-bold uppercase text-gray-500">Status</th>
+                <th className="px-4 py-2 text-center text-[11px] font-bold uppercase text-gray-500">Check In</th>
+                <th className="px-4 py-2 text-right text-[11px] font-bold uppercase text-gray-500">Action</th>
+              </tr></thead>
+              <tbody>{records.map((r) => {
+                const st = STATUS_STYLE[r.status] ?? STATUS_STYLE.PRESENT;
+                return (
+                  <tr key={r.id} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors group">
+                    <td className="px-4 py-2">
+                      <p className="text-xs font-semibold text-gray-900">{r.student?.firstName} {r.student?.lastName}</p>
+                      <p className="text-[10px] text-gray-400">#{r.student?.rollNumber}</p>
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold', st.bg, st.text)}>
+                        <span className={cn('h-1.5 w-1.5 rounded-full', st.dot)} />{r.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-center text-xs text-gray-500 tabular-nums">
+                      {r.checkIn ? new Date(r.checkIn).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      <button onClick={() => setOv(r)}
+                        className="text-[11px] font-semibold text-primary-600 hover:text-primary-800">Override</button>
+                    </td>
+                  </tr>
+                );
+              })}</tbody>
+            </table>
+          </div>
           {records.length === 0 && <p className="py-6 text-center text-xs text-gray-400">No attendance records for this section on this day.</p>}
-          <div className="border-t border-gray-50 bg-gray-50/30 p-3">
+          <div className="border-t border-gray-50 bg-gray-50/30 p-3 flex items-center justify-between">
+            <p className="text-[11px] text-gray-400">Wrong status? Override it — the record updates instantly.</p>
             <Link href={detailPath}
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary-50 px-3 py-1.5 text-[11px] font-semibold text-primary-700 transition hover:bg-primary-100">
               View Full Details
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7-7" /></svg>
             </Link>
           </div>
         </div>
+      )}
+      {ov && (
+        <AttendanceOverrideModal
+          studentId={ov.studentId}
+          studentName={`${ov.student?.firstName ?? ''} ${ov.student?.lastName ?? ''}`.trim() || undefined}
+          currentStatus={ov.status}
+          recordId={ov.id}
+          date={date}
+          onClose={() => { setOv(null); onChanged?.(); }}
+        />
       )}
     </div>
   );

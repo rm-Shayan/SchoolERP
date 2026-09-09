@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { attendanceService } from '@/lib/api/attendanceService';
-import type { MonthlyAttendanceReport } from '@/types';
+import type { AttendanceRecord, MonthlyAttendanceReport, StudentLite } from '@/types';
 import { TableSkeleton } from '@/features/shared/components';
 import AttendanceOverrideModal from './AttendanceOverrideModal';
 import MonthlyMatrixTable from './MonthlyMatrixTable';
@@ -24,7 +24,7 @@ export default function SectionMonthPanel({ sectionId }: Props) {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [data, setData] = useState<MonthlyAttendanceReport | null>(null);
   const [loading, setLoading] = useState(true);
-  const [ov, setOv] = useState<{ studentId: string; date: string } | null>(null);
+  const [ov, setOv] = useState<{ student: StudentLite; date: string; record?: AttendanceRecord } | null>(null);
 
   const load = useCallback(async () => {
     if (!schoolId) { setLoading(false); return; }
@@ -112,12 +112,21 @@ export default function SectionMonthPanel({ sectionId }: Props) {
 
       {loading ? <TableSkeleton rows={8} cols={5} /> : (
         <MonthlyMatrixTable students={students} records={records} offDays={data?.offDays ?? []} weeklyOff={data?.weeklyOff ?? [0, 6]} year={year} month={month}
-          onOverride={(sid, dt) => setOv({ studentId: sid, date: dt })} />
+          onOverride={(sid, dt, rec) => {
+            const student = students.find((st) => st.id === sid);
+            if (student) setOv({ student, date: dt, record: rec });
+          }} />
       )}
 
-      {ov && schoolId && (
-        <AttendanceOverrideModal studentId={ov.studentId} date={ov.date} schoolId={schoolId}
-          onClose={() => { setOv(null); load(); }} />
+      {ov && (
+        <AttendanceOverrideModal
+          studentId={ov.student.id}
+          studentName={`${ov.student.firstName} ${ov.student.lastName}`.trim()}
+          currentStatus={ov.record?.status}
+          recordId={ov.record?.id}
+          date={ov.date}
+          onClose={() => { setOv(null); load(); }}
+        />
       )}
     </div>
   );

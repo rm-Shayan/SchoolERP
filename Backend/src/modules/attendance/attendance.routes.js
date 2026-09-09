@@ -10,6 +10,8 @@ import {
   addOffDaySchema,
   removeOffDaySchema,
   updateWeeklyOffSchema,
+  phantomQuerySchema,
+  phantomCleanupSchema,
 } from "./attendance.validation.js";
 import { validate } from "../../middlewares/validate.middleware.js";
 import { authenticate, authorize } from "../../middlewares/auth.middleware.js";
@@ -186,6 +188,31 @@ router.delete(
   "/:id",
   authorize(["SUPER_ADMIN", "ADMIN", "RECEPTIONIST"]),
   attendanceController.deleteRecord
+);
+
+// ─── PHANTOM CLEANUP (old timezone-bug artifacts) ───────────────────────────
+/**
+ * GET /api/v1/attendance/phantoms?dateFrom&dateTo&schoolId
+ * Preview phantom records (manual-only rows stored a day before their intended
+ * date). Review-only — deletes nothing.
+ */
+router.get(
+  "/phantoms",
+  authorize(["SUPER_ADMIN", "ADMIN"]),
+  validate(phantomQuerySchema),
+  attendanceController.listPhantoms
+);
+
+/**
+ * POST /api/v1/attendance/phantoms/cleanup
+ * Delete explicitly selected phantom record IDs — re-verified against the
+ * phantom signature at delete time. Body { ids: [...] }.
+ */
+router.post(
+  "/phantoms/cleanup",
+  authorize(["SUPER_ADMIN", "ADMIN"]),
+  validate(phantomCleanupSchema),
+  attendanceController.cleanupPhantoms
 );
 
 // ─── ARCHIVE ────────────────────────────────────────────────────────────────

@@ -96,3 +96,18 @@ export const updateWeeklyOffSchema = z.object({
   }),
 });
 
+export const phantomQuerySchema = z.object({
+  query: z.object({
+    schoolId: z.string().uuid("Invalid school ID").optional(),
+    dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "dateFrom must be YYYY-MM-DD").optional(),
+    dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "dateTo must be YYYY-MM-DD").optional(),
+  }),
+});
+
+export const phantomCleanupSchema = z.object({
+  body: z.object({
+    schoolId: z.string().uuid("Invalid school ID").optional(),
+    ids: z.array(z.string().uuid("Invalid attendance record ID")).min(1, "At least one record ID is required"),
+  }),
+});
+

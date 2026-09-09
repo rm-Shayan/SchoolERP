@@ -23,7 +23,7 @@ interface Props {
   weeklyOff?: number[];
   year: number;
   month: number;
-  onOverride: (studentId: string, date: string) => void;
+  onOverride: (studentId: string, date: string, record?: AttendanceRecord) => void;
 }
 
 export default function MonthlyMatrixTable({ students, records, offDays, weeklyOff, year, month, onOverride }: Props) {
@@ -72,7 +72,7 @@ export default function MonthlyMatrixTable({ students, records, offDays, weeklyO
           <button
             title={isWeekend ? `${d} — Weekend` : isOff ? `${d} — ${offReason}` : rec ? `${d} — ${rec.status}` : `${d} — tap to mark`}
             disabled={isWeekend || isOff}
-            onClick={() => !isWeekend && !isOff && onOverride(stuId, dateKey)}
+            onClick={() => !isWeekend && !isOff && onOverride(stuId, dateKey, rec)}
             className={cn('mx-px h-6 w-full rounded text-[10px] font-bold tabular-nums transition-all',
               rec ? CELL_STYLE[rec.status] ?? 'bg-gray-100 text-gray-500' : isOff ? OFF_STYLE : isWeekend ? 'bg-gray-100/60 text-gray-200 cursor-not-allowed' : 'bg-gray-50 text-gray-300 hover:bg-primary-50 hover:text-primary-500',
               isToday && 'ring-1 ring-inset ring-primary-400')}

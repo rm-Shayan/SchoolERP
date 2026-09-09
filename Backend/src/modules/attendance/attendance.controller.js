@@ -1,5 +1,6 @@
 import attendanceService from "./attendance.service.js";
 import attendanceArchiveService from "./attendanceArchive.service.js";
+import attendancePhantomService from "./attendancePhantom.service.js";
 import ApiResponse from "../../lib/utils/ApiResponse.js";
 import ApiError from "../../lib/utils/ApiError.js";
 
@@ -291,6 +292,44 @@ class AttendanceController {
 
       const result = await attendanceService.deleteRecord(schoolId, req.params.id);
       return res.status(200).json(ApiResponse.ok("Record deleted", result));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * GET /api/v1/attendance/phantoms
+   * Preview phantom attendance records (bug artifacts) — deletes nothing.
+   */
+  listPhantoms = async (req, res, next) => {
+    try {
+      const schoolId = req.user.schoolId || req.query.schoolId;
+      if (!schoolId) {
+        return next(ApiError.badRequestError("School ID is required"));
+      }
+      const result = await attendancePhantomService.findPhantoms(
+        schoolId,
+        { dateFrom: req.query.dateFrom, dateTo: req.query.dateTo },
+        req.user
+      );
+      return res.status(200).json(ApiResponse.ok("Phantom attendance candidates fetched", result));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * POST /api/v1/attendance/phantoms/cleanup
+   * Delete explicitly selected phantom records (re-verified server-side).
+   */
+  cleanupPhantoms = async (req, res, next) => {
+    try {
+      const schoolId = req.user.schoolId || req.body.schoolId;
+      if (!schoolId) {
+        return next(ApiError.badRequestError("School ID is required"));
+      }
+      const result = await attendancePhantomService.deletePhantoms(schoolId, req.body.ids, req.user);
+      return res.status(200).json(ApiResponse.ok("Phantom attendance cleanup complete", result));
     } catch (error) {
       return next(error);
     }

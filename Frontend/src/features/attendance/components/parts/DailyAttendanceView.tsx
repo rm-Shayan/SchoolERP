@@ -136,7 +136,8 @@ export default function DailyAttendanceView() {
           {pageItems.map((g) => (
             <SectionDayCard key={g.sectionId} className={g.className} sectionName={g.sectionName} sectionId={g.sectionId} date={date} records={g.records}
               totalStudents={statsBySection.get(g.sectionId)?.totalStudents}
-              isOpen={expanded === g.sectionId} onToggle={() => setExpanded(expanded === g.sectionId ? null : g.sectionId)} />
+              isOpen={expanded === g.sectionId} onToggle={() => setExpanded(expanded === g.sectionId ? null : g.sectionId)}
+              onChanged={load} />
           ))}
           {filtered.length > CARDS_PER_PAGE && (
             <Pagination page={safePage} totalPages={totalPages} total={filtered.length} pageSize={CARDS_PER_PAGE}

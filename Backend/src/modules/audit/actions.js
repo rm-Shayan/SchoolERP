@@ -41,6 +41,9 @@ export const AUDIT_ACTIONS = {
   DELETE_STUDENT: "DELETE_STUDENT", // hard delete — permanent, overrides archive-only rule
   BLOCK_PARENT: "BLOCK_PARENT",
   UNBLOCK_PARENT: "UNBLOCK_PARENT",
+
+  // Attendance data hygiene
+  CLEANUP_ATTENDANCE: "CLEANUP_ATTENDANCE", // phantom duplicate attendance records deleted
 };
 
 // Display labels for the frontend Activity Log.
@@ -72,6 +75,7 @@ export const AUDIT_ACTION_LABELS = {
   [AUDIT_ACTIONS.DELETE_STUDENT]: "Student permanently deleted",
   [AUDIT_ACTIONS.BLOCK_PARENT]: "Parent blocked",
   [AUDIT_ACTIONS.UNBLOCK_PARENT]: "Parent unblocked",
+  [AUDIT_ACTIONS.CLEANUP_ATTENDANCE]: "Phantom attendance records deleted",
 };
 
 // Entity types stored in AuditLog.entityType
