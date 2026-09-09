@@ -46,6 +46,7 @@ export default function PortalShell({ title, subtitle, avatarUrl, orgName, orgLo
         children={childList}
         activeChildId={activeChildId}
         onChildChange={onChildChange}
+        themeColor={themeColor}
       />
       <div className="lg:pl-64">
         <PortalTopBar title={title} subtitle={subtitle} avatarUrl={avatarUrl} canEditPhoto={canEditPhoto} onMenuClick={() => setMobileOpen(true)} onLogout={onLogout} />

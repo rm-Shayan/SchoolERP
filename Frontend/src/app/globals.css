@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Primary tokens — defaults only; overridden at runtime via --theme-primary-* bridge */
+  /* Primary tokens — overridden at runtime via --theme-primary-* bridge in :root below */
   --color-primary-50: #f5f3ff;
   --color-primary-100: #ede9fe;
   --color-primary-200: #ddd6fe;

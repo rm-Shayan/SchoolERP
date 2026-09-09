@@ -34,9 +34,9 @@ export function buildPrimaryScale(hex: string): Record<string, string> | null {
 export const PRIMARY_STEPS = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'] as const;
 
 /**
- * Apply org theme by setting --color-primary-* directly on :root via setProperty.
- * Inline custom properties on <html> always beat @layer theme declarations.
- * Also sets --theme-primary-* as a secondary mechanism.
+ * Apply org theme by setting --theme-primary-* on :root.
+ * The :root bridge in globals.css resolves --color-primary-* via
+ * var(--theme-primary-*, fallback) — no need to set --color-primary-* directly.
  */
 export function applyPortalThemeToRoot(themeColor?: string | null): void {
   if (typeof document === 'undefined') return;
@@ -44,7 +44,6 @@ export function applyPortalThemeToRoot(themeColor?: string | null): void {
   if (!scale) { clearPortalThemeFromRoot(); return; }
   const root = document.documentElement;
   for (const step of PRIMARY_STEPS) {
-    root.style.setProperty(`--color-primary-${step}`, scale[step]);
     root.style.setProperty(`--theme-primary-${step}`, scale[step]);
   }
 }
@@ -53,7 +52,6 @@ export function clearPortalThemeFromRoot(): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
   for (const step of PRIMARY_STEPS) {
-    root.style.removeProperty(`--color-primary-${step}`);
     root.style.removeProperty(`--theme-primary-${step}`);
   }
 }
@@ -68,15 +66,14 @@ export function clearOrgThemeFromRoot(): void {
 
 /**
  * Returns inline CSS custom properties for the wrapper div.
- * Sets --color-primary-* and --theme-primary-* so both inline and utility
- * classes pick up the theme color.
+ * Sets --theme-primary-* so the :root bridge in globals.css resolves
+ * --color-primary-* via var(--theme-primary-*).
  */
 export function orgThemeStyle(themeColor?: string | null): CSSProperties | undefined {
   const scale = themeColor ? buildPrimaryScale(themeColor) : null;
   if (!scale) return undefined;
   const vars: Record<string, string> = {};
   for (const [step, value] of Object.entries(scale)) {
-    vars[`--color-primary-${step}`] = value;
     vars[`--theme-primary-${step}`] = value;
   }
   return vars as CSSProperties;

@@ -19,13 +19,14 @@ interface SidebarProps {
   children?: PortalChildBrief[];
   activeChildId?: string;
   onChildChange?: (id: string) => void;
+  themeColor?: string | null;
 }
 
 export default function PortalSidebar({
   active, onChange, orgName, orgLogoUrl, onLogout,
-  mobileOpen, onMobileClose, children: childList, activeChildId, onChildChange,
+  mobileOpen, onMobileClose, children: childList, activeChildId, onChildChange, themeColor,
 }: SidebarProps) {
-  const theme = getOrgThemeColor();
+  const theme = themeColor || getOrgThemeColor();
   const colors = sidebarColors(theme);
   const brand = theme || '#6366f1';
   const [openGroups, setOpenGroups] = useState<Set<number>>(new Set());
