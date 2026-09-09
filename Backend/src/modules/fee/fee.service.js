@@ -384,10 +384,6 @@ class FeeService {
     const targetSchoolId = getEffectiveSchoolId(user, schoolId);
     assertSchoolAccess(user, targetSchoolId);
 
-    const cacheKey = `fee:summary:${targetSchoolId}:${month || '_'}:${year || '_'}`;
-    const cached = await cacheGet(cacheKey);
-    if (cached) return cached;
-
     let dueDateFrom = null;
     let dueDateTo = null;
     if (month && year) {
@@ -398,9 +394,7 @@ class FeeService {
         dueDateTo = new Date(Date.UTC(y, m, 0));
       }
     }
-    const result = await feeRepository.getFeeSummary({ schoolId: targetSchoolId, dueDateFrom, dueDateTo });
-    await cacheSet(cacheKey, result, 60);
-    return result;
+    return feeRepository.getFeeSummary({ schoolId: targetSchoolId, dueDateFrom, dueDateTo });
   }
 
   /** School ka current default monthly due day (page load par fetch). */

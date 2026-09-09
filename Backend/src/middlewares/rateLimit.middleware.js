@@ -1,23 +1,15 @@
 import { rateLimit } from "express-rate-limit";
-import RedisStore from "rate-limit-redis";
-import redis from "../config/redis.js";
 
 // ==========================================
 // RATE LIMITING — brute-force / abuse protection
 // ==========================================
 //
-// Redis-backed store: works across PM2 workers and horizontal scale.
-// Falls back to in-memory if Redis is unavailable.
-
-const redisStore = new RedisStore({
-  sendCommand: (...args) => redis.sendCommand(args),
-  prefix: "rl:",
-});
+// In-memory store — zero Redis overhead. Single-instance (Suga free trial)
+// is fine. When scaling to multiple instances, swap to Redis store.
 
 const baseConfig = {
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  store: redisStore,
   message: {
     success: false,
     statusCode: 429,
@@ -58,11 +50,11 @@ export const sensitiveLimiter = rateLimit({
 
 /**
  * Global API guard — applied server-wide as a final safety net.
- * 1000 requests per minute per IP (supports 1000 req/s burst capacity).
+ * 300 requests per minute per IP.
  */
 export const globalLimiter = rateLimit({
   ...baseConfig,
   windowMs: 60 * 1000,
-  limit: 1000,
+  limit: 300,
   skip: (req) => req.ip === "::1" || req.ip === "127.0.0.1" || req.ip === "::ffff:127.0.0.1",
 });

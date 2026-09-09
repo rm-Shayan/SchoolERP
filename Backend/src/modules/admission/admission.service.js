@@ -1,7 +1,6 @@
 import xlsx from "xlsx";
 import admissionRepository from "./repository.js";
 import prisma from "../../config/db.js";
-import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
 import ApiError from "../../lib/utils/ApiError.js";
 import { getEffectiveSchoolId, assertOwnSchool, assertSchoolAccess, assertSchoolExists } from "../../lib/scope.js";
 import { generateIdentifierCode } from "../../lib/identifier.js";
@@ -633,14 +632,7 @@ class AdmissionService {
   async getFunnel(user, schoolId) {
     const targetSchoolId = getEffectiveSchoolId(user, schoolId);
     assertSchoolAccess(user, targetSchoolId);
-
-    const cacheKey = `admission:funnel:${targetSchoolId}`;
-    const cached = await cacheGet(cacheKey);
-    if (cached) return cached;
-
-    const result = await admissionRepository.getFunnel(targetSchoolId);
-    await cacheSet(cacheKey, result, 60);
-    return result;
+    return admissionRepository.getFunnel(targetSchoolId);
   }
 
   /**
