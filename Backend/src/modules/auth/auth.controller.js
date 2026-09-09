@@ -164,7 +164,7 @@ class AuthController {
    * Create a new staff user. SUPER_ADMIN or ADMIN only.
    */
   createUser = asyncHandler(async (req, res) => {
-    const user = await userManagementService.createUser(req.user, req.body);
+    const user = await userManagementService.createUser(req.user, req.body, req.file);
     return res.status(201).json(
       ApiResponse.created("Staff account created successfully", user)
     );
@@ -300,7 +300,8 @@ class AuthController {
     const user = await userManagementService.updateUser(
       req.user,
       req.params.id,
-      req.body
+      req.body,
+      req.file
     );
     return res.status(200).json(
       ApiResponse.ok("User updated successfully", user)

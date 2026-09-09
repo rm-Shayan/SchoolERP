@@ -5,6 +5,7 @@ import { useAppSelector } from '@/store/hooks';
 import { staffService } from '@/lib/api';
 import type { User } from '@/types';
 import { Modal, Input, Select, Button } from '@/features/shared/components';
+import AvatarUpload from '@/features/shared/components/AvatarUpload';
 import { getRoleLabel, useForm, required, isPhonePK } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import StaffAssignmentManager from './StaffAssignmentManager';
@@ -23,6 +24,7 @@ export default function StaffEditModal({ open, member, onClose, onUpdated }: Sta
   const schoolId = useAppSelector((s) => s.auth.school?.id ?? s.auth.user?.schoolId);
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   const { values, errors, isSubmitting, handleChange, handleBlur, handleSubmit } = useForm({
     initialValues: { name: member.name, phone: member.phone ?? '', role: member.role, email: member.email },
@@ -39,7 +41,7 @@ export default function StaffEditModal({ open, member, onClose, onUpdated }: Sta
           phone: (v.phone as string).trim() || undefined,
           role: v.role as string,
           email: (v.email as string).trim(),
-        });
+        }, avatarFile || undefined);
         toast.success('Staff member updated');
         onUpdated();
       } catch (err: any) {
@@ -68,6 +70,7 @@ export default function StaffEditModal({ open, member, onClose, onUpdated }: Sta
   return (
     <Modal open={open} onClose={onClose} title={`Edit — ${member.name}`} size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
+        <AvatarUpload currentUrl={member.avatarUrl} name={member.name} onFileSelect={setAvatarFile} />
         <Input
           label="Full Name"
           name="name"

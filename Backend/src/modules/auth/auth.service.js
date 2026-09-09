@@ -263,31 +263,26 @@ class AuthService {
     const tokenHash = hashValue(rawRefreshToken);
     const expiresAt = new Date(Date.now() + JWT.REFRESH_EXPIRY_MS);
 
-    await authRepository.createRefreshToken(user.id, tokenHash, expiresAt);
+    // Parallelize: refresh token write + branch list query + audit log
+    const [, ,] = await Promise.all([
+      authRepository.createRefreshToken(user.id, tokenHash, expiresAt),
+      attachAccessibleBranches(sessionUser, user),
+      auditService.record({
+        actorId: user.id, actorName: user.name, actorRole: user.role,
+        action: AUDIT_ACTIONS.LOGIN, entityType: AUDIT_ENTITY_TYPES.AUTH,
+        entityId: user.id, entityName: user.name,
+        organizationId: user.organizationId, schoolId: sessionUser.schoolId,
+        details: JSON.stringify({ loginId: identifier || email }),
+        ipAddress: req?.ip || null,
+      }),
+    ]);
 
     // Delivery cycle: the org is "delivered" (SETUP_PENDING → ACTIVE) on the
     // FIRST successful login — no earlier. Blocked orgs never reach this point.
     if (user.organization?.status === "SETUP_PENDING") {
       await organizationService.markDeliveredOnLogin(user);
-      user.organization.status = "ACTIVE"; // reflect in this response's DTO
+      user.organization.status = "ACTIVE";
     }
-
-    // Activity Log: successful staff login
-    auditService.record({
-      actorId: user.id,
-      actorName: user.name,
-      actorRole: user.role,
-      action: AUDIT_ACTIONS.LOGIN,
-      entityType: AUDIT_ENTITY_TYPES.AUTH,
-      entityId: user.id,
-      entityName: user.name,
-      organizationId: user.organizationId,
-      schoolId: sessionUser.schoolId,
-      details: JSON.stringify({ loginId: identifier || email }),
-      ipAddress: req?.ip || null,
-    });
-
-    await attachAccessibleBranches(sessionUser, user);
 
     return {
       accessToken,
@@ -595,7 +590,7 @@ class AuthService {
   async listAllUsersPlatform(requester, opts) { return userManagementService.listAllUsersPlatform(requester, opts); }
   async exportAllUsersPlatform(requester, filters) { return userManagementService.exportAllUsersPlatform(requester, filters); }
   async getUserById(requester, targetId) { return userManagementService.getUserById(requester, targetId); }
-  async updateUser(requester, targetId, data) { return userManagementService.updateUser(requester, targetId, data); }
+  async updateUser(requester, targetId, data, file) { return userManagementService.updateUser(requester, targetId, data, file); }
   async deactivateUser(requester, targetId, reason) { return userManagementService.deactivateUser(requester, targetId, reason); }
   async reactivateUser(requester, targetId) { return userManagementService.reactivateUser(requester, targetId); }
   async adminResetPassword(requester, targetId, pw) { return userManagementService.adminResetPassword(requester, targetId, pw); }

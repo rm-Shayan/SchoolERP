@@ -160,6 +160,7 @@ router.post(
   "/users",
   authenticate,
   authorize(ROLE_GROUPS.USER_MANAGERS),
+  imageUpload.single("avatar"),
   validate(createUserSchema),
   authController.createUser
 );
@@ -277,6 +278,7 @@ router.patch(
   "/users/:id",
   authenticate,
   authorize(ROLE_GROUPS.USER_MANAGERS),
+  imageUpload.single("avatar"),
   validate(updateUserSchema),
   authController.updateUser
 );

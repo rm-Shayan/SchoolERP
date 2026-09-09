@@ -80,19 +80,25 @@ const staffRoleValues = [
   ROLES.RECEPTIONIST,
 ];
 
-const smtpSchema = z.object({
+const smtpSchema = z.preprocess((v) => {
+  if (typeof v === 'string') { try { return JSON.parse(v); } catch { return undefined; } }
+  return v;
+}, z.object({
   host: z.string().min(1, "SMTP host is required"),
-  port: z.number().int().positive(),
-  secure: z.boolean(),
+  port: z.preprocess((v) => Number(v), z.number().int().positive()),
+  secure: z.preprocess((v) => v === 'true' || v === true, z.boolean()),
   username: z.string().email("Invalid SMTP email"),
   password: z.string().min(1, "SMTP password is required"),
-}).optional();
+}).optional());
 
-const cloudinarySchema = z.object({
+const cloudinarySchema = z.preprocess((v) => {
+  if (typeof v === 'string') { try { return JSON.parse(v); } catch { return undefined; } }
+  return v;
+}, z.object({
   cloudName: z.string().min(1, "Cloud Name is required"),
   apiKey: z.string().min(1, "API Key is required"),
   apiSecret: z.string().min(1, "API Secret is required"),
-}).optional();
+}).optional());
 
 export const createUserSchema = z.object({
   body: z.object({
@@ -135,7 +141,11 @@ export const updateUserSchema = z.object({
         }),
       })
       .optional(),
-    isActive: z.boolean().optional(),
+    isActive: z.preprocess((v) => {
+      if (v === 'true') return true;
+      if (v === 'false') return false;
+      return v;
+    }, z.boolean().optional()),
   }),
 });
 

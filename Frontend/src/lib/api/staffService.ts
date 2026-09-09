@@ -27,30 +27,18 @@ export interface StaffCreatePayload {
 }
 
 export interface PaginatedResult<T> { items: T[]; total: number; page: number; pageSize: number; totalPages: number; }
-
 export interface PlatformUserStats { total: number; active: number; inactive: number; orgs: number; }
-
 export interface PlatformUserFilters { search?: string; role?: string; status?: string; reason?: string; organizationId?: string; schoolId?: string; }
-
 export interface PlatformUserDirectory extends PaginatedResult<User> { stats: PlatformUserStats; }
 
 export interface DirectoryItem {
-  id: string;
-  type: 'staff' | 'student';
-  name: string;
-  email: string | null;
-  subtitle: string | null;
-  status: string;
-  avatarUrl?: string | null;
+  id: string; type: 'staff' | 'student'; name: string; email: string | null;
+  subtitle: string | null; status: string; avatarUrl?: string | null;
   organization: { id: string; name: string; logoUrl?: string | null } | null;
   branch: { id: string; name: string; code?: string; logoUrl?: string | null } | null;
   createdAt: string;
 }
-
-export interface PlatformDirectory extends PaginatedResult<DirectoryItem> {
-  userTotal: number;
-  studentTotal: number;
-}
+export interface PlatformDirectory extends PaginatedResult<DirectoryItem> { userTotal: number; studentTotal: number; }
 
 export interface DirectoryFilters {
   type?: string; search?: string; organizationId?: string; schoolId?: string;
@@ -92,17 +80,31 @@ export const staffService = {
     return res.data.data;
   },
 
-  create: async (data: StaffCreatePayload): Promise<User> => {
+  create: async (data: StaffCreatePayload, avatarFile?: File): Promise<User> => {
+    if (avatarFile) {
+      const form = new FormData();
+      for (const [k, v] of Object.entries(data)) { if (v != null) form.append(k, String(v)); }
+      form.append('avatar', avatarFile);
+      const res = await api.post<ApiResponse<User>>('/auth/users', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      return res.data.data;
+    }
     const res = await api.post<ApiResponse<User>>('/auth/users', data);
     return res.data.data;
   },
 
-  createSample: async (): Promise<{ created: number; password: string; items: { name: string; email: string; username: string; role: string; classTeacher: string | null }[] }> => {
+  createSample: async () => {
     const res = await api.post<ApiResponse<{ created: number; password: string; items: { name: string; email: string; username: string; role: string; classTeacher: string | null }[] }>>('/auth/users/sample');
     return res.data.data;
   },
 
-  update: async (id: string, data: { name?: string; phone?: string; role?: string; email?: string; isActive?: boolean }): Promise<User> => {
+  update: async (id: string, data: { name?: string; phone?: string; role?: string; email?: string; isActive?: boolean }, avatarFile?: File): Promise<User> => {
+    if (avatarFile) {
+      const form = new FormData();
+      for (const [k, v] of Object.entries(data)) { if (v != null) form.append(k, String(v)); }
+      form.append('avatar', avatarFile);
+      const res = await api.patch<ApiResponse<User>>(`/auth/users/${id}`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      return res.data.data;
+    }
     const res = await api.patch<ApiResponse<User>>(`/auth/users/${id}`, data);
     return res.data.data;
   },
@@ -136,12 +138,12 @@ export const staffService = {
     return res.data;
   },
 
-  getUnassignedAdmins: async (): Promise<{ id: string; name: string; email: string; organizationId: string | null }[]> => {
+  getUnassignedAdmins: async () => {
     const res = await api.get<ApiResponse<{ id: string; name: string; email: string; organizationId: string | null }[]>>('/auth/users/unassigned-admins');
     return res.data.data;
   },
 
-  assignToBranch: async (adminId: string, schoolId: string): Promise<{ success: boolean; admin: { id: string; name: string; email: string }; replacedAdmin?: { id: string; name: string; email: string } | null }> => {
+  assignToBranch: async (adminId: string, schoolId: string) => {
     const res = await api.post<ApiResponse<{ success: boolean; admin: { id: string; name: string; email: string }; replacedAdmin?: { id: string; name: string; email: string } | null }>>(`/auth/users/${adminId}/assign-branch`, { schoolId });
     return res.data.data;
   },

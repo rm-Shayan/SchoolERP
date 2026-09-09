@@ -32,7 +32,15 @@ export default function IssueTCModal({ open, student, onClose, onIssued }: Props
       await documentsApi.issueTc(student.id, { reason, remarks: remarks || undefined });
       toast.success('Transfer Certificate issued and downloaded');
       setReason(''); setRemarks(''); onIssued?.(); onClose();
-    } catch (err: any) { toast.error(err?.response?.data?.message ?? 'Failed to issue Transfer Certificate'); }
+    } catch (err: any) {
+      let msg = 'Failed to issue Transfer Certificate';
+      try {
+        const d = err?.response?.data;
+        if (d instanceof Blob) { const t = await d.text(); const p = JSON.parse(t); if (p?.message) msg = p.message; }
+        else if (d?.message) msg = d.message;
+      } catch { /* keep default */ }
+      toast.error(msg);
+    }
     finally { setBusy(false); }
   };
 

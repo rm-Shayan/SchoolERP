@@ -3,6 +3,7 @@ import xlsx from "xlsx";
 import prisma from "../../config/db.js";
 import authRepository from "../auth/repository.js";
 import { UserResponseDTO } from "../auth/auth.dto.js";
+import storageService from "../../services/storage.service.js";
 import ApiError from "../../lib/utils/ApiError.js";
 import { ROLES } from "../../constants.js";
 import auditService from "../audit/audit.service.js";
@@ -65,7 +66,7 @@ class UserManagementService {
     return xlsx.write(workbook, { type: "buffer", bookType: "xlsx" });
   }
 
-  async createUser(requester, data) {
+  async createUser(requester, data, file) {
     const allowedRoles = CREATABLE_ROLES_BY[requester.role];
     if (!allowedRoles) throw ApiError.forbiddenError("You do not have permission to create user accounts.");
     if (!allowedRoles.includes(data.role)) throw ApiError.forbiddenError(`You cannot create a user with role '${data.role}'.`);
@@ -158,6 +159,14 @@ class UserManagementService {
       organizationId,
       schoolId,
     });
+
+    if (file && file.buffer) {
+      try {
+        const { url } = await storageService.uploadImage({ buffer: file.buffer, folder: "avatars", organizationId, schoolId });
+        await authRepository.updateUser(newUser.id, { avatarUrl: url });
+        newUser.avatarUrl = url;
+      } catch { /* avatar upload is non-critical */ }
+    }
 
     auditService.record({
       actorId: requester.id, actorName: requester.name, actorRole: requester.role,
@@ -439,7 +448,7 @@ class UserManagementService {
     return UserResponseDTO.toDTO(target);
   }
 
-  async updateUser(requester, targetId, data) {
+  async updateUser(requester, targetId, data, file) {
     const target = await authRepository.findById(targetId);
     if (!target) throw ApiError.notFoundError("User not found");
     this._assertCanAccessUser(requester, target);
@@ -449,6 +458,15 @@ class UserManagementService {
     }
     const { password, organizationId, schoolId, ...safeData } = data;
     const updated = await authRepository.updateUser(targetId, safeData);
+
+    if (file && file.buffer) {
+      try {
+        const { url } = await storageService.uploadImage({ buffer: file.buffer, folder: "avatars", existingUrl: target.avatarUrl, organizationId: target.organizationId, schoolId: target.schoolId });
+        await authRepository.updateUser(targetId, { avatarUrl: url });
+        updated.avatarUrl = url;
+      } catch { /* avatar upload is non-critical */ }
+    }
+
     auditService.record({
       actorId: requester.id, actorName: requester.name, actorRole: requester.role,
       action: AUDIT_ACTIONS.UPDATE_STAFF, entityType: AUDIT_ENTITY_TYPES.USER,

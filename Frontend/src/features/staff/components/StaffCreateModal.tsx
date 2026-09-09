@@ -5,6 +5,7 @@ import { useAppSelector } from '@/store/hooks';
 import { staffService, teachingAssignmentService } from '@/lib/api';
 import { academicService, type Class, type Section, type Subject } from '@/lib/api/academicService';
 import { Modal, Input, Select, Button } from '@/features/shared/components';
+import AvatarUpload from '@/features/shared/components/AvatarUpload';
 import { getRoleLabel, useForm, composeValidators, required, isEmail, isPhonePK } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -25,6 +26,7 @@ export default function StaffCreateModal({ open, onClose, onCreated }: Props) {
   const [classId, setClassId] = useState('');
   const [sectionId, setSectionId] = useState('');
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   const loadClasses = useCallback(async () => {
     if (!schoolId) return;
@@ -33,7 +35,7 @@ export default function StaffCreateModal({ open, onClose, onCreated }: Props) {
   }, [schoolId]);
 
   useEffect(() => {
-    if (open) { loadClasses(); setClassId(''); setSectionId(''); setSelectedSubjects([]); }
+    if (open) { loadClasses(); setClassId(''); setSectionId(''); setSelectedSubjects([]); setAvatarFile(null); }
   }, [open, loadClasses]);
 
   useEffect(() => {
@@ -70,7 +72,7 @@ export default function StaffCreateModal({ open, onClose, onCreated }: Props) {
           phone: (v.phone as string).trim() || undefined,
           role: v.role as string,
           schoolId,
-        });
+        }, avatarFile || undefined);
         if (v.role === 'TEACHER' && classId) {
           const subs = selectedSubjects.length ? selectedSubjects : [''];
           await Promise.all(
@@ -103,6 +105,7 @@ export default function StaffCreateModal({ open, onClose, onCreated }: Props) {
           <Input label="Email" name="email" type="email" placeholder="staff@school.com" value={values.email as string} onChange={handleChange} onBlur={() => handleBlur('email')} error={errors.email} required />
           <Input label="Phone" name="phone" placeholder="0300 1234567" value={values.phone as string} onChange={handleChange} onBlur={() => handleBlur('phone')} error={errors.phone} />
         </div>
+        <AvatarUpload name={values.name as string} onFileSelect={setAvatarFile} />
         <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
           All staff use the same shared password (the School Code). No per-user password is needed.
         </p>
