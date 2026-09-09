@@ -41,12 +41,15 @@ export default function SubjectsSection() {
   // Optimistic local-state updates — no full reload after each action
   const createSubject = async (v: { name: string; code?: string; classIds: string[] }) => {
     try {
-      for (const classId of v.classIds) {
-        const created = await academicService.createSubject(classId, { name: v.name, code: v.code });
-        setClasses((prev) =>
-          prev.map((c) => (c.id === classId ? { ...c, subjects: [...c.subjects, { id: created.id, name: created.name, code: created.code }] } : c))
-        );
-      }
+      const results = await Promise.all(v.classIds.map((classId) => academicService.createSubject(classId, { name: v.name, code: v.code })));
+      setClasses((prev) =>
+        prev.map((c) => {
+          const idx = v.classIds.indexOf(c.id);
+          if (idx === -1) return c;
+          const created = results[idx];
+          return { ...c, subjects: [...c.subjects, { id: created.id, name: created.name, code: created.code }] };
+        }),
+      );
       toast.success(`Subject linked to ${v.classIds.length} class(es)`);
       setShowForm(false);
     } catch (err: any) {

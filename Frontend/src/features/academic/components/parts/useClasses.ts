@@ -63,8 +63,9 @@ export function useClasses() {
     if (!schoolId) return;
     try {
       const cls = await academicService.createClass(schoolId, { name: v.name, order: Number(v.order) });
-      const secs: Section[] = [];
-      for (const sec of v.sections) secs.push(await academicService.createSection(cls.id, secPayload(sec)));
+      const secs = v.sections.length > 0
+        ? await Promise.all(v.sections.map((sec) => academicService.createSection(cls.id, secPayload(sec))))
+        : [];
       patchClass({ id: cls.id, name: cls.name, order: cls.order, sections: secs });
       setShowForm(false);
       toast.success(v.sections.length > 0 ? 'Class + sections created' : 'Class created');
@@ -79,24 +80,21 @@ export function useClasses() {
     try {
       const cls = await academicService.updateClass(row.id, { name: v.name, order: Number(v.order) });
       const existing = row.sections;
-      const kept: Section[] = [];
-      for (const sec of v.sections.filter((a) => !existing.some((s) => s.name === a.name))) {
-        kept.push(await academicService.createSection(row.id, secPayload(sec)));
-      }
-      for (const s of existing.filter((s) => !v.sections.some((a) => a.name === s.name))) {
-        await academicService.deleteSection(s.id);
-      }
-      for (const sec of v.sections) {
+      const toCreate = v.sections.filter((a) => !existing.some((s) => s.name === a.name));
+      const toDelete = existing.filter((s) => !v.sections.some((a) => a.name === s.name));
+      const toUpdate = v.sections.filter((sec) => {
         const cur = existing.find((s) => s.name === sec.name);
-        if (cur) {
-          kept.push(
-            String(cur.capacity ?? '') !== sec.capacity || (cur.roomNumber ?? '') !== sec.roomNumber
-              ? await academicService.updateSection(cur.id, secPayload(sec))
-              : cur
-          );
-        }
-      }
-      patchClass({ id: cls.id, name: cls.name, order: cls.order, sections: kept.sort((a, b) => a.name.localeCompare(b.name)) });
+        return cur && (String(cur.capacity ?? '') !== sec.capacity || (cur.roomNumber ?? '') !== sec.roomNumber);
+      });
+      const [created, , updated] = await Promise.all([
+        toCreate.length > 0 ? Promise.all(toCreate.map((sec) => academicService.createSection(row.id, secPayload(sec)))) : [],
+        toDelete.length > 0 ? Promise.all(toDelete.map((s) => academicService.deleteSection(s.id))) : [],
+        toUpdate.length > 0 ? Promise.all(toUpdate.map((sec) => { const cur = existing.find((s) => s.name === sec.name)!; return academicService.updateSection(cur.id, secPayload(sec)); })) : [],
+      ]);
+      const unchanged = v.sections
+        .filter((sec) => { const cur = existing.find((s) => s.name === sec.name); return cur && !toUpdate.includes(sec); })
+        .map((sec) => existing.find((s) => s.name === sec.name)!);
+      patchClass({ id: cls.id, name: cls.name, order: cls.order, sections: [...unchanged, ...created, ...updated].sort((a, b) => a.name.localeCompare(b.name)) });
       setEditingClass(null);
       toast.success('Class updated');
     } catch (e: any) {

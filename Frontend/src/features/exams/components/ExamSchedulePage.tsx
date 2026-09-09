@@ -44,9 +44,12 @@ export default function ExamSchedulePage() {
     if (!schoolId) return;
     setLoading(true);
     try {
-      const examData = await examService.getBySchool(schoolId, yearId || undefined);
+      const [examData, termsData] = await Promise.all([
+        examService.getBySchool(schoolId, yearId || undefined),
+        yearId ? academicService.getTerms(yearId) : Promise.resolve([]),
+      ]);
       setExams(examData);
-      if (yearId) setTerms(await academicService.getTerms(yearId));
+      setTerms(termsData);
     } catch (err) {
       toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to load');
     } finally {

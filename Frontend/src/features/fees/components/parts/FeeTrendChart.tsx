@@ -56,25 +56,20 @@ export const FeeTrendChart = memo(function FeeTrendChart({ themeColor }: { theme
 
     async function load() {
       const now = new Date();
-      const months: MonthData[] = [];
-      // Fetch last 6 months
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const m = d.getMonth() + 1;
-        const y = d.getFullYear();
-        try {
-          const s = await feeService.getSummary({ schoolId: schoolId!, month: m, year: y });
-          months.push({
-            month: `${y}-${String(m).padStart(2, '0')}`,
-            label: d.toLocaleString('en-PK', { month: 'short', year: '2-digit' }),
-            collected: s.collected,
-            outstanding: s.outstanding,
-            total: s.total,
-          });
-        } catch {
-          months.push({ month: `${y}-${String(m).padStart(2, '0')}`, label: d.toLocaleString('en-PK', { month: 'short', year: '2-digit' }), collected: 0, outstanding: 0, total: 0 });
-        }
-      }
+      const monthInputs = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+        return { d, m: d.getMonth() + 1, y: d.getFullYear() };
+      });
+      const results = await Promise.allSettled(
+        monthInputs.map(({ m, y }) => feeService.getSummary({ schoolId: schoolId!, month: m, year: y })),
+      );
+      const months = results.map((r, i) => {
+        const { d, m, y } = monthInputs[i];
+        const key = `${y}-${String(m).padStart(2, '0')}`;
+        const label = d.toLocaleString('en-PK', { month: 'short', year: '2-digit' });
+        if (r.status === 'fulfilled') return { month: key, label, collected: r.value.collected, outstanding: r.value.outstanding, total: r.value.total };
+        return { month: key, label, collected: 0, outstanding: 0, total: 0 };
+      });
       if (!cancelled) { setData(months); setLoading(false); }
     }
     load();
