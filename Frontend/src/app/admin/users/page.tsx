@@ -1,11 +1,7 @@
-﻿import { Suspense } from 'react';
-import UsersPage from '@/features/superadmin/components/UsersPage';
-import PageLoader from '@/components/PageLoader';
+﻿import UsersPage from '@/features/superadmin/components/UsersPage';
 
 export default function UsersPageRoute() {
   return (
-    <Suspense fallback={<PageLoader />}>
       <UsersPage />
-    </Suspense>
   );
 }

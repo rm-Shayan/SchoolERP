@@ -1,11 +1,7 @@
-﻿import { Suspense } from 'react';
-import LiveAttendancePage from '@/features/attendance/components/LiveAttendancePage';
-import PageLoader from '@/components/PageLoader';
+﻿import LiveAttendancePage from '@/features/attendance/components/LiveAttendancePage';
 
 export default function BranchLiveAttendancePage() {
   return (
-    <Suspense fallback={<PageLoader />}>
       <LiveAttendancePage />
-    </Suspense>
   );
 }

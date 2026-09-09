@@ -1,11 +1,7 @@
-﻿import { Suspense } from 'react';
-import SuperAdminDashboard from '@/features/superadmin/components/SuperAdminDashboard';
-import PageLoader from '@/components/PageLoader';
+﻿import SuperAdminDashboard from '@/features/superadmin/components/SuperAdminDashboard';
 
 export default function AdminDashboardPage() {
   return (
-    <Suspense fallback={<PageLoader />}>
       <SuperAdminDashboard />
-    </Suspense>
   );
 }

@@ -1,11 +1,7 @@
-﻿import { Suspense } from 'react';
-import StaffListPage from '@/features/staff/components/StaffListPage';
-import PageLoader from '@/components/PageLoader';
+﻿import StaffListPage from '@/features/staff/components/StaffListPage';
 
 export default function BranchStaffPage() {
   return (
-    <Suspense fallback={<PageLoader />}>
       <StaffListPage />
-    </Suspense>
   );
 }

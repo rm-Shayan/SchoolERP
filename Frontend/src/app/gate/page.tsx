@@ -1,11 +1,10 @@
 'use client';
 
-import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppSelector } from '@/store/hooks';
-import GateScanPage from '@/features/attendance/components/GateScanPage';
 import PageLoader from '@/components/PageLoader';
+import GateScanPage from '@/features/attendance/components/GateScanPage';
 
 export default function GatePage() {
   const router = useRouter();
@@ -25,9 +24,5 @@ export default function GatePage() {
 
   if (!mounted) return <PageLoader />;
 
-  return (
-    <Suspense fallback={<PageLoader />}>
-      <GateScanPage />
-    </Suspense>
-  );
+  return <GateScanPage />;
 }

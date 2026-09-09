@@ -1,11 +1,7 @@
-﻿import { Suspense } from 'react';
-import ExamResultsPage from '@/features/exams/components/ExamResultsPage';
-import PageLoader from '@/components/PageLoader';
+﻿import ExamResultsPage from '@/features/exams/components/ExamResultsPage';
 
 export default function BranchExamResultsPage() {
   return (
-    <Suspense fallback={<PageLoader />}>
       <ExamResultsPage />
-    </Suspense>
   );
 }

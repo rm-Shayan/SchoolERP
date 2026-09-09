@@ -1,11 +1,7 @@
-﻿import { Suspense } from 'react';
-import AcademicSetupPage from '@/features/academic/components/AcademicSetupPage';
-import PageLoader from '@/components/PageLoader';
+﻿import AcademicSetupPage from '@/features/academic/components/AcademicSetupPage';
 
 export default function BranchAcademicPage() {
   return (
-    <Suspense fallback={<PageLoader />}>
       <AcademicSetupPage />
-    </Suspense>
   );
 }

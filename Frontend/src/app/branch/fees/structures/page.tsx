@@ -1,11 +1,7 @@
-﻿import { Suspense } from 'react';
-import FeeStructuresPage from '@/features/fees/components/FeeStructuresPage';
-import PageLoader from '@/components/PageLoader';
+﻿import FeeStructuresPage from '@/features/fees/components/FeeStructuresPage';
 
 export default function BranchFeeStructuresPage() {
   return (
-    <Suspense fallback={<PageLoader />}>
       <FeeStructuresPage />
-    </Suspense>
   );
 }
