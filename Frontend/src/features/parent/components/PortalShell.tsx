@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePortalTheme } from '@/hooks/usePortalTheme';
 import PortalSidebar from './PortalSidebar';
 import PortalTopBar from './PortalTopBar';
@@ -22,11 +22,16 @@ interface ShellProps {
   childList?: PortalChildBrief[];
   activeChildId?: string;
   onChildChange?: (id: string) => void;
+  themeColor?: string | null;
 }
 
-export default function PortalShell({ title, subtitle, avatarUrl, orgName, orgLogoUrl, canEditPhoto, active, onChange, onLogout, children, childList, activeChildId, onChildChange }: ShellProps) {
-  const { pageBg } = usePortalTheme();
+export default function PortalShell({ title, subtitle, avatarUrl, orgName, orgLogoUrl, canEditPhoto, active, onChange, onLogout, children, childList, activeChildId, onChildChange, themeColor }: ShellProps) {
+  const { pageBg, setOrgTheme } = usePortalTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    if (themeColor) setOrgTheme(themeColor);
+  }, [themeColor, setOrgTheme]);
 
   return (
     <div className="min-h-screen bg-gray-50" style={pageBg}>

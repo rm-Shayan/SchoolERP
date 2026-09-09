@@ -22,7 +22,16 @@ const STATUSES: { value: AttendanceStatus; label: string; color: string }[] = [
   { value: 'MANUAL_OVERRIDE', label: 'Manual Override', color: 'bg-primary-100 border-primary-300 text-primary-800' },
 ];
 
-export default function AttendanceOverrideModal({ studentId, date, onClose }: Props) {
+// Backend DATE columns are stored at UTC midnight — always send clean YYYY-MM-DD.
+// `new Date(iso).toISOString().slice(0, 10)` shifts to UTC (e.g. 2026-09-09T19:00:00Z
+// → 09-08) so strip the date part from the raw string instead.
+function normalizeDate(raw: string): string {
+  const m = /^([0-9]{4}-[0-9]{2}-[0-9]{2})/.exec(raw);
+  return m ? m[1] : raw;
+}
+
+export default function AttendanceOverrideModal({ studentId, date: rawDate, onClose }: Props) {
+  const date = normalizeDate(rawDate);
   const [status, setStatus] = useState<AttendanceStatus>('PRESENT');
   const [remarks, setRemarks] = useState('');
   const [saving, setSaving] = useState(false);

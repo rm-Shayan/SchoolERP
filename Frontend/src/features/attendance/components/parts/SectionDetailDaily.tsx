@@ -133,7 +133,7 @@ export default function SectionDetailDaily({ sectionId }: Props) {
                     </td>
                     <td className="py-3 px-4 text-right">
                       <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-all">
-                        <button onClick={() => setOv({ studentId: r.studentId, date: r.date })} className="text-[11px] font-semibold text-primary-600 hover:text-primary-800">Override</button>
+                        <button onClick={() => setOv({ studentId: r.studentId, date: r.date.slice(0, 10) })} className="text-[11px] font-semibold text-primary-600 hover:text-primary-800">Override</button>
                         <button onClick={() => handleDelete(r.id)} className="text-[11px] font-semibold text-red-400 hover:text-red-600">Delete</button>
                       </div>
                     </td>

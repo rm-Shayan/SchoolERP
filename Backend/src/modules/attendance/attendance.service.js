@@ -346,9 +346,20 @@ class AttendanceService {
     });
     if (!student) throw ApiError.notFoundError("Student not found in this branch");
 
-    const day = new Date(date);
-    day.setHours(0, 0, 0, 0);
-    if (Number.isNaN(day.getTime())) {
+    // DATE column UTC-midnight convention — scan flow (processScan) save karta hai
+    // `Date.UTC(y, m, d)` par, to override ko bhi same convention use karna hoga.
+    // Pehle `new Date(date).setHours(0,0,0,0)` tha — server TZ (UTC) me local
+    // midnight ban jata tha, jo PKT (UTC+5) ke liye previous date ka 19:00 UTC
+    // hota. Unique key mismatch → override ne naya record banaya jo UI me
+    // kabhi nahi dikhta (UI us date ko query karta hai jo scan flow ne likhi).
+    const [y, m, d] = String(date).split("-").map(Number);
+    const day = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+    if (
+      !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(String(date)) ||
+      Number.isNaN(day.getTime()) ||
+      day.getUTCMonth() !== (m || 1) - 1 ||
+      day.getUTCDate() !== (d || 1)
+    ) {
       throw ApiError.badRequestError("Invalid date — expected YYYY-MM-DD");
     }
 
@@ -481,9 +492,15 @@ class AttendanceService {
       throw ApiError.badRequestError("sectionId, date and records are required");
     }
 
-    const targetDate = new Date(date);
-    targetDate.setHours(0, 0, 0, 0);
-    if (Number.isNaN(targetDate.getTime())) {
+    // Same UTC-midnight convention as processScan/manualOverride — see comment there.
+    const [by, bm, bd] = String(date).split("-").map(Number);
+    const targetDate = new Date(Date.UTC(by, (bm || 1) - 1, bd || 1));
+    if (
+      !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(String(date)) ||
+      Number.isNaN(targetDate.getTime()) ||
+      targetDate.getUTCMonth() !== (bm || 1) - 1 ||
+      targetDate.getUTCDate() !== (bd || 1)
+    ) {
       throw ApiError.badRequestError("Invalid date — expected YYYY-MM-DD");
     }
 

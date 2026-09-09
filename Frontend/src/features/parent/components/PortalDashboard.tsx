@@ -120,6 +120,7 @@ export default function PortalDashboard() {
       childList={!isStudent && children.length > 1 ? briefs : undefined}
       activeChildId={!isStudent ? activeChildId : undefined}
       onChildChange={!isStudent ? switchChild : undefined}
+      themeColor={orgSchool?.themeColor}
     >
       {content}
     </PortalShell>
