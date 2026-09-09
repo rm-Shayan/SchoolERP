@@ -25,6 +25,7 @@ export default function Sidebar({ links, collapsed, onToggle, mobileOpen, onMobi
 
   const themeColor = organization?.themeColor || school?.themeColor || null;
   const colors = useMemo(() => sidebarColors(themeColor), [themeColor]);
+  console.log('Sidebar render', { colors , themeColor});
 
   const expandedByDefault = useMemo(() => {
     const map = new Map<string, boolean>();

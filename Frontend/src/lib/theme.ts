@@ -34,10 +34,9 @@ export function buildPrimaryScale(hex: string): Record<string, string> | null {
 export const PRIMARY_STEPS = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'] as const;
 
 /**
- * Apply org theme to :root by setting --theme-primary-* CSS custom properties.
- * The globals.css bridge (var(--theme-primary-*, <default>)) resolves these
- * into --color-primary-* which Tailwind utilities reference. No <style> tag,
- * no !important — pure CSS variable resolution.
+ * Apply org theme by setting --color-primary-* directly on :root via setProperty.
+ * Inline custom properties on <html> always beat @layer theme declarations.
+ * Also sets --theme-primary-* as a secondary mechanism.
  */
 export function applyPortalThemeToRoot(themeColor?: string | null): void {
   if (typeof document === 'undefined') return;
@@ -45,6 +44,7 @@ export function applyPortalThemeToRoot(themeColor?: string | null): void {
   if (!scale) { clearPortalThemeFromRoot(); return; }
   const root = document.documentElement;
   for (const step of PRIMARY_STEPS) {
+    root.style.setProperty(`--color-primary-${step}`, scale[step]);
     root.style.setProperty(`--theme-primary-${step}`, scale[step]);
   }
 }
@@ -53,13 +53,11 @@ export function clearPortalThemeFromRoot(): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
   for (const step of PRIMARY_STEPS) {
+    root.style.removeProperty(`--color-primary-${step}`);
     root.style.removeProperty(`--theme-primary-${step}`);
   }
 }
 
-/**
- * Alias — used by org admin portal (DashboardLayout).
- */
 export function applyOrgThemeToRoot(themeColor?: string | null): void {
   applyPortalThemeToRoot(themeColor);
 }
@@ -70,13 +68,15 @@ export function clearOrgThemeFromRoot(): void {
 
 /**
  * Returns inline CSS custom properties for the wrapper div.
- * Sets --theme-primary-* which the globals.css bridge resolves to --color-primary-*.
+ * Sets --color-primary-* and --theme-primary-* so both inline and utility
+ * classes pick up the theme color.
  */
 export function orgThemeStyle(themeColor?: string | null): CSSProperties | undefined {
   const scale = themeColor ? buildPrimaryScale(themeColor) : null;
   if (!scale) return undefined;
   const vars: Record<string, string> = {};
   for (const [step, value] of Object.entries(scale)) {
+    vars[`--color-primary-${step}`] = value;
     vars[`--theme-primary-${step}`] = value;
   }
   return vars as CSSProperties;
@@ -111,15 +111,8 @@ export function sidebarColors(themeColor?: string | null): SidebarColors {
   const activeBg = `${themeColor}35`;
   const activeAccent = mix(rgb, 255, 0.18);
   return {
-    bg,
-    bgHover,
-    activeBg,
-    activeText: '#ffffff',
-    activeAccent,
-    text: mix(rgb, 255, 0.82),
-    textMuted: mix(rgb, 255, 0.78),
-    textHover: '#ffffff',
-    border: `${activeAccent}30`,
-    groupText: mix(rgb, 255, 0.76),
+    bg, bgHover, activeBg, activeText: '#ffffff', activeAccent,
+    text: mix(rgb, 255, 0.82), textMuted: mix(rgb, 255, 0.78),
+    textHover: '#ffffff', border: `${activeAccent}30`, groupText: mix(rgb, 255, 0.76),
   };
 }
