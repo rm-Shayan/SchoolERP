@@ -34,7 +34,7 @@ export default function DashboardLayout({ links, title, children }: DashboardLay
   const router = useRouter();
   const { organization, school, user } = useAppSelector((s) => s.auth);
 
-  const themeColor = organization?.themeColor ?? school?.themeColor ?? null;
+  const themeColor = organization?.themeColor ?? null;
   const themeStyle = orgThemeStyle(themeColor);
 
   // Apply the theme to :root as well — inline styles are limited to the wrapper;

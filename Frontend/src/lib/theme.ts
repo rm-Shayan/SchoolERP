@@ -34,9 +34,9 @@ export function buildPrimaryScale(hex: string): Record<string, string> | null {
 export const PRIMARY_STEPS = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'] as const;
 
 /**
- * Apply org theme by setting --theme-primary-* on :root.
- * The :root bridge in globals.css resolves --color-primary-* via
- * var(--theme-primary-*, fallback) — no need to set --color-primary-* directly.
+ * Apply org theme by setting both --color-primary-* and --theme-primary-* on :root.
+ * Inline setProperty on <html> has the highest CSS cascade priority and overrides
+ * both @theme (layered) and :root (unlayered) declarations.
  */
 export function applyPortalThemeToRoot(themeColor?: string | null): void {
   if (typeof document === 'undefined') return;
@@ -44,6 +44,7 @@ export function applyPortalThemeToRoot(themeColor?: string | null): void {
   if (!scale) { clearPortalThemeFromRoot(); return; }
   const root = document.documentElement;
   for (const step of PRIMARY_STEPS) {
+    root.style.setProperty(`--color-primary-${step}`, scale[step]);
     root.style.setProperty(`--theme-primary-${step}`, scale[step]);
   }
 }
@@ -52,6 +53,7 @@ export function clearPortalThemeFromRoot(): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
   for (const step of PRIMARY_STEPS) {
+    root.style.removeProperty(`--color-primary-${step}`);
     root.style.removeProperty(`--theme-primary-${step}`);
   }
 }
@@ -74,6 +76,7 @@ export function orgThemeStyle(themeColor?: string | null): CSSProperties | undef
   if (!scale) return undefined;
   const vars: Record<string, string> = {};
   for (const [step, value] of Object.entries(scale)) {
+    vars[`--color-primary-${step}`] = value;
     vars[`--theme-primary-${step}`] = value;
   }
   return vars as CSSProperties;

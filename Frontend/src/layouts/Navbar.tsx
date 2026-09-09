@@ -24,7 +24,7 @@ export default function Navbar({ title, onMenuClick }: NavbarProps) {
   // Organization branding is the source of truth across every org portal page.
   // A branch may have its own color for branch-only contexts, but it must not
   // override the organization's theme in the org admin portal.
-  const themeColor = organization?.themeColor || school?.themeColor || '#6d28d9';
+  const themeColor = organization?.themeColor || '#6d28d9';
 
   const handleLogout = async () => {
     await dispatch(logoutAction());

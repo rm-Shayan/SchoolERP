@@ -23,7 +23,7 @@ export default function Sidebar({ links, collapsed, onToggle, mobileOpen, onMobi
   const title = organization?.name || school?.name || 'School ERP';
   const subtitle = school?.name || undefined;
 
-  const themeColor = organization?.themeColor || school?.themeColor || null;
+  const themeColor = organization?.themeColor || null;
   const colors = useMemo(() => sidebarColors(themeColor), [themeColor]);
 
   const expandedByDefault = useMemo(() => {
