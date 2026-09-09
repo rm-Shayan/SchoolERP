@@ -24,6 +24,15 @@ class StudentController {
   });
 
   /**
+   * GET /api/v1/students/stats
+   * Lightweight dashboard stats — counts only.
+   */
+  getDashboardStats = asyncHandler(async (req, res) => {
+    const stats = await studentService.getDashboardStats(req.user, req.query.schoolId);
+    return res.status(200).json(ApiResponse.ok("Dashboard stats fetched", stats));
+  });
+
+  /**
    * GET /api/v1/students/:id
    * Get a single student with full detail.
    */

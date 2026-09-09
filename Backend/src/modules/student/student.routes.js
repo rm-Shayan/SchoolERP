@@ -88,6 +88,16 @@ router.get(
 );
 
 /**
+ * GET /api/v1/students/stats
+ * Lightweight dashboard stats — counts only (no full student records).
+ */
+router.get(
+  "/stats",
+  authorize(ROLE_GROUPS.ALL_STAFF),
+  studentController.getDashboardStats
+);
+
+/**
  * GET /api/v1/students/export
  * CSV export — current filters ke mutabiq (har branch staff).
  * Must be declared before /:id to avoid route conflict.

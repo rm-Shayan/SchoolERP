@@ -3,18 +3,12 @@
 import { useEffect, useState } from 'react';
 import { studentService, attendanceService, admissionService, feeService } from '@/lib/api';
 import type { AdmissionFunnelStats } from '@/lib/api/admissionService';
-import type { Student } from '@/types';
 
 export interface ClassAttendanceDatum {
   name: string;
   Present: number;
   Late: number;
   Absent: number;
-}
-
-export interface ClassStrengthDatum {
-  name: string;
-  Students: number;
 }
 
 export interface FeeStatusDatum {
@@ -29,7 +23,6 @@ export interface DashboardData {
   feesCollected: number;
   funnel: AdmissionFunnelStats | null;
   classAttendance: ClassAttendanceDatum[];
-  classStrength: ClassStrengthDatum[];
   feeStatus: FeeStatusDatum[];
 }
 
@@ -39,20 +32,8 @@ const EMPTY: DashboardData = {
   feesCollected: 0,
   funnel: null,
   classAttendance: [],
-  classStrength: [],
   feeStatus: [],
 };
-
-function buildClassStrength(students: Student[]): ClassStrengthDatum[] {
-  const byClass = new Map<string, number>();
-  for (const s of students) {
-    const key = s.section?.class?.name ?? s.section?.name ?? 'Unassigned';
-    byClass.set(key, (byClass.get(key) ?? 0) + 1);
-  }
-  return [...byClass.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))
-    .map(([name, count]) => ({ name, Students: count }));
-}
 
 /** Full org-admin dashboard data load + derived chart datasets. */
 export function useDashboardData(schoolId?: string) {
@@ -71,12 +52,12 @@ export function useDashboardData(schoolId?: string) {
       try {
         const now = new Date();
         const results = await Promise.allSettled([
-          studentService.getAll({ schoolId }),
+          studentService.getStats(schoolId),
           attendanceService.getDailyReport({ schoolId }),
           feeService.getSummary({ schoolId }),
         ]);
         if (!alive) return;
-        const studentsData = results[0].status === 'fulfilled' ? results[0].value : [];
+        const statsData = results[0].status === 'fulfilled' ? results[0].value : null;
         const daily = results[1].status === 'fulfilled' ? results[1].value : null;
         const summary = results[2].status === 'fulfilled' ? results[2].value : null;
         const rawCounts = summary?.counts;
@@ -89,15 +70,13 @@ export function useDashboardData(schoolId?: string) {
 
         setData({
           ...EMPTY,
-          activeStudents: studentsData.filter((s) => s.status === 'ACTIVE').length,
+          activeStudents: statsData?.ACTIVE ?? 0,
           presentToday: (daily?.summary?.present ?? 0) + (daily?.summary?.late ?? 0),
           feesCollected: summary?.collected ?? 0,
-          classStrength: buildClassStrength(studentsData),
           feeStatus,
         });
         setLoading(false);
 
-        // Heavy reports hydrate after the critical dashboard cards are visible.
         setHydrating(true);
         const [funnelResult, monthlyResult] = await Promise.allSettled([
           admissionService.getFunnel(schoolId).catch(() => null),

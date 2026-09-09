@@ -283,7 +283,14 @@ class AttendanceService {
   }
 
   async getMonthlyReport(schoolId, year, month) {
-    return buildMonthlyReport(attendanceRepository, schoolId, year, month);
+    const cacheKey = `attendance:monthly:${schoolId}:${year}:${month}`;
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    const result = await buildMonthlyReport(attendanceRepository, schoolId, year, month);
+    try { await redis.setEx(cacheKey, 120, JSON.stringify(result)); } catch {}
+    return result;
   }
 
   // ─── OFF DAYS / HOLIDAYS ────────────────────────────────────────────────

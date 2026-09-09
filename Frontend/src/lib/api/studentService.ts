@@ -15,6 +15,10 @@ export const studentService = {
     const res = await api.get<ApiResponse<StudentListEnvelope>>('/students', { params });
     return { items: res.data.data.items, total: res.data.data.total, summary: res.data.data.summary ?? null };
   },
+  getStats: async (schoolId?: string): Promise<{ total: number; ACTIVE: number; GRADUATED: number; DROPPED_OUT: number; TRANSFERRED_OUT: number; blocked: number }> => {
+    const res = await api.get<ApiResponse<{ total: number; ACTIVE: number; GRADUATED: number; DROPPED_OUT: number; TRANSFERRED_OUT: number; blocked: number }>>('/students/stats', { params: { schoolId } });
+    return res.data.data;
+  },
   create: async (schoolId: string, data: StudentCreatePayload): Promise<Student> => {
     const res = await api.post<ApiResponse<Student>>(`/students/schools/${schoolId}`, data);
     return res.data.data;

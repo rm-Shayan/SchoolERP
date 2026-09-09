@@ -49,7 +49,7 @@ app.use(
   cors({
     origin: corsOrigin,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Idempotency-Key"],
     credentials: true,
   }),
 );
@@ -81,6 +81,16 @@ app.use(
 //    organizationId likhta hai; storage.service isi se tenant resolve
 //    karta hai (har call site par explicit orgId pass karne ki zaroorat nahi).
 app.use(requestContextMiddleware);
+
+// 7b. Cache-Control headers for GET API responses — browser + CDN can cache
+//     non-authenticated reads (public data, dashboards). Auth routes set
+//     no-store explicitly.
+app.use("/api/v1", (req, res, next) => {
+  if (req.method === "GET") {
+    res.set("Cache-Control", "private, max-age=30");
+  }
+  next();
+});
 
 // 8. API Routes Setup — timing middleware wraps all API routes
 app.use("/api/v1", globalLimiter, timingMiddleware, routes);

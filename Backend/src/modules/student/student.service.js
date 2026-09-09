@@ -104,6 +104,33 @@ class StudentService {
     return result;
   }
 
+  /**
+   * Lightweight dashboard stats — counts only (no full student records).
+   * Powers the admin dashboard "Active Students" card without fetching all students.
+   */
+  async getDashboardStats(user, schoolId) {
+    const targetSchoolId = getEffectiveSchoolId(user, schoolId);
+    assertSchoolAccess(user, targetSchoolId);
+
+    const cacheKey = `students:stats:${targetSchoolId}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) return cached;
+
+    const [statusCounts, blockedCount] = await Promise.all([
+      prisma.student.groupBy({ by: ["status"], where: { schoolId: targetSchoolId }, _count: { _all: true } }),
+      prisma.student.count({ where: { schoolId: targetSchoolId, isBlocked: true } }),
+    ]);
+
+    const stats = { total: 0, ACTIVE: 0, GRADUATED: 0, DROPPED_OUT: 0, TRANSFERRED_OUT: 0, blocked: blockedCount };
+    for (const row of statusCounts) {
+      stats[row.status] = row._count._all;
+      stats.total += row._count._all;
+    }
+
+    await cacheSet(cacheKey, stats, 60);
+    return stats;
+  }
+
   async getStudent(user, id) {
     const student = await studentRepository.findStudentById(id);
     if (!student) throw ApiError.notFoundError("Student not found");
