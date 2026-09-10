@@ -56,7 +56,11 @@ function flushRefreshQueue(error?: unknown) {
   q.forEach((e) => (error ? e.reject(error) : e.resolve()));
 }
 function normalizeError(error: AxiosError) {
-  const msg = (error.response?.data as { message?: unknown } | undefined)?.message;
+  const data = error.response?.data;
+  if (data instanceof Blob) {
+    return error;
+  }
+  const msg = (data as { message?: unknown } | undefined)?.message;
   if (typeof msg === 'string' && msg.trim() !== '') error.message = msg;
   return error;
 }

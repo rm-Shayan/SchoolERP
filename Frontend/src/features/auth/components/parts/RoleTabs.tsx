@@ -34,7 +34,7 @@ export default function RoleTabs({ active, themeColor, onChange }: RoleTabsProps
                 ? 'text-white shadow-md'
                 : 'text-gray-500 hover:text-gray-800 hover:bg-gray-200/60'
             )}
-            style={isActive ? { backgroundColor: themeColor || '#7c3aed', boxShadow: `0 4px 14px ${themeColor || '#7c3aed'}40` } : undefined}
+            style={isActive ? { backgroundColor: themeColor || '#6366f1', boxShadow: `0 4px 14px ${themeColor || '#6366f1'}40` } : undefined}
           >
             {SHORT_LABELS[key]}
           </button>

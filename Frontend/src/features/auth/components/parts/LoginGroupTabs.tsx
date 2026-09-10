@@ -58,7 +58,7 @@ export default function LoginGroupTabs({ active, themeColor, onChange }: LoginGr
               isActive ? 'text-white shadow-md' : 'text-gray-500 hover:bg-white/70 hover:text-gray-800',
             )}
             style={isActive
-              ? { backgroundColor: themeColor || '#7c3aed', boxShadow: `0 4px 14px ${themeColor || '#7c3aed'}35` }
+              ? { backgroundColor: themeColor || '#6366f1', boxShadow: `0 4px 14px ${themeColor || '#6366f1'}35` }
               : undefined}
           >
             <span className={cn('shrink-0 [&_svg]:h-4 [&_svg]:w-4', isActive ? 'text-white' : 'text-current')}>

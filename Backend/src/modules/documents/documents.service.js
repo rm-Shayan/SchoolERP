@@ -51,7 +51,7 @@ class DocumentsService {
       dueDate: fr.dueDate,
       issuedDate: new Date(),
       refNo: fr.id.slice(0, 8).toUpperCase(),
-      themeColor: s.school.themeColor || s.school.organization?.themeColor,
+      themeColor: s.school.organization?.themeColor,
       // Prefer a branch-specific mark, then fall back to the organization mark.
       // This keeps vouchers branded even when a branch has no separate logo.
       logoUrl: s.school.logoUrl || s.school.organization?.logoUrl,
@@ -87,7 +87,7 @@ class DocumentsService {
       refNo: a.id.slice(0, 8).toUpperCase(),
       amount: a.advanceFeeAmount ? Number(a.advanceFeeAmount) : 0,
       dueDate: a.testDate || a.createdAt,
-      themeColor: a.school.themeColor,
+      themeColor: a.school.organization?.themeColor,
       logoUrl: a.school.logoUrl,
       schoolAddress: a.school.address,
       schoolPhone: a.school.phone,
@@ -120,7 +120,7 @@ class DocumentsService {
       ...card,
       schoolName: st.school.name,
       campusName: '',
-      themeColor: st.school.themeColor,
+      themeColor: st.school.organization?.themeColor,
       logoUrl: st.school.logoUrl,
       schoolAddress: st.school.address,
       schoolPhone: st.school.phone,
@@ -131,7 +131,7 @@ class DocumentsService {
   async getStaffIdCard(user, staffId) {
     const u = await prisma.user.findUnique({
       where: { id: staffId },
-      include: { school: true },
+      include: { school: { include: { organization: true } } },
     });
     if (!u) throw ApiError.notFoundError('Staff not found');
     if (u.schoolId) assertSchoolAccess(user, u.schoolId);
@@ -154,7 +154,7 @@ class DocumentsService {
       cards: [card],
       schoolName: u.school?.name || 'School',
       campusName: '',
-      themeColor: u.school?.themeColor,
+      themeColor: u.school?.organization?.themeColor,
       logoUrl: u.school?.logoUrl,
     });
   }
@@ -187,7 +187,6 @@ class DocumentsService {
     assertSchoolAccess(user, student.school.id);
     if (student.status !== 'ACTIVE') throw ApiError.badRequestError(`Student is already ${student.status}`);
 
-    // Status map
     const statusMap = {
       GRADUATED: 'GRADUATED',
       DROPPED_OUT: 'DROPPED_OUT',
@@ -196,19 +195,37 @@ class DocumentsService {
     const newStatus = statusMap[reason];
     if (!newStatus) throw ApiError.badRequestError('Invalid reason. Must be GRADUATED, DROPPED_OUT, or TRANSFERRED_OUT');
 
-    // 1. Move photo to archive
+    const tcNumber = `TC-${Date.now().toString(36).toUpperCase()}`;
+    const tcDate = new Date();
+
+    // 1. Generate PDF FIRST — if this fails, no DB changes are made
+    const tc = await pdfService.transferCertificate({
+      schoolName: student.school.name,
+      schoolAddress: student.school.address,
+      schoolPhone: student.school.phone,
+      studentName: `${student.firstName} ${student.lastName}`,
+      fatherName: student.parent?.name || 'N/A',
+      className: student.section?.class?.name || 'N/A',
+      sectionName: student.section?.name || 'N/A',
+      rollNumber: student.rollNumber,
+      admissionDate: student.createdAt,
+      leavingDate: tcDate,
+      reason: newStatus,
+      remarks,
+      feeCleared: true,
+      tcNumber,
+      themeColor: student.school.organization?.themeColor,
+      logoUrl: student.school.logoUrl || student.school.organization?.logoUrl,
+    });
+
+    // 2. PDF succeeded — now mutate DB
     let imageUrl = student.imageUrl;
     if (student.imageUrl) {
       const moved = await storageService.moveToArchive({ url: student.imageUrl }).catch(() => null);
       if (moved?.url) imageUrl = moved.url;
     }
 
-    // 2. Generate TC number
-    const tcNumber = `TC-${Date.now().toString(36).toUpperCase()}`;
-
-    // 3. Update student status + generate TC in transaction
-    const tcDate = new Date();
-    const [updatedStudent] = await prisma.$transaction([
+    await prisma.$transaction([
       prisma.student.update({
         where: { id: studentId },
         data: { status: newStatus, imageUrl },
@@ -225,9 +242,7 @@ class DocumentsService {
       }),
     ]);
 
-    // 4. Deactivate student portal (student + parent)
-    // Student portal deactivation: set status already handles this (ACTIVE check in portal auth)
-    // Parent portal: mark parent as inactive if no other active children
+    // 3. Deactivate parent portal if no other active children
     if (student.parentId) {
       const otherActiveChildren = await prisma.student.count({
         where: { parentId: student.parentId, status: 'ACTIVE', id: { not: studentId } },
@@ -237,30 +252,10 @@ class DocumentsService {
       }
     }
 
-    // 5. Emit socket event
+    // 4. Emit socket event
     emitToRoom(`school:${student.schoolId}`, 'student_status_changed', {
       studentId: student.id,
       status: newStatus,
-    });
-
-    // 6. Generate TC PDF
-    const tc = await pdfService.transferCertificate({
-      schoolName: student.school.name,
-      schoolAddress: student.school.address,
-      schoolPhone: student.school.phone,
-      studentName: `${student.firstName} ${student.lastName}`,
-      fatherName: student.parent?.name || 'N/A',
-      className: student.section?.class?.name || 'N/A',
-      sectionName: student.section?.name || 'N/A',
-      rollNumber: student.rollNumber,
-      admissionDate: student.createdAt,
-      leavingDate: tcDate,
-      reason: newStatus,
-      remarks,
-      feeCleared: true,
-      tcNumber,
-      themeColor: student.school.themeColor || student.school.organization?.themeColor,
-      logoUrl: student.school.logoUrl || student.school.organization?.logoUrl,
     });
 
     return { tc, tcNumber, studentId: student.id, status: newStatus };
