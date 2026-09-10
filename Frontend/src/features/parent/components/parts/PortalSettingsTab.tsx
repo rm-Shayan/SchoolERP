@@ -11,6 +11,7 @@ import LinkedChildrenCard from './LinkedChildrenCard';
 import ProfileEditForm from './ProfileEditForm';
 import ProfileHeroCard from './ProfileHeroCard';
 import InfoRow from './PortalInfoRow';
+import SettingsInfoCard from './SettingsInfoCard';
 
 interface PortalSettingsTabProps {
   activeChildId: string;
@@ -77,7 +78,7 @@ export default function PortalSettingsTab({ activeChildId, onChildChange }: Port
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card className="overflow-hidden border-0 shadow-md lg:col-span-2">
-              <div className="h-1.5 bg-gradient-to-r from-gray-300 to-gray-100" />
+              <div className="h-1.5" style={{ background: `linear-gradient(90deg, ${color}, ${color}aa)` }} />
               <CardContent className="p-5">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-4">Account Information</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
@@ -90,32 +91,36 @@ export default function PortalSettingsTab({ activeChildId, onChildChange }: Port
             </Card>
             <LinkedChildrenCard children={children} activeChildId={activeChildId} onChildChange={onChildChange} />
           </div>
-
           <ProfileEditForm key={parent.id} parent={parent} onSaved={handleSaved} />
         </>
       ) : (
-        <Card className="overflow-hidden border-0 shadow-md">
-          <div className="h-1.5 bg-gradient-to-r from-gray-300 to-gray-100" />
-          <CardContent className="p-5">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Account Information</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
-              <InfoRow label="Roll Number" value={student?.rollNumber} accent={color} />
-              <InfoRow label="School" value={student?.school?.name} accent={color} />
-              <InfoRow label="Class" value={student?.class?.name} accent={color} />
-              <InfoRow label="Section" value={student?.section?.name} accent={color} />
-              <InfoRow label="Parent WhatsApp" value={student?.parentWhatsapp} fallback="—" accent={color} />
-              <InfoRow label="Status" value={student?.status?.replace('_', ' ')} accent={color} />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {studentMode && (
-        <Card>
-          <CardContent className="p-5 text-sm text-gray-500">
-            Student profile details are managed by the school. Roll number, class and section are updated by your school admin.
-          </CardContent>
-        </Card>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card className="overflow-hidden border-0 shadow-md">
+              <div className="h-1.5" style={{ background: `linear-gradient(90deg, ${color}, ${color}aa)` }} />
+              <CardContent className="p-5">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-4">Academic Details</h3>
+                <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                  <InfoRow label="Roll Number" value={student?.rollNumber} accent={color} />
+                  <InfoRow label="Class" value={student?.class?.name} accent={color} />
+                  <InfoRow label="Section" value={student?.section?.name} accent={color} />
+                  <InfoRow label="Status" value={student?.status?.replace('_', ' ')} accent={color} />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="overflow-hidden border-0 shadow-md">
+              <div className="h-1.5" style={{ background: `linear-gradient(90deg, ${color}88, ${color}44)` }} />
+              <CardContent className="p-5">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-4">Contact &amp; School</h3>
+                <div className="grid grid-cols-1 gap-y-4">
+                  <InfoRow label="School" value={student?.school?.name} accent={color} />
+                  <InfoRow label="Parent WhatsApp" value={student?.parentWhatsapp} fallback="—" accent={color} />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <SettingsInfoCard color={color} />
+        </>
       )}
     </div>
   );

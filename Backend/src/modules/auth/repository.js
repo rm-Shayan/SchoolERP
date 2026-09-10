@@ -617,7 +617,7 @@ class AuthRepository {
             status: true,
             portalPassword: true,
             organizationId: true,
-            organization: { select: { id: true, status: true, slug: true } },
+            organization: { select: { id: true, status: true, themeColor: true, logoUrl: true, slug: true } },
           },
         },
       },
