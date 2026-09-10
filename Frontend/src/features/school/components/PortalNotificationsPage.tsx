@@ -7,6 +7,7 @@ import type { PortalNotification } from '@/lib/api/notificationService';
 import { useAppSelector } from '@/store/hooks';
 import { Card, PageHeader, Button, EmptyState } from '@/features/shared/components';
 import { cn } from '@/lib/utils';
+import { getOrgThemeColor } from '@/lib/utils/orgTheme';
 import { getSocket } from '@/lib/socket';
 
 const CAT_ICON: Record<string, string> = {
@@ -39,7 +40,7 @@ export default function PortalNotificationsPage() {
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [page, setPage] = useState(1);
 
-  const themeColor = organization?.themeColor || '#6366f1';
+  const themeColor = organization?.themeColor || getOrgThemeColor() || '#6366f1';
   const rgb = hexToRgb(themeColor);
   const unreadBg = rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.06)` : undefined;
 

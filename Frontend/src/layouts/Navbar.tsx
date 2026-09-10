@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logoutAction } from '@/store/slices/authSlice';
 import { getInitials, getRoleLabel } from '@/lib/utils';
+import { getOrgThemeColor } from '@/lib/utils/orgTheme';
 import NotificationMenu from './parts/NotificationMenu';
 import PortalStatusPill from './parts/PortalStatusPill';
 
@@ -24,7 +25,7 @@ export default function Navbar({ title, onMenuClick }: NavbarProps) {
   // Organization branding is the source of truth across every org portal page.
   // A branch may have its own color for branch-only contexts, but it must not
   // override the organization's theme in the org admin portal.
-  const themeColor = organization?.themeColor || '#6366f1';
+  const themeColor = organization?.themeColor || getOrgThemeColor();
 
   const handleLogout = async () => {
     await dispatch(logoutAction());

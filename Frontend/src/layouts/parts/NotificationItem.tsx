@@ -39,7 +39,7 @@ export default function NotificationItem({ n, onRead, onDelete }: Props) {
       className={cn(
         'flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors duration-100',
         // LinkedIn: unread gets very subtle tint, hover is neutral gray
-        !n.isRead ? 'bg-sky-50/60 hover:bg-sky-100/70' : 'hover:bg-gray-100/80',
+        !n.isRead ? 'bg-primary-50/60 hover:bg-primary-100/70' : 'hover:bg-gray-100/80',
         'border-b border-gray-100 last:border-b-0',
       )}
     >

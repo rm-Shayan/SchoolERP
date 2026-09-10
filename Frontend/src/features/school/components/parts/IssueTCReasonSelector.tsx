@@ -22,7 +22,7 @@ export default function ReasonSelector({ reason, onReason, canIssue, isReception
       <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">Reason for Leaving *</label>
       <div className="space-y-2">
         {REASONS.map((r) => (
-          <label key={r.value} className={`relative flex items-start gap-3 rounded-xl border-2 p-3.5 cursor-pointer transition-all duration-200 ${reason === r.value ? 'border-primary-500 bg-primary-50/70 shadow-[0_4px_14px_-2px_rgba(124,58,237,0.18)] ring-2 ring-primary-200/40' : 'border-gray-200/80 bg-white hover:border-gray-300 hover:shadow-sm'}`}>
+          <label key={r.value} className={`relative flex items-start gap-3 rounded-xl border-2 p-3.5 cursor-pointer transition-all duration-200 ${reason === r.value ? 'border-primary-500 bg-primary-50/70 shadow-md shadow-primary-500/20 ring-2 ring-primary-200/40' : 'border-gray-200/80 bg-white hover:border-gray-300 hover:shadow-sm'}`}>
             {reason === r.value && <span className="absolute -top-2.5 -right-2.5 rounded-full bg-primary-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">Selected</span>}
             <input type="radio" name="tc-reason" value={r.value} checked={reason === r.value} onChange={(e) => onReason(e.target.value)} className="mt-0.5 h-4 w-4 text-primary-600 accent-primary-600" disabled={!canIssue} />
             <div>

@@ -3,6 +3,7 @@
 import { useState, useEffect, memo } from 'react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
 import { feeService } from '@/lib/api';
+import { getOrgThemeColor } from '@/lib/utils/orgTheme';
 import { useAppSelector } from '@/store/hooks';
 import { formatCurrency } from '@/lib/utils';
 
@@ -48,7 +49,7 @@ export const FeeTrendChart = memo(function FeeTrendChart({ themeColor }: { theme
   const schoolId = school?.id;
   const [data, setData] = useState<MonthData[]>([]);
   const [loading, setLoading] = useState(true);
-  const tc = themeColor || '#6366f1';
+  const tc = themeColor || getOrgThemeColor();
 
   useEffect(() => {
     if (!schoolId) return;

@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { getOrgThemeColor } from '@/lib/utils/orgTheme';
 import {
   setPortalNotifications, removePortalNotification, setPortalUnread,
   markAllPortalRead, markPortalRead,
@@ -26,7 +27,7 @@ export default function NotificationMenu() {
   const menuRef = useRef<HTMLDivElement>(null);
   const schoolId = school?.id;
   const organizationId = user?.organizationId;
-  const themeColor = organization?.themeColor || '#6366f1';
+  const themeColor = organization?.themeColor || getOrgThemeColor();
 
   const { data: unread, refetch: refetchUnread } = useUnreadCountQuery(
     { schoolId, organizationId },

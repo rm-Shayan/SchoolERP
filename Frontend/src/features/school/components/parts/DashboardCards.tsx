@@ -50,7 +50,7 @@ export function FunnelCard({ funnel, loading }: { funnel: AdmissionFunnelStats |
                     <span className="text-slate-900">{val} applicants</span>
                   </div>
                   <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: themeColor ? `linear-gradient(90deg, ${themeColor}, ${themeColor}cc)` : 'linear-gradient(90deg, #4f46e5, #4338ca)' }} />
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${themeColor || 'var(--color-primary-500)'}, ${themeColor || 'var(--color-primary-700)'}cc)` }} />
                   </div>
                 </div>
               );
