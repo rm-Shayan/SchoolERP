@@ -19,7 +19,7 @@ export default function SuperAdminNotificationsPage() {
   const [category, setCategory] = useState('');
   const [page, setPage] = useState(1);
   const [showSend, setShowSend] = useState(false);
-  const themeColor = organization?.themeColor || school?.themeColor || '#6366f1';
+  const themeColor = organization?.themeColor || '#6366f1';
   const [organizations, setOrganizations] = useState<{ value: string; label: string }[]>([]);
   const [branches, setBranches] = useState<{ value: string; label: string }[]>([]);
   const [organizationId, setOrganizationId] = useState('');

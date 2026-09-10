@@ -109,9 +109,9 @@ export default function FeeRecordsPage() {
         <DueDayEditor schoolId={schoolId} currentDueDay={dueDay} onSaved={(d) => { setDueDay(d); setEditDueDay(false); }} onCancel={() => setEditDueDay(false)} />
       )}
 
-      <FeeSummaryCards summary={summary} themeColor={school?.themeColor || organization?.themeColor} />
+      <FeeSummaryCards summary={summary} themeColor={organization?.themeColor} />
 
-      <FeeTrendChart themeColor={school?.themeColor || organization?.themeColor} />
+      <FeeTrendChart themeColor={organization?.themeColor} />
 
       <Card className="overflow-hidden rounded-3xl border-slate-200/80 bg-white/95 shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4 sm:px-6">

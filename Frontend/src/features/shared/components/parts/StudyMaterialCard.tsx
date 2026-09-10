@@ -15,7 +15,7 @@ interface Props {
 
 export default function StudyMaterialCard({ item, onEdit, onDelete, showActions = true }: Props) {
   const { organization, school } = useAppSelector((s) => s.auth);
-  const themeColor = organization?.themeColor || school?.themeColor || undefined;
+  const themeColor = organization?.themeColor || undefined;
 
   const config = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.DOCUMENT;
   const mediaUrl = item.fileUrl || item.linkUrl;

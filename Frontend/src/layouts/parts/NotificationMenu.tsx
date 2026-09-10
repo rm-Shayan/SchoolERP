@@ -26,7 +26,7 @@ export default function NotificationMenu() {
   const menuRef = useRef<HTMLDivElement>(null);
   const schoolId = school?.id;
   const organizationId = user?.organizationId;
-  const themeColor = organization?.themeColor || school?.themeColor || '#6366f1';
+  const themeColor = organization?.themeColor || '#6366f1';
 
   const { data: unread, refetch: refetchUnread } = useUnreadCountQuery(
     { schoolId, organizationId },

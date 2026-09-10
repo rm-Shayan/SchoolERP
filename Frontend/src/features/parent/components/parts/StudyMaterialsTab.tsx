@@ -18,7 +18,7 @@ const FILTERS = [
 
 export default function StudyMaterialsTab() {
   const { organization, school } = useAppSelector((s) => s.auth);
-  const themeColor = organization?.themeColor || school?.themeColor || undefined;
+  const themeColor = organization?.themeColor || undefined;
   const [items, setItems] = useState<StudyMaterial[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');

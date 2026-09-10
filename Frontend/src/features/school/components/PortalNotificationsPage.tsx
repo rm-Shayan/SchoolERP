@@ -39,7 +39,7 @@ export default function PortalNotificationsPage() {
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [page, setPage] = useState(1);
 
-  const themeColor = organization?.themeColor || school?.themeColor || '#6366f1';
+  const themeColor = organization?.themeColor || '#6366f1';
   const rgb = hexToRgb(themeColor);
   const unreadBg = rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.06)` : undefined;
 
