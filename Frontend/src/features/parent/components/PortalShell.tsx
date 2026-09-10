@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePortalTheme } from '@/hooks/usePortalTheme';
+import { orgThemeStyle } from '@/lib/theme';
 import PortalSidebar from './PortalSidebar';
 import PortalTopBar from './PortalTopBar';
 import MobileBottomNav from './parts/MobileBottomNav';
@@ -29,15 +30,14 @@ export default function PortalShell({ title, subtitle, avatarUrl, orgName, orgLo
   const { pageBg, setOrgTheme } = usePortalTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  console.log('[ThemeTrace] PortalShell rendered, themeColor prop:', themeColor);
-
   useEffect(() => {
-    console.log('[ThemeTrace] PortalShell useEffect — themeColor:', themeColor);
     if (themeColor) setOrgTheme(themeColor);
   }, [themeColor, setOrgTheme]);
 
+  const themeStyle = orgThemeStyle(themeColor);
+
   return (
-    <div className="min-h-screen bg-gray-50" style={pageBg}>
+    <div className="min-h-screen bg-gray-50" style={{ ...pageBg, ...themeStyle }}>
       <PortalSidebar
         active={active}
         onChange={onChange}

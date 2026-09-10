@@ -27,7 +27,6 @@ export default function PortalSidebar({
   mobileOpen, onMobileClose, children: childList, activeChildId, onChildChange, themeColor,
 }: SidebarProps) {
   const theme = themeColor || getOrgThemeColor();
-  console.log('[ThemeTrace] PortalSidebar — themeColor prop:', themeColor, 'getOrgThemeColor():', getOrgThemeColor(), 'final theme:', theme);
   const colors = sidebarColors(theme);
   const brand = theme || '#6366f1';
   const [openGroups, setOpenGroups] = useState<Set<number>>(new Set());
