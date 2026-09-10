@@ -96,23 +96,23 @@ export interface SidebarColors {
 }
 
 const DEFAULT_SIDEBAR: SidebarColors = {
-  bg: '#0f172a', bgHover: '#1e293b', activeBg: 'rgba(99,102,241,0.15)',
-  activeText: '#ffffff', activeAccent: '#818cf8', text: '#94a3b8',
-  textMuted: '#cbd5e1', textHover: '#ffffff', border: 'rgba(255,255,255,0.08)',
-  groupText: '#94a3b8',
+  bg: '#1e1b4b', bgHover: '#252262', activeBg: 'rgba(99,102,241,0.2)',
+  activeText: '#ffffff', activeAccent: '#a5b4fc', text: '#c7d2fe',
+  textMuted: '#e0e7ff', textHover: '#ffffff', border: 'rgba(255,255,255,0.08)',
+  groupText: '#a5b4fc',
 };
 
 export function sidebarColors(themeColor?: string | null): SidebarColors {
   if (!themeColor) return DEFAULT_SIDEBAR;
   const rgb = hexToRgb(themeColor);
   if (!rgb) return DEFAULT_SIDEBAR;
-  const bg = mix(rgb, 0, 0.42);
-  const bgHover = mix(rgb, 0, 0.3);
-  const activeBg = `${themeColor}35`;
-  const activeAccent = mix(rgb, 255, 0.18);
+  const bg = mix(rgb, 0, 0.15);
+  const bgHover = mix(rgb, 0, 0.08);
+  const activeBg = `${themeColor}40`;
+  const activeAccent = mix(rgb, 255, 0.15);
   return {
     bg, bgHover, activeBg, activeText: '#ffffff', activeAccent,
-    text: mix(rgb, 255, 0.82), textMuted: mix(rgb, 255, 0.78),
-    textHover: '#ffffff', border: `${activeAccent}30`, groupText: mix(rgb, 255, 0.76),
+    text: mix(rgb, 255, 0.75), textMuted: mix(rgb, 255, 0.65),
+    textHover: '#ffffff', border: `${activeAccent}30`, groupText: mix(rgb, 255, 0.6),
   };
 }
