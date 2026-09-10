@@ -19,7 +19,7 @@ const DashboardStats = memo(function DashboardStats({
   const items = useMemo(
     () => [
       { title: 'My Sections', value: assignmentsCount, subtitle: 'Teaching assignments', tint: 'bg-primary-100 text-primary-600' },
-      { title: 'Today\'s Classes', value: timetableCount, subtitle: 'Periods scheduled', tint: 'bg-sky-100 text-sky-600' },
+      { title: 'Today\'s Classes', value: timetableCount, subtitle: 'Periods scheduled', tint: 'bg-primary-50 text-primary-700' },
       { title: 'Upcoming PTMs', value: upcomingPtms, subtitle: 'Meetings lined up', tint: 'bg-amber-100 text-amber-600' },
       { title: 'Homework Posts', value: recentHomework, subtitle: 'Recent assignments', tint: 'bg-emerald-100 text-emerald-600' },
     ],
