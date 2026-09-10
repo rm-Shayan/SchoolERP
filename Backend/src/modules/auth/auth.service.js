@@ -1036,18 +1036,34 @@ class AuthService {
    * Get parent by parentId for the /me endpoint.
    */
   async getParentById(parentId) {
+    try {
+      const cached = await redis.get(`portal:parent:${parentId}`);
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
     const parent = await authRepository.findParentById(parentId);
     if (!parent) throw ApiError.notFoundError("Parent account not found.");
-    return ParentPortalDTO.toDTO(parent);
+    const dto = ParentPortalDTO.toDTO(parent);
+    try {
+      await redis.setEx(`portal:parent:${parentId}`, 300, JSON.stringify(dto));
+    } catch (_) {}
+    return dto;
   }
 
   /**
    * Get student by studentId for the /me endpoint.
    */
   async getStudentById(studentId) {
+    try {
+      const cached = await redis.get(`portal:student:${studentId}`);
+      if (cached) return JSON.parse(cached);
+    } catch (_) {}
     const student = await authRepository.findStudentById(studentId);
     if (!student) throw ApiError.notFoundError("Student not found.");
-    return StudentPortalDTO.toDTO(student);
+    const dto = StudentPortalDTO.toDTO(student);
+    try {
+      await redis.setEx(`portal:student:${studentId}`, 300, JSON.stringify(dto));
+    } catch (_) {}
+    return dto;
   }
 
   // ──────────────────────────────────────────

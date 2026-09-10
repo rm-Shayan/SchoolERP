@@ -56,6 +56,17 @@ export async function invalidateEntityCache(prefix, id) {
   } catch (_) {}
 }
 
+/** Invalidate portal /me cache + children cache after profile/status changes. */
+export async function invalidatePortalCache(parentId, studentId) {
+  try {
+    if (parentId) {
+      await redis.del(`portal:parent:${parentId}`);
+      await redis.del(`auth:children:${parentId}`);
+    }
+    if (studentId) await redis.del(`portal:student:${studentId}`);
+  } catch (_) {}
+}
+
 async function cachedLookup(prefix, id, fetchFn) {
   try {
     const cached = await redis.get(`${prefix}:${id}`);
@@ -430,11 +441,13 @@ export const authenticateAnyPortal = async (req, res, next) => {
       if (!parent) return next(ApiError.unauthorizedError("Parent account not found."));
       if (parent.isBlocked) return next(ApiError.unauthorizedError(BLOCKED_MESSAGE));
 
-      // Resolve child sectionIds for scoped queries
-      const children = await prisma.student.findMany({
-        where: { parentId: parent.id, status: "ACTIVE" },
-        select: { id: true, sectionId: true, schoolId: true, firstName: true, lastName: true, school: { select: { organizationId: true } } },
-      });
+      // Resolve child sectionIds for scoped queries — cached to avoid +15-60ms per request
+      const children = await cachedLookup("auth:children", parent.id, () =>
+        prisma.student.findMany({
+          where: { parentId: parent.id, status: "ACTIVE" },
+          select: { id: true, sectionId: true, schoolId: true, firstName: true, lastName: true, school: { select: { organizationId: true } } },
+        })
+      );
       if (!children.length) return next(ApiError.unauthorizedError("No active children linked."));
 
       req.portal = {

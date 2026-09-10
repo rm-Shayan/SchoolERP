@@ -175,17 +175,38 @@ class DocumentsService {
   // TRANSFER CERTIFICATE (TC) — generates TC PDF, changes student status,
   // deactivates student/parent portal, creates PromotionRecord.
   async issueTc(user, studentId, { reason, remarks }) {
-    const student = await prisma.student.findUnique({
-      where: { id: studentId },
-      include: {
-        section: { include: { class: true } },
-        parent: true,
-        school: { include: { organization: true } },
-      },
-    });
+    // Parallelize: student fetch + academic year fetch (independent)
+    const [student, academicYear] = await Promise.all([
+      prisma.student.findUnique({
+        where: { id: studentId },
+        select: {
+          id: true, firstName: true, lastName: true, rollNumber: true,
+          status: true, imageUrl: true, createdAt: true,
+          parentId: true, schoolId: true, sectionId: true,
+          section: { select: { id: true, name: true, class: { select: { name: true } } } },
+          parent: { select: { id: true, name: true } },
+          school: { select: {
+            id: true, name: true, address: true, phone: true, logoUrl: true, organizationId: true,
+            organization: { select: { id: true, name: true, logoUrl: true, themeColor: true } },
+          } },
+        },
+      }),
+      // Fetch academic year outside transaction — no lock needed
+      prisma.academicYear.findFirst({
+        where: { schoolId: studentId ? undefined : undefined, isCurrent: true },
+        select: { id: true },
+      }).catch(() => null),
+    ]);
+
     if (!student) throw ApiError.notFoundError('Student not found');
     assertSchoolAccess(user, student.school.id);
     if (student.status !== 'ACTIVE') throw ApiError.badRequestError(`Student is already ${student.status}`);
+
+    // Re-fetch academic year with correct schoolId (was undefined above)
+    const ay = academicYear || await prisma.academicYear.findFirst({
+      where: { schoolId: student.schoolId, isCurrent: true },
+      select: { id: true },
+    }).catch(() => null);
 
     const statusMap = {
       GRADUATED: 'GRADUATED',
@@ -218,29 +239,32 @@ class DocumentsService {
       logoUrl: student.school.logoUrl || student.school.organization?.logoUrl,
     });
 
-    // 2. PDF succeeded — now mutate DB
+    // 2. PDF succeeded — now mutate DB + archive photo in parallel
     let imageUrl = student.imageUrl;
-    if (student.imageUrl) {
-      const moved = await storageService.moveToArchive({ url: student.imageUrl }).catch(() => null);
-      if (moved?.url) imageUrl = moved.url;
-    }
-
-    await prisma.$transaction([
-      prisma.student.update({
-        where: { id: studentId },
-        data: { status: newStatus, imageUrl },
-      }),
-      prisma.promotionRecord.create({
-        data: {
-          studentId: student.id,
-          academicYearId: (await prisma.academicYear.findFirst({ where: { schoolId: student.schoolId, isCurrent: true } }))?.id || '',
-          fromSectionId: student.sectionId,
-          toSectionId: null,
-          action: newStatus,
-          remarks: `TC issued: ${tcNumber}. ${reason === 'TRANSFERRED_OUT' ? 'Transferred' : reason === 'GRADUATED' ? 'Graduated' : 'Dropped out'}. ${remarks || ''}`.trim(),
-        },
-      }),
+    const [moved] = await Promise.all([
+      student.imageUrl ? storageService.moveToArchive({ url: student.imageUrl }).catch(() => null) : null,
+      prisma.$transaction([
+        prisma.student.update({
+          where: { id: studentId },
+          data: { status: newStatus, imageUrl },
+        }),
+        prisma.promotionRecord.create({
+          data: {
+            studentId: student.id,
+            academicYearId: ay?.id || '',
+            fromSectionId: student.sectionId,
+            toSectionId: null,
+            action: newStatus,
+            remarks: `TC issued: ${tcNumber}. ${reason === 'TRANSFERRED_OUT' ? 'Transferred' : reason === 'GRADUATED' ? 'Graduated' : 'Dropped out'}. ${remarks || ''}`.trim(),
+          },
+        }),
+      ]),
     ]);
+    if (moved?.url) imageUrl = moved.url;
+    // Update imageUrl if it changed
+    if (imageUrl !== student.imageUrl) {
+      await prisma.student.update({ where: { id: studentId }, data: { imageUrl } }).catch(() => {});
+    }
 
     // 3. Deactivate parent portal if no other active children
     if (student.parentId) {

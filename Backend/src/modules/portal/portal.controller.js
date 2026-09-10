@@ -1,11 +1,16 @@
 import portalService from "./portal.service.js";
 import ApiResponse from "../../lib/utils/ApiResponse.js";
 import { streamPdf, buildExamDateSheetPdf, buildTimetablePdf } from "../../lib/pdf/reportPdf.js";
+import { getCachedPortal, setCachedPortal, bustPortalCache } from "../../lib/portalCache.js";
 
 class PortalController {
   getOverview = async (req, res, next) => {
     try {
+      const pk = `${req.portal.type}:${req.portal.id}`;
+      const cached = getCachedPortal(pk, "overview");
+      if (cached) return res.json(ApiResponse.ok("Portal overview", cached));
       const data = await portalService.getOverview(req.portal);
+      setCachedPortal(pk, "overview", data);
       res.json(ApiResponse.ok("Portal overview", data));
     } catch (e) { next(e); }
   };
@@ -13,28 +18,45 @@ class PortalController {
   getAttendance = async (req, res, next) => {
     try {
       const { month, year } = req.query;
+      const pk = `${req.portal.type}:${req.portal.id}`;
+      const ck = `att:${month || ""}:${year || ""}`;
+      const cached = getCachedPortal(pk, ck);
+      if (cached) return res.json(ApiResponse.ok("Attendance data", cached));
       const data = await portalService.getAttendance(req.portal, { month, year });
+      setCachedPortal(pk, ck, data);
       res.json(ApiResponse.ok("Attendance data", data));
     } catch (e) { next(e); }
   };
 
   getFees = async (req, res, next) => {
     try {
+      const pk = `${req.portal.type}:${req.portal.id}`;
+      const cached = getCachedPortal(pk, "fees");
+      if (cached) return res.json(ApiResponse.ok("Fee data", cached));
       const data = await portalService.getFees(req.portal);
+      setCachedPortal(pk, "fees", data);
       res.json(ApiResponse.ok("Fee data", data));
     } catch (e) { next(e); }
   };
 
   getHomework = async (req, res, next) => {
     try {
+      const pk = `${req.portal.type}:${req.portal.id}`;
+      const cached = getCachedPortal(pk, "hw");
+      if (cached) return res.json(ApiResponse.ok("Homework data", cached));
       const data = await portalService.getHomework(req.portal);
+      setCachedPortal(pk, "hw", data);
       res.json(ApiResponse.ok("Homework data", data));
     } catch (e) { next(e); }
   };
 
   getCirculars = async (req, res, next) => {
     try {
+      const pk = `${req.portal.type}:${req.portal.id}`;
+      const cached = getCachedPortal(pk, "circ");
+      if (cached) return res.json(ApiResponse.ok("Circulars", cached));
       const data = await portalService.getCirculars(req.portal);
+      setCachedPortal(pk, "circ", data);
       res.json(ApiResponse.ok("Circulars", data));
     } catch (e) { next(e); }
   };
@@ -77,6 +99,7 @@ class PortalController {
   createLeaveRequest = async (req, res, next) => {
     try {
       const data = await portalService.createLeaveRequest(req.portal, req.body);
+      bustPortalCache(`${req.portal.type}:${req.portal.id}`);
       res.status(201).json(ApiResponse.created("Leave request submitted", data));
     } catch (e) { next(e); }
   };
@@ -110,6 +133,7 @@ class PortalController {
   updateProfile = async (req, res, next) => {
     try {
       const data = await portalService.updateProfile(req.portal, req.body);
+      bustPortalCache(`${req.portal.type}:${req.portal.id}`);
       res.json(ApiResponse.ok("Profile updated", data));
     } catch (e) { next(e); }
   };
