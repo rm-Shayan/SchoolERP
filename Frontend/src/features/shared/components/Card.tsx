@@ -18,7 +18,7 @@ const Card = memo(function Card({ className, children, onClick }: CardProps) {
         'shadow-[0_1px_3px_rgba(15,23,42,0.04),0_4px_20px_rgba(15,23,42,0.03)]',
         'transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         'sa-card-glow',
-        onClick && 'cursor-pointer hover:shadow-[0_8px_32px_rgba(124,58,237,0.12),0_2px_8px_rgba(124,58,237,0.06)] hover:border-primary-300/50 hover:-translate-y-0.5',
+        onClick && 'cursor-pointer hover:shadow-[0_8px_32px_rgba(0,0,0,0.1),0_2px_8px_rgba(0,0,0,0.06)] hover:border-primary-300/50 hover:-translate-y-0.5',
         className
       )}
     >

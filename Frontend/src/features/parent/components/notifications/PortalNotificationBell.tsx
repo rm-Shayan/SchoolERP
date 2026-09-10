@@ -38,7 +38,7 @@ function PortalNotificationItem({ n, onRead, onDelete }: {
         <span className="text-[11px] text-gray-400 mt-1 block">{timeAgo(n.createdAt)}</span>
       </div>
       <div className="shrink-0 mt-2">
-        {!n.isRead && <span className="block w-2 h-2 rounded-full bg-blue-500" />}
+        {!n.isRead && <span className="block w-2 h-2 rounded-full bg-primary-500" />}
       </div>
     </div>
   );

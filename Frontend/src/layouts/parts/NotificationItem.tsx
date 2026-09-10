@@ -60,7 +60,7 @@ export default function NotificationItem({ n, onRead, onDelete }: Props) {
       {/* Unread dot */}
       <div className="shrink-0 mt-2">
         {!n.isRead && (
-          <span className="block w-2 h-2 rounded-full bg-blue-500" />
+          <span className="block w-2 h-2 rounded-full bg-primary-500" />
         )}
       </div>
     </div>

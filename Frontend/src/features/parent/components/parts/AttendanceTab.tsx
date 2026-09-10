@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from '@/features/shared/components';
 import { portalDataService } from '@/lib/api/portalDataService';
 import type { PortalAttendanceRecord, PortalAttendanceSummary } from '@/types/portal';
 import { cn } from '@/lib/utils';
+import { getOrgThemeColor } from '@/lib/utils/orgTheme';
 
 import { AttendanceSkeleton } from './PortalSkeletonsA';
 import { usePortalEvents } from '@/hooks/usePortalEvents';
@@ -103,7 +104,7 @@ function SummaryCards({ summary }: { summary: PortalAttendanceSummary }) {
     { label: 'Present', value: summary.present, color: '#22c55e' },
     { label: 'Late', value: summary.late, color: '#f59e0b' },
     { label: 'Absent', value: summary.absent, color: '#ef4444' },
-    { label: 'Leave', value: summary.leave, color: '#6366f1' },
+    { label: 'Leave', value: summary.leave, color: getOrgThemeColor() || '#6366f1' },
     ...(summary.halfDay > 0 ? [{ label: 'Half Day', value: summary.halfDay, color: '#0891b2' }] : []),
   ];
   return (

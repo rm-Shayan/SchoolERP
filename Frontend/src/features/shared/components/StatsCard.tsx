@@ -23,7 +23,7 @@ const StatsCard = memo(function StatsCard({ title, value, icon, subtitle, classN
       className={cn(
         'group relative bg-white rounded-2xl border border-gray-200/60 p-5 sm:p-6',
         'shadow-[0_1px_3px_rgba(15,23,42,0.04),0_4px_20px_rgba(15,23,42,0.03)]',
-        'hover:shadow-[0_8px_32px_rgba(124,58,237,0.1),0_2px_8px_rgba(124,58,237,0.05)]',
+        'hover:shadow-[0_8px_32px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.05)]',
         'hover:-translate-y-1 hover:border-primary-200/60',
         'transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         'overflow-hidden',

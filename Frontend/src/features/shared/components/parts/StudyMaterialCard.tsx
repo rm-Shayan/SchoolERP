@@ -107,7 +107,7 @@ export default function StudyMaterialCard({ item, onEdit, onDelete, showActions 
         {showActions && (
           <div className="mt-4 flex items-center gap-2 pt-3 border-t border-gray-100/70" style={themeColor ? { borderColor: `${themeColor}20` } : undefined}>
             {mediaUrl && (
-              <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors shadow-sm" style={themeColor ? { background: themeColor, color: '#fff' } : { background: 'linear-gradient(135deg, #4f46e5, #4338ca)', color: '#fff' }}>
+              <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors shadow-sm" style={themeColor ? { background: themeColor, color: '#fff' } : { background: 'linear-gradient(135deg, var(--color-primary-600), var(--color-primary-700))', color: '#fff' }}>
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                 {item.type === 'LINK' ? 'Open Link' : 'Open'}
               </a>

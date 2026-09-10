@@ -57,7 +57,7 @@ function AttendanceRing({ percentage, summary }: { percentage: number; summary: 
           <StatChip label="Present" value={summary.present} color="#22c55e" />
           <StatChip label="Late" value={summary.late} color="#f59e0b" />
           <StatChip label="Absent" value={summary.absent} color="#ef4444" />
-          <StatChip label="Leave" value={summary.leave} color="#6366f1" />
+          <StatChip label="Leave" value={summary.leave} color={getOrgThemeColor() || '#6366f1'} />
         </div>
       </CardContent>
     </Card>

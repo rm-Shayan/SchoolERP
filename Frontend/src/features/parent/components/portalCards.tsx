@@ -102,7 +102,7 @@ export function PortalInfoCards() {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <InfoCard icon="attendance" title="Attendance" note="Daily check-in and absence alerts delivered by email." color="#22c55e" />
       <InfoCard icon="fees" title="Fees" note="Fee reminders and payment receipts are delivered by email." color="#f59e0b" />
-      <InfoCard icon="notice" title="Circulars & Homework" note="New circulars and homework assignments are notified in real time." color="#6366f1" />
+      <InfoCard icon="notice" title="Circulars & Homework" note="New circulars and homework assignments are notified in real time." color={getOrgThemeColor() || '#6366f1'} />
     </div>
   );
 }
