@@ -18,15 +18,21 @@ type SchoolInfo = { themeColor?: string | null; logoUrl?: string | null; slug?: 
 
 /** Save org branding (theme + logo + slug) to localStorage — so logout redirects to login?org=. */
 function saveOrgBranding(school?: SchoolInfo | null) {
-  if (typeof window === 'undefined' || !school?.themeColor && !school?.logoUrl) return;
+  console.log('[ThemeTrace] saveOrgBranding called with:', JSON.stringify(school));
+  if (typeof window === 'undefined' || !school?.themeColor && !school?.logoUrl) {
+    console.log('[ThemeTrace] saveOrgBranding EARLY RETURN — themeColor:', school?.themeColor, 'logoUrl:', school?.logoUrl);
+    return;
+  }
   let prev: Record<string, unknown> = {};
   try { prev = JSON.parse(localStorage.getItem('organization') || '{}'); } catch { /* noop */ }
-  localStorage.setItem('organization', JSON.stringify({
+  const data = {
     ...prev,
     themeColor: school.themeColor ?? prev.themeColor ?? null,
     logoUrl: school.logoUrl ?? prev.logoUrl ?? null,
     slug: school.slug ?? prev.slug ?? null,
-  }));
+  };
+  localStorage.setItem('organization', JSON.stringify(data));
+  console.log('[ThemeTrace] saveOrgBranding saved to localStorage.organization:', JSON.stringify(data));
 }
 
 export default function PortalDashboard() {
@@ -43,6 +49,7 @@ export default function PortalDashboard() {
       try {
         if (isStudent) {
           const s = await portalService.studentGetMe();
+          console.log('[ThemeTrace] studentGetMe returned, s.school:', JSON.stringify(s?.school));
           setStudent(s);
           localStorage.setItem('studentProfile', JSON.stringify(s));
           saveOrgBranding(s.school);
@@ -95,6 +102,7 @@ export default function PortalDashboard() {
     imageUrl: c.imageUrl ?? null,
   }));
   const orgSchool = isStudent ? student?.school : (children[0]?.school ?? null);
+  console.log('[ThemeTrace] orgSchool.themeColor:', orgSchool?.themeColor, 'isStudent:', isStudent, 'student loaded:', !!student);
   const orgName = orgSchool?.name ?? (isStudent ? 'Student Portal' : 'Parent Portal');
   const orgLogoUrl = orgSchool?.logoUrl ?? null;
   const avatarUrl = isStudent ? (student?.imageUrl ?? null) : (parent?.imageUrl ?? null);

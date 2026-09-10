@@ -12,9 +12,14 @@ import { getOrgThemeColor } from '@/lib/utils/orgTheme';
  * fallback prevents flicker.
  */
 export function usePortalTheme() {
-  const [orgTheme, setOrgTheme] = useState<string | undefined>(getOrgThemeColor);
+  const [orgTheme, setOrgTheme] = useState<string | undefined>(() => {
+    const v = getOrgThemeColor();
+    console.log('[ThemeTrace] usePortalTheme useState init — getOrgThemeColor():', v);
+    return v;
+  });
 
   useEffect(() => {
+    console.log('[ThemeTrace] usePortalTheme useEffect — applying:', orgTheme);
     applyPortalThemeToRoot(orgTheme);
     return () => clearPortalThemeFromRoot();
   }, [orgTheme]);

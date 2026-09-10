@@ -29,7 +29,10 @@ export default function PortalShell({ title, subtitle, avatarUrl, orgName, orgLo
   const { pageBg, setOrgTheme } = usePortalTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  console.log('[ThemeTrace] PortalShell rendered, themeColor prop:', themeColor);
+
   useEffect(() => {
+    console.log('[ThemeTrace] PortalShell useEffect — themeColor:', themeColor);
     if (themeColor) setOrgTheme(themeColor);
   }, [themeColor, setOrgTheme]);
 
