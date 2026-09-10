@@ -26,6 +26,9 @@ const worker = new Worker(
     const errors = [];
     const createdOrgIds = [];
 
+    // Idempotency: load set of already-processed org codes from previous attempts
+    const done = new Set(job.progress?.done || []);
+
     for (let i = 0; i < organizations.length; i++) {
       const org = organizations[i];
       try {
@@ -37,6 +40,12 @@ const worker = new Worker(
 
         const formattedCode = code.toString().trim().toUpperCase();
 
+        // Already processed in a prior attempt — skip (no duplicate emails)
+        if (done.has(formattedCode)) {
+          skipCount++;
+          continue;
+        }
+
         // Check if organization code already exists
         const existing = await prisma.organization.findUnique({
           where: { code: formattedCode },
@@ -44,6 +53,7 @@ const worker = new Worker(
 
         if (existing) {
           logger.logger.warn(`Skipping duplicate organization code: ${formattedCode}`);
+          done.add(formattedCode);
           skipCount++;
           continue;
         }
@@ -140,6 +150,10 @@ const worker = new Worker(
         }
 
         successCount++;
+        done.add(formattedCode);
+
+        // Persist processed set so retry skips already-done items (idempotency)
+        await job.updateProgress({ done: [...done] });
 
         // Broadcast progress via WebSocket
         const progressPercent = Math.round(((i + 1) / organizations.length) * 100);

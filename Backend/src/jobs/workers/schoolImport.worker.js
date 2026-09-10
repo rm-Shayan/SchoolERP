@@ -22,6 +22,9 @@ const worker = new Worker(
     // Every organization touched by this job — used to bust per-org cache keys
     const touchedOrgIds = new Set();
 
+    // Idempotency: load set of already-processed branch codes from previous attempts
+    const done = new Set(job.progress?.done || []);
+
     // Resolve the target organization once when importing for a single org
     let targetOrg = null;
     if (organizationId) {
@@ -40,6 +43,14 @@ const worker = new Worker(
           continue;
         }
 
+        const formattedCode = code.toString().trim().toUpperCase();
+
+        // Already processed in a prior attempt — skip (no duplicate emails)
+        if (done.has(formattedCode)) {
+          skipCount++;
+          continue;
+        }
+
         // Resolve org — job-level organizationId wins; otherwise match by OrganizationCode
         let org = targetOrg;
         if (!org) {
@@ -55,12 +66,11 @@ const worker = new Worker(
           }
         }
 
-        const formattedCode = code.toString().trim().toUpperCase();
-
         // Skip duplicate branch codes (globally unique)
         const existing = await prisma.school.findUnique({ where: { code: formattedCode } });
         if (existing) {
           logger.logger.warn(`Skipping duplicate branch code: ${formattedCode}`);
+          done.add(formattedCode);
           skipCount++;
           continue;
         }
@@ -104,6 +114,10 @@ const worker = new Worker(
         }
 
         successCount++;
+        done.add(formattedCode);
+
+        // Persist processed set so retry skips already-done items (idempotency)
+        await job.updateProgress({ done: [...done] });
 
         // Broadcast progress via WebSocket
         const progressPercent = Math.round(((i + 1) / branches.length) * 100);

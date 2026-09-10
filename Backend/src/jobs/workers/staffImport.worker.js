@@ -29,6 +29,9 @@ export const staffImportWorker = new Worker(
     let skipCount = 0;
     const errors = [];
 
+    // Idempotency: load set of already-processed emails from previous attempts
+    const done = new Set(job.progress?.done || []);
+
     for (let i = 0; i < staffMembers.length; i++) {
       const member = staffMembers[i];
       try {
@@ -47,9 +50,16 @@ export const staffImportWorker = new Worker(
 
         const formattedEmail = email.toString().trim().toLowerCase();
 
+        // Already processed in a prior attempt — skip (no duplicate emails)
+        if (done.has(formattedEmail)) {
+          skipCount++;
+          continue;
+        }
+
         const existingUser = await prisma.user.findUnique({ where: { email: formattedEmail } });
         if (existingUser) {
           logger.logger.warn(`Skipping duplicate email: ${formattedEmail}`);
+          done.add(formattedEmail);
           skipCount++;
           continue;
         }
@@ -98,6 +108,10 @@ export const staffImportWorker = new Worker(
         });
 
         successCount++;
+        done.add(formattedEmail);
+
+        // Persist processed set so retry skips already-done items (idempotency)
+        await job.updateProgress({ done: [...done] });
 
         const progressPercent = Math.round(((i + 1) / staffMembers.length) * 100);
         emitToRoom(`job:${job.id}`, "staff_import_progress", {
