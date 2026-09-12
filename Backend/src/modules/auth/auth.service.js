@@ -633,6 +633,8 @@ class AuthService {
         to: normalized,
         priority: "CRITICAL",
         allowHolderAsRecipient: true,
+        organizationId: user.organizationId || undefined,
+        schoolId: user.schoolId || undefined,
         subject: "Your SchoolERP account - new password",
         html: `
           <p>Hello <b>${user.name}</b>,</p>
@@ -672,19 +674,30 @@ class AuthService {
     // Dispatch OTP via Email — primary parent channel (no WhatsApp API budget yet).
     // NOTE: future WhatsApp integration will swap this for whatsappService.sendMessage.
     if (parent.email) {
+      // Parent ka school scope pakdo — OTP email usi branch/org ke SMTP se
+      // jaye (tenant-first; platform env sirf fallback) aur NotificationLog
+      // me bhi school set ho.
+      let firstStudent = null;
+      try {
+        firstStudent = await prisma.student.findFirst({
+          where: { parentId: parent.id },
+          select: { schoolId: true, organizationId: true },
+        });
+      } catch (scopeErr) {
+        logger.logger.warn(`[Parent OTP] Scope lookup skipped: ${scopeErr.message}`);
+      }
+
       await sendOtpEmail({
         to: parent.email,
         recipientName: parent.name,
         otp,
+        organizationId: firstStudent?.organizationId || undefined,
+        schoolId: firstStudent?.schoolId || undefined,
       });
 
       // Log to NotificationLog (PRD §8 delivery status) using the parent's first school
-      try {
-        const firstStudent = await prisma.student.findFirst({
-          where: { parentId: parent.id },
-          select: { schoolId: true },
-        });
-        if (firstStudent) {
+      if (firstStudent) {
+        try {
           await prisma.notificationLog.create({
             data: {
               schoolId: firstStudent.schoolId,
@@ -695,9 +708,9 @@ class AuthService {
               sentAt: new Date(),
             },
           });
+        } catch (logErr) {
+          logger.logger.warn(`[Parent OTP] Notification log skipped: ${logErr.message}`);
         }
-      } catch (logErr) {
-        logger.logger.warn(`[Parent OTP] Notification log skipped: ${logErr.message}`);
       }
     } else {
       logger.logger.warn(
@@ -938,6 +951,8 @@ class AuthService {
         to: parentEmail,
         recipientName: student.parent?.name || "Parent/Guardian",
         otp,
+        organizationId: student.school?.organizationId || undefined,
+        schoolId: student.school?.id || undefined,
       }).catch((err) => {
         logger.logger.error(`[Student OTP] Email dispatch failed: ${err.message}`);
       });

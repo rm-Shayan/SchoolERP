@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import Logger from "../lib/utils/logger.js";
 import prisma from "../config/db.js";
+import storageService from "./storage.service.js";
 import { decryptSecret } from "../lib/utils/secretBox.js";
 
 const logger = new Logger("email-service");
@@ -154,21 +155,62 @@ export function clearTransportCache() {
   transportCache.clear();
 }
 
+// data: logos email clients me render nahi hote — shared hota hai ki pehli
+// email par stored URL me upload ho jayein (Gmail/Outlook safe). Plain URLs
+// pass-through hain. Cache = in-memory, notification.service wale se alag.
+const EMAIL_LOGO_CACHE = new Map();
+async function resolveLogoForEmail(logoUrl, organizationId) {
+  if (!logoUrl || !logoUrl.startsWith("data:")) return logoUrl;
+  if (EMAIL_LOGO_CACHE.has(logoUrl)) return EMAIL_LOGO_CACHE.get(logoUrl);
+  try {
+    const comma = logoUrl.indexOf(",");
+    if (comma === -1) return logoUrl;
+    const buffer = Buffer.from(logoUrl.slice(comma + 1), "base64");
+    const { url } = await storageService.uploadImage({ buffer, folder: "org-logos", organizationId });
+    if (url) {
+      if (EMAIL_LOGO_CACHE.size > 100) EMAIL_LOGO_CACHE.clear();
+      EMAIL_LOGO_CACHE.set(logoUrl, url);
+      logger.logger.info(`[Branding] data: logo -> ${url} (email-safe)`);
+      return url;
+    }
+  } catch (err) {
+    logger.logger.warn(`[Branding] Logo upload failed (${err.message}) -- original URL use`);
+  }
+  return logoUrl;
+}
+
 /**
  * Email branding resolver — rule:
- *   - Super admin / platform context (no organizationId) → PUBLIC primary
- *     image (CLIENT_URL/screen.png) as logo + "School ERP" display name.
- *   - Org/Branch admin context → org/branch logo (school first, then org)
- *     + branded display name.
+ *   - Super admin / platform context (no scope) → PUBLIC primary image
+ *     (CLIENT_URL/screen.png) as logo + "School ERP" display name.
+ *   - Org/Branch context → branch logo FIRST, org logo fallback (agar branch
+ *     ka na ho) + branded display name.
+ * `orgName` / `branchName` alag se return hote hain taake templates header
+ * me sahi org/branch naam dikha sakein.
  * `logoUrl === null` means the template falls back to the public primary image.
  */
 export async function resolveEmailBranding({ organizationId, schoolId } = {}) {
-  if (!organizationId) {
-    return { fromName: PLATFORM_SENDER_NAME, logoUrl: null, themeColor: null };
+  // Sirf schoolId aaye (branches-specific announcements) to uska org bhi
+  // resolve karo — warna org lookup miss hota aur logo/theme platform default
+  // par chale jaate (branch/org branding email me kabhi nahi aati).
+  let orgId = organizationId;
+  if (!orgId && schoolId) {
+    try {
+      const school = await prisma.school.findUnique({
+        where: { id: schoolId },
+        select: { organizationId: true },
+      });
+      orgId = school?.organizationId;
+    } catch (_) {
+      /* platform fallback below */
+    }
+  }
+  if (!orgId) {
+    return { fromName: PLATFORM_SENDER_NAME, logoUrl: null, themeColor: null, orgName: null, branchName: null };
   }
   const [org, school] = await Promise.all([
     prisma.organization.findUnique({
-      where: { id: organizationId },
+      where: { id: orgId },
       select: { name: true, logoUrl: true, themeColor: true },
     }),
     schoolId
@@ -179,9 +221,9 @@ export async function resolveEmailBranding({ organizationId, schoolId } = {}) {
       : Promise.resolve(null),
   ]);
   const fromName = [org?.name, school?.name].filter(Boolean).join(" - ") || PLATFORM_SENDER_NAME;
-  const logoUrl = school?.logoUrl || org?.logoUrl || null;
+  const logoUrl = await resolveLogoForEmail(school?.logoUrl || org?.logoUrl || null, orgId);
   const themeColor = school?.themeColor || org?.themeColor || null;
-  return { fromName, logoUrl, themeColor };
+  return { fromName, logoUrl, themeColor, orgName: org?.name || null, branchName: school?.name || null };
 }
 
 function platformCredsMissing() {
@@ -221,6 +263,14 @@ export const sendEmail = async ({
   for (const mailer of chain) {
     // Platform transport par bhi creds chahiye; missing hon to agla (koi nahi).
     if (mailer.source === "platform" && platformCredsMissing()) continue;
+
+    // Tenant SMTP configured hone ke bawajood fail ho gaya — platform env par
+    // giro to log kar do (diagnosis: tenant creds/decrypt ki problem dikhegi).
+    if (mailer.source === "platform" && hasTenant) {
+      logger.logger.warn(
+        `[Routing] Tenant SMTP failed — falling back to platform env SMTP for ${to}. Last error: ${lastErr?.message || "unknown"}`
+      );
+    }
 
     // Guard (sirf platform): SUPER_ADMIN credential holder ko apni hi bheji
     // hui mail ki copy na aaye. Tenant transports par skip nahi karte —

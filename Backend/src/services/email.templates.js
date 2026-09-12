@@ -454,17 +454,20 @@ export function moderationNoticeEmail({ name, entityName, entityType, action, re
 
 /**
  * Platform Announcement email — super admin se saare branch admins ko.
+ * `orgName`/`branchName` pass hone par header me org/branch ka naam ata hai
+ * (naam na du to "School ERP"). Logo: branch→org fallback branding se aata hai.
  */
-export function announcementEmail({ name, title, message, logoUrl, themeColor }) {
+export function announcementEmail({ name, title, message, logoUrl, themeColor, orgName, branchName }) {
+  const senderLabel = [branchName, orgName].filter(Boolean).join(" - ") || "your institution";
   const body = `
     <p>Hello ${name || "Admin"},</p>
     <p><b>${title}</b></p>
     <p style="white-space:pre-line;">${(message || "").replace(/</g, "&lt;")}</p>
-    <p style="margin-bottom:0;color:#666;font-size:12px;">This is an automated announcement from the platform administrator.</p>
+    <p style="margin-bottom:0;color:#666;font-size:12px;">This is an automated announcement from ${senderLabel}.</p>
   `;
   return {
     subject: `📢 ${title}`,
-    text: `Hello ${name || "Admin"},\n\n${title}\n\n${message || ""}\n\nThis is an automated announcement.`,
-    html: wrapEmail("Platform Announcement", body, { logoUrl, themeColor }),
+    text: `Hello ${name || "Admin"},\n\n${title}\n\n${message || ""}\n\nThis is an automated announcement from ${senderLabel}.`,
+    html: wrapEmail("Platform Announcement", body, { logoUrl, themeColor, orgName, branchName }),
   };
 }

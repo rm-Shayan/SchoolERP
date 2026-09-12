@@ -56,6 +56,8 @@ async function notifyAdminsOfModeration(admins, { entityName, entityType, action
         subject: tpl.subject,
         text: tpl.text,
         html: tpl.html,
+        organizationId,
+        schoolId,
         allowHolderAsRecipient: true,
       });
     })
@@ -441,7 +443,7 @@ class ModerationService {
         logoUrl: branding.logoUrl,
         themeColor: branding.themeColor,
       });
-      sendEmail({ to: target.email, subject: tpl.subject, text: tpl.text, html: tpl.html, allowHolderAsRecipient: true }).catch(() => {});
+      sendEmail({ to: target.email, subject: tpl.subject, text: tpl.text, html: tpl.html, organizationId: target.organizationId || undefined, schoolId: target.schoolId || undefined, allowHolderAsRecipient: true }).catch(() => {});
     }
 
     // Portal notification — branch feed me staff block dikhe.
@@ -500,7 +502,7 @@ class ModerationService {
         logoUrl: branding.logoUrl,
         themeColor: branding.themeColor,
       });
-      sendEmail({ to: target.email, subject: tpl.subject, text: tpl.text, html: tpl.html, allowHolderAsRecipient: true }).catch(() => {});
+      sendEmail({ to: target.email, subject: tpl.subject, text: tpl.text, html: tpl.html, organizationId: target.organizationId || undefined, schoolId: target.schoolId || undefined, allowHolderAsRecipient: true }).catch(() => {});
     }
 
     // Portal notification — branch feed me staff unblock dikhe.

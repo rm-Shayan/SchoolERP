@@ -82,23 +82,38 @@ class NotificationController {
       if (notif) created.push(notif);
     }
 
-    // 3. Send email to all admins
-    const branding = await resolveEmailBranding({ organizationId, schoolId }).catch(() => ({}));
+    // 3. Send email to all admins — har admin KO uski APNI org/branch ke SMTP
+    // se (DB OrgSecrets, tenant-first chain; platform env sirf last-resort
+    // fallback). Branding bhi usi admin ke branch/org ke hisaab se: branch
+    // logo pehle, nahi to org ka. Same-scope admins ke liye branding cache.
+    const brandingCache = new Map();
+    const brandingKey = (orgId, schId) => `${orgId || "?"}:${schId || "?"}`;
     const emailPromises = admins
       .filter((a) => a.email)
-      .map((admin) => {
+      .map(async (admin) => {
+        const adminOrg = admin.organizationId || organizationId || undefined;
+        const adminSchool = admin.schoolId || schoolId || undefined;
+        const key = brandingKey(adminOrg, adminSchool);
+        if (!brandingCache.has(key)) {
+          brandingCache.set(key, resolveEmailBranding({ organizationId: adminOrg, schoolId: adminSchool }).catch(() => ({})));
+        }
+        const branding = await brandingCache.get(key);
         const tpl = announcementEmail({
           name: admin.name,
           title: title || "Announcement",
           message: body,
           logoUrl: branding.logoUrl,
           themeColor: branding.themeColor,
+          orgName: branding.orgName,
+          branchName: branding.branchName,
         });
         return sendEmail({
           to: admin.email,
           subject: tpl.subject,
           text: tpl.text,
           html: tpl.html,
+          organizationId: adminOrg,
+          schoolId: adminSchool,
         }).catch(() => {});
       });
     await Promise.allSettled(emailPromises);
