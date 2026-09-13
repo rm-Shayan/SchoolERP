@@ -2,6 +2,7 @@ import xlsx from "xlsx";
 import prisma from "../../config/db.js";
 import ApiError from "../../lib/utils/ApiError.js";
 import { verifyAttendanceToken } from "../../lib/utils/attendanceToken.js";
+import { buildExcelBuffer } from "../../lib/utils/excelExport.js";
 import { emitToRoom } from "../../config/websocket.js";
 import redis from "../../config/redis.js";
 import notificationService from "../../services/notification.service.js";
@@ -240,11 +241,13 @@ class StaffAttendanceService {
       Remarks: r.remarks || "",
     }));
 
-    const wb = xlsx.utils.book_new();
-    const ws = xlsx.utils.json_to_sheet(rows);
-    xlsx.utils.book_append_sheet(wb, ws, "Staff Attendance");
     const bookType = format === "csv" ? "csv" : "xlsx";
-    return xlsx.write(wb, { type: "buffer", bookType });
+    return buildExcelBuffer({
+      sheetName: "Staff Attendance",
+      columns: ["Name", "Email", "Role", "Date", "Status", "Check In", "Remarks"],
+      rows,
+      bookType,
+    });
   }
 
   /**

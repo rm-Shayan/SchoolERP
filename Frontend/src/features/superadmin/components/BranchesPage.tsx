@@ -44,7 +44,7 @@ export default function BranchesPage() {
               <p className="mt-1 text-sm text-violet-100">Every campus across all organizations.</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleExport} className="bg-white/15 border-white/20 text-white hover:bg-white/25 hover:text-white backdrop-blur-sm">
+              <Button variant="outline" size="sm" onClick={handleExport} disabled={schools.length === 0} title={schools.length === 0 ? 'No branches to export' : undefined} className="bg-white/15 border-white/20 text-white hover:bg-white/25 hover:text-white backdrop-blur-sm">
                 <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                 Export
               </Button>

@@ -97,7 +97,7 @@ export default function StaffListPage() {
     <div className="space-y-6">
       <PageHeader title="Staff Management" description="Create, import, update and manage staff accounts."
         actions={<>
-          <Button size="sm" variant="outline" onClick={handleExport}>Export Excel</Button>
+          <Button size="sm" variant="outline" onClick={handleExport} disabled={staff.length === 0} title={staff.length === 0 ? 'No staff to export' : undefined}>Export Excel</Button>
           <Button size="sm" variant="outline" onClick={() => setShowImport(true)}>Import Excel</Button>
           <Button size="sm" onClick={() => setShowCreate(true)}>+ Add Staff</Button>
         </>}

@@ -12,6 +12,7 @@ import portalNotificationService from "../notification/notification.portalServic
 import { staffCredentialsEmail } from "../../services/email.templates.js";
 import { queueEmail } from "../../services/emailOutbox.js";
 import { buildCsv } from "../../lib/utils/csv.js";
+import { buildExcelBuffer } from "../../lib/utils/excelExport.js";
 import { staffImportQueue } from "../../jobs/queues/staffImport.queue.js";
 import Logger from "../../lib/utils/logger.js";
 import smtpSettingsService from "../smtpSettings/smtpSettings.service.js";
@@ -388,15 +389,15 @@ class UserManagementService {
     const userResult = requester.role === ROLES.SUPER_ADMIN
       ? await authRepository.findUsersByOrganization(requester.organizationId, { pageSize: 10000 })
       : await authRepository.findUsersBySchool(requester.schoolId, { pageSize: 10000 });
-    const rows = userResult.items.filter((u) => u.role !== ROLES.SUPER_ADMIN).map((u) => ({
-      Name: u.name, Email: u.email, Phone: u.phone || "", Role: u.role,
-      Username: u.username || "", Status: u.isActive ? "Active" : "Inactive",
-      Branch: u.school?.name || "", Created: u.createdAt ? new Date(u.createdAt).toISOString().slice(0, 10) : "",
-    }));
-    const wb = xlsx.utils.book_new();
-    const ws = xlsx.utils.json_to_sheet(rows);
-    xlsx.utils.book_append_sheet(wb, ws, "Staff");
-    return xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
+    return buildExcelBuffer({
+      sheetName: "Staff",
+      columns: ["Name", "Email", "Phone", "Role", "Username", "Status", "Branch", "Created"],
+      rows: userResult.items.filter((u) => u.role !== ROLES.SUPER_ADMIN).map((u) => ({
+        Name: u.name, Email: u.email, Phone: u.phone || "", Role: u.role,
+        Username: u.username || "", Status: u.isActive ? "Active" : "Inactive",
+        Branch: u.school?.name || "", Created: u.createdAt ? new Date(u.createdAt).toISOString().slice(0, 10) : "",
+      })),
+    });
   }
 
   async listAllUsersPlatform(requester, { page = 1, pageSize = 50, search, role, isActive, hasBlockReason, organizationId } = {}) {

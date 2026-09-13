@@ -17,6 +17,7 @@ import auditService from "../audit/audit.service.js";
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../audit/actions.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import { encryptSecret } from "../../lib/utils/secretBox.js";
+import { buildExcelBuffer } from "../../lib/utils/excelExport.js";
 import prisma from "../../config/db.js";
 
 const ORG_CACHE_TTL = 3600; // 1 hour
@@ -759,19 +760,18 @@ class OrganizationService {
    */
   async exportExcel() {
     const orgs = await this.getAllOrganizations();
-    const rows = orgs.map((org) => ({
-      Name: org.name,
-      Code: org.code,
-      Slug: org.slug,
-      "Branches": org._count?.branches ?? 0,
-      "Staff Accounts": org._count?.users ?? 0,
-      "Created": org.createdAt ? new Date(org.createdAt).toISOString().slice(0, 10) : "",
-    }));
-
-    const wb = xlsx.utils.book_new();
-    const ws = xlsx.utils.json_to_sheet(rows);
-    xlsx.utils.book_append_sheet(wb, ws, "Organizations");
-    return xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
+    return buildExcelBuffer({
+      sheetName: "Organizations",
+      columns: ["Name", "Code", "Slug", "Branches", "Staff Accounts", "Created"],
+      rows: orgs.map((org) => ({
+        Name: org.name,
+        Code: org.code,
+        Slug: org.slug,
+        Branches: org._count?.branches ?? 0,
+        "Staff Accounts": org._count?.users ?? 0,
+        Created: org.createdAt ? new Date(org.createdAt).toISOString().slice(0, 10) : "",
+      })),
+    });
   }
 
   /**

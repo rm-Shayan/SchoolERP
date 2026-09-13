@@ -22,6 +22,7 @@ export default function OrganizationsListPage() {
   const [createOpen, setCreateOpen] = useState(false);
 
   const setMode = useCallback((mode: OrgViewMode) => setView(mode), [setView]);
+  const hasOrgs = (overview?.organizations?.length ?? 0) > 0;
   if (loading) return <Skeleton />;
 
   return (
@@ -50,7 +51,7 @@ export default function OrganizationsListPage() {
                   </button>
                 ))}
               </div>
-              <Button variant="outline" size="sm" onClick={handleExport} loading={exporting}
+              <Button variant="outline" size="sm" onClick={handleExport} loading={exporting} disabled={!hasOrgs} title={hasOrgs ? undefined : 'No organizations to export'}
                 className="bg-white/15 border-white/20 text-white hover:bg-white/25 hover:text-white backdrop-blur-sm">
                 <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                 Export

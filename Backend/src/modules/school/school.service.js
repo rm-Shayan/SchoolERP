@@ -16,6 +16,7 @@ import storageService from "../../services/storage.service.js";
 import { resolveBranchLogoReplace } from "./logoSync.js";
 import auditService from "../audit/audit.service.js";
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../audit/actions.js";
+import { buildExcelBuffer } from "../../lib/utils/excelExport.js";
 
 
 
@@ -689,22 +690,21 @@ class SchoolService {
       ? await schoolRepository.listByOrganization(organizationId)
       : await schoolRepository.listAll();
 
-    const rows = schools.map((school) => ({
-      "Organization": organizationId ? (org?.name ?? "") : (school.organization?.name ?? ""),
-      "Org Code": organizationId ? (org?.code ?? "") : (school.organization?.code ?? ""),
-      "Branch Name": school.name,
-      "Branch Code": school.code,
-      "Address": school.address ?? "",
-      "Phone": school.phone ?? "",
-      "Students": school._count?.students ?? 0,
-      "Classes": school._count?.classes ?? 0,
-      "Created": school.createdAt ? new Date(school.createdAt).toISOString().slice(0, 10) : "",
-    }));
-
-    const wb = xlsx.utils.book_new();
-    const ws = xlsx.utils.json_to_sheet(rows);
-    xlsx.utils.book_append_sheet(wb, ws, "Branches");
-    return xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
+    return buildExcelBuffer({
+      sheetName: "Branches",
+      columns: ["Organization", "Org Code", "Branch Name", "Branch Code", "Address", "Phone", "Students", "Classes", "Created"],
+      rows: schools.map((school) => ({
+        "Organization": organizationId ? (org?.name ?? "") : (school.organization?.name ?? ""),
+        "Org Code": organizationId ? (org?.code ?? "") : (school.organization?.code ?? ""),
+        "Branch Name": school.name,
+        "Branch Code": school.code,
+        "Address": school.address ?? "",
+        "Phone": school.phone ?? "",
+        "Students": school._count?.students ?? 0,
+        "Classes": school._count?.classes ?? 0,
+        "Created": school.createdAt ? new Date(school.createdAt).toISOString().slice(0, 10) : "",
+      })),
+    });
   }
 
   /**

@@ -97,7 +97,7 @@ export default function StaffAttendanceDailyView() {
             className="h-9 w-full rounded-lg border border-gray-200 pl-9 pr-3 text-xs bg-white focus:ring-2 focus:ring-primary-300 outline-none" />
         </div>
         <div className="flex gap-2 ml-auto">
-          <Button size="sm" variant="outline" onClick={handleExport}>Export</Button>
+          <Button size="sm" variant="outline" onClick={handleExport} disabled={staffOnly.length === 0} title={staffOnly.length === 0 ? 'No staff to export' : undefined}>Export</Button>
           <Button size="sm" variant="outline" onClick={() => setShowImport(true)}>Import</Button>
           <Button size="sm" loading={saving} onClick={handleSaveAll} disabled={!Object.keys(attendance).length}>Save All</Button>
         </div>
