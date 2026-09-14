@@ -10,11 +10,12 @@ interface OrgFooterProps {
   theme: string;
 }
 
-const exploreLinks = [
-  { label: 'About', href: '#about' },
-  { label: 'Programs', href: '#programs' },
-  { label: 'Campuses', href: '#campuses' },
-  { label: 'Admission', href: '#admission' },
+const buildExploreLinks = (slug: string) => [
+  { label: 'About', href: `/o/${slug}/about` },
+  { label: 'Programs', href: `/o/${slug}/programs` },
+  { label: 'Campuses', href: `/o/${slug}/campuses` },
+  { label: 'Gallery', href: `/o/${slug}/gallery` },
+  { label: 'Fees', href: `/o/${slug}/fees` },
 ];
 
 const socialIcons: Record<string, { path: string; label: string }> = {
@@ -39,6 +40,7 @@ const socialIcons: Record<string, { path: string; label: string }> = {
 export default function OrgFooter({ org, theme }: OrgFooterProps) {
   const count = org.branches.length;
   const hasSocial = org.facebookUrl || org.instagramUrl || org.twitterUrl || org.youtubeUrl;
+  const exploreLinks = buildExploreLinks(org.slug);
 
   return (
     <footer className="border-t border-gray-100 bg-gray-50">

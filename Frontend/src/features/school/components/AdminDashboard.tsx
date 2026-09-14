@@ -13,6 +13,7 @@ import { useDashboardData } from '../hooks/useDashboardData';
 import { EmptyState, Card } from '@/features/shared/components';
 import { useRouter } from 'next/navigation';
 import { useEffect as useEffect2 } from 'react';
+import { sidebarColors } from '@/lib/theme';
 
 const FADE_MS = 400;
 
@@ -31,6 +32,9 @@ export default function AdminDashboard() {
   const prevLoading = useRef(loading);
   const [showSkeleton, setShowSkeleton] = useState(loading);
   const [contentVisible, setContentVisible] = useState(!loading);
+
+  const sColors = sidebarColors(organization?.themeColor || null);
+  const bannerBg = `linear-gradient(120deg, ${sColors.bg} 0%, ${sColors.bgHover} 50%, ${sColors.bg} 100%)`;
 
   useEffect(() => {
     if (prevLoading.current && !loading) {
@@ -55,7 +59,7 @@ export default function AdminDashboard() {
       )}
       <div className={`transition-opacity duration-400 ease-out ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
       <Reveal>
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-900 via-primary-800 to-slate-900 p-6 md:p-8 text-white shadow-lg border border-primary-900">
+        <div className="relative overflow-hidden rounded-2xl p-6 md:p-8 text-white shadow-lg border" style={{ background: bannerBg, borderColor: sColors.border }}>
           <div className="absolute top-0 right-0 -mt-6 -mr-6 w-32 h-32 bg-primary-700/20 rounded-full blur-2xl pointer-events-none" />
           <div className="relative z-10 flex flex-col gap-1 max-w-2xl">
             <span className="text-xs font-bold uppercase tracking-wider text-primary-300 bg-primary-950/40 px-2.5 py-1 rounded-full w-fit border border-primary-800/30">{organization?.name || 'School ERP'}</span>

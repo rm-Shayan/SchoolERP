@@ -281,6 +281,7 @@ export const sendEmail = async ({
   }
 
   let lastErr = null;
+  let guardSkipped = false;
   for (const mailer of chain) {
     // Platform transport par bhi creds chahiye; missing hon to agla (koi nahi).
     if (mailer.source === "platform" && platformCredsMissing()) continue;
@@ -293,20 +294,23 @@ export const sendEmail = async ({
       );
     }
 
-    // Guard (sirf platform): SUPER_ADMIN credential holder ko apni hi bheji
-    // hui mail ki copy na aaye. Tenant transports par skip nahi karte —
-    // branch admin apne hi address ko test mail bhej sakta hai.
-    if (
+    // SELF-SEND GUARD (har transport par): agar recipient === transport ka OWN
+    // authenticated SMTP account hai to ye self-copy hai — Gmail usay inbox +
+    // sent dono me daal deta hai. Super admin ko org/branch (absent/fee due)
+    // emails ki aisi copies nahi aani chahiyein. Skip karke agla transport
+    // try karo; `allowHolderAsRecipient: true` (test email / credential mail)
+    // is guard ko by-design bypass karta hai.
+    const isSelfSend =
       !allowHolderAsRecipient &&
-      mailer.source === "platform" &&
       mailer.holder &&
       to &&
-      to.toLowerCase() === mailer.holder
-    ) {
+      to.toLowerCase() === mailer.holder;
+    if (isSelfSend) {
       logger.logger.warn(
-        `[Email Guard] Skipping email to credential holder (${to}) — Subject: ${subject}`
+        `[Email Guard] Skipping self-send via ${mailer.key} (${mailer.fromEmail} -> ${to}) — Subject: ${subject}`
       );
-      return { skipped: true, reason: "Recipient is the SMTP credential holder" };
+      guardSkipped = true;
+      continue;
     }
 
     let displayName = mailer.fromName;
@@ -337,6 +341,11 @@ export const sendEmail = async ({
     }
   }
 
+  // Saare transports self-send guard se skip hue (koi real send nahi hua) —
+  // isay outbox me queue na karo, warna retry loop self-copies bhejta rahega.
+  if (guardSkipped && !lastErr) {
+    return { skipped: true, reason: "Recipient is the SMTP credential holder" };
+  }
   throw lastErr || new Error("No SMTP transport available to send email");
 };
 

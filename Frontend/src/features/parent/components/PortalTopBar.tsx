@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { getOrgThemeColor } from '@/lib/utils/orgTheme';
+import { sidebarColors } from '@/lib/theme';
 import { getApiErrorMessage } from '@/lib/utils';
 import { parentService, PARENT_PROFILE_UPDATED_EVENT } from '@/lib/api/parentService';
 import PortalNotificationBell from './notifications/PortalNotificationBell';
@@ -22,7 +23,10 @@ export default function PortalTopBar({ title, subtitle, avatarUrl, canEditPhoto,
   const [imgFailed, setImgFailed] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const color = getOrgThemeColor() || '#6366f1';
+  const themeColor = getOrgThemeColor() || null;
+  const color = themeColor || '#6366f1';
+  const colors = sidebarColors(themeColor);
+  const bannerBg = `linear-gradient(135deg, ${colors.bg} 0%, ${colors.bgHover} 55%, ${colors.bg} 100%)`;
 
   const avatar = avatarUrl && !imgFailed ? (
     <img src={avatarUrl} alt={title} onError={() => setImgFailed(true)} className="h-8 w-8 rounded-full object-cover ring-2" style={{ boxShadow: `0 0 0 2px ${color}55` }} />
@@ -48,13 +52,13 @@ export default function PortalTopBar({ title, subtitle, avatarUrl, canEditPhoto,
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/95 shadow-sm shadow-slate-100/30 backdrop-blur-md">
-      <div className="absolute inset-x-0 top-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${color}, ${color}cc, ${color})` }} />
+    <header className="sticky top-0 z-30 shadow-md" style={{ background: bannerBg }}>
+      <div className="absolute inset-x-0 top-0 h-1" style={{ background: `linear-gradient(90deg, ${color}, ${color}cc, ${color})` }} />
       <div className="flex h-16 items-center gap-2 px-4 md:gap-3 md:px-6">
         {onMenuClick && (
           <button
             onClick={onMenuClick}
-            className="-ml-1 shrink-0 rounded-xl p-2 text-slate-500 hover:bg-slate-50 hover:text-slate-700 lg:hidden transition-colors"
+            className="-ml-1 shrink-0 rounded-xl p-2 text-white/70 hover:bg-white/10 hover:text-white lg:hidden transition-colors"
             aria-label="Open menu"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -63,8 +67,8 @@ export default function PortalTopBar({ title, subtitle, avatarUrl, canEditPhoto,
           </button>
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-base font-extrabold tracking-tight text-slate-900">{title}</h1>
-          <p className="truncate text-xs font-medium text-slate-400">{subtitle}</p>
+          <h1 className="truncate text-base font-extrabold tracking-tight text-white">{title}</h1>
+          <p className="truncate text-xs font-medium text-white/70">{subtitle}</p>
         </div>
 
         <PortalNotificationBell />
@@ -72,13 +76,13 @@ export default function PortalTopBar({ title, subtitle, avatarUrl, canEditPhoto,
         <div className="relative">
           <button
             onClick={() => setOpen(!open)}
-            className="flex items-center gap-2 rounded-xl border border-transparent p-1 px-2 hover:border-slate-100 hover:bg-slate-50 transition-all duration-300"
+            className="flex items-center gap-2 rounded-xl border border-transparent p-1 px-2 hover:border-white/10 hover:bg-white/10 transition-all duration-300"
             aria-label="User menu"
           >
             {avatar}
             <div className="hidden text-left md:block">
-              <p className="text-xs font-bold leading-tight text-slate-950">{title}</p>
-              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              <p className="text-xs font-bold leading-tight text-white">{title}</p>
+              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/55">
                 {subtitle.includes('·') ? subtitle.split('·')[0].trim() : subtitle}
               </p>
             </div>

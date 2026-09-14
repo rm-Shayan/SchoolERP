@@ -28,7 +28,7 @@ class TeacherDashboardController {
 
       const [assignments, ptmCount, homeworkCount, timetableCount] =
         await Promise.all([
-          prisma.teachingAssignment.count({
+          prisma.teacherAssignment.count({
             where: { teacherId: userId, class: { schoolId } },
           }),
           prisma.pTMSession.count({

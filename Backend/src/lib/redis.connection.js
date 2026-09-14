@@ -9,6 +9,8 @@
  *   BULLMQ_COMMAND_TIMEOUT   — ms before a single COMMAND is considered hung
  *   BULLMQ_KEEPALIVE         — TCP keepalive interval in ms (0 = off)
  *   BULLMQ_MAX_RETRIES       — max reconnect attempts before giving up
+ *                              (0 = infinite; default 0 so a transient
+ *                              cloud Redis reset never permanently kills workers)
  */
 
 import IORedis from "ioredis";
@@ -20,7 +22,7 @@ const logger = new Logger("redis-bullmq");
 const CONNECT_TIMEOUT = parseInt(process.env.BULLMQ_CONNECT_TIMEOUT || "5000", 10);
 const COMMAND_TIMEOUT = parseInt(process.env.BULLMQ_COMMAND_TIMEOUT || "30000", 10);
 const KEEPALIVE_MS    = parseInt(process.env.BULLMQ_KEEPALIVE || "30000", 10);
-const MAX_RETRIES     = parseInt(process.env.BULLMQ_MAX_RETRIES || "15", 10);
+const MAX_RETRIES     = parseInt(process.env.BULLMQ_MAX_RETRIES || "0", 10);
 
 function buildConnection() {
   const url = process.env.REDIS_URL;
@@ -52,7 +54,9 @@ function buildConnection() {
 
     // ── Reconnection ──────────────────────────────────────────────────
     retryStrategy(times) {
-      if (times > MAX_RETRIES) {
+      // DEFAULT: infinite retries (MAX_RETRIES=0). A transient cloud Redis
+      // reset must NEVER permanently kill workers until manual restart.
+      if (MAX_RETRIES > 0 && times > MAX_RETRIES) {
         logger.logger.error(`BullMQ Redis: gave up after ${MAX_RETRIES} retries`);
         return null; // null = stop reconnecting, emit "end" event
       }

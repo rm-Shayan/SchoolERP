@@ -100,7 +100,7 @@ export default function PortalNotificationBell() {
         aria-label="Notifications"
         className={cn(
           'relative p-2 rounded-full transition-colors duration-150',
-          open ? 'bg-black/[0.08] text-gray-900' : 'text-gray-500 hover:bg-black/[0.06] hover:text-gray-700',
+          open ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white',
         )}
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>

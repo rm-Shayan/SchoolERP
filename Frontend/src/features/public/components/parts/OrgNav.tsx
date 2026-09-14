@@ -5,11 +5,11 @@ import Logo from '@/features/shared/components/Logo';
 import type { OrgPublicData } from '@/lib/api/orgService';
 import { buildOrgLoginHref } from './orgLoginHref';
 
-const sectionLinks = [
-  { label: 'About', href: '#about' },
-  { label: 'Programs', href: '#programs' },
-  { label: 'Campuses', href: '#campuses' },
-  { label: 'Admission', href: '#admission' },
+const buildPageLinks = (slug: string) => [
+  { label: 'About', href: `/o/${slug}/about` },
+  { label: 'Programs', href: `/o/${slug}/programs` },
+  { label: 'Campuses', href: `/o/${slug}/campuses` },
+  { label: 'Admission', href: `/o/${slug}/admission` },
 ];
 
 interface OrgNavProps {
@@ -20,6 +20,7 @@ export default function OrgNav({ org }: OrgNavProps) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const admissionHref = `/o/${org.slug}/admission`;
+  const sectionLinks = buildPageLinks(org.slug);
   const theme = org.themeColor || '#6366f1';
 
   useEffect(() => {

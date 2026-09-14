@@ -141,6 +141,12 @@ export const queueEmail = async (emailData, attempts = 3) => {
 /**
  * Outbox worker — PENDING emails utha kar priority order me retry karta hai.
  * Cron har 30 min call karta hai. Returns summary for logging.
+ *
+ * Duplicate-send guard: har row ko ATOMIC claim karta hai (scheduledFor ko
+ * future me le jaata hai WITHOUT status badle). Agar do replicas / overlapping
+ * cron ticks ek hi row utha lein to pehla claim jeetta hai, dusra skip. Crash
+ * hone par bhi row wedge nahi hota — scheduledFor guzar jata hai aur dobara
+ * retry hota hai (at-least-once delivery, koi duplicate nahi).
  */
 export const retryPendingEmails = async (limit = 100) => {
   const rows = await prisma.pendingEmail.findMany({
@@ -155,7 +161,26 @@ export const retryPendingEmails = async (limit = 100) => {
 
   const summary = { total: rows.length, sent: 0, deferred: 0, failedPermanent: 0 };
 
+  // In-flight dedup for this run — ek hi tree me duplicate dispatch na ho.
+  const inFlight = new Set();
+
   for (const row of rows) {
+    if (inFlight.has(row.id)) {
+      summary.deferred += 1;
+      continue;
+    }
+
+    // ATOMIC CLAIM: sirf ye wale batch me se jeeta hua hi process karo.
+    // status PENDING hi rahta hai; scheduledFor se claim lock ki tarah kaam.
+    const claimed = await prisma.pendingEmail.updateMany({
+      where: { id: row.id, status: "PENDING", scheduledFor: { lte: new Date() } },
+      data: { scheduledFor: new Date(Date.now() + RETRY_SOON_MS) },
+    });
+    if (claimed.count === 0) {
+      summary.deferred += 1;
+      continue;
+    }
+    inFlight.add(row.id);
     let mail;
     try {
       mail = deserializePayload(row.payload);
@@ -190,8 +215,23 @@ export const retryPendingEmails = async (limit = 100) => {
       summary.sent += 1;
       continue;
     }
+    if (sentInfo?.skipped) {
+      // Self-send guard ne is email ko rok diya (recipient === SMTP holder) —
+      // ye kabhi succeed nahi hoga, isliye outbox me infinite retry mat karo.
+      await prisma.pendingEmail.update({
+        where: { id: row.id },
+        data: {
+          status: "FAILED",
+          attempts: { increment: 1 },
+          lastError: "Skipped: recipient is the SMTP credential holder (self-send)",
+        },
+      });
+      logger.logger.warn(`[Outbox] #${row.id} permanently skipped (self-send) -> ${mail.to}`);
+      summary.failedPermanent += 1;
+      continue;
+    }
     if (sentInfo) {
-      // mock (SMTP not configured) ya skipped — abhi bekar, thodi der baad dobara
+      // mock (SMTP not configured) — abhi bekar, thodi der baad dobara
       await prisma.pendingEmail.update({
         where: { id: row.id },
         data: { scheduledFor: new Date(Date.now() + RETRY_SOON_MS) },
