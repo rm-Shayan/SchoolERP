@@ -9,6 +9,8 @@ RUN npm ci --ignore-scripts && npm cache clean --force
 
 COPY Backend/prisma ./prisma
 COPY Backend/prisma.config.ts ./
+# prisma.config.ts → src/config/env.js import karta hai (env file split)
+COPY Backend/src/config ./src/config
 ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
 RUN npx prisma generate
 
@@ -27,6 +29,8 @@ COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
 
 COPY Backend/prisma ./prisma
 COPY Backend/prisma.config.ts ./
+# prisma.config.ts → src/config/env.js import karta hai (env file split)
+COPY Backend/src/config ./src/config
 ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
 RUN npx prisma generate
 

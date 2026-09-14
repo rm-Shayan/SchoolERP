@@ -1,4 +1,5 @@
-import "dotenv/config";
+// Smart loader — NODE_ENV=local → dev.env, warna .env (src/config/env.js)
+import "../src/config/env.js";
 import prisma from "../src/config/db.js";
 import bcrypt from "bcryptjs";
 import { generateIdentifierCode } from "../src/lib/identifier.js";

@@ -8,9 +8,9 @@ let schoolId: string;
 test.beforeAll(async ({ request }) => {
   const res = await request.post(`${API}/auth/login`, {
     data: {
-      schoolCode: 'GULSHAN-01',
-      email: 'admin@falconacademy.com',
-      password: 'admin123',
+      schoolCode: 'DEMO-01',
+      email: 'admin.demo-01@seed.example.com',
+      password: 'Admin@123',
     },
   });
   expect(res.ok()).toBeTruthy();
@@ -31,7 +31,7 @@ test.describe('Org Admin API Flow', () => {
   test.describe('Authentication', () => {
     test('login with school code returns tokens + user', async ({ request }) => {
       const res = await request.post(`${API}/auth/login`, {
-        data: { schoolCode: 'GULSHAN-01', email: 'admin@falconacademy.com', password: 'admin123' },
+        data: { schoolCode: 'DEMO-01', email: 'admin.demo-01@seed.example.com', password: 'Admin@123' },
       });
       expect(res.ok()).toBeTruthy();
       const body = await res.json();
@@ -43,7 +43,7 @@ test.describe('Org Admin API Flow', () => {
 
     test('login without school code also works for admin', async ({ request }) => {
       const res = await request.post(`${API}/auth/login`, {
-        data: { email: 'admin@falconacademy.com', password: 'admin123' },
+        data: { email: 'admin.demo-01@seed.example.com', password: 'Admin@123' },
       });
       expect(res.ok()).toBeTruthy();
       const body = await res.json();
@@ -52,14 +52,14 @@ test.describe('Org Admin API Flow', () => {
 
     test('wrong password returns 401', async ({ request }) => {
       const res = await request.post(`${API}/auth/login`, {
-        data: { schoolCode: 'GULSHAN-01', email: 'admin@falconacademy.com', password: 'wrongpassword' },
+        data: { schoolCode: 'DEMO-01', email: 'admin.demo-01@seed.example.com', password: 'wrongpassword' },
       });
       expect(res.status()).toBe(401);
     });
 
     test('wrong school code returns 401', async ({ request }) => {
       const res = await request.post(`${API}/auth/login`, {
-        data: { schoolCode: 'WRONG-CODE', email: 'admin@falconacademy.com', password: 'admin123' },
+        data: { schoolCode: 'WRONG-CODE', email: 'admin.demo-01@seed.example.com', password: 'Admin@123' },
       });
       expect(res.status()).toBe(401);
     });

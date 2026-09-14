@@ -48,22 +48,22 @@ export default function StudyMaterialForm({
   const [sectionId, setSectionId] = useState(initialValues?.sectionId ?? '');
   const [subjectId, setSubjectId] = useState(initialValues?.subjectId ?? '');
   const [fileError, setFileError] = useState('');
-  const [_linkError, _setLinkError] = useState('');
-  const [_sectionError, _setSectionError] = useState('');
-  const [_subjectError, _setSubjectError] = useState('');
+  const [linkError, setLinkError] = useState('');
+  const [sectionError, setSectionError] = useState('');
+  const [subjectError, setSubjectError] = useState('');
 
   const handleSubmit = async () => {
-    _setSectionError('');
-    _setSubjectError('');
-    _setLinkError('');
+    setSectionError('');
+    setSubjectError('');
+    setLinkError('');
     setFileError('');
 
     if (!title.trim()) { toast.error('Title is required'); return; }
-    if (!sectionId) { _setSectionError('Select a section'); return; }
-    if (subjectId && !subjects.some((s) => s.id === subjectId)) { _setSubjectError('Select a valid subject'); return; }
+    if (!sectionId) { setSectionError('Select a section'); return; }
+    if (subjectId && !subjects.some((s) => s.id === subjectId)) { setSubjectError('Select a valid subject'); return; }
 
     if (!file && !linkUrl.trim()) { toast.error('Select a file or enter a URL'); return; }
-    if (linkUrl.trim() && !/^https?:\/\//i.test(linkUrl)) { _setLinkError('Enter a valid URL starting with https://'); return; }
+    if (linkUrl.trim() && !/^https?:\/\//i.test(linkUrl)) { setLinkError('Enter a valid URL starting with https://'); return; }
 
     const fd = new FormData();
     fd.append('title', title.trim());
@@ -92,10 +92,11 @@ export default function StudyMaterialForm({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
           <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            value={sectionId} onChange={(e) => { setSectionId(e.target.value); setSubjectId(''); _setSubjectError(''); }}>
+            value={sectionId} onChange={(e) => { setSectionId(e.target.value); setSubjectId(''); setSubjectError(''); }}>
             <option value="">All sections</option>
             {sectionsLoading ? <option disabled>Loading...</option> : sections.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
+          {sectionError && <p className="mt-1 text-xs text-red-500">{sectionError}</p>}
         </div>
       </div>
 
@@ -103,15 +104,16 @@ export default function StudyMaterialForm({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
           <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            value={subjectId} onChange={(e) => { setSubjectId(e.target.value); _setSubjectError(''); }}>
+            value={subjectId} onChange={(e) => { setSubjectId(e.target.value); setSubjectError(''); }}>
             <option value="">All subjects</option>
             {subjectsLoading ? <option disabled>Loading...</option> : subjects.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
-          {_subjectError && <p className="mt-1 text-xs text-red-500">{_subjectError}</p>}
+          {subjectError && <p className="mt-1 text-xs text-red-500">{subjectError}</p>}
         </div>
       )}
 
       <StudyMaterialTypeSelector type={type} setType={setType} file={file} setFile={setFile} linkUrl={linkUrl} setLinkUrl={setLinkUrl} setFileError={setFileError} />
+      {linkError && <p className="-mt-2 text-xs text-red-500">{linkError}</p>}
 
       <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
         <Button variant="secondary" onClick={onCancel} disabled={submitting}>Cancel</Button>

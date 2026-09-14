@@ -7,6 +7,7 @@ import { Card } from '@/features/shared/components';
 import type { SmtpSettingsStatus, SmtpSettingInfo } from '@/types';
 import toast from 'react-hot-toast';
 import SmtpStatusChips from './SmtpStatusChips';
+import SmtpQueuedMailWarning from './SmtpQueuedMailWarning';
 import SmtpSettingsForm from './SmtpSettingsForm';
 import { pickExisting, type Scope, type Tier } from './smtpShared';
 
@@ -104,6 +105,7 @@ export default function SmtpSettingsSection({ organizationId: orgProp, schoolId:
           <SmtpStatusChips status={status} />
         </div>
       </button>
+      <SmtpQueuedMailWarning queuedMail={status?.queuedMail} scopeLabel={lockedBranch ? branchName || 'this branch' : orgName || 'this organization'} />
       {open && (
         <div className="space-y-6 border-t border-slate-200 bg-slate-50/70 px-4 py-5 sm:px-6 sm:py-6">
           <div className="rounded-xl border border-primary-200 bg-white p-3 shadow-sm">

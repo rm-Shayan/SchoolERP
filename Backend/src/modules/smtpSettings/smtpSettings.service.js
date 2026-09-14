@@ -81,9 +81,26 @@ class SmtpSettingsService {
     const rows = await prisma.orgSecrets.findMany({ where: { organizationId, category: "SMTP" } });
     const pick = (scopeSchoolId, tier) =>
       this._mask(rows.find((r) => r.tier === tier && (r.schoolId || null) === (scopeSchoolId || null)) || null);
+
+    // Queued school mail — outbox (PendingEmail) rows waiting for a transport.
+    // School mail kabhi platform SMTP se nahi jati, to ye rows tab banti hain
+    // jab tenant SMTP missing ho ya fail ho. Settings UI par warning dikhata hai.
+    const queuedWhere = { organizationId, status: "PENDING", ...(schoolId ? { schoolId } : {}) };
+    const [pendingCount, oldestPending] = await Promise.all([
+      prisma.pendingEmail.count({ where: queuedWhere }),
+      prisma.pendingEmail.findFirst({ where: queuedWhere, orderBy: { createdAt: "asc" }, select: { createdAt: true } }),
+    ]);
+    // Tenant SMTP available hai is scope ke liye? (branch override ya org default)
+    const hasTenantSmtp = rows.some((r) => !r.schoolId || (schoolId && r.schoolId === schoolId));
+
     return {
       organization: { primary: pick(null, "PRIMARY"), secondary: pick(null, "SECONDARY") },
       ...(schoolId ? { branch: { primary: pick(schoolId, "PRIMARY"), secondary: pick(schoolId, "SECONDARY") } } : {}),
+      queuedMail: {
+        count: pendingCount,
+        hasTenantSmtp,
+        oldestAt: oldestPending?.createdAt || null,
+      },
     };
   }
 

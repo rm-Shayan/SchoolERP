@@ -20,7 +20,7 @@ export default function FeeStructuresPage() {
   const [editing, setEditing] = useState<FeeStructure | null>(null);
 
   const load = async () => {
-    if (!schoolId) return;
+    if (!schoolId) { setMetaLoading(false); return; }
     try {
       const [data, c, y] = await Promise.all([
         feeService.getStructuresBySchool(schoolId),

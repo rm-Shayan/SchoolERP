@@ -9,7 +9,7 @@ test.describe('Parent Portal API Flow', () => {
 
   test('POST /auth/parent/login returns token + parent', async ({ page }) => {
     const res = await page.request.post(`${API}/auth/parent/login`, {
-      data: { schoolCode: 'GULSHAN-01', phone: '0317-7777777', password: 'GULSHAN-01' },
+      data: { schoolCode: 'DEMO-01', phone: '03234000047', password: 'DEMO-01' },
     });
     expect(res.ok()).toBeTruthy();
     const json = await res.json();
@@ -20,21 +20,21 @@ test.describe('Parent Portal API Flow', () => {
 
   test('POST /auth/parent/login with wrong password returns 401', async ({ page }) => {
     const res = await page.request.post(`${API}/auth/parent/login`, {
-      data: { schoolCode: 'GULSHAN-01', phone: '0317-7777777', password: 'wrong' },
+      data: { schoolCode: 'DEMO-01', phone: '03234000047', password: 'wrong' },
     });
     expect(res.status()).toBe(401);
   });
 
   test('POST /auth/parent/login with wrong phone returns 401', async ({ page }) => {
     const res = await page.request.post(`${API}/auth/parent/login`, {
-      data: { schoolCode: 'GULSHAN-01', phone: '0399-9999999', password: 'GULSHAN-01' },
+      data: { schoolCode: 'DEMO-01', phone: '0399-9999999', password: 'DEMO-01' },
     });
     expect(res.status()).toBe(401);
   });
 
   test('POST /auth/parent/login with wrong school code returns 401', async ({ page }) => {
     const res = await page.request.post(`${API}/auth/parent/login`, {
-      data: { schoolCode: 'WRONG-CODE', phone: '0317-7777777', password: 'GULSHAN-01' },
+      data: { schoolCode: 'WRONG-CODE', phone: '03234000047', password: 'DEMO-01' },
     });
     expect(res.status()).toBe(401);
   });

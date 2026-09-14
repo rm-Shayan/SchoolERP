@@ -6,15 +6,23 @@
       "localStorage": [
         {
           "name": "accessToken",
-          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmNDAwMjg0MS0xN2MyLTRkOWItYTVjMy04NWI2YjgzYWE0MGIiLCJyb2xlIjoiQURNSU4iLCJzY2hvb2xJZCI6IjYyNmU4N2Q1LTE1ODEtNDIxOC04OTJjLTZjMWJkZmVhZmYyNiIsIm9yZ2FuaXphdGlvbklkIjoiNjFjNGVmYWMtYTJjYS00ZTkxLWE3YTAtNzVlNjQ3MTZhNGFjIiwidG9rZW5UeXBlIjoic3RhZmYiLCJpYXQiOjE3ODgzNjg3MzcsImV4cCI6MTc4ODM3MjMzN30.241A-R-M3Uk9vgfDYbnWDCa1-SK5aNvJr9HuJHuENyI"
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwMDFmN2UzYi1iMjQ5LTQxNjgtOGQ1OS02NWMxMTM1N2NkZDEiLCJyb2xlIjoiQURNSU4iLCJzY2hvb2xJZCI6ImVjNWVjYzQzLWRjOTMtNGM2OS1hYzA2LWEzMjc5OTM2N2Y1NCIsIm9yZ2FuaXphdGlvbklkIjoiZWY4OGE0ODQtMjE2MS00ZjZlLTkyYWEtYzBmZjBlZmQxYjk2IiwidG9rZW5UeXBlIjoic3RhZmYiLCJpYXQiOjE3ODkzMDMzMTYsImV4cCI6MTc4OTMwNjkxNn0.XjYGgfUXsOXzUc6YQiPWnMwL-eqm8x7lhJ_Jy8zBMyI"
         },
         {
-          "name": "user",
-          "value": "{\"id\":\"f4002841-17c2-4d9b-a5c3-85b6b83aa40b\",\"name\":\"Falcon Branch Principal\",\"username\":\"FALCON-ADMIN\",\"email\":\"admin@falconacademy.com\",\"phone\":\"0300-1234567\",\"avatarUrl\":null,\"role\":\"ADMIN\",\"isActive\":true,\"schoolId\":\"626e87d5-1581-4218-892c-6c1bdfeaff26\",\"organizationId\":\"61c4efac-a2ca-4e91-a7a0-75e64716a4ac\",\"createdAt\":\"2026-09-02T06:00:17.671Z\",\"branchAccess\":[],\"blockedReason\":null,\"blockedAt\":null,\"blockedByName\":null,\"school\":{\"id\":\"626e87d5-1581-4218-892c-6c1bdfeaff26\",\"name\":\"Falcon Academy — Gulshan Campus\",\"code\":\"GULSHAN-01\",\"status\":\"ACTIVE\",\"logoUrl\":null,\"themeColor\":null,\"attendanceStartTime\":\"07:45\",\"attendanceCutoffTime\":\"08:30\",\"attendanceAbsentTime\":\"10:00\",\"attendanceAlertTime\":\"09:30\"},\"organization\":{\"id\":\"61c4efac-a2ca-4e91-a7a0-75e64716a4ac\",\"name\":\"Falcon Academy Systems\",\"code\":\"FALCON-HQ\",\"slug\":\"falcon-hq\",\"status\":\"ACTIVE\",\"themeColor\":null,\"logoUrl\":null},\"schools\":[{\"id\":\"626e87d5-1581-4218-892c-6c1bdfeaff26\",\"name\":\"Falcon Academy — Gulshan Campus\",\"code\":\"GULSHAN-01\",\"status\":\"ACTIVE\"}]}"
+          "name": "school",
+          "value": "{\"id\":\"ec5ecc43-dc93-4c69-ac06-a32799367f54\",\"name\":\"Demo Academy Main Campus\",\"code\":\"DEMO-01\",\"status\":\"ACTIVE\",\"logoUrl\":null,\"themeColor\":null,\"attendanceStartTime\":\"07:45\",\"attendanceCutoffTime\":\"08:30\",\"attendanceAbsentTime\":\"10:00\",\"attendanceAlertTime\":\"09:30\"}"
         },
         {
           "name": "refreshToken",
-          "value": "ad226d8cef2a343491ac8e73d608f15ba28c67e0b189775498077e7fc35b21e4e1a465ac763383f634bf1918365da2f47e55982a22c0b6fc5832f2ebe2bccb96"
+          "value": "e82f54d9dea3c5fcc581c56dc8dfad9f359f979a52a5f8fde9152b25c5450eb29963da7f0192ebd38192553b8c21f24aa53d1e7aeaf3e131586ab015ad907f7b"
+        },
+        {
+          "name": "user",
+          "value": "{\"id\":\"001f7e3b-b249-4168-8d59-65c11357cdd1\",\"name\":\"Principal DEMO-01\",\"username\":\"DEMO-01-ADMIN\",\"email\":\"admin.demo-01@seed.example.com\",\"phone\":null,\"avatarUrl\":null,\"role\":\"ADMIN\",\"isActive\":true,\"schoolId\":\"ec5ecc43-dc93-4c69-ac06-a32799367f54\",\"organizationId\":\"ef88a484-2161-4f6e-92aa-c0ff0efd1b96\",\"createdAt\":\"2026-09-13T07:40:40.270Z\",\"branchAccess\":[],\"blockedReason\":null,\"blockedAt\":null,\"blockedByName\":null,\"school\":{\"id\":\"ec5ecc43-dc93-4c69-ac06-a32799367f54\",\"name\":\"Demo Academy Main Campus\",\"code\":\"DEMO-01\",\"status\":\"ACTIVE\",\"logoUrl\":null,\"themeColor\":null,\"attendanceStartTime\":\"07:45\",\"attendanceCutoffTime\":\"08:30\",\"attendanceAbsentTime\":\"10:00\",\"attendanceAlertTime\":\"09:30\"},\"organization\":{\"id\":\"ef88a484-2161-4f6e-92aa-c0ff0efd1b96\",\"name\":\"Demo Academy\",\"code\":\"DEMO\",\"slug\":\"demo\",\"status\":\"ACTIVE\",\"themeColor\":\"#2563eb\",\"logoUrl\":null},\"schools\":[{\"id\":\"ec5ecc43-dc93-4c69-ac06-a32799367f54\",\"name\":\"Demo Academy Main Campus\",\"code\":\"DEMO-01\",\"status\":\"ACTIVE\"}]}"
+        },
+        {
+          "name": "organization",
+          "value": "{\"id\":\"ef88a484-2161-4f6e-92aa-c0ff0efd1b96\",\"name\":\"Demo Academy\",\"code\":\"DEMO\",\"slug\":\"demo\",\"status\":\"ACTIVE\",\"themeColor\":\"#2563eb\",\"logoUrl\":null}"
         }
       ]
     }

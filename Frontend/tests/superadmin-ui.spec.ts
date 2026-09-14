@@ -1,6 +1,19 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 const BASE = 'http://localhost:3000';
+
+// The admin shell renders through PortalGuard (token validation) -> page skeleton
+// (data fetch) -> real UI. Wait for the last-rendered control instead of a fixed
+// sleep so tests stay correct under dev-server compile and API latency.
+async function openOrganizations(page: Page) {
+  await page.goto(`${BASE}/admin/organizations`, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: 'New Org' }).waitFor({ state: 'visible', timeout: 30000 });
+}
+
+async function openBranches(page: Page) {
+  await page.goto(`${BASE}/admin/branches`, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: /Active/i }).waitFor({ state: 'visible', timeout: 30000 });
+}
 
 test.describe('Super Admin UI Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -29,15 +42,13 @@ test.describe('Super Admin UI Flow', () => {
 
   test.describe('Organizations Page', () => {
     test('organizations page loads with hero header', async ({ page }) => {
-      await page.goto(`${BASE}/admin/organizations`);
-      await page.waitForTimeout(2000);
+      await openOrganizations(page);
       await expect(page.getByRole('heading', { name: 'Organizations' })).toBeVisible();
       await expect(page.getByText('Manage all tenant organizations')).toBeVisible();
     });
 
     test('stats tiles show correct data', async ({ page }) => {
-      await page.goto(`${BASE}/admin/organizations`);
-      await page.waitForTimeout(2000);
+      await openOrganizations(page);
       const body = await page.textContent('body');
       expect(body).toContain('Orgs');
       expect(body).toContain('Branches');
@@ -46,15 +57,13 @@ test.describe('Super Admin UI Flow', () => {
     });
 
     test('search filters organizations', async ({ page }) => {
-      await page.goto(`${BASE}/admin/organizations`);
-      await page.waitForTimeout(2000);
+      await openOrganizations(page);
       const body = await page.textContent('body');
       expect(body).toContain('Organizations');
     });
 
     test('grid/table view toggle works', async ({ page }) => {
-      await page.goto(`${BASE}/admin/organizations`);
-      await page.waitForTimeout(2000);
+      await openOrganizations(page);
       const gridBtn = page.getByRole('button', { name: /grid/i });
       const tableBtn = page.getByRole('button', { name: /table/i });
       await expect(gridBtn).toBeVisible();
@@ -66,15 +75,13 @@ test.describe('Super Admin UI Flow', () => {
     });
 
     test('org cards render in grid view', async ({ page }) => {
-      await page.goto(`${BASE}/admin/organizations`);
-      await page.waitForTimeout(3000);
+      await openOrganizations(page);
       const body = await page.textContent('body');
       expect(body).not.toMatch(/Something went wrong|TypeError/i);
     });
 
     test('bottom analytics section renders', async ({ page }) => {
-      await page.goto(`${BASE}/admin/organizations`);
-      await page.waitForTimeout(2000);
+      await openOrganizations(page);
       await expect(page.getByText('Top by Revenue')).toBeVisible();
       await expect(page.getByText('Top by Students')).toBeVisible();
       await expect(page.getByText('Status Distribution')).toBeVisible();
@@ -82,8 +89,7 @@ test.describe('Super Admin UI Flow', () => {
     });
 
     test('quick action links navigate correctly', async ({ page }) => {
-      await page.goto(`${BASE}/admin/organizations`);
-      await page.waitForTimeout(2000);
+      await openOrganizations(page);
       await page.getByRole('button', { name: 'New Org' }).click();
       await page.waitForTimeout(1000);
       const body = await page.textContent('body');
@@ -93,14 +99,12 @@ test.describe('Super Admin UI Flow', () => {
 
   test.describe('Branches Page', () => {
     test('branches page loads with hero header', async ({ page }) => {
-      await page.goto(`${BASE}/admin/branches`);
-      await page.waitForTimeout(2000);
+      await openBranches(page);
       await expect(page.getByRole('heading', { name: 'Branches', exact: true })).toBeVisible();
     });
 
     test('stats show branch count, orgs, students, staff', async ({ page }) => {
-      await page.goto(`${BASE}/admin/branches`);
-      await page.waitForTimeout(2000);
+      await openBranches(page);
       await expect(page.getByRole('heading', { name: 'Branches', exact: true })).toBeVisible();
       const body = await page.textContent('body');
       expect(body).toContain('Organizations');
@@ -109,15 +113,13 @@ test.describe('Super Admin UI Flow', () => {
     });
 
     test('branch analytics section renders', async ({ page }) => {
-      await page.goto(`${BASE}/admin/branches`);
-      await page.waitForTimeout(3000);
+      await openBranches(page);
       await expect(page.getByText('Top by Students')).toBeVisible();
       await expect(page.getByText('Top by Staff')).toBeVisible();
     });
 
     test('search filters branches', async ({ page }) => {
-      await page.goto(`${BASE}/admin/branches`);
-      await page.waitForTimeout(2000);
+      await openBranches(page);
       const searchInput = page.getByPlaceholder('Search branches…');
       await expect(searchInput).toBeVisible();
       await searchInput.fill('test');
@@ -125,8 +127,7 @@ test.describe('Super Admin UI Flow', () => {
     });
 
     test('status filter chips work', async ({ page }) => {
-      await page.goto(`${BASE}/admin/branches`);
-      await page.waitForTimeout(2000);
+      await openBranches(page);
       const activeChip = page.getByRole('button', { name: /Active/i });
       const blockedChip = page.getByRole('button', { name: /Blocked/i });
       await expect(activeChip).toBeVisible();
@@ -190,8 +191,7 @@ test.describe('Super Admin UI Flow', () => {
 
   test.describe('Create Organization Flow', () => {
     test('create org page/modal loads', async ({ page }) => {
-      await page.goto(`${BASE}/admin/organizations`);
-      await page.waitForTimeout(2000);
+      await openOrganizations(page);
       await page.getByRole('button', { name: 'New Org' }).click();
       await page.waitForTimeout(1000);
       const body = await page.textContent('body');

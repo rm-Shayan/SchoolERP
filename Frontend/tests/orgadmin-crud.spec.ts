@@ -75,7 +75,7 @@ test.describe('Org Admin CRUD — Fee Structures', () => {
 
     // Select class
     const classSel = modal.locator('select[name="classId"]');
-    await classSel.waitFor({ state: 'visible', timeout: 5000 });
+    await classSel.waitFor({ state: 'visible', timeout: 15000 });
     const classOpts = await classSel.locator('option').allTextContents();
     if (classOpts.length > 1) await classSel.selectOption({ index: 1 });
     await page.waitForTimeout(500);
@@ -130,61 +130,56 @@ test.describe('Org Admin CRUD — Fee Structures', () => {
 test.describe('Org Admin CRUD — Study Materials', () => {
   test.setTimeout(90000);
 
-  test('Create and delete study material', async ({ page }) => {
-    page.on('dialog', (d) => d.accept());
+  test('Create and delete study material via URL source', async ({ page }) => {
+    const uniqueTitle = `Test Material ${Date.now()}`;
 
     await page.goto(`${BASE}/branch/study-material`);
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(5000);
 
-    const initialEmpty = await page.locator('text=No materials yet').isVisible().catch(() => false);
-
-    // Click "New Material" button — click the one inside the page header
+    // Open the create modal from the page header
     await page.locator('button:has-text("New Material")').first().click();
-    await page.waitForTimeout(3000);
-
-    // Wait for modal heading "New Material"
     const heading = page.locator('h2:has-text("New Material")');
-    if (!await heading.isVisible({ timeout: 5000 }).catch(() => false)) {
-      // Retry
-      await page.locator('button:has-text("New Material")').last().click();
-      await page.waitForTimeout(3000);
-    }
+    await heading.waitFor({ state: 'visible', timeout: 15000 });
+
+    const modal = page.locator('.fixed.inset-0.z-50').last();
 
     // Fill title
-    const titleInput = page.locator('input[placeholder*="Chapter"]');
-    if (await titleInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await titleInput.fill(`Test Material ${Date.now()}`);
-    } else {
-      // Fallback: first visible input in the modal
-      const firstInput = heading.locator('xpath=ancestor::div[2]//input').first();
-      if (await firstInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await firstInput.fill(`Test Material ${Date.now()}`);
-      }
-    }
-    await page.waitForTimeout(500);
+    const titleInput = modal.locator('input[placeholder*="Chapter"]');
+    await titleInput.waitFor({ state: 'visible', timeout: 10000 });
+    await titleInput.fill(uniqueTitle);
 
-    // Intercept the API call to check if it succeeds
-    let apiSuccess = false;
-    page.on('response', (resp) => {
-      if (resp.url().includes('/study-material') && resp.request().method() === 'POST') {
-        apiSuccess = resp.status() === 201;
-      }
-    });
+    // Select a section — wait for section options to load (may compile/lazy-load)
+    const sectionSel = modal.locator('select').first();
+    await expect(sectionSel.locator('option').nth(1)).toBeAttached({ timeout: 20000 });
+    await sectionSel.selectOption({ index: 1 });
 
-    // Click Create button — last one should be inside modal
-    await page.locator('button:has-text("Create")').last().click();
+    // Provide the required source: switch to URL mode and fill a valid link
+    await modal.locator('button:has-text("Paste URL")').click();
+    const linkInput = modal.locator('input[placeholder*="youtube"]');
+    await linkInput.waitFor({ state: 'visible', timeout: 5000 });
+    await linkInput.fill('https://example.com/chapter-1');
 
-    // Wait for either modal to close or API response
-    await page.waitForTimeout(8000);
+    // Submit and assert the API actually created it (201)
+    const postResponse = page.waitForResponse(
+      (r) => r.url().includes('/study-material') && r.request().method() === 'POST',
+      { timeout: 20000 }
+    );
+    await modal.getByRole('button', { name: 'Create', exact: true }).click();
+    const response = await postResponse;
+    expect(response.status(), 'POST /study-material should create the material').toBe(201);
 
-    // Verify: check if creation succeeded via API or if modal closed
-    const body = await page.textContent('body');
-    const modalGone = !(await page.locator('h2:has-text("New Material")').isVisible().catch(() => false));
-    const materialVisible = body.includes('Test Material') || body.includes('created') || body.includes('Created');
-    const noLongerEmpty = initialEmpty && !body.includes('No materials yet');
-    const ok = apiSuccess || modalGone || materialVisible || noLongerEmpty;
-    expect(ok).toBeTruthy();
+    // Toast + card visible after list reload
+    await expect(page.getByText('Created', { exact: true })).toBeVisible({ timeout: 15000 });
+    const cardTitle = page.getByRole('heading', { name: uniqueTitle });
+    await expect(cardTitle).toBeVisible({ timeout: 15000 });
+
+    // Delete it via the card actions + confirm dialog
+    const card = cardTitle.locator("xpath=ancestor::div[contains(@class,'overflow-hidden')][1]");
+    await card.getByRole('button', { name: 'Delete' }).click();
+    await page.locator('.fixed.inset-0.z-50').last().getByRole('button', { name: 'Delete' }).click();
+    await expect(page.getByText('Deleted', { exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(cardTitle).toHaveCount(0, { timeout: 15000 });
   });
 });
 
@@ -192,55 +187,50 @@ test.describe('Org Admin CRUD — Homework', () => {
   test.setTimeout(90000);
 
   test('Create and delete homework', async ({ page }) => {
-    page.on('dialog', (d) => d.accept());
+    const uniqueTitle = `Test HW ${Date.now()}`;
 
     await page.goto(`${BASE}/branch/homework`);
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(5000);
 
-    // Click "New Homework" button
-    await page.locator('button:has-text("New Homework")').click();
-    await page.waitForTimeout(3000);
-
-    // Wait for modal heading "Post Homework"
+    // Open the post modal from the page header
+    await page.locator('button:has-text("New Homework")').first().click();
     const heading = page.locator('h2:has-text("Post Homework")');
-    const headingVisible = await heading.isVisible({ timeout: 10000 }).catch(() => false);
-    if (!headingVisible) {
-      // Retry click
-      await page.locator('button:has-text("New Homework")').click();
-      await page.waitForTimeout(3000);
-    }
-    await heading.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+    await heading.waitFor({ state: 'visible', timeout: 15000 });
 
-    // Select section from the first visible select
-    const sectionSel = page.locator('select:visible').first();
-    await sectionSel.waitFor({ state: 'visible', timeout: 5000 });
-    const opts = await sectionSel.locator('option').allTextContents();
-    if (opts.length > 1) await sectionSel.selectOption({ index: 1 });
-    await page.waitForTimeout(500);
+    const modal = page.locator('.fixed.inset-0.z-50').last();
 
-    // Fill title
-    const titleInput = page.locator('input[name="title"]');
-    await titleInput.waitFor({ state: 'visible', timeout: 5000 });
-    await titleInput.fill(`Test HW ${Date.now()}`);
-    await page.waitForTimeout(500);
+    // Select a section — wait for async section options before choosing
+    const sectionSel = modal.locator('select').first();
+    await expect(sectionSel.locator('option').nth(1)).toBeAttached({ timeout: 20000 });
+    await sectionSel.selectOption({ index: 1 });
 
-    // Fill content
-    const contentField = page.locator('input[name="content"], textarea[name="content"]').first();
-    if (await contentField.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await contentField.fill('Complete exercises from chapter 1 to 5.');
-    }
-    await page.waitForTimeout(300);
+    // Fill title + details
+    const titleInput = modal.locator('input[name="title"]');
+    await titleInput.waitFor({ state: 'visible', timeout: 10000 });
+    await titleInput.fill(uniqueTitle);
+    const contentField = modal.locator('input[name="content"], textarea[name="content"]').first();
+    await contentField.fill('Complete exercises from chapter 1 to 5.');
 
-    // Click Post Homework
-    await page.locator('button:has-text("Post Homework")').last().click();
-    await page.waitForTimeout(5000);
+    // Submit and assert the API actually created it (201)
+    const postResponse = page.waitForResponse(
+      (r) => r.url().includes('/homework') && r.request().method() === 'POST',
+      { timeout: 20000 }
+    );
+    await modal.getByRole('button', { name: 'Post Homework' }).click();
+    const response = await postResponse;
+    expect(response.status(), 'POST /homework should create the homework').toBe(201);
 
-    // Verify
-    const body = await page.textContent('body');
-    const ok = body.includes('Homework posted') || body.includes('posted')
-      || body.includes('Test HW') || !body.includes('No homework found');
-    expect(ok).toBeTruthy();
+    // Toast + list reload showing the new homework
+    await expect(page.getByText(/Homework posted/)).toBeVisible({ timeout: 15000 });
+    const itemTitle = page.locator('h4', { hasText: uniqueTitle }).first();
+    await expect(itemTitle).toBeVisible({ timeout: 15000 });
+
+    // Delete via the row action (aria-labelled with the title) + confirm dialog
+    await page.getByRole('button', { name: `Delete ${uniqueTitle}` }).click();
+    await page.locator('.fixed.inset-0.z-50').last().getByRole('button', { name: 'Delete' }).click();
+    await expect(page.getByText('Homework deleted')).toBeVisible({ timeout: 15000 });
+    await expect(itemTitle).toHaveCount(0, { timeout: 15000 });
   });
 });
 

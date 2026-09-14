@@ -13,16 +13,17 @@ test.describe('Org Admin UI Flow', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       try {
-        await page.goto(`${BASE}/login`);
-        await page.waitForLoadState('domcontentloaded');
-        await page.waitForTimeout(2000);
+        await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });
+        // Wait for the hub form to hydrate instead of a fixed sleep
+        await page.getByPlaceholder('you@example.com or username').waitFor({ state: 'visible', timeout: 20000 });
 
-        await page.getByPlaceholder('e.g. GULSHAN-01').fill('GULSHAN-01');
-        await page.getByPlaceholder('you@example.com or username').fill('admin@falconacademy.com');
-        await page.getByPlaceholder('••••••••').fill('admin123');
+        await page.getByPlaceholder('e.g. GULSHAN-01').fill('DEMO-01');
+        await page.getByPlaceholder('you@example.com or username').fill('admin.demo-01@seed.example.com');
+        await page.getByPlaceholder('••••••••').fill('Admin@123');
         await page.getByRole('button', { name: 'Sign in' }).click();
 
-        await page.waitForURL(/branch|dashboard/, { timeout: 15000 });
+        // First navigation compiles the dashboard route in dev — allow for it
+        await page.waitForURL(/branch|dashboard/, { timeout: 45000 });
         expect(page.url()).toMatch(/branch|dashboard/);
       } finally {
         await context.close();

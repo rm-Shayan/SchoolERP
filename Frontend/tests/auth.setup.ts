@@ -35,9 +35,9 @@ setup('authenticate as org admin', async ({ page }) => {
   setup.setTimeout(60000);
   const res = await page.request.post(`${API}/auth/login`, {
     data: {
-      schoolCode: 'GULSHAN-01',
-      email: 'admin@falconacademy.com',
-      password: 'admin123',
+      schoolCode: 'DEMO-01',
+      email: 'admin.demo-01@seed.example.com',
+      password: 'Admin@123',
     },
   });
 
@@ -64,9 +64,9 @@ setup('authenticate as teacher', async ({ page }) => {
   setup.setTimeout(60000);
   const res = await page.request.post(`${API}/auth/login`, {
     data: {
-      schoolCode: 'GULSHAN-01',
-      email: 'teacher@falconacademy.com',
-      password: 'teacher123',
+      schoolCode: 'DEMO-01',
+      email: 'teacher1.demo-01@seed.example.com',
+      password: 'Teacher@123',
     },
   });
 
@@ -93,9 +93,9 @@ setup('authenticate as student', async ({ page }) => {
   setup.setTimeout(60000);
   const res = await page.request.post(`${API}/auth/student/login`, {
     data: {
-      schoolCode: 'GULSHAN-01',
+      schoolCode: 'DEMO-01',
       rollNumber: '101',
-      password: 'GULSHAN-01',
+      password: 'DEMO-01',
     },
   });
 
@@ -121,9 +121,9 @@ setup('authenticate as parent', async ({ page }) => {
   setup.setTimeout(60000);
   const res = await page.request.post(`${API}/auth/parent/login`, {
     data: {
-      schoolCode: 'GULSHAN-01',
-      phone: '0317-7777777',
-      password: 'GULSHAN-01',
+      schoolCode: 'DEMO-01',
+      phone: '03234000047',
+      password: 'DEMO-01',
     },
   });
 

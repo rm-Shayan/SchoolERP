@@ -6,10 +6,13 @@ node_modules/
 .env.local
 .env.*.local
 !.env.example
+dev.env
+# Note: dev.env (local dev file, no real secrets) is NOT ignored — it's committed.
 
 # Prisma
 prisma/migrations/dev.db
 *.db
+docker-compose.yml
 
 # Build output
 dist/

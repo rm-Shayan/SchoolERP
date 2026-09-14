@@ -1,4 +1,18 @@
 {
   "cookies": [],
-  "origins": []
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "studentProfile",
+          "value": "{\"id\":\"56b208c4-df6f-4595-ab6b-94876f56ba00\",\"firstName\":\"Ahmed\",\"lastName\":\"Khan\",\"rollNumber\":\"101\",\"imageUrl\":null,\"status\":\"ACTIVE\",\"isActive\":true,\"school\":{\"id\":\"ec5ecc43-dc93-4c69-ac06-a32799367f54\",\"name\":\"Demo Academy Main Campus\",\"slug\":\"demo\",\"themeColor\":\"#2563eb\",\"logoUrl\":null},\"class\":{\"id\":\"abc91119-a732-498f-a509-82d2a2f383f0\",\"name\":\"Class 1\"},\"section\":{\"id\":\"52b16740-54ba-47d7-ac1f-444782c8e4f3\",\"name\":\"A\"},\"parentWhatsapp\":\"****0046\"}"
+        },
+        {
+          "name": "studentToken",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdHVkZW50SWQiOiI1NmIyMDhjNC1kZjZmLTQ1OTUtYWI2Yi05NDg3NmY1NmJhMDAiLCJzY2hvb2xJZCI6ImVjNWVjYzQzLWRjOTMtNGM2OS1hYzA2LWEzMjc5OTM2N2Y1NCIsInRva2VuVHlwZSI6InN0dWRlbnQiLCJpYXQiOjE3ODkzMDMzMzAsImV4cCI6MTc5MTg5NTMzMH0.JmdyUslJnAvUqsZPrzW6esvGQoiJFyfjXFyH7vSFceM"
+        }
+      ]
+    }
+  ]
 }

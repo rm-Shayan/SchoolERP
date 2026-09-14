@@ -1,4 +1,6 @@
-import "dotenv/config";
+// Smart env loader — sab se pehle: NODE_ENV=local → dev.env, warna .env.
+// (Docker prod me .env file nahi hoti — sirf runtime env vars use hote hain.)
+import "./config/env.js";
 import http from "http";
 import app from "./app.js";
 import prisma from "./config/db.js";

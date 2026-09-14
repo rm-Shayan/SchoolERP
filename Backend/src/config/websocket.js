@@ -218,6 +218,14 @@ export const emitToRoom = (room, event, data) => {
 };
 
 /** Return Socket.io + adapter status for the health endpoint. */
+
+// Redis PING result short-cache — Docker/K8s/LB healthchecks har ~30s /health
+// marte hain; har call par live PING = ~86k faltu Redis commands/month
+// (metered providers jaise Upstash ka quota killer). Sirf SUCCESS cache hota
+// hai — error turant report hota hai taake Redis ka masla chhupa na rahe.
+let _redisPingCache = { value: null, at: 0 };
+const REDIS_PING_CACHE_MS = 60_000;
+
 export const getSocketStatus = async () => {
   if (!io) return { adapter: "uninitialized", clients: 0, rooms: 0, redisPing: null };
 
@@ -225,8 +233,14 @@ export const getSocketStatus = async () => {
   const isRedis = !!(adapter.pubClient && adapter.subClient);
   let redisPing = null;
   if (isRedis) {
-    try { await adapter.pubClient.ping(); redisPing = "pong"; }
-    catch (err) { redisPing = err.message; }
+    const now = Date.now();
+    if (_redisPingCache.value !== null && now - _redisPingCache.at < REDIS_PING_CACHE_MS) {
+      redisPing = _redisPingCache.value;
+    } else {
+      try { await adapter.pubClient.ping(); redisPing = "pong"; }
+      catch (err) { redisPing = err.message; }
+      if (redisPing === "pong") _redisPingCache = { value: "pong", at: now };
+    }
   }
 
   return {

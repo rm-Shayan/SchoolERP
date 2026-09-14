@@ -20,26 +20,39 @@ Frontend (Next.js 16)                       Backend (Express)
 ## Prerequisites
 
 - Node.js >= 22
-- PostgreSQL (17 recommended)
-- Redis (local Docker or Upstash cloud)
+- Docker (local Postgres 18 + Redis 7 via `Backend/docker-compose.yml`)
 - npm
 
 ## Quick Start
 
 ### 1. Backend
 
+Local development uses a dedicated env split — see **`Backend/README.md`** for details:
+
 ```bash
 cd Backend
 npm install
-cp .env.example .env        # then fill in your values
-npx prisma migrate deploy   # apply schema
-npm run dev                 # starts on ${PORT} (default 3000, frontend expects 5000)
+docker compose up -d                        # local Postgres 18 + Redis 7
+NODE_ENV=local npx prisma migrate deploy    # schema on LOCAL db
+NODE_ENV=local npm run dev                  # :5000 — local Postgres/Redis only
+```
+
+(`dev.env` already committed hai — usme local values hain, koi real secret nahi.
+`.env` sirf production values ke liye hai — local dev me uski zaroorat nahi.)
+
+> `NODE_ENV=local` → loads `dev.env` (local services). Without it the server
+> loads `.env` (production Neon/Upstash) — never do that for local dev.
+
+Optional: pull real production data into your local DB (read-only on prod):
+
+```bash
+npm run sync:neon -- --yes
 ```
 
 Seed a super admin (once):
 
 ```bash
-npm run seed                # creates superadmin@schoolerp.com
+npm run seed                # creates superadmin@schoolerp.com (dev.env target)
 ```
 
 Tests:
@@ -64,11 +77,12 @@ npm run build               # typecheck + production build (Next/Turbopack)
 npm run lint                # oxlint
 ```
 
-### 3. Docker (optional, full local stack)
+### 3. Docker (optional, backend in container)
 
 ```bash
 cd Backend
-docker compose up --build -d   # postgres + redis + backend + nginx
+docker compose up -d                        # postgres + redis (default)
+docker compose --profile full up -d         # + backend container (same network)
 docker compose down
 ```
 
@@ -81,7 +95,7 @@ docker compose down
 | `DATABASE_URL` | PostgreSQL connection string |
 | `JWT_SECRET` | JWT signing key (min 32 chars) |
 | `REDIS_URL` | Redis connection (pub/sub, auth cache, queues) |
-| `NODE_ENV` | `development` / `production` |
+| `NODE_ENV` | `local` (dev.env) / `production` (`.env`) — env file split, see `Backend/README.md` |
 | `SMTP_*` | Email delivery (host, port, user, app password) |
 | `API_URL` | Public backend base URL (for absolute `/uploads/...` links in emails) |
 | `CLIENT_URL` | Comma-separated frontend origin whitelist for CORS |

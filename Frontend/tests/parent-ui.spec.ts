@@ -22,9 +22,12 @@ test.describe('Parent Portal UI Flow', () => {
       localStorage.removeItem('studentToken');
       localStorage.removeItem('studentProfile');
     });
-    await page.goto(`${BASE}/parent/dashboard`);
-    await page.waitForTimeout(5000);
-    expect(page.url()).toContain('/parent/login');
+    await page.goto(`${BASE}/parent/dashboard`, { waitUntil: 'domcontentloaded' });
+    // The portal guard clears tokens and routes to the unified login hub.
+    // /parent/login is a legacy alias that server-redirects to /login, so the
+    // canonical destination is /login (optionally with ?org=<slug>).
+    await page.waitForURL(/\/login/, { timeout: 20000 });
+    expect(page.url()).toContain('/login');
   });
 
   test('Dashboard loads without errors', async ({ page }) => {

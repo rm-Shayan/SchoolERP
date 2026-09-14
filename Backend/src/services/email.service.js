@@ -231,6 +231,20 @@ function platformCredsMissing() {
 }
 
 /**
+ * School/tenant business mail ke liye platform transport eligible hai ya nahi.
+ * `allowPlatformFallback === false` (school mail: fee reminders, announcements,
+ * homework notices) par platform transport chain se NIKAL jata hai — is se:
+ *   - Bounce/NDR mails super admin ke inbox me nahi aate
+ *   - Replies aur daily-limit warnings tenant ke apne account par rehte hain
+ * Platform-critical mail (provisioning credentials, moderation notices, OTP,
+ * super-admin announcements) par fallback allowed rehta hai (default true).
+ */
+function isPlatformEligible(mailer, { allowPlatformFallback = true } = {}) {
+  if (mailer.source !== "platform") return true;
+  return Boolean(allowPlatformFallback);
+}
+
+/**
  * Core sender. Tenant-first routing: org/branch ki DB me saved SMTP settings
  * (OrgSecrets) se jati hai, failover chain ke mutabiq:
  *   Branch PRIMARY -> Org PRIMARY -> Org SECONDARY -> Platform env (last).
@@ -246,8 +260,15 @@ export const sendEmail = async ({
   organizationId,
   schoolId,
   allowHolderAsRecipient = false,
+  allowPlatformFallback = true,
 }) => {
-  const chain = await getTransportChain({ organizationId, schoolId });
+  const allChain = await getTransportChain({ organizationId, schoolId });
+  // School mail: platform transport chain se hata do (bounces super admin ke
+  // inbox me na aayen). Tenant transports ke bina mail outbox me queue hoti
+  // hai (drop nahi) — queueEmail retry karta rehta hai.
+  const chain = allChain.filter((m) =>
+    isPlatformEligible(m, { allowPlatformFallback })
+  );
 
   // Bilkul kuch configured na ho (na tenant, na env) -> mock (dev).
   const hasTenant = chain.some((m) => m.source !== "platform");

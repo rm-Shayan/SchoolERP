@@ -26,11 +26,23 @@ export interface SmtpTierPair {
   secondary: SmtpSettingInfo | null;
 }
 
+/** Outbox backlog info — school mail waiting because tenant SMTP is missing/failing */
+export interface SmtpQueuedMail {
+  /** PENDING rows in the outbox for this scope */
+  count: number;
+  /** Tenant SMTP configured for this scope (branch override or org default) */
+  hasTenantSmtp: boolean;
+  /** Oldest queued mail timestamp, null when nothing is queued */
+  oldestAt: string | null;
+}
+
 export interface SmtpSettingsStatus {
   /** Org-level defaults (schoolId null) */
   organization: SmtpTierPair;
   /** Branch-level overrides — only when schoolId is provided in query */
   branch?: SmtpTierPair;
+  /** Queued school mail info — present since the outbox warning feature */
+  queuedMail?: SmtpQueuedMail;
 }
 
 export interface SmtpSettingsPayload {
