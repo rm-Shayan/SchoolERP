@@ -167,15 +167,14 @@ class AdmissionRepository {
    * paayein; duplicate check bhi transaction mein hi hota hai).
    */
   async findNextRollNumber(schoolId, client = prisma) {
-    const students = await client.student.findMany({
-      where: { schoolId },
-      select: { rollNumber: true },
-    });
-    const nums = students
-      .map((s) => s.rollNumber)
-      .filter((r) => r && /^\d+$/.test(r))
-      .map(Number);
-    return String(nums.length ? Math.max(...nums) + 1 : 1);
+    const rows = await client.$queryRaw`
+      SELECT COALESCE(MAX(CAST("rollNumber" AS BIGINT)), 0)::int AS "maxRoll"
+      FROM "Student"
+      WHERE "schoolId" = ${schoolId}
+        AND "rollNumber" IS NOT NULL
+        AND "rollNumber" ~ '^[0-9]+$'
+    `;
+    return String((rows[0].maxRoll ?? 0) + 1);
   }
 
   async upsertParent(data, client = prisma) {

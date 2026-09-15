@@ -7,6 +7,7 @@ import type { Student, RemarkType, User } from '@/types';
 import { Button, Card, CardContent, Input, Select } from '@/features/shared/components';
 import { useForm, composeValidators, required, minLength } from '@/lib/utils';
 import RemarkTypePicker from './RemarkTypePicker';
+import PTMPicker from './PTMPicker';
 import toast from 'react-hot-toast';
 import { useAppSelector } from '@/store/hooks';
 
@@ -29,7 +30,7 @@ export default function RemarkForm({ editing, onSaved, onCancel }: Props) {
   const [onBehalf, setOnBehalf] = useState('');
 
   const { values, errors, isSubmitting, setValue, handleChange, handleBlur, handleSubmit } = useForm({
-    initialValues: { sectionId: '', studentId: '', type: 'POSITIVE', title: '', description: '' },
+    initialValues: { sectionId: '', studentId: '', type: 'POSITIVE', title: '', description: '', ptmSessionId: '' },
     validators: {
       // In edit mode, student/section are locked — only type/comment can be changed.
       sectionId: editing ? noop : required('Select a section'),
@@ -49,11 +50,12 @@ export default function RemarkForm({ editing, onSaved, onCancel }: Props) {
             title: v.title as string,
             description: (v.description as string) || undefined,
             teacherId: isManager && onBehalf ? onBehalf : undefined,
+            ptmSessionId: (v.ptmSessionId as string) || undefined,
           });
           toast.success('Remark sent to parent');
         }
         if (!editing) {
-          setValue('studentId', ''); setValue('type', 'POSITIVE'); setValue('title', ''); setValue('description', '');
+          setValue('studentId', ''); setValue('type', 'POSITIVE'); setValue('title', ''); setValue('description', ''); setValue('ptmSessionId', '');
           setOnBehalf('');
         }
         onSaved();
@@ -90,7 +92,7 @@ export default function RemarkForm({ editing, onSaved, onCancel }: Props) {
   }, [editing]);
 
   const handleSectionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setValue('sectionId', e.target.value); setValue('studentId', '');
+    setValue('sectionId', e.target.value); setValue('studentId', ''); setValue('ptmSessionId', '');
   };
 
   return (
@@ -113,6 +115,10 @@ export default function RemarkForm({ editing, onSaved, onCancel }: Props) {
               value={onBehalf} onChange={(e) => setOnBehalf(e.target.value)} />
           )}
           <RemarkTypePicker value={values.type as string} error={errors.type} onChange={(t) => setValue('type', t)} />
+          {!editing && (
+            <PTMPicker schoolId={schoolId} sectionId={values.sectionId as string} studentId={values.studentId as string}
+              value={values.ptmSessionId as string} onChange={(v) => setValue('ptmSessionId', v)} />
+          )}
           <Input label="Comment" name="title" placeholder="e.g. Helped a classmate"
             value={values.title as string} onChange={handleChange}
             onBlur={() => handleBlur('title')} error={errors.title} required />

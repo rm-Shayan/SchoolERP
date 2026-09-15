@@ -26,7 +26,7 @@ class ConductController {
    * Remark history for a student.
    */
   listByStudent = asyncHandler(async (req, res) => {
-    const result = await conductService.listByStudent(req.user, req.params.studentId, req.query);
+    const result = await conductService.listByStudent(req.user, req.params.id, req.query);
     return res.status(200).json(ApiResponse.ok("Remarks fetched", result));
   });
 

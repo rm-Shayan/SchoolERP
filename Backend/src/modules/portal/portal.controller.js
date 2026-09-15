@@ -42,10 +42,10 @@ class PortalController {
   getHomework = async (req, res, next) => {
     try {
       const pk = `${req.portal.type}:${req.portal.id}`;
-      const cached = await getCachedPortal(pk, "hw");
+      const cached = await getCachedPortal(pk, "homework");
       if (cached) return res.json(ApiResponse.ok("Homework data", cached));
       const data = await portalService.getHomework(req.portal);
-      await setCachedPortal(pk, "hw", data);
+      await setCachedPortal(pk, "homework", data);
       res.json(ApiResponse.ok("Homework data", data));
     } catch (e) { next(e); }
   };

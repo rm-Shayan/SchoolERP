@@ -35,6 +35,21 @@ export async function runConductCleanupJob() {
           `[ConductCleanup] Year "${year.name}" (${year.schoolId}) → ${result.count} remarks deleted`
         );
       }
+
+      // Kuch remarks bina academicYearId ke ho sakte hain (jab branch ka
+      // isCurrent year set nahi tha). Unhe bhi saal khatam hone par saaf karo —
+      // warna loose remarks hamesha table me phaste.
+      const loose = await prisma.conductRemark.deleteMany({
+        where: {
+          academicYearId: null,
+          student: { schoolId: year.schoolId },
+          createdAt: { lt: year.endDate },
+        },
+      });
+      if (loose.count > 0) {
+        totalDeleted += loose.count;
+        logger.logger.info(`[ConductCleanup] Year "${year.name}" (${year.schoolId}) → ${loose.count} unlinked remarks deleted`);
+      }
     }
 
     logger.logger.info(

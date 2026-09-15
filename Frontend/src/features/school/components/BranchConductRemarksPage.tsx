@@ -22,7 +22,6 @@ const TYPE_FILTERS = [
 export default function BranchConductRemarksPage() {
   const { school } = useAppSelector((s) => s.auth);
   const { isAdmin } = useRoleAccess();
-  const isReadOnly = !isAdmin;
   const schoolId = school?.id;
   const [remarks, setRemarks] = useState<ConductRemark[]>([]);
   const [total, setTotal] = useState(0);
@@ -37,9 +36,10 @@ export default function BranchConductRemarksPage() {
   const [deleteBusy, setDeleteBusy] = useState(false);
 
   const load = useCallback(async () => {
+    if (!schoolId) return;
     setLoading(true);
     try {
-      const params: any = { page, pageSize: 20 };
+      const params: any = { schoolId, page, pageSize: 20 };
       if (typeFilter) params.type = typeFilter;
       if (teacherFilter) params.teacherId = teacherFilter;
       const res = await conductService.listAll(params);
@@ -47,7 +47,7 @@ export default function BranchConductRemarksPage() {
       setTotal(res.total);
     } catch { toast.error('Failed to load remarks'); }
     finally { setLoading(false); }
-  }, [page, typeFilter, teacherFilter]);
+  }, [schoolId, page, typeFilter, teacherFilter]);
 
   useEffect(() => { load(); }, [load]);
   useRealtimeRefresh(['conduct_remark'], load);

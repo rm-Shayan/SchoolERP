@@ -398,30 +398,45 @@ class AttendanceService {
    * Agar scannedAt nahi hai to skip — time pata nahi isliye status confirm nahi kar sakte.
    */
   async syncOfflineScans(schoolId, scans = []) {
+    // Same student ke scans serial chalne chahiye (check-in/check-out order +
+    // (studentId,date) unique conflict se bachne ke liye), alag students parallel.
+    const groups = new Map();
+    for (const s of scans) {
+      if (!s.scannedAt) continue;
+      if (!groups.has(s.identifierCode)) groups.set(s.identifierCode, []);
+      groups.get(s.identifierCode).push(s);
+    }
+
     let synced = 0;
     let failed = 0;
-    for (const s of scans) {
-      try {
-        // scannedAt mandatory — offline sync me actual scan time ki zaroorat
-        // hoti hai taake cutoff (e.g. 08:30) ke hisaab se PRESENT/LATE sahi determine ho.
-        // scannedAt nahi hai to skip — time pata nahi isliye status confirm nahi kar sakte.
-        if (!s.scannedAt) {
+    const runGroup = async (group) => {
+      for (const s of group) {
+        try {
+          const result = await attendanceService.processScan(schoolId, {
+            identifierCode: s.identifierCode,
+            deviceId: s.deviceId,
+            method: s.method || "QR",
+            scannedAt: s.scannedAt,
+            synced: true,
+          });
+          if (result?.status === "not_found") { failed += 1; continue; }
+          synced += 1;
+        } catch (_) {
           failed += 1;
-          continue;
         }
-        const result = await attendanceService.processScan(schoolId, {
-          identifierCode: s.identifierCode,
-          deviceId: s.deviceId,
-          method: s.method || "QR",
-          scannedAt: s.scannedAt,
-          synced: true,
-        });
-        if (result?.status === "not_found") { failed += 1; continue; }
-        synced += 1;
-      } catch (_) {
-        failed += 1;
       }
-    }
+    };
+
+    const groupList = [...groups.values()];
+    const CONCURRENCY = 10;
+    let cursor = 0;
+    const workers = Array.from({ length: Math.min(CONCURRENCY, groupList.length) }, async () => {
+      while (cursor < groupList.length) {
+        const group = groupList[cursor++];
+        await runGroup(group);
+      }
+    });
+    await Promise.all(workers);
     return { synced, failed };
   }
 

@@ -38,11 +38,8 @@ class PortalService {
   }
 
   async getTimetable(portal) {
-    // Return timetable for all child sections
-    const allSlots = await Promise.all(
-      portal.sectionIds.map((id) => portalRepository.getTimetable(id))
-    );
-    return allSlots.flat();
+    // Har section ke liye alag query chalne ke bajaye ek hi findMany (sectionId IN).
+    return portalRepository.getTimetables(portal.sectionIds);
   }
 
   // ── Exam Date Sheets ──────────────────────────────────

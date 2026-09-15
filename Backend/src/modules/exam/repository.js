@@ -22,6 +22,20 @@ class ExamRepository {
     });
   }
 
+  async classesByIds(ids) {
+    return prisma.class.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, schoolId: true, subjects: { select: { id: true } } },
+    });
+  }
+
+  async sectionsByIds(ids) {
+    return prisma.section.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, classId: true },
+    });
+  }
+
   async createExam(data) {
     return prisma.exam.create({
       data,
@@ -106,30 +120,70 @@ class ExamRepository {
     });
   }
 
-  async upsertExamResult(data) {
-    return prisma.examResult.upsert({
-      where: {
-        examId_studentId_subjectId: {
-          examId: data.examId,
-          studentId: data.studentId,
-          subjectId: data.subjectId,
-        },
-      },
-      update: {
-        marksObtained: data.marksObtained,
-        maxMarks: data.maxMarks,
-        remarks: data.remarks || null,
-      },
-      create: data,
+  /**
+   * N individual upserts ki jagah ek transaction:
+   * 1 query me existing results dekho → naye createMany (skipDuplicates),
+   * already-existing ko parallel updateMany. Round trips 1 + N → ~2.
+   */
+  async bulkUpsertExamResults(examId, entries) {
+    const studentIds = [...new Set(entries.map((e) => e.studentId))];
+    const subjectIds = [...new Set(entries.map((e) => e.subjectId))];
+    const keyOf = (r) => `${r.studentId}:${r.subjectId}`;
+
+    const existingRows = await prisma.examResult.findMany({
+      where: { examId, studentId: { in: studentIds }, subjectId: { in: subjectIds } },
+      select: { id: true, studentId: true, subjectId: true },
+    });
+    const existingKeys = new Set(existingRows.map(keyOf));
+
+    const toCreate = entries.filter((e) => !existingKeys.has(keyOf(e)));
+    const toUpdate = entries.filter((e) => existingKeys.has(keyOf(e)));
+
+    await prisma.$transaction(async (tx) => {
+      if (toCreate.length) {
+        await tx.examResult.createMany({
+          data: toCreate.map((e) => ({ examId, ...e })),
+          skipDuplicates: true,
+        });
+      }
+      if (toUpdate.length) {
+        await Promise.all(
+          toUpdate.map((e) =>
+            tx.examResult.updateMany({
+              where: { examId, studentId: e.studentId, subjectId: e.subjectId },
+              data: {
+                marksObtained: e.marksObtained,
+                maxMarks: e.maxMarks,
+                remarks: e.remarks || null,
+              },
+            })
+          )
+        );
+      }
+    });
+  }
+
+  async findResultsForEntries(examId, studentIds, subjectIds) {
+    return prisma.examResult.findMany({
+      where: { examId, studentId: { in: studentIds }, subjectId: { in: subjectIds } },
+      include: { student: { include: { parent: true, section: { include: { class: true } } } }, subject: true },
     });
   }
 
   async findResultsByExam(examId) {
     return prisma.examResult.findMany({
       where: { examId },
-      include: {
-        student: { include: { parent: true, section: { include: { class: true } } } },
-        subject: true,
+      select: {
+        id: true,
+        examId: true,
+        studentId: true,
+        subjectId: true,
+        marksObtained: true,
+        maxMarks: true,
+        remarks: true,
+        createdAt: true,
+        subject: { select: { id: true, name: true, code: true } },
+        student: { select: { id: true, name: true, rollNumber: true, status: true } },
       },
     });
   }

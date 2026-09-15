@@ -28,6 +28,8 @@ export interface PortalConductRemark {
   id: string; type: string; comment: string; createdAt: string;
   teacher: { id: string; name: string };
   student?: { id: string; firstName: string; lastName: string };
+  ptmSession?: { id: string; title: string; scheduledAt?: string } | null;
+  academicYear?: { id: string; name: string } | null;
 }
 
 export interface PortalPTMSession {

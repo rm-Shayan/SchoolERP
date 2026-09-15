@@ -12,10 +12,21 @@ class ExamService {
    */
   async _validatePapers(schoolId, papers) {
     if (!papers?.length) return { creates: [] };
+    const classIds = [...new Set(papers.map((p) => p.classId))];
+    const sectionIds = [...new Set(papers.map((p) => p.sectionId).filter(Boolean))];
+
+    // Pehle har paper par 1 query chalti thi (N+1) — ab 2 batched queries.
+    const [classes, sections] = await Promise.all([
+      examRepository.classesByIds(classIds),
+      sectionIds.length ? examRepository.sectionsByIds(sectionIds) : [],
+    ]);
+    const classMap = new Map(classes.map((c) => [c.id, c]));
+    const sectionMap = new Map(sections.map((s) => [s.id, s]));
+
     const seen = new Set();
     const creates = [];
     for (const p of papers) {
-      const cls = await examRepository.findClassById(p.classId);
+      const cls = classMap.get(p.classId);
       if (!cls || cls.schoolId !== schoolId) {
         throw ApiError.badRequestError("Paper class does not belong to this school");
       }
@@ -23,7 +34,7 @@ class ExamService {
         throw ApiError.badRequestError("Subject does not belong to the given class");
       }
       if (p.sectionId) {
-        const sec = await examRepository.sectionExists(p.sectionId);
+        const sec = sectionMap.get(p.sectionId);
         if (!sec || sec.classId !== p.classId) {
           throw ApiError.badRequestError("Section does not belong to the given class");
         }
@@ -201,17 +212,22 @@ class ExamService {
       }
     }
 
-    let results = await Promise.all(
-      entries.map((entry) =>
-        examRepository.upsertExamResult({
-          examId,
-          studentId: entry.studentId,
-          subjectId: entry.subjectId,
-          marksObtained: Number(entry.marksObtained),
-          maxMarks: Number(entry.maxMarks),
-          remarks: entry.remarks || null,
-        })
-      )
+    await examRepository.bulkUpsertExamResults(
+      examId,
+      entries.map((entry) => ({
+        studentId: entry.studentId,
+        subjectId: entry.subjectId,
+        marksObtained: Number(entry.marksObtained),
+        maxMarks: Number(entry.maxMarks),
+        remarks: entry.remarks || null,
+      }))
+    );
+
+    // Writes ke baad final rows ek hi query me (response shape preserve).
+    const results = await examRepository.findResultsForEntries(
+      examId,
+      entries.map((e) => e.studentId),
+      entries.map((e) => e.subjectId)
     );
 
     emitToRoom(`school:${exam.schoolId}`, "exam_results_entered", {

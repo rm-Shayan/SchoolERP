@@ -11,12 +11,15 @@ export const createRemarkSchema = z.object({
     comment: z.string().min(1, "Comment required (keep it short)").max(500),
     // ADMIN/SUPER_ADMIN kisi teacher ke naam par remark daal sakte hain
     teacherId: z.string().uuid("Invalid teacherId").optional(),
+    // Optional PTM session link — kis PTM me ye remark diya gaya
+    ptmSessionId: z.string().uuid("Invalid ptmSessionId").optional(),
   }),
 });
 
 export const listRemarksByStudentSchema = z.object({
   params: idParam.params,
   query: z.object({
+    academicYearId: z.string().uuid("Invalid academicYearId").optional(),
     page: z.coerce.number().int().positive().optional(),
     pageSize: z.coerce.number().int().positive().max(100).optional(),
   }),
@@ -45,6 +48,9 @@ export const deleteRemarkSchema = z.object(idParam);
 
 export const listRemarksBySchoolSchema = z.object({
   query: z.object({
+    // Active campus — SUPER_ADMIN/multi-branch admin explicit schoolId bhejte
+    // hain taake sirf us campus ke remarks aayein.
+    schoolId: z.string().uuid().optional(),
     type: z.enum(["POSITIVE", "NEUTRAL", "NEGATIVE"]).optional(),
     teacherId: z.string().uuid().optional(),
     page: z.coerce.number().int().positive().optional(),

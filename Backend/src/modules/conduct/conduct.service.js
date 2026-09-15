@@ -1,10 +1,18 @@
 import conductRepository from "./repository.js";
 import ApiError from "../../lib/utils/ApiError.js";
-import { assertOwnSchool, assertSchoolAccess } from "../../lib/scope.js";
+import { getEffectiveSchoolId, assertOwnSchool, assertSchoolAccess } from "../../lib/scope.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import { emitToRoom } from "../../config/websocket.js";
+import { bustPortalCache } from "../../lib/portalCache.js";
 
 class ConductService {
+  /** Remark change hone par parent/student ka cached /conduct stale ho jata
+   * hai — dono portal keys ke "conduct" endpoint ko bust karo. */
+  bustConductPortals({ studentId, parentId }) {
+    if (parentId) bustPortalCache(`parent:${parentId}`, "conduct");
+    if (studentId) bustPortalCache(`student:${studentId}`, "conduct");
+  }
+
   async createRemark(user, data) {
     const student = await conductRepository.findStudentForRemark(data.studentId);
     if (!student) throw ApiError.notFoundError("Student not found");
@@ -21,12 +29,28 @@ class ConductService {
       author = { id: staff.id, name: staff.name };
     }
 
+    // PTM interlink: remark kis PTM session me diya gaya — session usi school
+    // ka hona chahiye aur usi student/uskich sections ka ho.
+    if (data.ptmSessionId) {
+      const ptm = await conductRepository.findPTMForRemark(data.ptmSessionId);
+      if (!ptm || ptm.schoolId !== student.schoolId) {
+        throw ApiError.badRequestError("PTM session does not belong to this school");
+      }
+      const inScope =
+        ptm.scope === "WHOLE_SCHOOL" ||
+        (ptm.scope === "STUDENT" ? ptm.studentId === student.id : (ptm.sectionIds || []).includes(student.sectionId));
+      if (!inScope) {
+        throw ApiError.badRequestError("This PTM does not include this student — remark cannot be linked");
+      }
+    }
+
     const academicYear = await conductRepository.findCurrentAcademicYear(student.schoolId);
 
     const remark = await conductRepository.createRemark({
       studentId: data.studentId,
       teacherId: author.id,
       academicYearId: academicYear?.id || null,
+      ptmSessionId: data.ptmSessionId || null,
       type: data.type || "NEUTRAL",
       comment: data.comment,
     });
@@ -48,6 +72,8 @@ class ConductService {
     emitToRoom(`school:${student.schoolId}`, "conduct_remark", {
       id: remark.id, studentId: data.studentId, type: remark.type,
     });
+
+    this.bustConductPortals({ studentId: student.id, parentId: student.parent?.id });
 
     return {
       ...remark,
@@ -80,6 +106,11 @@ class ConductService {
   }
 
   async listBySection(user, sectionId, query) {
+    // Section kisi aur campus ka ho to koi school-wide ya cross-campus list na
+    // mil ske — pehle section ka school verify karo.
+    const section = await conductRepository.findSectionScope(sectionId);
+    if (!section) throw ApiError.notFoundError("Section not found");
+    assertSchoolAccess(user, section.class.schoolId);
     return conductRepository.listRemarksBySection(sectionId, {
       type: query.type,
       page: Math.max(1, parseInt(query.page, 10) || 1),
@@ -88,8 +119,11 @@ class ConductService {
   }
 
   async listAllBySchool(user, query) {
-    assertSchoolAccess(user, user.schoolId);
-    return conductRepository.listRemarksBySchool(user.schoolId, {
+    // schoolId query se (frontend active campus bhejta hai). Branch staff ka
+    // school token-se locked hai; SUPER_ADMIN ko explicit campus chahiye.
+    const targetSchoolId = getEffectiveSchoolId(user, query.schoolId || user.schoolId);
+    assertSchoolAccess(user, targetSchoolId);
+    return conductRepository.listRemarksBySchool(targetSchoolId, {
       type: query.type || undefined,
       teacherId: query.teacherId || undefined,
       page: Math.max(1, parseInt(query.page, 10) || 1),
@@ -130,6 +164,7 @@ class ConductService {
       link: "/conduct",
     }).catch(() => {});
 
+    this.bustConductPortals({ studentId: remark.student.id, parentId: remark.student.parent?.id });
     return updated;
   }
 
@@ -154,6 +189,8 @@ class ConductService {
       refId: id,
       link: "/conduct",
     }).catch(() => {});
+
+    this.bustConductPortals({ studentId: remark.student.id, parentId: remark.student.parent?.id });
 
     return true;
   }

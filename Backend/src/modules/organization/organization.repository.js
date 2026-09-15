@@ -84,29 +84,23 @@ class OrganizationRepository {
    * Decimal amounts come back as strings — convert to numbers for the UI.
    */
   async revenueOverview() {
-    const payments = await prisma.feePayment.findMany({
-      select: {
-        amount: true,
-        feeRecord: {
-          select: {
-            student: {
-              select: {
-                school: { select: { organizationId: true } },
-              },
-            },
-          },
-        },
-      },
-    });
+    // Pehle saare FeePayment rows fetch hokar JS me sum hote the — ab SQL-side
+    // grouped aggregation (org per total). Decimal amounts float8 → number.
+    const rows = await prisma.$queryRaw`
+      SELECT s."organizationId" AS "orgId",
+             SUM(fp."amount")::float8 AS "total"
+      FROM "FeePayment" fp
+      JOIN "FeeRecord" f ON f."id" = fp."feeRecordId"
+      JOIN "Student" st ON st."id" = f."studentId"
+      JOIN "School" s ON s."id" = st."schoolId"
+      GROUP BY s."organizationId"
+    `;
 
     const byOrg = {};
     let total = 0;
-    for (const p of payments) {
-      const orgId = p.feeRecord?.student?.school?.organizationId;
-      if (!orgId) continue;
-      const amount = Number(p.amount) || 0;
-      byOrg[orgId] = (byOrg[orgId] || 0) + amount;
-      total += amount;
+    for (const r of rows) {
+      byOrg[r.orgId] = r.total;
+      total += r.total;
     }
     return { byOrg, total };
   }
@@ -157,25 +151,6 @@ class OrganizationRepository {
       orderBy: { createdAt: "asc" },
     });
 
-    const staff = await prisma.user.findMany({
-      where: { organizationId },
-      include: {
-        school: { select: { id: true, name: true, logoUrl: true, organization: { select: { logoUrl: true } } } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    const payments = await prisma.feePayment.findMany({
-      where: { feeRecord: { student: { school: { organizationId } } } },
-      select: {
-        amount: true,
-        paidAt: true,
-        feeRecord: {
-          select: { student: { select: { schoolId: true } } },
-        },
-      },
-    });
-
     const since = new Date();
     since.setMonth(since.getMonth() - (months - 1));
     since.setDate(1);
@@ -187,54 +162,79 @@ class OrganizationRepository {
       monthKeys.push({ key: `${d.getFullYear()}-${d.getMonth() + 1}`, label: d.toLocaleString("en", { month: "short" }), total: 0 });
     }
 
+    // Payments / enrollment / attendance / fees sab pehle Node me poora fetch
+    // hokar JS loops se aggregate hote the — ab ye 4 kaam SQL-side GROUP BY me.
+    const [staff, paymentRows, enrollmentRows, attendanceRows, feeRows] = await Promise.all([
+      prisma.user.findMany({
+        where: { organizationId },
+        include: {
+          school: { select: { id: true, name: true, logoUrl: true, organization: { select: { logoUrl: true } } } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.$queryRaw`
+        SELECT to_char(fp."paidAt", 'YYYY-MM') AS "month",
+               s."id" AS "schoolId",
+               SUM(fp."amount")::float8 AS "amount"
+        FROM "FeePayment" fp
+        JOIN "FeeRecord" f ON f."id" = fp."feeRecordId"
+        JOIN "Student" st ON st."id" = f."studentId"
+        JOIN "School" s ON s."id" = st."schoolId"
+        WHERE s."organizationId" = ${organizationId}
+          AND fp."paidAt" >= ${since}
+        GROUP BY "month", s."id"
+      `,
+      prisma.$queryRaw`
+        SELECT to_char("createdAt", 'YYYY-MM') AS "month", COUNT(*)::int AS "count"
+        FROM "Student"
+        WHERE "schoolId" IN (SELECT "id" FROM "School" WHERE "organizationId" = ${organizationId})
+          AND "createdAt" >= ${since}
+        GROUP BY "month"
+      `,
+      prisma.$queryRaw`
+        SELECT to_char(AR."date", 'YYYY-MM') AS "month",
+               COUNT(*)::int AS "total",
+               COUNT(*) FILTER (WHERE AR."status" IN ('PRESENT', 'LATE'))::int AS "present"
+        FROM "AttendanceRecord" AR
+        JOIN "Student" st ON st."id" = AR."studentId"
+        WHERE st."schoolId" IN (SELECT "id" FROM "School" WHERE "organizationId" = ${organizationId})
+          AND AR."date" >= ${since}
+        GROUP BY "month"
+      `,
+      prisma.$queryRaw`
+        SELECT COALESCE(SUM(f."totalAmount"), 0)::float8 AS "totalDue",
+               COALESCE(SUM(f."paidAmount"), 0)::float8 AS "totalPaid"
+        FROM "FeeRecord" f
+        WHERE f."studentId" IN (
+          SELECT "id" FROM "Student"
+          WHERE "schoolId" IN (SELECT "id" FROM "School" WHERE "organizationId" = ${organizationId})
+        )
+      `,
+    ]);
+
     const revenueBySchool = {};
-    for (const p of payments) {
-      const d = new Date(p.paidAt);
-      const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
-      const bucket = monthKeys.find((m) => m.key === key);
-      if (!bucket) continue;
-      const amount = Number(p.amount) || 0;
-      bucket.total += amount;
-      const schoolId = p.feeRecord?.student?.schoolId;
-      if (schoolId) {
-        revenueBySchool[schoolId] = revenueBySchool[schoolId] || {};
-        revenueBySchool[schoolId][key] = (revenueBySchool[schoolId][key] || 0) + amount;
+    for (const r of paymentRows) {
+      for (const m of monthKeys) {
+        if (m.key === r.month) m.total += r.amount;
       }
+      revenueBySchool[r.schoolId] = revenueBySchool[r.schoolId] || {};
+      revenueBySchool[r.schoolId][r.month] = (revenueBySchool[r.schoolId][r.month] || 0) + r.amount;
     }
 
     const totalRevenue = monthKeys.reduce((s, m) => s + m.total, 0);
 
     // ── Enrollment trends (new students per month) ──────────────────
-    const newStudents = await prisma.student.findMany({
-      where: { school: { organizationId }, createdAt: { gte: since } },
-      select: { createdAt: true, schoolId: true },
-    });
     const enrollmentByMonth = {};
-    for (const s of newStudents) {
-      const key = `${s.createdAt.getFullYear()}-${s.createdAt.getMonth() + 1}`;
-      enrollmentByMonth[key] = (enrollmentByMonth[key] || 0) + 1;
-    }
+    for (const r of enrollmentRows) enrollmentByMonth[r.month] = r.count;
 
     // ── Attendance rate (present vs total per month) ─────────────────
-    const attendanceRecords = await prisma.attendanceRecord.findMany({
-      where: { student: { school: { organizationId } }, date: { gte: since } },
-      select: { date: true, status: true },
-    });
     const attendanceByMonth = {};
-    for (const a of attendanceRecords) {
-      const key = `${a.date.getFullYear()}-${a.date.getMonth() + 1}`;
-      if (!attendanceByMonth[key]) attendanceByMonth[key] = { present: 0, total: 0 };
-      attendanceByMonth[key].total += 1;
-      if (a.status === "PRESENT" || a.status === "LATE") attendanceByMonth[key].present += 1;
-    }
+    for (const r of attendanceRows) attendanceByMonth[r.month] = { present: r.present, total: r.total };
 
     // ── Fee collection vs due ───────────────────────────────────────
-    const feeRecords = await prisma.feeRecord.findMany({
-      where: { student: { school: { organizationId } } },
-      select: { totalAmount: true, paidAmount: true, status: true },
-    });
-    const totalDue = feeRecords.reduce((s, r) => s + (Number(r.totalAmount) || 0), 0);
-    const totalPaid = feeRecords.reduce((s, r) => s + (Number(r.paidAmount) || 0), 0);
+    const fee = feeRows[0] || {};
+    const totalDue = fee.totalDue || 0;
+    const totalPaid = fee.totalPaid || 0;
     const totalPending = totalDue - totalPaid;
 
     return {
@@ -339,11 +339,16 @@ class OrganizationRepository {
    * Total collected revenue for a single organization (from fee payments).
    */
   async revenueForOrganization(organizationId) {
-    const payments = await prisma.feePayment.findMany({
-      where: { feeRecord: { student: { school: { organizationId } } } },
-      select: { amount: true },
-    });
-    return payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    // FeePayment rows Node me load karke sum karne ke bajaye SQL-side aggregate.
+    const rows = await prisma.$queryRaw`
+      SELECT COALESCE(SUM(fp."amount"), 0)::float8 AS "total"
+      FROM "FeePayment" fp
+      JOIN "FeeRecord" f ON f."id" = fp."feeRecordId"
+      JOIN "Student" st ON st."id" = f."studentId"
+      JOIN "School" s ON s."id" = st."schoolId"
+      WHERE s."organizationId" = ${organizationId}
+    `;
+    return rows[0].total || 0;
   }
 
   /**

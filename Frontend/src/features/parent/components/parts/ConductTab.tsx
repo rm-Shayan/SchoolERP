@@ -57,6 +57,13 @@ export default function ConductTab() {
                   </div>
                   <p className="text-sm font-medium text-gray-900">{r.comment}</p>
                   <p className="text-xs text-gray-500 mt-1">By {r.teacher.name}</p>
+                  {(r.ptmSession || r.academicYear) && (
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      {r.ptmSession ? `From PTM: ${r.ptmSession.title}` : ''}
+                      {r.ptmSession && r.academicYear ? ' · ' : ''}
+                      {r.academicYear ? r.academicYear.name : ''}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>

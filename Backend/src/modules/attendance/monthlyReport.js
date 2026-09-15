@@ -65,31 +65,30 @@ export async function buildMonthlyReport(repository, schoolId, year, month) {
   const totals = { totalMarked: 0, present: 0, late: 0, absent: 0, leave: 0, halfDay: 0, manualOverride: 0 };
 
   for (const node of sectionMap.values()) {
-    const present = node.records.filter((r) => r.status === "PRESENT").length;
-    const late = node.records.filter((r) => r.status === "LATE").length;
-    const absent = node.records.filter((r) => r.status === "ABSENT").length;
-    const leave = node.records.filter((r) => r.status === "LEAVE").length;
-    const halfDay = node.records.filter((r) => r.status === "HALF_DAY").length;
-    const manualOverride = node.records.filter((r) => r.status === "MANUAL_OVERRIDE").length;
+    // 6 separate filter() passes ki jagah single loop me counts.
+    const counts = { present: 0, late: 0, absent: 0, leave: 0, halfDay: 0, manualOverride: 0 };
+    for (const r of node.records) {
+      if (counts[r.status] !== undefined) counts[r.status] += 1;
+    }
 
     node.summary = {
       totalStudents: node.students.length,
-      present,
-      late,
-      absent,
-      leave,
-      halfDay,
-      manualOverride,
+      present: counts.present,
+      late: counts.late,
+      absent: counts.absent,
+      leave: counts.leave,
+      halfDay: counts.halfDay,
+      manualOverride: counts.manualOverride,
       totalRecords: node.records.length,
     };
 
     totals.totalMarked += node.records.length;
-    totals.present += present;
-    totals.late += late;
-    totals.absent += absent;
-    totals.leave += leave;
-    totals.halfDay += halfDay;
-    totals.manualOverride += manualOverride;
+    totals.present += counts.present;
+    totals.late += counts.late;
+    totals.absent += counts.absent;
+    totals.leave += counts.leave;
+    totals.halfDay += counts.halfDay;
+    totals.manualOverride += counts.manualOverride;
 
     const classKey = node.classId || node.className;
     if (!classMap.has(classKey)) {

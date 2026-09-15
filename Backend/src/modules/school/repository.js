@@ -195,51 +195,56 @@ class SchoolRepository {
     since.setDate(1);
     since.setHours(0, 0, 0, 0);
 
+    // SQL-side aggregation — pehle dashboard pull par student + attendance +
+    // fee records ki LAKHON rows Node me load hokar JS loops se aggregate hoti
+    // thin. Ab sab aggregation DB par hota hai (3 indexed queries total).
+    const [enrollmentRows, attendanceRows, feeAgg, studentCount, staffCount] = await Promise.all([
+      prisma.$queryRaw`
+        SELECT to_char("createdAt", 'YYYY-MM') AS "month", COUNT(*)::int AS "count"
+        FROM "Student"
+        WHERE "schoolId" = ${schoolId} AND "createdAt" >= ${since}
+        GROUP BY "month"
+      `,
+      prisma.$queryRaw`
+        SELECT to_char(AR."date", 'YYYY-MM') AS "month",
+               COUNT(*)::int AS "total",
+               COUNT(*) FILTER (WHERE AR."status" IN ('PRESENT', 'LATE'))::int AS "present"
+        FROM "AttendanceRecord" AR
+        WHERE AR."date" >= ${since}
+          AND AR."studentId" IN (SELECT "id" FROM "Student" WHERE "schoolId" = ${schoolId})
+        GROUP BY "month"
+      `,
+      prisma.$queryRaw`
+        SELECT COALESCE(SUM("totalAmount"), 0)::float8 AS "totalDue",
+               COALESCE(SUM("paidAmount"), 0)::float8 AS "totalPaid"
+        FROM "FeeRecord"
+        WHERE "studentId" IN (SELECT "id" FROM "Student" WHERE "schoolId" = ${schoolId})
+      `,
+      prisma.student.count({ where: { schoolId, status: "ACTIVE" } }),
+      prisma.user.count({ where: { schoolId, isActive: true } }),
+    ]);
+
     const monthKeys = [];
     for (let i = 0; i < months; i++) {
       const d = new Date(since.getFullYear(), since.getMonth() + i, 1);
       monthKeys.push({ key: `${d.getFullYear()}-${d.getMonth() + 1}`, label: d.toLocaleString("en", { month: "short" }), count: 0, rate: 0 });
     }
 
-    // New students per month
-    const newStudents = await prisma.student.findMany({
-      where: { schoolId, createdAt: { gte: since } },
-      select: { createdAt: true },
-    });
-    for (const s of newStudents) {
-      const key = `${s.createdAt.getFullYear()}-${s.createdAt.getMonth() + 1}`;
-      const bucket = monthKeys.find((m) => m.key === key);
-      if (bucket) bucket.count += 1;
-    }
-
-    // Attendance rate per month
-    const attendanceRecords = await prisma.attendanceRecord.findMany({
-      where: { student: { schoolId }, date: { gte: since } },
-      select: { date: true, status: true },
-    });
+    const enrollMap = {};
+    for (const r of enrollmentRows) enrollMap[r.month] = r.count;
     const attMap = {};
-    for (const a of attendanceRecords) {
-      const key = `${a.date.getFullYear()}-${a.date.getMonth() + 1}`;
-      if (!attMap[key]) attMap[key] = { present: 0, total: 0 };
-      attMap[key].total += 1;
-      if (a.status === "PRESENT" || a.status === "LATE") attMap[key].present += 1;
-    }
+    for (const r of attendanceRows) attMap[r.month] = { total: r.total, present: r.present };
+
     for (const m of monthKeys) {
-      const a = attMap[m.key];
-      m.rate = a ? Math.round((a.present / a.total) * 100) : 0;
+      const enr = enrollMap[m.key];
+      if (enr) m.count = enr;
+      const att = attMap[m.key];
+      m.rate = att && att.total > 0 ? Math.round((att.present / att.total) * 100) : 0;
     }
 
-    // Fee summary
-    const feeRecords = await prisma.feeRecord.findMany({
-      where: { student: { schoolId } },
-      select: { totalAmount: true, paidAmount: true },
-    });
-    const totalDue = feeRecords.reduce((s, r) => s + (Number(r.totalAmount) || 0), 0);
-    const totalPaid = feeRecords.reduce((s, r) => s + (Number(r.paidAmount) || 0), 0);
-
-    // Active counts
-    const studentCount = await prisma.student.count({ where: { schoolId, status: "ACTIVE" } });
-    const staffCount = await prisma.user.count({ where: { schoolId, isActive: true } });
+    const fee = feeAgg[0] || {};
+    const totalDue = fee.totalDue || 0;
+    const totalPaid = fee.totalPaid || 0;
 
     return {
       enrollment: { monthly: monthKeys.map((m) => ({ key: m.key, label: m.label, count: m.count })) },

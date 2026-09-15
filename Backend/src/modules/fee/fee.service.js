@@ -322,7 +322,7 @@ class FeeService {
 
     portalNotificationService.create({
       schoolId: targetSchoolId, senderName: "Fee System",
-      title: "FEES_GENERATED", body: `${created} fee record(s) generated for ${monthLabel} (skipped: ${skipped}, students in scope: ${studentsInScope}).`,
+      title: "FEES_GENERATED", body: `${created} fee record(s) generated for ${monthLabel} (skipped: ${skipped}, students in scope: ${students.length}).`,
       category: "FEE", refType: "FEE_GENERATE", refId: null, link: "/fees/records",
     }).catch(() => {});
 

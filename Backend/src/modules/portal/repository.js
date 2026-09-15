@@ -166,9 +166,10 @@ class PortalRepository {
 
   // ── Timetable ──────────────────────────────────────────
 
-  async getTimetable(sectionId) {
+  async getTimetables(sectionIds) {
+    if (!sectionIds?.length) return [];
     return prisma.timetableSlot.findMany({
-      where: { sectionId },
+      where: { sectionId: { in: sectionIds } },
       include: {
         subject: { select: { id: true, name: true } },
         teacher: { select: { id: true, name: true } },
@@ -185,6 +186,8 @@ class PortalRepository {
       include: {
         teacher: { select: { id: true, name: true } },
         student: { select: { id: true, firstName: true, lastName: true } },
+        ptmSession: { select: { id: true, title: true, scheduledAt: true } },
+        academicYear: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: "desc" },
       take: limit,

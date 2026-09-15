@@ -63,7 +63,7 @@ class TeachingAssignmentService {
         link: "/teaching-assignment",
       }).catch(() => {});
 
-      // Pro org admin ko bhi notification jaye
+      // Pro org admin ko bhi notification jaye (parallel)
       const orgAdmins = await prisma.user.findMany({
         where: {
           organizationId: teacher.organizationId,
@@ -72,20 +72,22 @@ class TeachingAssignmentService {
         },
         select: { id: true, name: true },
       });
-      for (const admin of orgAdmins) {
-        portalNotificationService.create({
-          schoolId: targetSchoolId,
-          senderId: user.id,
-          senderName: user.name,
-          recipientId: admin.id,
-          title: "TEACHER_ASSIGNED",
-          body: `${user.name} ne ${teacher.name} ko ${assignment.class.name}${assignment.section ? ` - ${assignment.section.name}` : ""}${assignment.subject ? ` (${assignment.subject.name})` : ""} ke liye assign kiya hai.`,
-          category: "ACADEMIC",
-          refType: "TEACHING_ASSIGNMENT",
-          refId: assignment.id,
-          link: "/teaching-assignment",
-        }).catch(() => {});
-      }
+      await Promise.all(
+        orgAdmins.map((admin) =>
+          portalNotificationService.create({
+            schoolId: targetSchoolId,
+            senderId: user.id,
+            senderName: user.name,
+            recipientId: admin.id,
+            title: "TEACHER_ASSIGNED",
+            body: `${user.name} ne ${teacher.name} ko ${assignment.class.name}${assignment.section ? ` - ${assignment.section.name}` : ""}${assignment.subject ? ` (${assignment.subject.name})` : ""} ke liye assign kiya hai.`,
+            category: "ACADEMIC",
+            refType: "TEACHING_ASSIGNMENT",
+            refId: assignment.id,
+            link: "/teaching-assignment",
+          }).catch(() => {})
+        )
+      );
     }
 
     return assignment;
@@ -142,20 +144,22 @@ class TeachingAssignmentService {
         },
         select: { id: true, name: true },
       });
-      for (const admin of orgAdmins) {
-        portalNotificationService.create({
-          schoolId: assignment.class.schoolId,
-          senderId: user.id,
-          senderName: user.name,
-          recipientId: admin.id,
-          title: "TEACHER_UNASSIGNED",
-          body: `${user.name} ne ${teacher.name} ka assignment ${assignment.class.name}${assignment.section ? ` - ${assignment.section.name}` : ""}${assignment.subject ? ` (${assignment.subject.name})` : ""} se remove kar diya hai.`,
-          category: "ACADEMIC",
-          refType: "TEACHING_ASSIGNMENT",
-          refId: id,
-          link: "/teaching-assignment",
-        }).catch(() => {});
-      }
+      await Promise.all(
+        orgAdmins.map((admin) =>
+          portalNotificationService.create({
+            schoolId: assignment.class.schoolId,
+            senderId: user.id,
+            senderName: user.name,
+            recipientId: admin.id,
+            title: "TEACHER_UNASSIGNED",
+            body: `${user.name} ne ${teacher.name} ka assignment ${assignment.class.name}${assignment.section ? ` - ${assignment.section.name}` : ""}${assignment.subject ? ` (${assignment.subject.name})` : ""} se remove kar diya hai.`,
+            category: "ACADEMIC",
+            refType: "TEACHING_ASSIGNMENT",
+            refId: id,
+            link: "/teaching-assignment",
+          }).catch(() => {})
+        )
+      );
     }
 
     return true;

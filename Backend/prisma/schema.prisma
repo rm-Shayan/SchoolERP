@@ -490,6 +490,7 @@ model Student {
   @@index([status])
   @@index([schoolId, sectionId, status])
   @@index([parentId, status])
+  @@index([schoolId, rollNumber])
 }
 
 // Tracks year-to-year movement: promotion, repeat, section transfer,
@@ -942,21 +943,24 @@ model ExamResult {
 }
 
 model ConductRemark {
-  id             String     @id @default(uuid())
+  id             String        @id @default(uuid())
   studentId      String
   teacherId      String
-  academicYearId String?    // scoped to academic year — cleanup job deletes old years
-  type           RemarkType @default(NEUTRAL)
+  academicYearId String?       // scoped to academic year — cleanup job deletes old years
+  ptmSessionId   String?       // optional link to the PTM session this remark was given in
+  type           RemarkType    @default(NEUTRAL)
   comment        String
-  createdAt      DateTime   @default(now())
+  createdAt      DateTime      @default(now())
 
-  student        Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  teacher        User       @relation(fields: [teacherId], references: [id])
+  student        Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher        User          @relation(fields: [teacherId], references: [id])
   academicYear   AcademicYear? @relation(fields: [academicYearId], references: [id], onDelete: SetNull)
+  ptmSession     PTMSession?   @relation(fields: [ptmSessionId], references: [id], onDelete: SetNull)
 
   @@index([studentId])
   @@index([teacherId])
   @@index([academicYearId])
+  @@index([ptmSessionId])
 }
 
 // ==========================================
@@ -978,7 +982,8 @@ model PTMSession {
   teacherIds  String[]   @default([]) // teachers attending this PTM
   createdAt   DateTime   @default(now())
 
-  school      School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  school        School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  conductRemarks ConductRemark[] // remarks linked to this PTM session
 
   @@index([schoolId])
 }

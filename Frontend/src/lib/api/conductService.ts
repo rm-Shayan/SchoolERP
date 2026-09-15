@@ -6,6 +6,7 @@ export interface ConductRemark {
   studentId: string;
   teacherId: string;
   academicYearId?: string | null;
+  ptmSessionId?: string | null;
   type: RemarkType;
   title: string;
   comment: string;
@@ -15,6 +16,7 @@ export interface ConductRemark {
   student?: { id: string; firstName: string; lastName: string; rollNumber: string; section?: { name: string; class?: { name: string } } };
   teacher?: { id: string; name: string };
   academicYear?: { id: string; name: string } | null;
+  ptmSession?: { id: string; title: string; scheduledAt?: string } | null;
 }
 
 export interface ConductRemarkListResponse {
@@ -34,6 +36,7 @@ export const conductService = {
     description?: string;
     date?: string;
     teacherId?: string;
+    ptmSessionId?: string;
   }): Promise<ConductRemark> => {
     const res = await api.post<ApiResponse<ConductRemark>>('/conduct/remarks', {
       ...data,
@@ -43,14 +46,14 @@ export const conductService = {
   },
 
   // GET /conduct/remarks/students/:id — ALL_STAFF
-  getByStudent: async (studentId: string): Promise<ConductRemark[]> => {
-    const res = await api.get<ApiResponse<ConductRemark[]>>(`/conduct/remarks/students/${studentId}`);
+  getByStudent: async (studentId: string, params?: { academicYearId?: string; page?: number; pageSize?: number }): Promise<ConductRemarkListResponse> => {
+    const res = await api.get<ApiResponse<ConductRemarkListResponse>>(`/conduct/remarks/students/${studentId}`, { params });
     return res.data.data;
   },
 
   // GET /conduct/remarks/sections/:sectionId — ALL_STAFF
-  getBySection: async (sectionId: string): Promise<ConductRemark[]> => {
-    const res = await api.get<ApiResponse<ConductRemark[]>>(`/conduct/remarks/sections/${sectionId}`);
+  getBySection: async (sectionId: string, params?: { type?: string; page?: number; pageSize?: number }): Promise<ConductRemarkListResponse> => {
+    const res = await api.get<ApiResponse<ConductRemarkListResponse>>(`/conduct/remarks/sections/${sectionId}`, { params });
     return res.data.data;
   },
 
@@ -60,8 +63,8 @@ export const conductService = {
     return res.data.data;
   },
 
-  // GET /conduct/remarks/school — ACADEMIC (admin view)
-  listAll: async (params?: { type?: string; teacherId?: string; page?: number; pageSize?: number }): Promise<ConductRemarkListResponse> => {
+  // GET /conduct/remarks/school — ACADEMIC (admin view; active campus explicit)
+  listAll: async (params?: { schoolId?: string; type?: string; teacherId?: string; page?: number; pageSize?: number }): Promise<ConductRemarkListResponse> => {
     const res = await api.get<ApiResponse<ConductRemarkListResponse>>('/conduct/remarks/school', { params });
     return res.data.data;
   },

@@ -25,6 +25,7 @@ const DEFAULT_ORG = "4b9316cc-f48b-4967-9ab4-a6f12bf1ccef";
 const argv = process.argv.slice(2);
 const confirmYes = argv.includes("--yes");
 const dryRun = argv.includes("--dry-run");
+const replace = argv.includes("--replace");
 const orgId = (argv[argv.indexOf("--org") + 1]) || DEFAULT_ORG;
 
 // ─── Env/secrets helpers ────────────────────────────────────────────────────
@@ -88,6 +89,78 @@ const dst = new PrismaClient({ adapter: new PrismaPg(dstPool) });
 
 const many = (data) => ({ data });
 
+// ─── Org wipe (reverse dependency order) ─────────────────────────────────────
+async function wipeOrg(dst, org, schoolIds) {
+  const none = { in: ["00000000-0000-0000-0000-000000000000"] };
+  const pick = (arr) => (arr.length ? { in: arr } : none);
+  const map = (rows) => rows.map((r) => r.id);
+
+  const schools = await dst.school.findMany({ where: { organizationId: org.id } });
+  const sc = {};
+  const yearIds = map(await dst.academicYear.findMany({ where: { schoolId: { in: schoolIds } }, select: { id: true } }));
+  sc.termIds = map(await dst.term.findMany({ where: { academicYearId: pick(yearIds) }, select: { id: true } }));
+  const classIds = map(await dst.class.findMany({ where: { schoolId: { in: schoolIds } }, select: { id: true } }));
+  sc.sectionIds = map(await dst.section.findMany({ where: { classId: pick(classIds) }, select: { id: true } }));
+  sc.templateIds = map(await dst.sectionTemplate.findMany({ where: { schoolId: { in: schoolIds } }, select: { id: true } }));
+  sc.subjectIds = map(await dst.subject.findMany({ where: { classId: pick(classIds) }, select: { id: true } }));
+  sc.assignmentIds = map(await dst.teacherAssignment.findMany({ where: { classId: pick(classIds) }, select: { id: true } }));
+  const studentIds = map(await dst.student.findMany({ where: { schoolId: { in: schoolIds } }, select: { id: true } }));
+  sc.parentIds = (await dst.student.findMany({ where: { schoolId: { in: schoolIds } }, select: { parentId: true } })).map((r) => r.parentId).filter(Boolean);
+  const feeIds = map(await dst.feeStructure.findMany({ where: { schoolId: { in: schoolIds } }, select: { id: true } }));
+  sc.lineIds = map(await dst.feeLineItem.findMany({ where: { feeStructureId: pick(feeIds) }, select: { id: true } }));
+  sc.dueIds = map(await dst.feeRecord.findMany({ where: { studentId: { in: studentIds } }, select: { id: true } }));
+  sc.payIds = map(await dst.feePayment.findMany({ where: { feeRecordId: { in: sc.dueIds } }, select: { id: true } }));
+  const examIds = map(await dst.exam.findMany({ where: { schoolId: { in: schoolIds } }, select: { id: true } }));
+  sc.resultIds = map(await dst.examResult.findMany({ where: { examId: pick(examIds) }, select: { id: true } }));
+  sc.slotIds = map(await dst.timetableSlot.findMany({ where: { sectionId: pick(sc.sectionIds) }, select: { id: true } }));
+  sc.attIds = map(await dst.attendanceRecord.findMany({ where: { studentId: { in: studentIds } }, select: { id: true } }));
+  sc.circIds = map(await dst.circular.findMany({ where: { schoolId: { in: schoolIds } }, select: { id: true } }));
+  sc.actIds = map(await dst.activity.findMany({ where: { schoolId: { in: schoolIds } }, select: { id: true } }));
+  sc.ptmIds = map(await dst.pTMSession.findMany({ where: { schoolId: { in: schoolIds } }, select: { id: true } }));
+  sc.hwIds = map(await dst.homeworkBroadcast.findMany({ where: { schoolId: { in: schoolIds } }, select: { id: true } }));
+  sc.remIds = map(await dst.conductRemark.findMany({ where: { studentId: { in: studentIds } }, select: { id: true } }));
+  sc.appIds = map(await dst.applicant.findMany({ where: { schoolId: { in: schoolIds } }, select: { id: true } }));
+  sc.userIds = map(await dst.user.findMany({ where: { OR: [{ organizationId: org.id }, { schoolId: { in: schoolIds } }] }, select: { id: true } }));
+
+  const del = async (tx, model, where) => { const c = await tx[model].deleteMany({ where }); if (c.count) console.log(`  deleted ${model}: ${c.count}`); };
+  await dst.$transaction(async (tx) => {
+    const delJoin = async () => {
+      if (feeIds.length) {
+        const c = await tx.$executeRawUnsafe('DELETE FROM "_ClassToFeeStructure" WHERE "B" = ANY($1::text[])', feeIds);
+        if (c) console.log(`  deleted _ClassToFeeStructure: ${c}`);
+      }
+    };
+    await delJoin();
+    await del(tx, "conductRemark", { id: pick(sc.remIds) });
+    await del(tx, "attendanceRecord", { id: pick(sc.attIds) });
+    await del(tx, "feePayment", { id: pick(sc.payIds) });
+    await del(tx, "timetableSlot", { id: pick(sc.slotIds) });
+    await del(tx, "examResult", { id: pick(sc.resultIds) });
+    await del(tx, "teacherAssignment", { id: pick(sc.assignmentIds) });
+    await del(tx, "homeworkBroadcast", { id: pick(sc.hwIds) });
+    await del(tx, "circular", { id: pick(sc.circIds) });
+    await del(tx, "activity", { id: pick(sc.actIds) });
+    await del(tx, "pTMSession", { id: pick(sc.ptmIds) });
+    await del(tx, "applicant", { id: pick(sc.appIds) });
+    await del(tx, "feeRecord", { id: pick(sc.dueIds) });
+    await del(tx, "feeLineItem", { id: pick(sc.lineIds) });
+    await del(tx, "student", { id: { in: studentIds } });
+    await del(tx, "feeStructure", { id: pick(feeIds) });
+    await del(tx, "parent", { id: pick(sc.parentIds) });
+    await del(tx, "subject", { id: pick(sc.subjectIds) });
+    await del(tx, "sectionTemplate", { id: pick(sc.templateIds) });
+    await del(tx, "section", { id: pick(sc.sectionIds) });
+    await del(tx, "exam", { id: pick(examIds) });
+    await del(tx, "class", { id: pick(classIds) });
+    await del(tx, "term", { id: pick(sc.termIds) });
+    await del(tx, "academicYear", { id: pick(yearIds) });
+    await del(tx, "user", { id: pick(sc.userIds) });
+    await del(tx, "orgSecrets", { organizationId: org.id });
+    await del(tx, "school", { id: pick(map(schools)) });
+    await del(tx, "organization", { id: org.id });
+  }, { maxWait: 30000, timeout: 300000 });
+}
+
 async function main() {
   const org = await src.organization.findUnique({ where: { id: orgId } });
   if (!org) { console.error("ABORT: org source DB mein nahi mili -> " + orgId); process.exit(1); }
@@ -96,9 +169,9 @@ async function main() {
   const plan = [];
   let tables = [];
 
-  const school = await src.school.findFirst({ where: { organizationId: org.id } });
-  const schools = school ? [school] : [];
+  const schools = await src.school.findMany({ where: { organizationId: org.id } });
   const schoolIds = schools.map((s) => s.id);
+  if (!schoolIds.length) { console.error("ABORT: org ke koi school nahi mile source mein."); process.exit(1); }
 
   const secrets = await src.orgSecrets.findMany({ where: { organizationId: org.id } });
   const users = await src.user.findMany({ where: { OR: [{ organizationId: org.id }, { schoolId: { in: schoolIds } }] } });
@@ -153,7 +226,11 @@ async function main() {
   if (dryRun) return;
 
   const exists = await dst.organization.findUnique({ where: { id: org.id }, select: { id: true } });
-  if (exists) { console.error("ABORT: org target mein PEHLE se maujood hai -> " + org.id); return; }
+  if (exists && !replace) { console.error("ABORT: org target mein PEHLE se maujood hai -> " + org.id + " --replace ke saath dobara chalao."); return; }
+  if (exists && replace) {
+    await wipeOrg(dst, org, schoolIds);
+    console.log(`WIPE done: target ka purana ${org.name} data delete ho gaya.`);
+  }
 
   const secretsOut = secrets.map((r) => {
     const d = { ...r.data };
@@ -163,35 +240,44 @@ async function main() {
   });
 
   await dst.$transaction(async (tx) => {
-    for (const r of [org]) await tx.organization.create({ data: r });
-    for (const r of schools) await tx.school.create({ data: r });
-    for (const r of secretsOut) await tx.orgSecrets.create({ data: r });
-    for (const r of users) await tx.user.create({ data: r });
-    for (const r of years) await tx.academicYear.create(many(r));
-    for (const r of terms) await tx.term.create(many(r));
-    for (const r of classes) await tx.class.create(many(r));
-    for (const r of sections) await tx.section.create(many(r));
-    for (const r of templates) await tx.sectionTemplate.create(many(r));
-    for (const r of subjects) await tx.subject.create(many(r));
-    for (const r of assignments) await tx.teacherAssignment.create(many(r));
-    for (const r of parents) await tx.parent.create(many(r));
-    for (const r of students) await tx.student.create(many(r));
-    for (const r of fees) await tx.feeStructure.create(many(r));
-    for (const r of feeItems) await tx.feeLineItem.create(many(r));
-    for (const row of joins.rows) await tx.$executeRawUnsafe('INSERT INTO "_ClassToFeeStructure" ("A","B") VALUES ($1,$2)', row.A, row.B);
-    for (const r of dues) await tx.feeRecord.create(many(r));
-    for (const r of payments) await tx.feePayment.create(many(r));
-    for (const r of exams) await tx.exam.create(many(r));
-    for (const r of results) await tx.examResult.create(many(r));
-    for (const r of slots) await tx.timetableSlot.create(many(r));
-    for (const r of attendance) await tx.attendanceRecord.create(many(r));
-    for (const r of circulars) await tx.circular.create(many(r));
-    for (const r of activities) await tx.activity.create(many(r));
-    for (const r of ptms) await tx.pTMSession.create(many(r));
-    for (const r of homework) await tx.homeworkBroadcast.create(many(r));
-    for (const r of remarks) await tx.conductRemark.create(many(r));
-    for (const r of applicants) await tx.applicant.create(many(r));
-  }, { maxWait: 30000, timeout: 300000 });
+    const manyCreate = async (model, rows) => {
+      if (!rows.length) return;
+      await tx[model].createMany({ data: rows });
+    };
+    await manyCreate("organization", [org]);
+    await manyCreate("school", schools);
+    await manyCreate("orgSecrets", secretsOut);
+    await manyCreate("user", users);
+    await manyCreate("academicYear", years);
+    await manyCreate("term", terms);
+    await manyCreate("class", classes);
+    await manyCreate("section", sections);
+    await manyCreate("sectionTemplate", templates);
+    await manyCreate("subject", subjects);
+    await manyCreate("teacherAssignment", assignments);
+    await manyCreate("parent", parents);
+    await manyCreate("student", students);
+    await manyCreate("feeStructure", fees);
+    await manyCreate("feeLineItem", feeItems);
+    if (joins.rows.length) {
+      await tx.$executeRawUnsafe(
+        'INSERT INTO "_ClassToFeeStructure" ("A","B") SELECT * FROM unnest($1::text[], $2::text[])',
+        joins.rows.map((r) => r.A), joins.rows.map((r) => r.B),
+      );
+    }
+    await manyCreate("feeRecord", dues);
+    await manyCreate("feePayment", payments);
+    await manyCreate("exam", exams);
+    await manyCreate("examResult", results);
+    await manyCreate("timetableSlot", slots);
+    await manyCreate("attendanceRecord", attendance);
+    await manyCreate("circular", circulars);
+    await manyCreate("activity", activities);
+    await manyCreate("pTMSession", ptms);
+    await manyCreate("homeworkBroadcast", homework);
+    await manyCreate("conductRemark", remarks);
+    await manyCreate("applicant", applicants);
+  }, { maxWait: 30000, timeout: 480000 });
 
   console.log(`\nSUCCESS: ${org.name} (${org.id}) production mein copy ho gaya — ${total} rows.`);
   console.log("First admin login pe org SETUP_PENDING -> ACTIVE auto ho jata hai.");

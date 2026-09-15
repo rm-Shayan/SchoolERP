@@ -4,6 +4,21 @@ import Logger from "../../lib/utils/logger.js";
 
 const logger = new Logger("portal-notifications");
 
+// Loop me create() baar-baar call hota hai (superadmin broadcast, assignments)
+// — har baar school.findUnique na kare. In-memory short-TTL cache.
+const schoolOrgCache = new Map();
+const SCHOOL_ORG_TTL = 5 * 60 * 1000;
+async function resolveOrganizationId(schoolId) {
+  const hit = schoolOrgCache.get(schoolId);
+  if (hit && Date.now() - hit.at < SCHOOL_ORG_TTL) return hit.orgId;
+  const orgId = await prisma.school
+    .findUnique({ where: { id: schoolId }, select: { organizationId: true } })
+    .then((s) => s?.organizationId || null)
+    .catch(() => null);
+  schoolOrgCache.set(schoolId, { orgId, at: Date.now() });
+  return orgId;
+}
+
 const TITLE_MAP = {
   PTM_CREATED: "Parent-Teacher Meeting Scheduled",
   PTM_UPDATED: "Parent-Teacher Meeting Updated",
@@ -44,8 +59,7 @@ class PortalNotificationService {
   async create({ organizationId, schoolId, senderId, senderName, recipientId, title, body, category = "GENERAL", refType, refId, link }) {
     try {
       if (!organizationId && schoolId) {
-        const school = await prisma.school.findUnique({ where: { id: schoolId }, select: { organizationId: true } }).catch(() => null);
-        organizationId = school?.organizationId || null;
+        organizationId = await resolveOrganizationId(schoolId);
       }
 
       const notification = await prisma.notificationLog.create({

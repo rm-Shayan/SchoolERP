@@ -178,12 +178,12 @@ class AttendanceRepository {
     } else if (!existingRecord.checkIn) {
       attendanceRecord = await prisma.attendanceRecord.update({
         where: { id: existingRecord.id },
-        data: { status, checkIn: scanTime, scanLog: [...(existingRecord.scanLog || []), scanEntry] },
+        data: { status, checkIn: scanTime, scanLog: [...(existingRecord.scanLog || []), scanEntry].slice(-20) },
       });
     } else {
       attendanceRecord = await prisma.attendanceRecord.update({
         where: { id: existingRecord.id },
-        data: { checkOut: scanTime, scanLog: [...(existingRecord.scanLog || []), scanEntry] },
+        data: { checkOut: scanTime, scanLog: [...(existingRecord.scanLog || []), scanEntry].slice(-20) },
       });
     }
 

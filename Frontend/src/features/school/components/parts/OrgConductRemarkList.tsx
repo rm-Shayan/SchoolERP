@@ -35,11 +35,19 @@ export default function OrgConductRemarkList({ remarks, onEdit, onDelete }: Prop
                 </span>
               </div>
               <p className="text-sm text-gray-800">{r.comment}</p>
-              <div className="mt-1 flex items-center gap-3">
+              <div className="mt-1 flex flex-wrap items-center gap-3">
                 <span className="text-[11px] font-medium text-gray-500">by {r.teacher?.name ?? 'Unknown'}</span>
                 <span className="text-[11px] text-gray-400">
                   {new Date(r.createdAt).toLocaleDateString()} {new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
+                {r.ptmSession && (
+                  <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-semibold text-primary-700 ring-1 ring-primary-200/60">
+                    PTM: {r.ptmSession.title}
+                  </span>
+                )}
+                {r.academicYear && (
+                  <span className="text-[10px] text-gray-400">{r.academicYear.name}</span>
+                )}
               </div>
             </div>
             <div className="flex shrink-0 gap-1">

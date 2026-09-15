@@ -66,21 +66,24 @@ class NotificationController {
       return res.status(201).json(ApiResponse.ok("Notification sent (no admins found)", null));
     }
 
-    // 2. Create portal notification for each admin
-    const created = [];
-    for (const admin of admins) {
-      const notif = await portalNotificationService.create({
-        organizationId: admin.organizationId || organizationId || null,
-        schoolId: admin.schoolId || schoolId || null,
-        senderId: req.user.id,
-        senderName: req.user.name,
-        recipientId: admin.id,
-        title: title || "GENERAL",
-        body,
-        category: category || "GENERAL",
-      });
-      if (notif) created.push(notif);
-    }
+    // 2. Create portal notification for each admin (parallel — sequential N
+    // round trips ki jagah ek saath).
+    const created = (
+      await Promise.all(
+        admins.map((admin) =>
+          portalNotificationService.create({
+            organizationId: admin.organizationId || organizationId || null,
+            schoolId: admin.schoolId || schoolId || null,
+            senderId: req.user.id,
+            senderName: req.user.name,
+            recipientId: admin.id,
+            title: title || "GENERAL",
+            body,
+            category: category || "GENERAL",
+          })
+        )
+      )
+    ).filter(Boolean);
 
     // 3. Send email to all admins — har admin KO uski APNI org/branch ke SMTP
     // se (DB OrgSecrets, tenant-first chain; platform env sirf last-resort
