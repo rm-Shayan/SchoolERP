@@ -20,6 +20,7 @@ interface StudentListProps {
   onPassedOut?: (student: Student) => void;
   onTc?: (student: Student) => void;
   onRollback?: (student: Student) => void;
+  onDownloadTc?: (student: Student) => void;
 }
 
 function SkeletonTable() {
@@ -63,6 +64,7 @@ export function StudentList({
   onPassedOut,
   onTc,
   onRollback,
+  onDownloadTc,
 }: StudentListProps) {
   if (loading) return <SkeletonTable />;
 
@@ -115,6 +117,7 @@ export function StudentList({
       onPassedOut={onPassedOut}
       onTc={onTc}
       onRollback={onRollback}
+      onDownloadTc={onDownloadTc}
     />
   );
 }

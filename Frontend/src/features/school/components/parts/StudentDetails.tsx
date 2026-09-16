@@ -22,8 +22,35 @@ interface Props {
 }
 
 export function StudentTcCard({ student }: { student: Student }) {
+  const [tcBusy, setTcBusy] = useState(false);
   if (student.status === 'ACTIVE') return null;
   const label = TC_REASON_LABELS[student.status] ?? student.status.replace(/_/g, ' ');
+  const isTransferredNoTc = student.status === 'TRANSFERRED_OUT' && !student.transferCertificate;
+
+  const handleIssueTc = async () => {
+    setTcBusy(true);
+    try {
+      await documentsApi.issueTc(student.id, { reason: 'TRANSFERRED_OUT' });
+      toast.success('Transfer Certificate issued and downloaded');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Failed to issue Transfer Certificate');
+    } finally {
+      setTcBusy(false);
+    }
+  };
+
+  const handleDownloadTc = async () => {
+    setTcBusy(true);
+    try {
+      await documentsApi.downloadTc(student.id);
+      toast.success('Transfer Certificate downloaded');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? err?.message ?? 'Failed to download Transfer Certificate');
+    } finally {
+      setTcBusy(false);
+    }
+  };
+
   return (
     <Card className="bg-gradient-to-br from-amber-50/80 to-white">
       <CardHeader className="border-amber-100/70 pb-2">
@@ -37,7 +64,19 @@ export function StudentTcCard({ student }: { student: Student }) {
           <div><p className="text-xs text-gray-400 uppercase tracking-wide">Status</p><p className="font-medium text-gray-800">Issued</p></div>
           <div><p className="text-xs text-gray-400 uppercase tracking-wide">Issued For</p><p className="font-medium text-gray-800">{label}</p></div>
         </div>
-        <div className="rounded-lg bg-amber-50 border border-amber-200/60 px-3 py-2 text-xs text-amber-700">TC was issued when student status changed to {label}.</div>
+        {student.transferCertificate && (
+          <div className="rounded-lg bg-amber-50 border border-amber-200/60 px-3 py-2 text-xs text-amber-700">
+            <span className="font-semibold">{student.transferCertificate.tcNumber}</span> — TC issued on{' '}
+            {new Date(student.transferCertificate.issuedAt).toLocaleDateString()}. It can be downloaded again anytime.
+          </div>
+        )}
+        {isTransferredNoTc ? (
+          <Button size="sm" variant="outline" loading={tcBusy} onClick={handleIssueTc}>Issue TC</Button>
+        ) : (
+          <Button size="sm" variant="outline" loading={tcBusy} onClick={handleDownloadTc} disabled={!student.transferCertificate}>
+            Download TC
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

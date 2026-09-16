@@ -55,4 +55,12 @@ export default {
       next(e);
     }
   },
+  downloadTc: async (req, res, next) => {
+    try {
+      const { tc, tcNumber } = await documentsService.downloadTc(req.user, req.params.id);
+      sendPdf(res, tc, `TC-${tcNumber}.pdf`);
+    } catch (e) {
+      next(e);
+    }
+  },
 };

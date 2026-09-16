@@ -477,6 +477,7 @@ model Student {
   examResults       ExamResult[]
   promotionRecords  PromotionRecord[]
   leaveRequests    LeaveRequest[]
+  transferCertificate TransferCertificate?
 
   // Active-list queries should always filter status = ACTIVE.
   // Graduated/dropped-out students stay in DB (compliance/history)
@@ -491,6 +492,25 @@ model Student {
   @@index([schoolId, sectionId, status])
   @@index([parentId, status])
   @@index([schoolId, rollNumber])
+}
+
+// Issued-once Transfer Certificate. One per student (unique studentId) — TC
+// issuance is idempotent: the certificate is stored so it can be re-downloaded
+// any time, but never re-issued or duplicated.
+model TransferCertificate {
+  id           String   @id @default(uuid())
+  studentId    String   @unique
+  schoolId     String   // denormalized — school-level queries ke liye
+  tcNumber     String   @unique
+  reason       String   // GRADUATED / DROPPED_OUT / TRANSFERRED_OUT
+  remarks      String?
+  issuedAt     DateTime @default(now())
+  issuedById   String?  // staff user id jo TC issue kiya
+  issuedByName String?  // display name snapshot
+
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
 }
 
 // Tracks year-to-year movement: promotion, repeat, section transfer,
@@ -837,6 +857,25 @@ model FeePayment {
   @@index([feeRecordId, paidAt])
 }
 
+// Durable idempotency ledger for payment submissions. When a client supplies an
+// `X-Idempotency-Key`, the FIRST successful write stores the created FeePayment
+// ids here inside the SAME transaction. A retried submission (double-click,
+// network retry, duplicate webhook) finds the replay row FIRST and returns the
+// original result instead of creating a second payment. Keyed on the logical
+// payment (which may allocate to multiple fee records), not on a single row.
+model FeePaymentReplay {
+  idempotencyKey String        @id
+  schoolId       String
+  studentId      String
+  feeRecordId    String        // primary fee record — UI result is anchored here
+  paymentIds     String[]
+  amount         Decimal       @db.Decimal(10, 2)
+  method         PaymentMethod
+  createdAt      DateTime      @default(now())
+
+  @@index([schoolId])
+}
+
 // Yearly fee rollup — attendance archive wala hi pattern. Saal khatam hone par
 // raw FeeRecords (aur unke payments) delete ho jate hain, per-student per-year
 // ka summary yahan rehta hai — DB unbounded nahi barta, history phir bhi rehti
@@ -891,6 +930,8 @@ model Exam {
   name      String   // e.g., "Mid-Term Examination"
   startDate DateTime
   endDate   DateTime
+  isPublished Boolean @default(false) // results publish — idempotency guard
+  publishedAt DateTime?               // kab publish hua (audit)
 
   school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   term      Term     @relation(fields: [termId], references: [id], onDelete: Cascade)

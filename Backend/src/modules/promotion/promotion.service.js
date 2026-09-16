@@ -142,6 +142,17 @@ class PromotionService {
     const year = await this._assertAcademicYear(user, academicYearId);
     const student = await this._assertStudent(user, studentId);
 
+    // Idempotency — ek student ek academic year me repeat sirf ek dafa.
+    // (Double-submit / double-click par duplicate PromotionRecord + dobara
+    // identifier reissue nahi hoga.)
+    const existingRepeat = await prisma.promotionRecord.findFirst({
+      where: { studentId: student.id, academicYearId: year.id, action: "REPEATED" },
+      select: { id: true },
+    });
+    if (existingRepeat) {
+      throw ApiError.badRequestError("This student has already been marked as repeating this academic year.");
+    }
+
     let targetSection = null;
     if (toSectionId) targetSection = await this._assertSection(user, toSectionId);
 

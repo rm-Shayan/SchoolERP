@@ -15,20 +15,19 @@ interface StudentRowProps {
   onPassedOut?: (student: Student) => void;
   onTc?: (student: Student) => void;
   onRollback?: (student: Student) => void;
+  onDownloadTc?: (student: Student) => void;
 }
 
-function StudentRowInner({ student, lastClassIds, onView, onEdit, onDelete, onPassedOut, onTc, onRollback }: StudentRowProps) {
+function StudentRowInner({ student, lastClassIds, onView, onEdit, onDelete, onPassedOut, onTc, onRollback, onDownloadTc }: StudentRowProps) {
   // "Passed Out" is only for ACTIVE students in the school's last class
   // (e.g., Class 10 / Matric) — other classes are promoted, not passed out.
   const showPassedOut = student.status === 'ACTIVE' && !!onPassedOut && isLastClassStudent(student, lastClassIds ?? new Set());
-  const showTc = student.status === 'ACTIVE' && !!onTc;
+  const showExit = student.status === 'ACTIVE' && !!onTc;
+  const showIssueTcTransferred = student.status === 'TRANSFERRED_OUT' && !student.transferCertificate && !!onTc;
+  // TC issued once → re-downloadable, never re-issuable.
+  const showDownloadTc = student.status !== 'ACTIVE' && !!student.transferCertificate && !!onDownloadTc;
   const isLifecycleInactive = (student.status === 'GRADUATED' || student.status === 'DROPPED_OUT' || student.status === 'TRANSFERRED_OUT') && !!onRollback;
-
-  // TC actions are role-restricted:
-  // - Receptionist sees Issue TC only for ACTIVE students.
-  // - Admin sees full lifecycle actions (reissue / reactivate) in StudentDetails.
-  // The row button stays simple: it only opens the TC modal for active students.
-  const tcAllowedForRole = true; // handled inside IssueTCModal + StudentDetails
+  const tcBtnCls = 'ml-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors';
   return (
     <tr className="group hover:bg-primary-50/40 transition-colors">
       <td className="px-4 py-3">
@@ -111,15 +110,9 @@ function StudentRowInner({ student, lastClassIds, onView, onEdit, onDelete, onPa
               Passed Out
             </button>
           )}
-          {showTc && (
-            <button
-              onClick={() => onTc?.(student)}
-              title="Issue Transfer Certificate"
-              className="ml-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors"
-            >
-              Issue TC
-            </button>
-          )}
+          {showExit && <button onClick={() => onTc?.(student)} title="Set exit status (Dropout / Passed Out / Transfer)" className={tcBtnCls}>Exit</button>}
+          {showIssueTcTransferred && <button onClick={() => onTc?.(student)} title="Issue TC for this transferred student" className={tcBtnCls}>Issue TC</button>}
+          {showDownloadTc && <button onClick={() => onDownloadTc?.(student)} title={`Download issued Transfer Certificate (${student.transferCertificate?.tcNumber})`} className={tcBtnCls}>Download TC</button>}
           {isLifecycleInactive && (
             <button
               onClick={() => onRollback?.(student)}

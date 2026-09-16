@@ -35,8 +35,8 @@ export const studentService = {
     const res = await api.delete<ApiResponse<{ id: string }>>(`/students/${id}`);
     return res.data.data;
   },
-  updateStatus: async (id: string, status: import('@/types').StudentStatus): Promise<Student> => {
-    const res = await api.patch<ApiResponse<Student>>(`/students/${id}/status`, { status });
+  updateStatus: async (id: string, status: import('@/types').StudentStatus, remarks?: string): Promise<Student> => {
+    const res = await api.patch<ApiResponse<Student>>(`/students/${id}/status`, { status, remarks: remarks || undefined });
     return res.data.data;
   },
   rollback: async (id: string, remarks?: string): Promise<Student> => {

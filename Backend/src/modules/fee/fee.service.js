@@ -607,10 +607,19 @@ class FeeService {
    * status par depend karta hai: PAID → portal-only (no email); PARTIAL →
    * parent ko updated fee voucher email.
    */
-  async recordPayment(user, feeRecordId, { amount, method = "CASH", reference, allocateOpenRecords = false, periodMonths = null, recordIds = null, allocations = null }) {
+  async recordPayment(user, feeRecordId, { amount, method = "CASH", reference, allocateOpenRecords = false, periodMonths = null, recordIds = null, allocations = null, idempotencyKey = null }) {
     const record = await feeRepository.findFeeRecordById(feeRecordId);
     if (!record) throw ApiError.notFoundError("Fee record not found");
     assertOwnSchool(user, record.student.schoolId);
+
+    // Idempotency — the same logical submission (same key) returns the ORIGINAL
+    // result instead of creating a second payment. Handle ALL paths uniformly at
+    // the top so every fee-mutating entry is covered.
+    let replay = null;
+    if (idempotencyKey) {
+      replay = await prisma.feePaymentReplay.findUnique({ where: { idempotencyKey } });
+      if (replay) return this._replayResult(user, replay, record);
+    }
 
     const paidAmount = Number(amount);
     if (paidAmount <= 0) throw ApiError.badRequestError("Payment amount must be positive");
@@ -620,18 +629,28 @@ class FeeService {
       const byId = new Map(items.map((item) => [item.id, item]));
       const allocatedTotal = allocations.reduce((sum, item) => sum + Number(item.amount), 0);
       if (Math.abs(allocatedTotal - paidAmount) > 0.5) throw ApiError.badRequestError("Payment total does not match month allocation");
-      await prisma.$transaction(async (tx) => {
+      const allocationOutcome = await prisma.$transaction(async (tx) => {
+        const paymentIds = [];
         for (const allocation of allocations) {
           const item = byId.get(allocation.recordId);
           if (!item) throw ApiError.badRequestError("Invalid fee month selected");
           const applied = Number(allocation.amount);
           const balance = Math.max(0, Number(item.totalAmount) + Number(item.dueCharges || 0) - Number(item.paidAmount || 0));
           if (applied > balance) throw ApiError.badRequestError("A month payment exceeds its balance");
-          await tx.feePayment.create({ data: { feeRecordId: item.id, amount: Number(applied.toFixed(2)), method, reference: reference || null } });
+          const created = await tx.feePayment.create({ data: { feeRecordId: item.id, amount: Number(applied.toFixed(2)), method, reference: reference || null } });
+          paymentIds.push(created.id);
           const nextPaid = Number(item.paidAmount || 0) + applied;
           await tx.feeRecord.update({ where: { id: item.id }, data: { paidAmount: Number(nextPaid.toFixed(2)), status: applied >= balance ? "PAID" : "PARTIAL" } });
         }
+        await this._writeReplay(tx, idempotencyKey, record, paymentIds, paidAmount, method);
+      }).catch(async (err) => {
+        if (err && err.__idempotencyConflict) {
+          const replayed = await prisma.feePaymentReplay.findUnique({ where: { idempotencyKey } });
+          return this._replayResult(user, replayed, record);
+        }
+        throw err;
       });
+      if (allocationOutcome?.duplicate) return allocationOutcome;
       cacheInvalidatePrefix(`fee:records:${record.student.schoolId}:`);
       emitToRoom(`school:${record.student.schoolId}`, "fee_payment_recorded", { feeRecordId, amount: paidAmount });
       // Portal notification for admin
@@ -664,17 +683,30 @@ class FeeService {
       }
       const newPaid = Number(record.paidAmount) + paidAmount;
       const allPaid = periods.every((p) => p.status === "PAID");
-      const updated = await feeRepository.updateFeeRecord(record.id, {
-        paidAmount: Number(newPaid.toFixed(2)),
-        status: allPaid ? "PAID" : "PARTIAL",
-        periods,
+      const periodOutcome = await prisma.$transaction(async (tx) => {
+        const recUpdated = await tx.feeRecord.update({
+          where: { id: record.id },
+          data: {
+            paidAmount: Number(newPaid.toFixed(2)),
+            status: allPaid ? "PAID" : "PARTIAL",
+            periods,
+          },
+        });
+        const recPayment = await tx.feePayment.create({
+          data: { feeRecordId, amount: Number(paidAmount.toFixed(2)), method, reference: reference || null },
+        });
+        await this._writeReplay(tx, idempotencyKey, record, [recPayment.id], paidAmount, method);
+        return { updated: recUpdated, payment: recPayment };
+      }).catch(async (err) => {
+        if (err && err.__idempotencyConflict) {
+          const replayed = await prisma.feePaymentReplay.findUnique({ where: { idempotencyKey } });
+          return this._replayResult(user, replayed, record);
+        }
+        throw err;
       });
-      const payment = await feeRepository.createFeePayment({
-        feeRecordId,
-        amount: Number(paidAmount.toFixed(2)),
-        method,
-        reference: reference || null,
-      });
+      if (periodOutcome?.duplicate) return periodOutcome;
+      const updated = periodOutcome.updated;
+      const payment = periodOutcome.payment;
       cacheInvalidatePrefix(`fee:records:${record.student.schoolId}:`);
       // Receipt mein selected months dikhao.
       const receiptPeriods = periods
@@ -760,47 +792,81 @@ class FeeService {
         : await feeRepository.findFeeRecordsByIds(recordIds, record.studentId);
       let remaining = paidAmount;
       let first = null;
-      // Batch all payment writes in a single transaction (H2 fix).
-      await prisma.$transaction(async (tx) => {
+      // Batch all payment writes in a single transaction (H2 fix). The "exceeds
+      // balance" check runs BEFORE the loop so a bad request never partially commits.
+      const openOutcome = await prisma.$transaction(async (tx) => {
+        const openBalance = open.reduce((s, r) => s + Math.max(0, Number(r.totalAmount) + Number(r.dueCharges || 0) - Number(r.paidAmount || 0)), 0);
+        if (paidAmount > openBalance) throw ApiError.badRequestError("Payment exceeds selected fee balance");
+        const paymentIds = [];
         for (const item of open) {
           if (remaining <= 0) break;
           const balance = Math.max(0, Number(item.totalAmount) + Number(item.dueCharges || 0) - Number(item.paidAmount || 0));
           const applied = Math.min(balance, remaining);
           if (!applied) continue;
-          await tx.feePayment.create({ data: { feeRecordId: item.id, amount: Number(applied.toFixed(2)), method, reference: reference || null } });
+          const created = await tx.feePayment.create({ data: { feeRecordId: item.id, amount: Number(applied.toFixed(2)), method, reference: reference || null } });
+          paymentIds.push(created.id);
           const nextPaid = Number(item.paidAmount || 0) + applied;
           await tx.feeRecord.update({ where: { id: item.id }, data: { paidAmount: Number(nextPaid.toFixed(2)), status: nextPaid >= Number(item.totalAmount) + Number(item.dueCharges || 0) ? "PAID" : "PARTIAL" } });
           remaining -= applied;
           if (!first) first = item;
         }
+        await this._writeReplay(tx, idempotencyKey, record, paymentIds, paidAmount, method);
+      }).catch(async (err) => {
+        if (err && err.__idempotencyConflict) {
+          const replayed = await prisma.feePaymentReplay.findUnique({ where: { idempotencyKey } });
+          return this._replayResult(user, replayed, record);
+        }
+        throw err;
       });
-      if (remaining > 0) throw ApiError.badRequestError("Payment exceeds selected fee balance");
+      if (openOutcome?.duplicate) return openOutcome;
       return { payment: null, feeRecord: await feeRepository.findFeeRecordById(first?.id || feeRecordId), receiptPdf: null, allocated: true };
     }
 
-    const payment = await feeRepository.createFeePayment({
-      feeRecordId,
-      amount: Number(paidAmount.toFixed(2)),
-      method,
-      reference: reference || null,
-    });
+    // Idempotency guard — pehle se fully-paid record dobara pay nahi ho sakti
+    // (double-click / duplicate submit par cash double nahi hoga, duplicate
+    // receipt/email bhi nahi jayegi).
+    const currentBalance = Number(record.totalAmount) + Number(record.dueCharges || 0) - Number(record.paidAmount || 0);
+    if (currentBalance <= 0) {
+      throw ApiError.badRequestError("This fee record is already fully paid. No further payment is required.");
+    }
 
-    const newPaid = Number(record.paidAmount) + paidAmount;
+    // Concurrency-safe write: the read + increment live in ONE transaction, so
+    // two users recording payments at the same time can never lost-update the
+    // balance. The idempotency replay row is persisted in the same transaction.
+    const baseOutcome = await prisma.$transaction(async (tx) => {
+      const fresh = await tx.feeRecord.findUnique({
+        where: { id: feeRecordId },
+        select: { id: true, totalAmount: true, dueCharges: true, paidAmount: true, periods: true },
+      });
+      if (!fresh) throw ApiError.notFoundError("Fee record not found");
+      const balance = Number(fresh.totalAmount) + Number(fresh.dueCharges || 0) - Number(fresh.paidAmount || 0);
+      if (balance <= 0) throw ApiError.badRequestError("This fee record is already fully paid. No further payment is required.");
+      const createdPayment = await tx.feePayment.create({
+        data: { feeRecordId, amount: Number(paidAmount.toFixed(2)), method, reference: reference || null },
+      });
+      const newPaid = Number(fresh.paidAmount) + Number(paidAmount.toFixed(2));
+      const total = Number(fresh.totalAmount);
+      const status = newPaid >= total ? "PAID" : "PARTIAL";
+      const periodsUpdate = Array.isArray(fresh.periods) && fresh.periods.length
+        ? { periods: fresh.periods.map((p) => ({ ...p, status: status === "PAID" ? "PAID" : p.status })) }
+        : {};
+      const recUpdated = await tx.feeRecord.update({ where: { id: feeRecordId }, data: { paidAmount: newPaid, status, ...periodsUpdate } });
+      await this._writeReplay(tx, idempotencyKey, record, [createdPayment.id], paidAmount, method);
+      return { payment: createdPayment, updated: recUpdated };
+    }).catch(async (err) => {
+      if (err && err.__idempotencyConflict) {
+        const replayed = await prisma.feePaymentReplay.findUnique({ where: { idempotencyKey } });
+        return this._replayResult(user, replayed, record);
+      }
+      throw err;
+    });
+    if (baseOutcome?.duplicate) return baseOutcome;
+
+    const payment = baseOutcome.payment;
+    const updated = baseOutcome.updated;
+    const newPaid = Number(updated.paidAmount);
     const total = Number(record.totalAmount);
-
-    let status = "PAID";
-    if (newPaid < total) status = "PARTIAL";
-    if (newPaid >= total) status = "PAID";
-
-    // Pura record clear hua → saare months PAID mark karo (voucher itemization).
-    const periodsUpdate = Array.isArray(record.periods) && record.periods.length
-      ? { periods: record.periods.map((p) => ({ ...p, status: status === "PAID" ? "PAID" : p.status })) }
-      : {};
-    const updated = await feeRepository.updateFeeRecord(record.id, {
-      paidAmount: Number(newPaid.toFixed(2)),
-      status,
-      ...periodsUpdate,
-    });
+    const status = updated.status;
 
     cacheInvalidatePrefix(`fee:records:${record.student.schoolId}:`);
 
@@ -1019,6 +1085,89 @@ class FeeService {
     const accountNumber = school?.bankAccountNumber || school?.organization?.bankAccountNumber || null;
     if (!bankName && !accountNumber) return undefined;
     return { bankName, accountTitle, accountNumber };
+  }
+
+  // ── Idempotency (payment replay) ─────────────────────────────
+
+  /**
+   * Persist the outcome of a payment submission INSIDE the write transaction.
+   * A unique conflict (P2002) means a concurrent duplicate already processed
+   * this key → the whole transaction must roll back (so no second payment is
+   * created) and the caller replays the stored result instead.
+   */
+  async _writeReplay(tx, idempotencyKey, record, paymentIds, paidAmount, method) {
+    if (!idempotencyKey) return;
+    try {
+      await tx.feePaymentReplay.create({
+        data: {
+          idempotencyKey,
+          schoolId: record.student.schoolId,
+          studentId: record.studentId,
+          feeRecordId: record.id,
+          paymentIds,
+          amount: Number(paidAmount.toFixed(2)),
+          method,
+        },
+      });
+    } catch (err) {
+      if (err && err.code === "P2002") {
+        const conflict = new Error("Idempotency key already processed");
+        conflict.__idempotencyConflict = true;
+        throw conflict;
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Rebuild the ORIGINAL result of an already-processed payment submission:
+   * the stored payment row(s), the CURRENT fee record, and (for single-record
+   * payments) a freshly generated receipt — so a retry looks exactly like the
+   * first success. Never mutates anything.
+   */
+  async _replayResult(user, replay, record) {
+    if (!replay) throw ApiError.badRequestError("Idempotency replay record missing");
+    if (replay.feeRecordId !== record.id) {
+      throw ApiError.badRequestError("Idempotency key was already used for a different fee record");
+    }
+    assertOwnSchool(user, record.student.schoolId);
+
+    const current = await feeRepository.findFeeRecordById(replay.feeRecordId);
+    if (!current) throw ApiError.notFoundError("Fee record not found");
+
+    const payments = await prisma.feePayment.findMany({
+      where: { id: { in: replay.paymentIds } },
+      orderBy: { paidAt: "asc" },
+    });
+    const payment = payments[0] || {
+      id: "replay",
+      amount: Number(replay.amount),
+      method: replay.method,
+      paidAt: replay.createdAt,
+    };
+
+    let receiptPdf = null;
+    // Only single-record payments produce a receipt on the original request —
+    // regenerate it for the retry so the response is identical.
+    if (payments.length === 1) {
+      const monthLabel = new Date(current.dueDate).toLocaleString("en-PK", { month: "long", year: "numeric" });
+      receiptPdf = await pdfService.feeReceipt({
+        schoolName: current.student.school.name,
+        studentName: `${current.student.firstName} ${current.student.lastName}`,
+        className: `${current.student.section?.class?.name || ""} ${current.student.section?.name || ""}`.trim(),
+        rows: [
+          { label: "Fee Period", value: monthLabel },
+          { label: "Due Date", value: new Date(current.dueDate).toLocaleDateString("en-PK") },
+          { label: "Status", value: current.status },
+        ],
+        lineItems: [{ title: "Payment Received", amount: Number(payment.amount) }],
+        totalPaid: Number(payment.amount),
+        paidAt: payment.paidAt || replay.createdAt,
+        refNo: `RC-${(payment.id || "replay").slice(0, 8)}`,
+        qrData: `FEE:${current.id}`,
+      });
+    }
+    return { payment, feeRecord: current, receiptPdf, duplicate: true };
   }
 
   // ── Reminders (shared helpers) ──────────────────────────────

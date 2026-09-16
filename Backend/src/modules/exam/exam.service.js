@@ -246,6 +246,12 @@ class ExamService {
     const exam = await this.getExam(user, examId);
     assertOwnSchool(user, exam.schoolId);
 
+    // Idempotency — results pehle se publish hain: no-op success (koi duplicate
+    // notification / websocket event nahi).
+    if (exam.isPublished) {
+      return { examId, notified: 0, alreadyPublished: true };
+    }
+
     const results = await examRepository.findResultsByExam(examId);
     if (!results.length) {
       throw ApiError.badRequestError("No results recorded for this exam yet");
@@ -259,6 +265,9 @@ class ExamService {
     }, {});
 
     const activeCount = Object.values(byStudent).filter(({ student }) => student.status === "ACTIVE").length;
+
+    // Mark published first — guard races: a second concurrent publish sees the flag.
+    await examRepository.markExamPublished(examId);
 
     // Portal notification to admin — sirf in-app
     portalNotificationService.create({

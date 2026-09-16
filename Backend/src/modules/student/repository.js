@@ -55,6 +55,7 @@ class StudentRepository {
         },
         section: { include: { class: true } },
         parent: true,
+        transferCertificate: { select: { tcNumber: true, reason: true, remarks: true, issuedAt: true, issuedByName: true } },
       },
     });
   }
@@ -114,6 +115,7 @@ class StudentRepository {
         include: {
           section: { include: { class: true } },
           parent: { select: { id: true, name: true, whatsappNo: true, phone: true, email: true } },
+          transferCertificate: { select: { tcNumber: true, reason: true, issuedAt: true } },
         },
         orderBy: [{ rollNumber: "asc" }],
         skip: (page - 1) * pageSize,

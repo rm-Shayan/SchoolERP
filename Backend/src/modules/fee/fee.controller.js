@@ -160,10 +160,18 @@ class FeeController {
    * PARTIAL → updated fee voucher emailed to parent.
    */
   recordPayment = asyncHandler(async (req, res) => {
-    const result = await feeService.recordPayment(req.user, req.params.id, req.body);
-    return res.status(201).json(ApiResponse.created("Payment recorded successfully", {
+    const body = { ...req.body };
+    // Client-supplied idempotency key (header is CORS-whitelisted). A retried
+    // submission with the same key replays the original result instead of
+    // creating a duplicate payment.
+    const headerKey = req.headers["x-idempotency-key"];
+    if (headerKey && !body.idempotencyKey) body.idempotencyKey = String(headerKey).slice(0, 200);
+    const result = await feeService.recordPayment(req.user, req.params.id, body);
+    const statusCode = result.duplicate ? 200 : 201;
+    return res.status(statusCode).json(ApiResponse.ok(result.duplicate ? "Payment already recorded" : "Payment recorded successfully", {
       payment: result.payment,
       feeRecord: result.feeRecord,
+      duplicate: result.duplicate || false,
     }));
   });
 

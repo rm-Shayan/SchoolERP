@@ -18,6 +18,7 @@ interface StudentTableProps {
   onPassedOut?: (student: Student) => void;
   onTc?: (student: Student) => void;
   onRollback?: (student: Student) => void;
+  onDownloadTc?: (student: Student) => void;
 }
 
 export function StudentTable({
@@ -36,6 +37,7 @@ export function StudentTable({
   onPassedOut,
   onTc,
   onRollback,
+  onDownloadTc,
 }: StudentTableProps) {
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
@@ -75,7 +77,7 @@ export function StudentTable({
           </thead>
           <tbody className="divide-y divide-gray-100">
             {students.map((s) => (
-              <StudentRow key={s.id} student={s} lastClassIds={lastClassIds} onView={onView} onEdit={onEdit} onDelete={onDelete} onPassedOut={onPassedOut} onTc={onTc} onRollback={onRollback} />
+              <StudentRow key={s.id} student={s} lastClassIds={lastClassIds} onView={onView} onEdit={onEdit} onDelete={onDelete} onPassedOut={onPassedOut} onTc={onTc} onRollback={onRollback} onDownloadTc={onDownloadTc} />
             ))}
           </tbody>
         </table>

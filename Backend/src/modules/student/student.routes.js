@@ -134,13 +134,14 @@ router.patch(
 /**
  * DELETE /api/v1/students/:id
  * Hard delete — permanently removes the student record and all history.
- * SUPER_ADMIN ONLY: proper school system mein branch admin archive karta hai
- * (lifecycle: graduate/dropout/transfer), permanently delete nahi — fee,
- * attendance aur exam history kabhi wipe nahi honi chahiye kisi branch se.
+ * MANAGEMENT (ADMIN / SUPER_ADMIN): branch admin (kisi school ka head) apne
+ * school se har managerial action kar sakta hai — including permanent delete.
+ * School scoping (assertOwnSchool) keeps ADMIN locked to their own branch
+ * while SUPER_ADMIN can operate across branches.
  */
 router.delete(
   "/:id",
-  authorize(["SUPER_ADMIN"]),
+  authorize(ROLE_GROUPS.MANAGEMENT),
   validate(getStudentSchema),
   studentController.deleteStudent
 );

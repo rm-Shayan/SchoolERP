@@ -95,6 +95,17 @@ class AdmissionService {
     }
     if (testMarks !== undefined) data.testMarks = testMarks || null;
 
+    // Idempotency — applicant is already in this stage: no-op success (re-click
+    // on Approve / Schedule Test par duplicate email/websocket nahi jayega).
+    if (status === applicant.status) {
+      emitToRoom(`school:${applicant.schoolId}`, "admission_status_updated", {
+        id,
+        status: applicant.status,
+        updatedAt: applicant.updatedAt,
+      });
+      return applicant;
+    }
+
     const updated = await admissionRepository.updateApplicant(id, data);
 
     emitToRoom(`school:${applicant.schoolId}`, "admission_status_updated", {

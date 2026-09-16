@@ -27,4 +27,23 @@ export const documentsApi = {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   },
+
+  downloadTc: async (studentId: string): Promise<void> => {
+    const res = await api.get(`/documents/tc/${studentId}`, { responseType: 'blob' });
+    const blob = res.data as Blob;
+    if (blob.type === 'application/json' || blob.size < 100) {
+      const text = await blob.text();
+      let parsed: { message?: string } | null = null;
+      try { parsed = JSON.parse(text); } catch { /* not JSON */ }
+      throw new Error(parsed?.message || 'Transfer Certificate download failed');
+    }
+    const url = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Transfer-Certificate.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  },
 };

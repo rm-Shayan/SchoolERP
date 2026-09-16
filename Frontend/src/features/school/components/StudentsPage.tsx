@@ -7,6 +7,7 @@ import type { Student, Class } from '@/types';
 import { ConfirmDialog, PageHeader } from '@/features/shared/components';
 import toast from 'react-hot-toast';
 import { useStudentsQuery } from '../hooks/useStudentsQuery';
+import { useStudentDelete } from '../hooks/useStudentDelete';
 import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { StudentStats } from './parts/StudentStats';
@@ -30,8 +31,7 @@ export default function StudentsPage() {
   const [selected, setSelected] = useState<Student | null>(null);
   const [passTarget, setPassTarget] = useState<Student | null>(null);
   const [passBusy, setPassBusy] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
-  const [deleteBusy, setDeleteBusy] = useState(false);
+  const { deleteTarget, setDeleteTarget, deleteBusy, confirmDelete, downloadTc } = useStudentDelete((id) => { removeStudent(id); setSelected((prev) => (prev?.id === id ? null : prev)); reload(); });
   const [showImport, setShowImport] = useState(false);
   const [tcTarget, setTcTarget] = useState<Student | null>(null);
   const [rollbackTarget, setRollbackTarget] = useState<Student | null>(null);
@@ -55,24 +55,8 @@ export default function StudentsPage() {
     try {
       const updated = await studentService.updateStatus(passTarget.id, 'GRADUATED');
       toast.success(`${passTarget.firstName} ${passTarget.lastName} passed out`);
-      patchStudent(updated);
-      setSelected((prev) => (prev?.id === updated.id ? updated : prev));
-      setPassTarget(null);
-      reload();
+      patchStudent(updated); setSelected((prev) => (prev?.id === updated.id ? updated : prev)); setPassTarget(null); reload();
     } catch (err: any) { toast.error(err?.response?.data?.message ?? 'Failed to mark passed out'); } finally { setPassBusy(false); }
-  };
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    setDeleteBusy(true);
-    try {
-      await studentService.remove(deleteTarget.id);
-      toast.success(`${deleteTarget.firstName} ${deleteTarget.lastName} deleted`);
-      removeStudent(deleteTarget.id);
-      setSelected((prev) => (prev?.id === deleteTarget.id ? null : prev));
-      setDeleteTarget(null);
-      reload();
-    } catch (err: any) { toast.error(err?.response?.data?.message ?? 'Failed to delete student'); } finally { setDeleteBusy(false); }
   };
 
   const handleRollback = async () => {
@@ -81,10 +65,7 @@ export default function StudentsPage() {
     try {
       const updated = await studentService.rollback(rollbackTarget.id);
       toast.success(`${rollbackTarget.firstName} ${rollbackTarget.lastName} reactivated`);
-      patchStudent(updated);
-      setSelected((prev) => (prev?.id === updated.id ? updated : prev));
-      setRollbackTarget(null);
-      reload();
+      patchStudent(updated); setSelected((prev) => (prev?.id === updated.id ? updated : prev)); setRollbackTarget(null); reload();
     } catch (err: any) { toast.error(err?.response?.data?.message ?? 'Failed to reactivate student'); } finally { setRollbackBusy(false); }
   };
 
@@ -136,10 +117,11 @@ export default function StudentsPage() {
       <StudentList loading={loading} refetching={refetching} students={students} total={total} hasFilters={!!search.trim() || !!statusFilter || !!sectionFilter} page={page} pageSize={pageSize} totalPages={totalPages} lastClassIds={lastClassIds} onPageChange={setPage} onPageSizeChange={setPageSize}
         onView={setSelected}
         onEdit={openEdit}
-        onDelete={isReceptionist ? undefined : setDeleteTarget}
+        onDelete={isAdmin ? setDeleteTarget : undefined}
         onPassedOut={isReceptionist ? undefined : setPassTarget}
         onTc={setTcTarget}
         onRollback={setRollbackTarget}
+        onDownloadTc={downloadTc}
       />
 
       <StudentFormModal key={formMode === 'create' ? 'create' : formStudent?.id ?? 'none'} open={formMode !== null} onClose={() => { setFormMode(null); setFormStudent(null); }} classes={classes} mode={formMode === 'create' ? 'create' : 'edit'} student={formStudent} onSubmit={handleFormSubmit} />
@@ -150,7 +132,7 @@ export default function StudentsPage() {
 
       <ConfirmDialog open={!!passTarget} title="Mark as Passed Out?" message={`${passTarget ? `${passTarget.firstName} ${passTarget.lastName}` : 'Student'} is in the school's final class. Marking as Passed Out archives the record (fee/attendance history stays safe), and it can be reactivated anytime.`} confirmLabel="Passed Out" loading={passBusy} onConfirm={handlePassedOut} onCancel={() => setPassTarget(null)} />
 
-      <ConfirmDialog open={!!deleteTarget} title="Delete student?" message={`Permanently delete ${deleteTarget ? `${deleteTarget.firstName} ${deleteTarget.lastName}` : 'this student'}? This cannot be undone.`} confirmLabel="Delete" loading={deleteBusy} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />
+      <ConfirmDialog open={!!deleteTarget} title="Delete student?" message={`Permanently delete ${deleteTarget ? `${deleteTarget.firstName} ${deleteTarget.lastName}` : 'this student'}? This cannot be undone.`} confirmLabel="Delete" loading={deleteBusy} onConfirm={confirmDelete} onCancel={() => setDeleteTarget(null)} />
 
       <IssueTCModal open={!!tcTarget} student={tcTarget} onClose={() => setTcTarget(null)} onIssued={() => { setTcTarget(null); reload(); }} />
 

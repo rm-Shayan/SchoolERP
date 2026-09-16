@@ -14,6 +14,9 @@ export const admissionImportWorker = new Worker(
 
     let successCount = 0;
     const errors = [];
+    // In-run dedup set — same file dobara submit/retry hone par duplicate
+    // "INQUIRY" applicants nahi banenge (first+last+className+whatsapp key).
+    const seenKeys = new Set();
 
     const school = await prisma.school.findUnique({
       where: { id: schoolId },
@@ -48,6 +51,28 @@ export const admissionImportWorker = new Worker(
           errors.push({ row: rowIndex, error: `Class not found: '${className || "?"}'` });
           continue;
         }
+
+        // Idempotency — dedupe (in-run + against existing INQUIRY applicants):
+        // same file submit twice = same applicant created once.
+        const norm = (v) => (v == null ? "" : String(v).trim().toLowerCase());
+        const fName = norm(firstName);
+        const lName = norm(lastName);
+        const wName = norm(parentWhatsappNo || parentPhone || "");
+        const dupKey = `${classId}|${fName}|${lName}|${wName}`;
+        if (seenKeys.has(dupKey)) {
+          errors.push({ row: rowIndex, error: "Duplicate row skipped (already imported)" });
+          continue;
+        }
+        const existingInquiry = await prisma.applicant.findFirst({
+          where: { schoolId, classId, status: "INQUIRY", firstName: String(firstName).trim(), parentWhatsappNo: (parentWhatsappNo || parentPhone || "").toString().trim() },
+          select: { id: true },
+        });
+        if (existingInquiry) {
+          errors.push({ row: rowIndex, error: "Duplicate applicant skipped (already imported earlier)" });
+          seenKeys.add(dupKey);
+          continue;
+        }
+        seenKeys.add(dupKey);
 
         await prisma.applicant.create({
           data: {

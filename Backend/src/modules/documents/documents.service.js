@@ -172,8 +172,10 @@ class DocumentsService {
     return `data:image/png;base64,${buf.toString('base64')}`;
   }
 
-  // TRANSFER CERTIFICATE (TC) — generates TC PDF, changes student status,
-  // deactivates student/parent portal, creates PromotionRecord.
+  // TRANSFER CERTIFICATE (TC) — explicit, on-demand document for the
+  // TC/transfer status ONLY. Setting an exit status (changeStatus in the
+  // student module) never generates or downloads anything; this endpoint is
+  // reached only when the admin deliberately chooses to issue the certificate.
   async issueTc(user, studentId, { reason, remarks }) {
     // Parallelize: student fetch + academic year fetch (independent)
     const [student, academicYear] = await Promise.all([
@@ -200,7 +202,31 @@ class DocumentsService {
 
     if (!student) throw ApiError.notFoundError('Student not found');
     assertSchoolAccess(user, student.school.id);
-    if (student.status !== 'ACTIVE') throw ApiError.badRequestError(`Student is already ${student.status}`);
+    if (student.status !== 'ACTIVE' && student.status !== 'TRANSFERRED_OUT') {
+      throw ApiError.badRequestError(`Student is already ${student.status}. A TC is only available for the TC (Transferred Out) status.`);
+    }
+
+    // §4 exit-flow contract — a Transfer Certificate is ONLY valid for the TC /
+    // transfer status. Dropout and Passed Out students get their own letters;
+    // there is NO code path where a non-transfer status produces a TC.
+    if (reason !== 'TRANSFERRED_OUT') {
+      throw ApiError.badRequestError(
+        'Transfer Certificate (TC) can only be issued for a Transferred Out (TC) student. Dropouts and passed-out students do not receive a TC.'
+      );
+    }
+
+    // Idempotency guard — a TC can only be issued once per student. Even if a
+    // later status change were ever allowed, the stored certificate is the single
+    // source of truth; re-clicking "Issue TC" must never create a second one.
+    const existingTc = await prisma.transferCertificate.findUnique({
+      where: { studentId: student.id },
+      select: { tcNumber: true },
+    });
+    if (existingTc) {
+      throw ApiError.badRequestError(
+        `Transfer Certificate already issued (${existingTc.tcNumber}). Use the "Download TC" action instead.`
+      );
+    }
 
     // Re-fetch academic year with correct schoolId (was undefined above)
     const ay = academicYear || await prisma.academicYear.findFirst({
@@ -208,15 +234,9 @@ class DocumentsService {
       select: { id: true },
     }).catch(() => null);
 
-    const statusMap = {
-      GRADUATED: 'GRADUATED',
-      DROPPED_OUT: 'DROPPED_OUT',
-      TRANSFERRED_OUT: 'TRANSFERRED_OUT',
-    };
-    const newStatus = statusMap[reason];
-    if (!newStatus) throw ApiError.badRequestError('Invalid reason. Must be GRADUATED, DROPPED_OUT, or TRANSFERRED_OUT');
+    const newStatus = 'TRANSFERRED_OUT';
 
-    const tcNumber = `TC-${Date.now().toString(36).toUpperCase()}`;
+    const tcNumber = `TC-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const tcDate = new Date();
 
     // 1. Generate PDF FIRST — if this fails, no DB changes are made
@@ -248,6 +268,17 @@ class DocumentsService {
           where: { id: studentId },
           data: { status: newStatus, imageUrl },
         }),
+        prisma.transferCertificate.create({
+          data: {
+            studentId: student.id,
+            schoolId: student.schoolId,
+            tcNumber,
+            reason: newStatus,
+            remarks: remarks || null,
+            issuedById: user.id,
+            issuedByName: user.name,
+          },
+        }),
         prisma.promotionRecord.create({
           data: {
             studentId: student.id,
@@ -255,7 +286,7 @@ class DocumentsService {
             fromSectionId: student.sectionId,
             toSectionId: null,
             action: newStatus,
-            remarks: `TC issued: ${tcNumber}. ${reason === 'TRANSFERRED_OUT' ? 'Transferred' : reason === 'GRADUATED' ? 'Graduated' : 'Dropped out'}. ${remarks || ''}`.trim(),
+            remarks: `TC issued: ${tcNumber}. Transferred out of school. ${remarks || ''}`.trim(),
           },
         }),
       ]),
@@ -283,6 +314,53 @@ class DocumentsService {
     });
 
     return { tc, tcNumber, studentId: student.id, status: newStatus };
+  }
+
+  // TRANSFER CERTIFICATE DOWNLOAD — re-fetches the already-issued certificate
+  // for a student. Idempotent GET: never creates or mutates anything, always
+  // reproduces the exact originally-issued TC (same TC number, same data).
+  async downloadTc(user, studentId) {
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+      select: {
+        id: true, firstName: true, lastName: true, rollNumber: true, createdAt: true,
+        sectionId: true, parentId: true, schoolId: true,
+        section: { select: { id: true, name: true, class: { select: { name: true } } } },
+        parent: { select: { id: true, name: true } },
+        school: { select: {
+          id: true, name: true, address: true, phone: true, logoUrl: true, organizationId: true,
+          organization: { select: { id: true, name: true, logoUrl: true, themeColor: true } },
+        } },
+        transferCertificate: true,
+      },
+    });
+
+    if (!student) throw ApiError.notFoundError('Student not found');
+    assertSchoolAccess(user, student.school.id);
+
+    const tc = student.transferCertificate;
+    if (!tc) throw ApiError.badRequestError('No Transfer Certificate has been issued for this student yet.');
+
+    const pdf = await pdfService.transferCertificate({
+      schoolName: student.school.name,
+      schoolAddress: student.school.address,
+      schoolPhone: student.school.phone,
+      studentName: `${student.firstName} ${student.lastName}`,
+      fatherName: student.parent?.name || 'N/A',
+      className: student.section?.class?.name || 'N/A',
+      sectionName: student.section?.name || 'N/A',
+      rollNumber: student.rollNumber,
+      admissionDate: student.createdAt,
+      leavingDate: tc.issuedAt,
+      reason: tc.reason,
+      remarks: tc.remarks,
+      feeCleared: true,
+      tcNumber: tc.tcNumber,
+      themeColor: student.school.organization?.themeColor,
+      logoUrl: student.school.logoUrl || student.school.organization?.logoUrl,
+    });
+
+    return { tc: pdf, tcNumber: tc.tcNumber };
   }
 }
 

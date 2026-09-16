@@ -232,6 +232,20 @@ class StudentService {
       throw ApiError.badRequestError("Invalid student status");
     }
 
+    // Idempotency — already in the requested state: no-op success (repeat clicks
+    // on Passed Out / Drop Out / Transfer Out are harmless, no side effects).
+    if (status === student.status) {
+      return student;
+    }
+
+    // Lifecycle guard — a non-active student cannot be re-labelled to another
+    // non-active lifecycle. Reactivate (rollback) first, then apply a new status.
+    if (student.status !== "ACTIVE" && status !== "ACTIVE") {
+      throw ApiError.badRequestError(
+        `Student is already ${student.status}. Reactivate the student before applying a different lifecycle status.`
+      );
+    }
+
     let imageUrl = student.imageUrl;
     if (status !== "ACTIVE" && student.imageUrl && student.status === "ACTIVE") {
       const moved = await storageService.moveToArchive({ url: student.imageUrl, organizationId: user.organizationId, schoolId: student.schoolId });

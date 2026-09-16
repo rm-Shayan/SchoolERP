@@ -14,6 +14,14 @@ export interface Parent {
   remarks?: string;
 }
 
+export interface TransferCertificate {
+  tcNumber: string;
+  reason: string;
+  remarks?: string;
+  issuedAt: string;
+  issuedByName?: string;
+}
+
 export interface Student {
   id: string;
   schoolId: string;
@@ -36,6 +44,7 @@ export interface Student {
   section?: Section;
   parent?: Parent;
   school?: School;
+  transferCertificate?: TransferCertificate;
 }
 
 export type ApplicantDocumentType = 'B_FORM' | 'BIRTH_CERTIFICATE' | 'OTHER';

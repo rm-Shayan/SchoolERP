@@ -113,6 +113,13 @@ class ExamRepository {
     return prisma.exam.delete({ where: { id } });
   }
 
+  async markExamPublished(id) {
+    return prisma.exam.update({
+      where: { id },
+      data: { isPublished: true, publishedAt: new Date() },
+    });
+  }
+
   async findSubjectsByClass(classId) {
     return prisma.subject.findMany({
       where: { classId },
