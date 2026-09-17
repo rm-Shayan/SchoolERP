@@ -2,25 +2,50 @@
 
 import api from './client';
 
+/** A blob that is actually a JSON error body (axios responseType 'blob'). */
+export function isErrorBlob(data: unknown): data is Blob {
+  return data instanceof Blob && (data.type.includes('json') || data.size < 100);
+}
+
+/** Extract a server error message from an error blob, if possible. */
+export async function errorMessageFromBlob(blob: Blob, fallback: string): Promise<string> {
+  try {
+    const text = await blob.text();
+    const parsed: { message?: string } | null = JSON.parse(text);
+    return parsed?.message || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/** Wrap an axios data blob as a PDF blob and trigger a download. */
+export function downloadPdfBlob(data: unknown, filename: string): void {
+  const blob = new Blob([data as BlobPart], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Revoke only after the download has started — immediate revoke can blank
+  // the PDF in some browsers.
+  setTimeout(() => URL.revokeObjectURL(url), 2_000);
+}
+
 /**
  * Fetch a PDF via the authed axios client (Authorization header attached) and
  * open it in a new tab. Raw `<a href="/api/v1/...">` links fail with 401
  * because a browser navigation carries no token — this helper fixes that bug
- * (voucher / receipt / admission slip).
+ * (voucher / receipt / admission slip). Error bodies are surfaced instead of
+ * silently downloading a broken file.
  */
 export async function openPdf(path: string): Promise<void> {
   const res = await api.get(path, { responseType: 'blob' });
-  const blob = new Blob([res.data as BlobPart], { type: 'application/pdf' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = pdfFilename(path);
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  // Give the new tab time to render the PDF — revoking immediately causes
-  // some browsers to show a blank page.
-  setTimeout(() => URL.revokeObjectURL(url), 2_000);
+  if (isErrorBlob(res.data)) {
+    throw new Error(await errorMessageFromBlob(res.data as Blob, 'Failed to generate document'));
+  }
+  downloadPdfBlob(res.data, pdfFilename(path));
 }
 
 /**

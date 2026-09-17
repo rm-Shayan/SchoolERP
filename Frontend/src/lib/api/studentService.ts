@@ -1,6 +1,7 @@
 'use client';
 
 import api from './client';
+import { downloadPdfBlob, errorMessageFromBlob, isErrorBlob } from './pdfLinks';
 import type { ApiResponse, Student } from '@/types';
 import type { StudentCreatePayload, StudentUpdatePayload, StudentListParams, StudentListEnvelope, PlatformStudentListParams, StudentSummary } from './studentTypes';
 
@@ -65,20 +66,18 @@ export const studentService = {
   },
   downloadIdCard: async (id: string): Promise<void> => {
     const res = await api.post(`/students/${id}/reissue-id`, {}, { responseType: 'blob' });
-    const blob = new Blob([res.data as BlobPart], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `id-card-${id}.pdf`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 2_000);
+    if (isErrorBlob(res.data)) {
+      throw new Error(await errorMessageFromBlob(res.data as Blob, 'Failed to re-issue ID card'));
+    }
+    downloadPdfBlob(res.data, `id-card-${id}.pdf`);
   },
   getPlatform: async (params?: PlatformStudentListParams): Promise<StudentListEnvelope> => {
     const res = await api.get<ApiResponse<StudentListEnvelope>>('/students/platform', { params });
     return res.data.data;
   },
   downloadImportTemplate: async (): Promise<void> => {
-    const headers = ['First Name','Last Name','Class Name','Section Name','Roll Number','Gender','DOB','Parent Name','Parent Phone','Parent Email','Parent Address'];
-    const sample = ['Ahmed','Khan','Class 5','A','101','Male','2012-05-15','Mr. Khan','03001234567','khan@email.com','123 Main St'];
+    const headers = ['First Name','Last Name','Class Name','Section Name','Roll Number','Parent WhatsApp','Gender','DOB','Parent Name','Parent Phone','Parent Email','Parent Address'];
+    const sample = ['Ahmed','Khan','Class 5','A','101','03001234567','Male','2012-05-15','Mr. Khan','03001234567','khan@email.com','123 Main St'];
     const csv = [headers.join(','), sample.join(',')].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);

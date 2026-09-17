@@ -57,7 +57,7 @@ export default function ResultsWorkspace({ examId, students, subjects, loading, 
     setPublishing(true);
     try {
       const res = await examService.publish(examId);
-      toast.success(`Results sent to ${res.notified} parent(s)`);
+      toast.success(`Results published to ${res.notified} parent(s)`);
     } catch (err) {
       toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to publish');
     } finally {
@@ -90,7 +90,7 @@ export default function ResultsWorkspace({ examId, students, subjects, loading, 
       <ConfirmDialog
         open={publishOpen}
         title="Publish results?"
-        message="A result summary will be emailed to all parents. Continue?"
+        message="A result summary will become visible to parents in the portal. Continue?"
         confirmLabel="Publish"
         loading={publishing}
         onConfirm={publishResults}

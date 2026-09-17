@@ -29,6 +29,18 @@ class AcademicRepository {
     return prisma.academicYear.delete({ where: { id } });
   }
 
+  async academicYearHistoryCounts(id) {
+    return prisma.academicYear.findUnique({
+      where: { id },
+      select: {
+        _count: {
+          select: { terms: true, promotionRecords: true, feeStructures: true },
+        },
+        terms: { select: { _count: { select: { exams: true } } } },
+      },
+    });
+  }
+
   async setAcademicYearsCurrent(schoolId, exceptId = null) {
     return prisma.academicYear.updateMany({
       where: { schoolId, id: exceptId ? { not: exceptId } : undefined },
@@ -51,6 +63,10 @@ class AcademicRepository {
 
   async findTermById(id) {
     return prisma.term.findUnique({ where: { id } });
+  }
+
+  async termExamCount(id) {
+    return prisma.exam.count({ where: { termId: id } });
   }
 
   async updateTerm(id, data) {

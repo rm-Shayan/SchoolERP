@@ -92,6 +92,23 @@ class AcademicService {
   async deleteAcademicYear(user, id) {
     const year = await this.getAcademicYear(user, id);
     assertOwnSchool(user, year.schoolId);
+    if (year.isCurrent) {
+      throw ApiError.badRequestError(
+        "Cannot delete the current academic year. Create a new year and mark it current first."
+      );
+    }
+    const history = await academicRepository.academicYearHistoryCounts(id);
+    const examCount = history.terms.reduce((sum, t) => sum + t._count.exams, 0);
+    if (
+      history._count.terms > 0 ||
+      history._count.promotionRecords > 0 ||
+      history._count.feeStructures > 0 ||
+      examCount > 0
+    ) {
+      throw ApiError.badRequestError(
+        "Cannot delete this academic year — it contains historical records (terms, exams, promotions, or fee structures). Archive it instead; deleting would destroy exam results and history."
+      );
+    }
     const result = await academicRepository.deleteAcademicYear(id);
     await cacheDel(`academic:years:${year.schoolId}`);
     return result;
@@ -132,6 +149,12 @@ class AcademicService {
     if (!term) throw ApiError.notFoundError("Term not found");
     const year = await this.getAcademicYear(user, term.academicYearId);
     assertOwnSchool(user, year.schoolId);
+    const examCount = await academicRepository.termExamCount(id);
+    if (examCount > 0) {
+      throw ApiError.badRequestError(
+        "Cannot delete this term — it has exams with recorded results. Delete the exams first or archive the academic year."
+      );
+    }
     const result = await academicRepository.deleteTerm(id);
     await cacheDel(`academic:years:${year.schoolId}`);
     return result;

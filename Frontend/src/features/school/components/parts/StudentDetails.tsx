@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Badge, Button, Card, CardHeader, CardContent, Modal } from '@/features/shared/components';
 import { documentsApi } from '@/lib/api/documents';
+import { studentService } from '@/lib/api/studentService';
 import type { Student } from '@/types';
 import toast from 'react-hot-toast';
 import { StudentDetailsTable } from './StudentDetailsTable';
@@ -85,12 +86,26 @@ export function StudentTcCard({ student }: { student: Student }) {
 export function StudentDetails({ student, onClose, onUpdated, onEdit }: Props) {
   const [idBusy, setIdBusy] = useState(false);
 
+  // "Re-issue" = fresh identifier (new QR) + new ID slip. Falls back to a
+  // plain print for roles that can't re-issue (e.g. receptionist).
   const handleIdCard = async () => {
     if (!student) return;
     setIdBusy(true);
-    try { await documentsApi.studentIdCard(student.id); }
-    catch (err: any) { toast.error(err?.response?.data?.message ?? 'Failed to generate ID card'); }
-    finally { setIdBusy(false); }
+    try {
+      await studentService.downloadIdCard(student.id);
+    } catch (err: any) {
+      if (err?.response?.status === 403) {
+        try {
+          await documentsApi.studentIdCard(student.id);
+        } catch (e2: any) {
+          toast.error(e2?.message ?? 'Failed to print ID card');
+        }
+        return;
+      }
+      toast.error(err?.message ?? err?.response?.data?.message ?? 'Failed to re-issue ID card');
+    } finally {
+      setIdBusy(false);
+    }
   };
 
   return (

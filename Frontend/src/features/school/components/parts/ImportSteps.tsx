@@ -13,7 +13,7 @@ const STEPS = [
   },
   {
     title: 'Upload & Import',
-    description: 'Upload the filled file via Super Admin → Import Data. Results are shown live.',
+    description: 'Upload the filled file via the Import button on the relevant page in your branch. Results are shown live.',
   },
 ];
 

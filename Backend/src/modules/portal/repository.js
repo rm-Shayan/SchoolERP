@@ -129,7 +129,7 @@ class PortalRepository {
 
   async getExamResults(studentIds) {
     return prisma.examResult.findMany({
-      where: { studentId: { in: studentIds } },
+      where: { studentId: { in: studentIds }, exam: { isPublished: true } },
       include: {
         exam: { select: { id: true, name: true, startDate: true, term: { select: { name: true } } } },
         subject: { select: { id: true, name: true } },
@@ -154,6 +154,7 @@ class PortalRepository {
     return prisma.exam.findMany({
       where: {
         schoolId,
+        isPublished: true,
         term: { academicYear: { isCurrent: true } },
         papers: { some: { classId: { in: classIds } } },
       },

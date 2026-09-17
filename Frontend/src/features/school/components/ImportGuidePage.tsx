@@ -4,56 +4,19 @@ import { useState } from 'react';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { useRouter } from 'next/navigation';
 import { PageHeader, Card, Button } from '@/features/shared/components';
-import { studentService, staffService, staffAttendanceService } from '@/lib/api';
+import { staffService, staffAttendanceService } from '@/lib/api';
 import ImportSteps from './parts/ImportSteps';
 import TemplateTable from './parts/TemplateTable';
-import { STUDENT_COLUMNS, STAFF_COLUMNS, TIMETABLE_MULTI_COLUMNS, STAFF_ATTENDANCE_COLUMNS } from './parts/importColumns';
+import { TAB_META, TIPS, COLUMNS_BY_TYPE, ImportType } from './parts/importColumns';
 import { downloadBlob } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-type ImportType = 'students' | 'staff' | 'staff-attendance' | 'timetable';
-
-const TAB_META: Record<ImportType, { label: string; icon: string }> = {
-  students: {
-    label: 'Students',
-    icon: 'M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z',
-  },
-  staff: {
-    label: 'Staff',
-    icon: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4z',
-  },
-  'staff-attendance': {
-    label: 'Staff Attendance',
-    icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
-  },
-  timetable: {
-    label: 'Timetable',
-    icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
-  },
-};
-
-const TIPS: Record<ImportType, string[]> = {
-  students: [
-    'Class Name / Section Name must exactly match existing classes in the Academic Setup.',
-    'Roll Number must be unique within each section.',
-    'If a parent email is provided, login credentials are sent via email.',
-  ],
-  staff: [
-    'Role only accepts these values: TEACHER, STAFF, ACCOUNTANT, NURSE, LIBRARIAN.',
-    'Leave Password blank and the system will auto-generate and email it.',
-    'Email must be unique — each staff member gets a unique account.',
-  ],
-  'staff-attendance': [
-    'Matches by Staff Name or Email — exact name or email is required.',
-    'Date format must be YYYY-MM-DD (e.g. 2026-08-27).',
-    'Status only accepts these values: PRESENT, ABSENT, LATE, LEAVE.',
-    'If a record for the same staff + date already exists, it will be overwritten.',
-  ],
-  timetable: [
-    'Each row is for one section — use the "Class 5 - A" format in the Section column.',
-    'The Day column accepts both day names (Monday) and numbers (1-7).',
-    'The Teacher column requires the exact name as it appears in the staff list.',
-  ],
+const SAMPLE_ROWS: Record<ImportType, string> = {
+  students: 'Ahmed,Khan,Class 5,A,101,03001234567,Male,2012-05-15,Mr. Khan,03009876543,khan@email.com,123 Main St',
+  staff: 'Mr. Ahmed Khan,ahmed@school.edu,03001234567,TEACHER',
+  'staff-attendance': 'Mr. Ahmed Khan,ahmed@school.edu,2026-08-27,PRESENT,Late by 10 mins',
+  timetable: 'Monday,Mathematics,Mr. Ahmed Khan,08:00,08:45,Class 5 - A',
+  admissions: 'Ahmed,Khan,Class 5,Mr. Khan,03001234567,03001234567,khan@email.com,2012-05-15,Male,5000',
 };
 
 export default function ImportGuidePage() {
@@ -61,14 +24,12 @@ export default function ImportGuidePage() {
   const router = useRouter();
   if (!isAdmin) { router.replace('/branch/dashboard'); return null; }
   const [activeTab, setActiveTab] = useState<ImportType>('students');
-  const columns = activeTab === 'students' ? STUDENT_COLUMNS : activeTab === 'staff' ? STAFF_COLUMNS : activeTab === 'staff-attendance' ? STAFF_ATTENDANCE_COLUMNS : TIMETABLE_MULTI_COLUMNS;
+  const columns = COLUMNS_BY_TYPE[activeTab];
   const requiredCount = columns.filter((c) => c.req).length;
 
   const handleDownload = async () => {
     try {
-      if (activeTab === 'students') {
-        await studentService.downloadImportTemplate();
-      } else if (activeTab === 'staff') {
+      if (activeTab === 'staff') {
         const blob = await staffService.downloadImportTemplate();
         downloadBlob(blob, 'staff-import-template.xlsx');
       } else if (activeTab === 'staff-attendance') {
@@ -76,12 +37,10 @@ export default function ImportGuidePage() {
         downloadBlob(new Blob([res.data], { type: 'application/vnd.ms-excel' }), 'staff-attendance-template.xlsx');
       } else {
         const header = columns.map((c) => c.col).join(',');
-        const sample = ['Monday,Mathematics,Mr. Ahmed Khan,08:00,08:45,Class 5 - A'].join('\n');
-        const csv = `${header}\n${sample}`;
-        const blob = new Blob([csv], { type: 'text/csv' });
-        downloadBlob(blob, 'timetable-import-sample.csv');
+        const csv = `${header}\n${SAMPLE_ROWS[activeTab]}`;
+        downloadBlob(new Blob([csv], { type: 'text/csv' }), `${activeTab}-import-sample.csv`);
       }
-      toast.success(`${TAB_META[activeTab].label} template downloaded`);
+      toast.success(`${TAB_META[activeTab].label} sample downloaded`);
     } catch {
       toast.error('Failed to download template');
     }
@@ -116,7 +75,7 @@ export default function ImportGuidePage() {
             <h2 className="text-base font-semibold text-gray-900">{TAB_META[activeTab].label} Import Format</h2>
             <p className="text-xs text-gray-500 mt-0.5">{columns.length} cols — <span className="font-medium text-red-600">{requiredCount} required</span>, {columns.length - requiredCount} optional</p>
           </div>
-          <Button variant="outline" size="sm" onClick={handleDownload} className="shrink-0">Download Sample (.xlsx)</Button>
+          <Button variant="outline" size="sm" onClick={handleDownload} className="shrink-0">Download Sample</Button>
         </div>
 
         <TemplateTable columns={columns} />

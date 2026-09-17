@@ -188,9 +188,8 @@ class ExamRepository {
         marksObtained: true,
         maxMarks: true,
         remarks: true,
-        createdAt: true,
         subject: { select: { id: true, name: true, code: true } },
-        student: { select: { id: true, name: true, rollNumber: true, status: true } },
+        student: { select: { id: true, firstName: true, lastName: true, rollNumber: true, status: true } },
       },
     });
   }
