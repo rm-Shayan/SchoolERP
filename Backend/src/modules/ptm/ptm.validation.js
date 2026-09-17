@@ -28,6 +28,7 @@ export const scopeBodyShape = {
   sectionIds: z.array(z.string().uuid()).optional(),
   studentId: z.string().uuid().optional(),
   teacherIds: z.array(z.string().uuid()).optional(),
+  academicYearId: z.string().uuid().optional(),
 };
 
 function requireFor(v, ctx) {
@@ -55,6 +56,7 @@ export const listPtmSchema = z.object({
     schoolId: z.string().uuid("Invalid schoolId").optional(),
     page: z.coerce.number().int().positive().optional(),
     pageSize: z.coerce.number().int().positive().max(100).optional(),
+    academicYearId: z.string().uuid("Invalid academicYearId").optional(),
   }),
 });
 

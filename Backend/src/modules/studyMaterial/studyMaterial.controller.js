@@ -19,7 +19,7 @@ async function uploadToStorage(file, type, user) {
 
 class StudyMaterialController {
   create = asyncHandler(async (req, res) => {
-    const { title, description, type, linkUrl, sectionId, subjectId } = req.body;
+    const { title, description, type, linkUrl, sectionId, subjectId, academicYearId } = req.body;
     if (!title || !title.trim()) throw ApiError.badRequestError("Title is required");
 
     // File OR URL — at least one required
@@ -39,6 +39,7 @@ class StudyMaterialController {
       linkUrl: linkUrl || null,
       sectionId: sectionId || null,
       subjectId: subjectId || null,
+      academicYearId: academicYearId || null,
       schoolId: req.user.schoolId,
     });
     return res.status(201).json(ApiResponse.created("Study material created", result));

@@ -17,12 +17,24 @@ class PortalService {
     return portalRepository.getAttendanceMonthSummary(portal.studentIds, y, m);
   }
 
+  // Archived yearly attendance history — child switch par active child ke
+  // studentIds se scope hota hai (middleware ?studentId= handle karta hai).
+  async getAttendanceYearlySummaries(portal) {
+    return portalRepository.getAttendanceYearSummaries(portal.studentIds);
+  }
+
   async getFees(portal) {
     const [records, summary] = await Promise.all([
       portalRepository.getFeeRecords(portal.studentIds),
       portalRepository.getFeeSummary(portal.studentIds),
     ]);
     return { records, summary };
+  }
+
+  // Archived yearly fee summary (PAID roll-ups) — purane saal ki history
+  // parent/student portal par; live records alag tab par dikhte hain.
+  async getFeeYearlySummaries(portal) {
+    return portalRepository.getFeeYearSummaries(portal.studentIds);
   }
 
   async getHomework(portal) {

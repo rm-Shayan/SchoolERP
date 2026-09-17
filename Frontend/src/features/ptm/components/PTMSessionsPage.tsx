@@ -5,6 +5,7 @@ import { useAppSelector } from '@/store/hooks';
 import { ptmService } from '@/lib/api';
 import type { PTMEvent } from '@/lib/api/ptmService';
 import { academicService, type Class } from '@/lib/api/academicService';
+import type { AcademicYear } from '@/types';
 import { PageHeader, Button, Card, CardContent, EmptyState, Badge } from '@/features/shared/components';
 import { ListSkeleton } from '@/features/shared/components';
 import toast from 'react-hot-toast';
@@ -23,23 +24,27 @@ export default function PTMSessionsPage() {
   const schoolId = school?.id ?? user?.schoolId;
   const [sessions, setSessions] = useState<PTMEvent[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
+  const [years, setYears] = useState<AcademicYear[]>([]);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<Tab>('upcoming');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<PTMEvent | null>(null);
   const [selClass, setSelClass] = useState('');
   const [selSection, setSelSection] = useState('');
+  const [selYear, setSelYear] = useState('');
 
   const load = useCallback(async () => {
     if (!schoolId) return;
     setLoading(true);
     try {
-      const [sess, cls] = await Promise.all([
+      const [sess, cls, yrs] = await Promise.all([
         ptmService.getBySchool(schoolId),
         academicService.getClassesBySchool(schoolId),
+        academicService.getYearsBySchool(schoolId),
       ]);
       setSessions(sess);
       setClasses(cls);
+      setYears(yrs);
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Failed to load PTM sessions');
     } finally {
@@ -56,12 +61,13 @@ export default function PTMSessionsPage() {
   const past = safeSessions.filter((s) => new Date(s.scheduledAt) < now || s.status === 'CANCELLED');
 
   const matchesFilter = useCallback((s: PTMEvent) => {
+    if (selYear && s.academicYearId !== selYear) return false;
     if (!selSection && !selClass) return true;
     if (s.scope === 'WHOLE_SCHOOL') return true;
     const inClass = !selClass || s.classIds?.includes(selClass);
     const inSection = !selSection || s.sectionIds?.includes(selSection);
     return Boolean(inClass && inSection);
-  }, [selClass, selSection]);
+  }, [selClass, selSection, selYear]);
   const filteredUpcoming = useMemo(() => upcoming.filter(matchesFilter), [upcoming, matchesFilter]);
   const filteredPast = useMemo(() => past.filter(matchesFilter), [past, matchesFilter]);
   const active = tab === 'upcoming' ? filteredUpcoming : filteredPast;
@@ -88,9 +94,9 @@ export default function PTMSessionsPage() {
         <div className="col-span-2 rounded-2xl border border-primary-100 bg-primary-50/60 px-4 py-3 sm:col-span-1"><p className="text-2xl font-bold text-primary-700">{classes.length}</p><p className="text-xs text-primary-700/70">Classes available</p></div>
       </div>
       <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
-        <PTMFilterBar classes={classes} selectedClassId={selClass} selectedSectionId={selSection}
-        onClassChange={setSelClass} onSectionChange={setSelSection}
-        onClear={() => { setSelClass(''); setSelSection(''); }} />
+        <PTMFilterBar classes={classes} years={years} selectedClassId={selClass} selectedSectionId={selSection} selectedYearId={selYear}
+        onClassChange={setSelClass} onSectionChange={setSelSection} onYearChange={setSelYear}
+        onClear={() => { setSelClass(''); setSelSection(''); setSelYear(''); }} />
       </div>
       <div className="inline-flex gap-1 bg-gray-100 rounded-xl p-1">
         {(['upcoming', 'past'] as Tab[]).map((key) => (

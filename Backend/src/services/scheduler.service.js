@@ -11,7 +11,11 @@ import { runHomeworkCleanupJob } from "../jobs/cron/homeworkCleanup.job.js";
 import { runConductCleanupJob } from "../jobs/cron/conductCleanup.job.js";
 import { runExamCleanupJob } from "../jobs/cron/examCleanup.job.js";
 import { runAttendanceCleanupJob } from "../jobs/cron/attendanceCleanup.job.js";
+import { runFeeArchiveJob } from "../jobs/cron/feeArchive.job.js";
 import { runPendingEmailJob } from "../jobs/cron/pendingEmail.job.js";
+import { runPtmCleanupJob } from "../jobs/cron/ptmCleanup.job.js";
+import { runStudyMaterialCleanupJob } from "../jobs/cron/studyMaterialCleanup.job.js";
+import { runAcademicYearRolloverJob } from "../jobs/cron/academicYearRollover.job.js";
 
 const logger = new Logger("scheduler-service");
 
@@ -19,19 +23,32 @@ const logger = new Logger("scheduler-service");
 // Multi-replica deployments me har instance node-cron chalata hai — bina lock
 // ke ek hi job (fee reminder, attendance alert, pending-email retry) har
 // replica se DUPLICATE bhejti hai. Lock jeetne wala hi job chalaata hai.
+//
+// Redis DOWN hai to enableOfflineQueue=false ki wajah se set() turant throw
+// karta hai. Aise me ham lock skipp karke job phir bhi chalate hain (no-lock
+// fallback) taake fee/absent alerts kabhi silent-fail na hone. Risk: Redis
+// down hone par multi-instance me duplicate run — acceptable, single-better
+// than "jobs kabhi na chalein".
 async function withJobLock(name, seconds, fn) {
   const key = `cron:lock:${name}`;
+  let acquired = false;
   try {
-    const acquired = await redis.set(key, "1", { NX: true, EX: seconds });
-    if (!acquired) {
-      logger.logger.info(`[CRON] ${name} skipped — another instance holds the lock`);
-      return;
-    }
+    acquired = await redis.set(key, "1", { NX: true, EX: seconds });
+  } catch (err) {
+    logger.logger.warn(`[CRON] ${name} — Redis unavailable (${err.message}); running WITHOUT lock`);
+  }
+  if (!acquired) {
+    logger.logger.info(`[CRON] ${name} skipped — another instance holds the lock`);
+    return;
+  }
+  try {
     await fn();
   } catch (err) {
     logger.logger.error(`[CRON] ${name} failed: ${err.message}`);
   } finally {
-    try { await redis.del(key); } catch { /* release best-effort */ }
+    if (acquired) {
+      try { await redis.del(key); } catch { /* release best-effort */ }
+    }
   }
 }
 
@@ -47,9 +64,13 @@ const lockFns = {
   conductCleanup: () => withJobLock("conduct-cleanup", 3600, runConductCleanupJob),
   examCleanup: () => withJobLock("exam-cleanup", 3600, runExamCleanupJob),
   attendanceCleanup: () => withJobLock("attendance-cleanup", 3600, runAttendanceCleanupJob),
+  feeArchive: () => withJobLock("fee-archive", 3600, runFeeArchiveJob),
   cleanup: () => withJobLock("cleanup", 3600, runCleanupJob),
   autoVoucher: () => withJobLock("auto-voucher", 3600, runAutoVoucherJob),
   pendingEmail: () => withJobLock("pending-email", 2850, runPendingEmailJob),
+  ptmCleanup: () => withJobLock("ptm-cleanup", 3600, runPtmCleanupJob),
+  studyMaterialCleanup: () => withJobLock("study-material-cleanup", 3600, runStudyMaterialCleanupJob),
+  academicYearRollover: () => withJobLock("academic-year-rollover", 3600, runAcademicYearRolloverJob),
 };
 
 class SchedulerService {
@@ -88,6 +109,18 @@ class SchedulerService {
 
     // Data Cleanup (daily 3:00 AM)
     cron.schedule("0 3 * * *", lockFns.cleanup);
+
+    // Fee Year-End Archive (daily 3:30 AM) — PAID records only
+    cron.schedule("30 3 * * *", lockFns.feeArchive);
+
+    // PTM Sessions Cleanup (daily 3:40 AM)
+    cron.schedule("40 3 * * *", lockFns.ptmCleanup);
+
+    // Study Material Cleanup (daily 3:50 AM)
+    cron.schedule("50 3 * * *", lockFns.studyMaterialCleanup);
+
+    // Academic Year Auto-Rollover (daily 12:10 AM)
+    cron.schedule("10 0 * * *", lockFns.academicYearRollover);
 
     // Monthly Auto Voucher (1st of month, 12:05 AM)
     cron.schedule("5 0 1 * *", lockFns.autoVoucher);

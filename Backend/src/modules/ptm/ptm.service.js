@@ -87,12 +87,16 @@ class PtmService {
     await this.validateTeachers(targetSchoolId, data.teacherIds);
     const targets = await this.resolveScope(targetSchoolId, data);
 
+    const currentYear = await ptmRepository.findCurrentAcademicYear(targetSchoolId);
+    const academicYearId = data.academicYearId || currentYear?.id || null;
+
     const session = await ptmRepository.createSession({
       schoolId: targetSchoolId,
       title: data.title,
       description: data.description || null,
       scheduledAt: new Date(data.scheduledAt),
       location: data.location || null,
+      academicYearId,
       ...targets,
       teacherIds: [...new Set(data.teacherIds || [])],
     });
@@ -120,12 +124,13 @@ class PtmService {
     return { session, notifiedParents: null };
   }
 
-  async listSessions(user, schoolId, { page = 1, pageSize = 50 }) {
+  async listSessions(user, schoolId, { page = 1, pageSize = 50, academicYearId }) {
     const targetSchoolId = getEffectiveSchoolId(user, schoolId);
     assertSchoolAccess(user, targetSchoolId);
     const result = await ptmRepository.listSessionsBySchool(targetSchoolId, {
       page: Math.max(1, parseInt(page, 10) || 1),
       pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50)),
+      academicYearId: academicYearId || undefined,
     });
     return { ...result, items: await this.decorateSessions(targetSchoolId, result.items) };
   }

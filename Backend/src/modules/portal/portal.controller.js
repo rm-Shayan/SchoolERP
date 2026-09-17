@@ -3,10 +3,15 @@ import ApiResponse from "../../lib/utils/ApiResponse.js";
 import { getCachedPortal, setCachedPortal, bustPortalCache } from "../../lib/portalCache.js";
 import { streamPdf, buildExamDateSheetPdf, buildTimetablePdf } from "../../lib/pdf/reportPdf.js";
 
+// Child-switch safety: cache key me scoped studentIds rakhne se parent jis bache
+// par switch kare, usi ka data milega — pichle bache ki stale cache nahi.
+const cacheScope = (req) => req.portal.studentIds.join(",");
+const cachePortalKey = (req) => `${req.portal.type}:${req.portal.id}:${cacheScope(req)}`;
+
 class PortalController {
   getOverview = async (req, res, next) => {
     try {
-      const pk = `${req.portal.type}:${req.portal.id}`;
+      const pk = cachePortalKey(req);
       const cached = await getCachedPortal(pk, "overview");
       if (cached) return res.json(ApiResponse.ok("Portal overview", cached));
       const data = await portalService.getOverview(req.portal);
@@ -18,7 +23,7 @@ class PortalController {
   getAttendance = async (req, res, next) => {
     try {
       const { month, year } = req.query;
-      const pk = `${req.portal.type}:${req.portal.id}`;
+      const pk = cachePortalKey(req);
       const ck = `att:${month || ""}:${year || ""}`;
       const cached = await getCachedPortal(pk, "attendance", ck);
       if (cached) return res.json(ApiResponse.ok("Attendance data", cached));
@@ -28,9 +33,21 @@ class PortalController {
     } catch (e) { next(e); }
   };
 
+  getAttendanceYearlySummaries = async (req, res, next) => {
+    try {
+      const pk = cachePortalKey(req);
+      const ck = `ys:${cacheScope(req)}`;
+      const cached = await getCachedPortal(pk, "attendance", ck);
+      if (cached) return res.json(ApiResponse.ok("Yearly attendance history", cached));
+      const data = await portalService.getAttendanceYearlySummaries(req.portal);
+      await setCachedPortal(pk, "attendance", data, ck);
+      res.json(ApiResponse.ok("Yearly attendance history", data));
+    } catch (e) { next(e); }
+  };
+
   getFees = async (req, res, next) => {
     try {
-      const pk = `${req.portal.type}:${req.portal.id}`;
+      const pk = cachePortalKey(req);
       const cached = await getCachedPortal(pk, "fees");
       if (cached) return res.json(ApiResponse.ok("Fee data", cached));
       const data = await portalService.getFees(req.portal);
@@ -39,9 +56,21 @@ class PortalController {
     } catch (e) { next(e); }
   };
 
+  getFeeYearlySummaries = async (req, res, next) => {
+    try {
+      const pk = cachePortalKey(req);
+      const ck = `ys:${cacheScope(req)}`;
+      const cached = await getCachedPortal(pk, "fees", ck);
+      if (cached) return res.json(ApiResponse.ok("Yearly fee history", cached));
+      const data = await portalService.getFeeYearlySummaries(req.portal);
+      await setCachedPortal(pk, "fees", data, ck);
+      res.json(ApiResponse.ok("Yearly fee history", data));
+    } catch (e) { next(e); }
+  };
+
   getHomework = async (req, res, next) => {
     try {
-      const pk = `${req.portal.type}:${req.portal.id}`;
+      const pk = cachePortalKey(req);
       const cached = await getCachedPortal(pk, "homework");
       if (cached) return res.json(ApiResponse.ok("Homework data", cached));
       const data = await portalService.getHomework(req.portal);
@@ -52,7 +81,7 @@ class PortalController {
 
   getCirculars = async (req, res, next) => {
     try {
-      const pk = `${req.portal.type}:${req.portal.id}`;
+      const pk = cachePortalKey(req);
       const cached = await getCachedPortal(pk, "circulars");
       if (cached) return res.json(ApiResponse.ok("Circulars", cached));
       const data = await portalService.getCirculars(req.portal);
@@ -63,7 +92,7 @@ class PortalController {
 
   getResults = async (req, res, next) => {
     try {
-      const pk = `${req.portal.type}:${req.portal.id}`;
+      const pk = cachePortalKey(req);
       const cached = await getCachedPortal(pk, "results");
       if (cached) return res.json(ApiResponse.ok("Exam results", cached));
       const data = await portalService.getResults(req.portal);
@@ -74,7 +103,7 @@ class PortalController {
 
   getTimetable = async (req, res, next) => {
     try {
-      const pk = `${req.portal.type}:${req.portal.id}`;
+      const pk = cachePortalKey(req);
       const cached = await getCachedPortal(pk, "timetable");
       if (cached) return res.json(ApiResponse.ok("Timetable", cached));
       const data = await portalService.getTimetable(req.portal);
@@ -85,7 +114,7 @@ class PortalController {
 
   getConduct = async (req, res, next) => {
     try {
-      const pk = `${req.portal.type}:${req.portal.id}`;
+      const pk = cachePortalKey(req);
       const cached = await getCachedPortal(pk, "conduct");
       if (cached) return res.json(ApiResponse.ok("Conduct remarks", cached));
       const data = await portalService.getConduct(req.portal);
@@ -96,7 +125,7 @@ class PortalController {
 
   getPTM = async (req, res, next) => {
     try {
-      const pk = `${req.portal.type}:${req.portal.id}`;
+      const pk = cachePortalKey(req);
       const cached = await getCachedPortal(pk, "ptm");
       if (cached) return res.json(ApiResponse.ok("PTM sessions", cached));
       const data = await portalService.getPTM(req.portal);
@@ -107,7 +136,7 @@ class PortalController {
 
   getLeaveRequests = async (req, res, next) => {
     try {
-      const pk = `${req.portal.type}:${req.portal.id}`;
+      const pk = cachePortalKey(req);
       const cached = await getCachedPortal(pk, "leave");
       if (cached) return res.json(ApiResponse.ok("Leave requests", cached));
       const data = await portalService.getLeaveRequests(req.portal);
@@ -119,14 +148,14 @@ class PortalController {
   createLeaveRequest = async (req, res, next) => {
     try {
       const data = await portalService.createLeaveRequest(req.portal, req.body);
-      bustPortalCache(`${req.portal.type}:${req.portal.id}`);
+      bustPortalCache(cachePortalKey(req));
       res.status(201).json(ApiResponse.created("Leave request submitted", data));
     } catch (e) { next(e); }
   };
 
   getExams = async (req, res, next) => {
     try {
-      const pk = `${req.portal.type}:${req.portal.id}`;
+      const pk = cachePortalKey(req);
       const cached = await getCachedPortal(pk, "exams");
       if (cached) return res.json(ApiResponse.ok("Exam date sheets", cached));
       const data = await portalService.getExams(req.portal);
@@ -157,7 +186,7 @@ class PortalController {
   updateProfile = async (req, res, next) => {
     try {
       const data = await portalService.updateProfile(req.portal, req.body);
-      bustPortalCache(`${req.portal.type}:${req.portal.id}`);
+      bustPortalCache(cachePortalKey(req));
       res.json(ApiResponse.ok("Profile updated", data));
     } catch (e) { next(e); }
   };

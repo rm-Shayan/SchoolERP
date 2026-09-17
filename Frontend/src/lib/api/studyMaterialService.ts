@@ -29,6 +29,8 @@ export interface StudyMaterial {
   sectionId?: string | null;
   subjectId?: string | null;
   createdById?: string | null;
+  academicYearId?: string | null;
+  academicYear?: { id: string; name: string } | null;
   createdAt: string;
   updatedAt: string;
   createdBy?: StudyMaterialCreator | null;
@@ -58,6 +60,7 @@ export const studyMaterialService = {
     subjectId?: string;
     type?: string;
     createdById?: string;
+    academicYearId?: string;
     page?: number;
     pageSize?: number;
   }): Promise<StudyMaterialListResponse> => {

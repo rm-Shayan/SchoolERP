@@ -3,6 +3,17 @@ import Logger from "../../lib/utils/logger.js";
 
 const logger = new Logger("attendance-cleanup-job");
 
+// Retention: saal khatam hone ke baad itne din (default 180 = 6 mahine) raw
+// attendance LIVE rehti hai (recent queries/verifications), phir summarize
+// kar ke delete — history AttendanceYearSummary me rehti hai.
+const ENDED_YEAR_GRACE_DAYS = Number(process.env.ENDED_YEAR_GRACE_DAYS) || 180;
+
+function graceDate() {
+  const d = new Date();
+  d.setDate(d.getDate() - ENDED_YEAR_GRACE_DAYS);
+  return d;
+}
+
 // AttendanceStatus → AttendanceYearSummary column mapping.
 const STATUS_TO_FIELD = {
   PRESENT: "daysPresent",
@@ -15,10 +26,12 @@ const STATUS_TO_FIELD = {
 /**
  * Academic Year End Attendance Archive (node-cron — daily 2:45 AM).
  *
- * Jis academic year ki endDate guzar gayi, us saal ki RAW attendance records
- * ko per-student per-year AttendanceYearSummary mein roll-up karke delete kar
- * deta hai. Naya academic year LIVE records se fresh start karta hai; purana
- * saal ki history summary ke roop mein mehfooz rehti hai
+ * Jis academic year ki endDate guzar gayi ho AUR grace period (default 6
+ * mahine) guzar chuka ho, us saal ki RAW attendance records ko per-student
+ * per-year AttendanceYearSummary mein roll-up karke delete kar deta hai.
+ * Recent year ka raw data grace tak live rehta hai; summary hamesha rehti.
+ * Naya academic year LIVE records se fresh start karta hai; purana saal ki
+ * history summary ke roop mein mehfooz rehti hai
  * (GET /attendance/students/:id/yearly-summaries usi ko parse karti hai).
  *
  * Idempotent: purane summaries pehle delete phir dobara create — is liye job
@@ -28,7 +41,7 @@ export async function runAttendanceCleanupJob() {
   logger.logger.info("[AttendanceCleanup] Starting academic-year-end archive sweep...");
   try {
     const endedYears = await prisma.academicYear.findMany({
-      where: { endDate: { lt: new Date() } },
+      where: { endDate: { lt: graceDate() } },
       select: { id: true, schoolId: true, name: true, startDate: true, endDate: true },
       orderBy: { endDate: "desc" },
     });

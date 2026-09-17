@@ -347,10 +347,11 @@ class PromotionService {
       link: "/students",
     }).catch(() => {});
 
-    // Parent ko bhi portal notification jaye
-    if (student.parent) {
+    // Parent ko bhi portal notification jaye — sirf us parent ke portal me.
+    if (student.parent?.id) {
       portalNotificationService.create({
         schoolId: student.schoolId, senderName: "System",
+        recipientId: student.parent.id,
         title: status === "GRADUATED" ? "STUDENT_GRADUATED" : "STUDENT_WITHDRAWN",
         body: `${student.firstName} ${student.lastName} ${status === "GRADUATED" ? "apne class me graduate hua hai" : "school se withdraw ho gaya hai"} — ${year.name}.${remarks ? ` Remarks: ${remarks}` : ""}`,
         category: "ADMISSION",

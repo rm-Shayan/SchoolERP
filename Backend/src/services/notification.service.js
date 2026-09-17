@@ -84,15 +84,19 @@ class NotificationService {
    * In-app (PORTAL) dispatch — NO email/SMS goes out. Sirf NotificationLog
    * entry (channel=PORTAL) + dashboard realtime emit. Fee PAID jaise alerts
    * ke liye jo parent ko email pe nahi bhejne.
+   *
+   * @param {string} [params.recipientId] — parent portal user id. Jab set ho
+   *   to notification SIRF us parent ko dikhti hai (no school-wide leak).
+   * @param {string} [params.category] — FEE/ATTENDANCE/etc (default ATTENDANCE).
    */
-  async notifyParentPortal({ schoolId, title = "School ERP Notification", message, details = [] }) {
+  async notifyParentPortal({ schoolId, recipientId, title = "School ERP Notification", message, details = [], category = "ATTENDANCE" }) {
     if (!schoolId) return { success: false, reason: "No schoolId" };
     const detailsText = details.length
       ? "\n" + details.map(([label, value]) => `${label}: ${value}`).join("\n")
       : "";
     const record = await portalNotificationService.create({
-      schoolId, senderName: "System", title,
-      body: `${message}${detailsText}`, category: "ATTENDANCE",
+      schoolId, recipientId, senderName: "System", title,
+      body: `${message}${detailsText}`, category,
     });
     return record ? { success: true, channel: "PORTAL", id: record.id } : { success: false };
   }

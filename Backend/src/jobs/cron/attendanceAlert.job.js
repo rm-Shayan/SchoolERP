@@ -5,6 +5,7 @@ import portalNotificationService from "../../modules/notification/notification.p
 import { emitToRoom } from "../../config/websocket.js";
 import redis from "../../config/redis.js";
 import leaveService from "../../modules/leave/leave.service.js";
+import { dedupHas, dedupSet } from "./dedupCache.js";
 
 const logger = new Logger("attendance-alert-job");
 
@@ -33,10 +34,17 @@ function isOffDay(school, today) {
  * window) parents + admins are notified about:
  *   - students marked LATE today, and
  *   - students with no check-in at all (absent).
- * Redis dedup: once per school per date. No auto-ABSENT marking here — the
- * system only records LATE (lateMark job) and alerts; history is preserved.
+ * Redis dedup: once per school per date (+ in-memory fallback jab Redis down).
+ * No auto-ABSENT marking here — the system only records LATE (lateMark job)
+ * and alerts; history is preserved.
+ *
+ * Options:
+ *   schoolId — sirf is school ke liye chalayein (manual admin trigger).
+ *   force    — alert-time / off-day gate aur same-day dedup KO CROSS karke
+ *              FORCE send karein (manual "Send Absent Alerts" button).
  */
-export async function runAttendanceAlertJob() {
+export async function runAttendanceAlertJob(options = {}) {
+  const { force = false, schoolId = null } = options;
   logger.logger.info("[AttAlert] Starting attendance alert sweep...");
   const now = new Date();
   // DATE column UTC-midnight convention (see lateMark.job.js)
@@ -47,20 +55,26 @@ export async function runAttendanceAlertJob() {
 
   try {
     const schools = await prisma.school.findMany({
+      where: schoolId ? { id: schoolId } : {},
       select: { id: true, name: true, attendanceAlertTime: true, weeklyOff: true, offDays: true },
     });
 
     for (const school of schools) {
       // Weekly off (weekend) or holiday set → school closed, no absent/late alerts.
-      if (isOffDay(school, today)) continue;
+      if (!force && isOffDay(school, today)) continue;
 
       const alertMin = minutesOf(school.attendanceAlertTime || "09:30");
-      if (nowMin < alertMin) continue;
+      if (!force && nowMin < alertMin) continue;
 
       const sentKey = `att_alert:${school.id}:${dateKey}`;
-      try {
-        if (await redis.get(sentKey)) continue;
-      } catch (_) {}
+      if (!force) {
+        // Redis-dedup + in-memory fallback (Redis down par emails dubara na jayein).
+        try {
+          if ((await redis.get(sentKey)) || dedupHas(sentKey)) continue;
+        } catch (_) {
+          if (dedupHas(sentKey)) continue;
+        }
+      }
 
       const activeStudents = await prisma.student.findMany({
         where: { schoolId: school.id, status: "ACTIVE" },
@@ -71,6 +85,7 @@ export async function runAttendanceAlertJob() {
       });
       if (activeStudents.length === 0) {
         try { await redis.setEx(sentKey, 86400, "no_students"); } catch (_) {}
+        dedupSet(sentKey);
         continue;
       }
 
@@ -97,6 +112,8 @@ export async function runAttendanceAlertJob() {
           const message = `Dear ${student.parent?.name || "Parent"}, your child ${name} (${className}) arrived after the attendance cutoff today.`;
           notificationService.notifyParentPortal({
             schoolId: school.id,
+            // Parent ko sirf APNE bache ki alert — no school-wide leak.
+            recipientId: student.parent?.id,
             message,
             title: `Attendance Alert — Late`,
             details: [
@@ -105,14 +122,30 @@ export async function runAttendanceAlertJob() {
               ["Status", "Late"],
             ],
           }).catch(() => {});
-        } else if (student.parent?.email) {
-          const key = student.parent.email.trim().toLowerCase();
-          if (!absentByEmail.has(key)) {
-            absentByEmail.set(key, { parentName: student.parent.name, parentPhone: student.parent.phone, kids: [] });
+        } else if (isAbsent) {
+          // Absent — parent ko apni targeted portal notification (email ke
+          // alawa) taake portal me sirf uske bache ka alert aaye.
+          notificationService.notifyParentPortal({
+            schoolId: school.id,
+            recipientId: student.parent?.id,
+            message: `Dear ${student.parent?.name || "Parent"}, your child ${name} (${className}) has no attendance check-in recorded today. If this is unexpected, please contact the school office.`,
+            title: `Attendance Alert — Absent`,
+            details: [
+              ["Student", name],
+              ["Class", className || "—"],
+              ["Status", "Absent"],
+            ],
+          }).catch(() => {});
+          if (student.parent?.email) {
+            const key = student.parent.email.trim().toLowerCase();
+            if (!absentByEmail.has(key)) {
+              absentByEmail.set(key, { parentName: student.parent.name, parentPhone: student.parent.phone, kids: [] });
+            }
+            absentByEmail.get(key).kids.push({ name, className });
           }
-          absentByEmail.get(key).kids.push({ name, className });
         }
-        // Portal notification — branch feed me alert dikhe (har bachche ke liye).
+        // Portal notification — admin/staff branch feed me dikhe. Portal users
+        // (parent/student) ise nahi dekh sakte (sirf apni targeted + circular).
         portalNotificationService.create({
           schoolId: school.id,
           senderName: "Attendance Alert",
@@ -150,6 +183,7 @@ export async function runAttendanceAlertJob() {
       // baad email karti hai.
       if (absentByEmail.size > 0) {
         try { await redis.setEx(sentKey, 86400, "sent"); } catch (_) {}
+        dedupSet(sentKey);
       }
       if (absentByEmail.size > 0) {
         emitToRoom(`school:${school.id}`, "attendance_alert_completed", {

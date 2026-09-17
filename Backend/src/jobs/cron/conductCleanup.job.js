@@ -3,18 +3,29 @@ import Logger from "../../lib/utils/logger.js";
 
 const logger = new Logger("conduct-cleanup-job");
 
+// Retention: saal khatam hone ke baad itne din (default 180 = 6 mahine)
+// remarks LIVE rehte hain (parents/TC/queries ke liye), phir delete.
+const ENDED_YEAR_GRACE_DAYS = Number(process.env.ENDED_YEAR_GRACE_DAYS) || 180;
+
+function graceDate() {
+  const d = new Date();
+  d.setDate(d.getDate() - ENDED_YEAR_GRACE_DAYS);
+  return d;
+}
+
 /**
  * Academic Year End Conduct Remarks Cleanup (node-cron — daily 2:15 AM).
  *
  * Same pattern as homework cleanup: jis branch ka academic year khatam ho
- * chuka hai (endDate < aaj), us saal ke saare conduct remarks delete kar
- * dete hain. Purana data table ko bharne se pehle hi saaf.
+ * chuka ho aur grace period (default 6 mahine) guzar chuka ho, us saal ke
+ * remarks delete kar dete hain. Grace important hai — remarks saal khatam
+ * hote hi nahi mitte, taki parent/student unhe dekh sakein.
  */
 export async function runConductCleanupJob() {
   logger.logger.info("[ConductCleanup] Starting academic-year-end remarks sweep...");
   try {
     const endedYears = await prisma.academicYear.findMany({
-      where: { endDate: { lt: new Date() } },
+      where: { endDate: { lt: graceDate() } },
       select: { id: true, schoolId: true, name: true, startDate: true, endDate: true },
       orderBy: { endDate: "desc" },
     });

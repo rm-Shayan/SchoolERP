@@ -3,19 +3,31 @@ import Logger from "../../lib/utils/logger.js";
 
 const logger = new Logger("exam-cleanup-job");
 
+// Retention: saal khatam hone ke baad itne din (default 180 = 6 mahine)
+// exams/results LIVE rehte hain, phir delete hote hain — recent results
+// turant nahi mitte (result history parents/TC ke liye zaroori).
+const ENDED_YEAR_GRACE_DAYS = Number(process.env.ENDED_YEAR_GRACE_DAYS) || 180;
+
+function graceDate() {
+  const d = new Date();
+  d.setDate(d.getDate() - ENDED_YEAR_GRACE_DAYS);
+  return d;
+}
+
 /**
  * Academic Year End Exam + Terms Cleanup (node-cron — daily 2:30 AM).
  *
  * Conduct remarks ke sath jaisa pattern: jis academic year ki endDate guzar
- * gayi, us saal ke saare TERMS delete kar deta hai — FK cascade se exams,
- * date-sheet papers (ExamPaper) aur results (ExamResult) sab khud delete ho
- * jate hain. Purana data tabla bharne nahi deta.
+ * gayi ho AUR grace period (default 6 mahine) bhi guzar chuka ho, us saal ke
+ * saare TERMS delete kar deta hai — FK cascade se exams, date-sheet papers
+ * (ExamPaper) aur results (ExamResult) sab delete ho jate hain. Grace recent
+ * results ko turant mitne se bachata hai.
  */
 export async function runExamCleanupJob() {
   logger.logger.info("[ExamCleanup] Starting academic-year-end exam/term sweep...");
   try {
     const endedYears = await prisma.academicYear.findMany({
-      where: { endDate: { lt: new Date() } },
+      where: { endDate: { lt: graceDate() } },
       select: { id: true, schoolId: true, name: true },
       orderBy: { endDate: "desc" },
     });

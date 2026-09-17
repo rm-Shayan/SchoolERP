@@ -290,17 +290,19 @@ class FeeRepository {
   }
 
   /**
-   * Year-end archive (attendance archive jaisa hi pattern): cutoff se pehle ke
-   * saare fee records per-student per-year summary mein roll-up hokar delete.
+   * Year-end fee archive (attendance archive jaisa hi pattern): cutoff se pehle
+   * ke sirf PAID fee records per-student per-year FeeYearSummary mein roll-up
+   * hokar delete. UNPAID/PARTIAL/OVERDUE records kabhi archive nahi hote —
+   * outstanding collect karna hai, is lye woh live rehte hain.
    * Re-run safe — summaries upsert hoti hain, delete sirf fetched records par.
    */
   async archiveFeeRecords(cutoff) {
     const summary = { studentsProcessed: 0, recordsArchived: 0, summariesCreated: 0 };
 
-    // Single query: fetch ALL records before cutoff with schoolId embedded.
+    // Single query: fetch ONLY PAID records before cutoff with schoolId embedded.
     // Eliminates N+1: no per-student groupBy + findMany + findUnique.
     const allRecords = await prisma.feeRecord.findMany({
-      where: { dueDate: { lt: cutoff } },
+      where: { dueDate: { lt: cutoff }, status: "PAID" },
       select: {
         id: true, studentId: true, dueDate: true,
         totalAmount: true, paidAmount: true, status: true,

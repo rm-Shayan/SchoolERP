@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import Link from 'next/link';
 import { applyPortalThemeToRoot, clearPortalThemeFromRoot } from '@/lib/theme';
 
 interface ErrorProps {
@@ -42,9 +43,9 @@ export default function ParentError({ error, reset }: ErrorProps) {
         <button onClick={reset} className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50">
           Try again
         </button>
-        <a href="/login" className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700">
+        <Link href="/login" className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700">
           Go to Login
-        </a>
+        </Link>
       </div>
     </div>
   );

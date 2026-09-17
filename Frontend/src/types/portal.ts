@@ -51,3 +51,30 @@ export interface PortalFeeResponse {
   records: PortalFeeRecord[];
   summary: PortalFeeSummary;
 }
+
+export interface PortalAttendanceYearSummary {
+  id: string;
+  yearLabel: string;
+  dateFrom: string;
+  dateTo: string;
+  daysPresent: number;
+  daysLate: number;
+  daysAbsent: number;
+  daysLeave: number;
+  daysManual: number;
+  totalDays: number;
+}
+
+export interface PortalFeeYearSummary {
+  id: string;
+  yearLabel: string;
+  dateFrom: string;
+  dateTo: string;
+  recordCount: number;
+  totalCharged: string;
+  totalPaid: string;
+  paidRecords: number;
+  partialRecords: number;
+  unpaidRecords: number;
+  overdueRecords: number;
+}

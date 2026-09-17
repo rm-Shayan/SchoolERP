@@ -80,15 +80,22 @@ class PtmRepository {
     return prisma.pTMSession.delete({ where: { id } });
   }
 
-  async listSessionsBySchool(schoolId, { page, pageSize }) {
+  async findCurrentAcademicYear(schoolId) {
+    return prisma.academicYear.findFirst({ where: { schoolId, isCurrent: true } });
+  }
+
+  async listSessionsBySchool(schoolId, { page, pageSize, academicYearId }) {
+    const where = { schoolId };
+    if (academicYearId) where.academicYearId = academicYearId;
     const [items, total] = await Promise.all([
       prisma.pTMSession.findMany({
-        where: { schoolId },
+        where,
+        include: { academicYear: { select: { id: true, name: true } } },
         orderBy: { scheduledAt: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      prisma.pTMSession.count({ where: { schoolId } }),
+      prisma.pTMSession.count({ where }),
     ]);
     return { items, total, page, pageSize };
   }

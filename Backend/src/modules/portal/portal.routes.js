@@ -16,7 +16,9 @@ router.post("/me/avatar", imageUpload.single("file"), portalController.uploadAva
 
 router.get("/overview", portalController.getOverview);
 router.get("/attendance", portalController.getAttendance);
+router.get("/attendance/yearly-summaries", portalController.getAttendanceYearlySummaries);
 router.get("/fees", portalController.getFees);
+router.get("/fees/yearly-summaries", portalController.getFeeYearlySummaries);
 router.get("/homework", portalController.getHomework);
 router.get("/circulars", portalController.getCirculars);
 router.get("/results", portalController.getResults);

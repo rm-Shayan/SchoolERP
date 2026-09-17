@@ -4,8 +4,18 @@ import { emitToRoom } from "../../config/websocket.js";
 import redis from "../../config/redis.js";
 import leaveService from "../../modules/leave/leave.service.js";
 import portalNotificationService from "../../modules/notification/notification.portalService.js";
+import { dedupHas, dedupSet } from "./dedupCache.js";
 
 const logger = new Logger("late-mark-job");
+
+/** Redis unavailable ho tab bhi job chalani hai — dedup check fail-open. */
+async function alreadyMarked(key) {
+  try {
+    return (await redis.get(key)) || dedupHas(key);
+  } catch (_) {
+    return dedupHas(key);
+  }
+}
 
 function minutesOf(time) {
   const [h, m] = time.split(":").map(Number);
@@ -73,35 +83,33 @@ export async function runLateMarkJob() {
       // === STEP 1: Mark LATE after cutoffTime ===
       if (nowMin >= cutoffMin) {
         const lateKey = `late_mark:${school.id}:${dateKey}`;
-        try {
-          if (!(await redis.get(lateKey))) {
-            const marked = await markStudentsWithStatus(school, today, "LATE", school.attendanceCutoffTime);
-            totalLate += marked;
-            try { await redis.setEx(lateKey, 86400, "sent"); } catch (_) {}
-            if (marked > 0) {
-              emitToRoom(`school:${school.id}`, "auto_late_completed", { schoolId: school.id, count: marked, date: today });
-            }
+        if (!(await alreadyMarked(lateKey))) {
+          const marked = await markStudentsWithStatus(school, today, "LATE", school.attendanceCutoffTime);
+          totalLate += marked;
+          try { await redis.setEx(lateKey, 86400, "sent"); } catch (_) {}
+          dedupSet(lateKey);
+          if (marked > 0) {
+            emitToRoom(`school:${school.id}`, "auto_late_completed", { schoolId: school.id, count: marked, date: today });
           }
-        } catch (_) {}
+        }
       }
 
       // === STEP 2: Upgrade LATE → ABSENT after absentTime ===
       if (nowMin >= absentMin) {
         const absentKey = `absent_mark:${school.id}:${dateKey}`;
-        try {
-          if (!(await redis.get(absentKey))) {
-            const upgraded = await markLateToAbsent(school, today, school.attendanceAbsentTime);
-            totalAbsent += upgraded.length;
-            // Auto-absent ke baad parent/student portal notification (har bachche ka)
-            for (const stu of upgraded) {
-              await notifyAbsentToPortal(school, stu, school.attendanceAbsentTime).catch(() => {});
-            }
-            try { await redis.setEx(absentKey, 86400, "sent"); } catch (_) {}
-            if (upgraded.length > 0) {
-              emitToRoom(`school:${school.id}`, "auto_absent_completed", { schoolId: school.id, count: upgraded.length, date: today });
-            }
+        if (!(await alreadyMarked(absentKey))) {
+          const upgraded = await markLateToAbsent(school, today, school.attendanceAbsentTime);
+          totalAbsent += upgraded.length;
+          // Auto-absent ke baad parent/student portal notification (har bachche ka)
+          for (const stu of upgraded) {
+            await notifyAbsentToPortal(school, stu, school.attendanceAbsentTime).catch(() => {});
           }
-        } catch (_) {}
+          try { await redis.setEx(absentKey, 86400, "sent"); } catch (_) {}
+          dedupSet(absentKey);
+          if (upgraded.length > 0) {
+            emitToRoom(`school:${school.id}`, "auto_absent_completed", { schoolId: school.id, count: upgraded.length, date: today });
+          }
+        }
       }
     }
 
@@ -166,6 +174,7 @@ async function markLateToAbsent(school, today, absentTime) {
       student: {
         select: {
           id: true, firstName: true, lastName: true,
+          parent: { select: { id: true } },
           section: { select: { name: true, class: { select: { name: true } } } },
         },
       },
@@ -183,10 +192,27 @@ async function markLateToAbsent(school, today, absentTime) {
   return lateNoCheckin.map((r) => r.student);
 }
 
-/** Auto-absent hone par har affected student ke liye portal notification. */
+/** Auto-absent hone par affected student ke parent ko targeted + admin feed. */
 async function notifyAbsentToPortal(school, stu, absentTime) {
   const name = `${stu.firstName} ${stu.lastName}`.trim();
   const className = `${stu.section?.class?.name || ""} ${stu.section?.name || ""}`.trim();
+
+  // Parent (apne bache ki) — sirf us parent ke portal me dikhegi.
+  if (stu.parent?.id) {
+    await portalNotificationService.create({
+      schoolId: school.id,
+      senderName: "Attendance System",
+      recipientId: stu.parent.id,
+      title: "ATTENDANCE_ABSENT",
+      body: `Dear Parent, your child ${name}${className ? ` (${className})` : ""} was marked ABSENT — no check-in recorded by ${absentTime}. If this is unexpected, please contact the school office.`,
+      category: "STUDENT",
+      refType: "ATTENDANCE",
+      refId: stu.id,
+      link: "/attendance",
+    }).catch(() => {});
+  }
+
+  // Admin/staff branch feed — portal users ise nahi dekh sakte.
   return portalNotificationService.create({
     schoolId: school.id,
     senderName: "Attendance System",
@@ -239,17 +265,15 @@ export async function runStartupCatchup() {
     const absentMin = minutesOf(school.attendanceAbsentTime || "10:00");
 
     // STEP 1: Agar cutoff time baad hai aur LATE mark nahi hua
-    if (nowMin >= cutoffMin) {
-      const lateKey = `late_mark:${school.id}:${dateKey}`;
+    if (nowMin >= cutoffMin && !(await alreadyMarked(`late_mark:${school.id}:${dateKey}`))) {
       try {
-        if (!(await redis.get(lateKey))) {
-          const marked = await markStudentsWithStatus(school, today, "LATE", school.attendanceCutoffTime);
-          totalLate += marked;
-          try { await redis.setEx(lateKey, 86400, "sent"); } catch (_) {}
-          if (marked > 0) {
-            logger.logger.info(`[Startup Catchup] ${school.name}: marked ${marked} students LATE`);
-            emitToRoom(`school:${school.id}`, "auto_late_completed", { schoolId: school.id, count: marked, date: today });
-          }
+        const marked = await markStudentsWithStatus(school, today, "LATE", school.attendanceCutoffTime);
+        totalLate += marked;
+        try { await redis.setEx(`late_mark:${school.id}:${dateKey}`, 86400, "sent"); } catch (_) {}
+        dedupSet(`late_mark:${school.id}:${dateKey}`);
+        if (marked > 0) {
+          logger.logger.info(`[Startup Catchup] ${school.name}: marked ${marked} students LATE`);
+          emitToRoom(`school:${school.id}`, "auto_late_completed", { schoolId: school.id, count: marked, date: today });
         }
       } catch (err) {
         logger.logger.error(`[Startup Catchup] ${school.name} LATE error: ${err.message}`);
@@ -257,20 +281,18 @@ export async function runStartupCatchup() {
     }
 
     // STEP 2: Agar absent time baad hai aur ABSENT mark nahi hua
-    if (nowMin >= absentMin) {
-      const absentKey = `absent_mark:${school.id}:${dateKey}`;
+    if (nowMin >= absentMin && !(await alreadyMarked(`absent_mark:${school.id}:${dateKey}`))) {
       try {
-        if (!(await redis.get(absentKey))) {
-          const upgraded = await markLateToAbsent(school, today, school.attendanceAbsentTime);
-          totalAbsent += upgraded.length;
-          for (const stu of upgraded) {
-            await notifyAbsentToPortal(school, stu, school.attendanceAbsentTime).catch(() => {});
-          }
-          try { await redis.setEx(absentKey, 86400, "sent"); } catch (_) {}
-          if (upgraded.length > 0) {
-            logger.logger.info(`[Startup Catchup] ${school.name}: upgraded ${upgraded.length} students to ABSENT`);
-            emitToRoom(`school:${school.id}`, "auto_absent_completed", { schoolId: school.id, count: upgraded.length, date: today });
-          }
+        const upgraded = await markLateToAbsent(school, today, school.attendanceAbsentTime);
+        totalAbsent += upgraded.length;
+        for (const stu of upgraded) {
+          await notifyAbsentToPortal(school, stu, school.attendanceAbsentTime).catch(() => {});
+        }
+        try { await redis.setEx(`absent_mark:${school.id}:${dateKey}`, 86400, "sent"); } catch (_) {}
+        dedupSet(`absent_mark:${school.id}:${dateKey}`);
+        if (upgraded.length > 0) {
+          logger.logger.info(`[Startup Catchup] ${school.name}: upgraded ${upgraded.length} students to ABSENT`);
+          emitToRoom(`school:${school.id}`, "auto_absent_completed", { schoolId: school.id, count: upgraded.length, date: today });
         }
       } catch (err) {
         logger.logger.error(`[Startup Catchup] ${school.name} ABSENT error: ${err.message}`);

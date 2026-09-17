@@ -61,6 +61,11 @@ export default function PTMSessionCard({ session, onEdit, onDelete }: PTMSession
                   <span className="inline-flex items-center rounded-full bg-primary-50 border border-primary-100 px-2.5 py-0.5 text-xs font-semibold text-primary-700">
                     {session.scopeLabel}
                   </span>
+                  {session.academicYear?.name && (
+                    <span className="inline-flex items-center rounded-full bg-gray-100 border border-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                      {session.academicYear.name}
+                    </span>
+                  )}
                   {session.teachers?.length > 0 && (
                     <span className="text-xs text-gray-500">
                       Teachers: {session.teachers.map((t) => t.name).join(', ')}

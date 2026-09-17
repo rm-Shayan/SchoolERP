@@ -69,6 +69,20 @@ class ConductService {
       link: "/conduct",
     }).catch(() => {});
 
+    // Parent ko bhi (uske bache ki remark) — sirf us parent ke portal me.
+    if (student.parent?.id) {
+      portalNotificationService.create({
+        schoolId: student.schoolId, senderId: author.id, senderName: author.name,
+        recipientId: student.parent.id,
+        title: "CONDUCT_REMARK",
+        body: `Academic remark for your child ${studentName}${className ? ` (${className})` : ""}: "${data.comment}".`,
+        category: "STUDENT",
+        refType: "CONDUCT_REMARK",
+        refId: remark.id,
+        link: "/conduct",
+      }).catch(() => {});
+    }
+
     emitToRoom(`school:${student.schoolId}`, "conduct_remark", {
       id: remark.id, studentId: data.studentId, type: remark.type,
     });

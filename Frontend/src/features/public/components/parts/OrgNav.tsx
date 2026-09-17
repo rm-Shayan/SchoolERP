@@ -47,7 +47,7 @@ export default function OrgNav({ org }: OrgNavProps) {
 
         <nav className="hidden items-center gap-1 text-sm font-medium md:flex">
           {sectionLinks.map((item) => (
-            <a
+            <Link
               key={item.href}
               href={item.href}
               className="rounded-lg px-3.5 py-2 transition-colors duration-200"
@@ -60,7 +60,7 @@ export default function OrgNav({ org }: OrgNavProps) {
               }}
             >
               {item.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
@@ -104,7 +104,7 @@ export default function OrgNav({ org }: OrgNavProps) {
         <div className="border-t border-gray-100 bg-white px-4 pb-4 md:hidden">
           <nav className="flex flex-col gap-1 pt-2 text-sm font-medium">
             {sectionLinks.map((item) => (
-              <a
+              <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
@@ -112,7 +112,7 @@ export default function OrgNav({ org }: OrgNavProps) {
                 style={{ color: theme }}
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
             <Link
               href={buildOrgLoginHref(org)}

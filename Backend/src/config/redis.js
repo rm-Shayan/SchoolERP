@@ -7,6 +7,10 @@ const redis = createClient({
   url: process.env.REDIS_URL || "redis://localhost:6379",
   socket: {
     connectTimeout: 5000,       // fail fast if Redis is unreachable
+    // JITNE bhi Redis DOWN ho, commands queue hue bina turant throw ho jayein.
+    // (Default true hona = har cron job pehli redis.set() par HAMESHA hang ho
+    // jata tha → fee/absent crons char bazari se kabhi chalte hi nahi the.)
+    enableOfflineQueue: false,
     reconnectStrategy: (retries) => {
       if (retries > 10) return new Error("Redis max reconnect attempts reached");
       return Math.min(retries * 200, 3000); // exponential backoff capped at 3s

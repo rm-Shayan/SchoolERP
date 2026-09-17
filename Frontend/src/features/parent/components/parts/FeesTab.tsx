@@ -7,6 +7,7 @@ import type { PortalFeeRecord, PortalFeeSummary } from '@/types/portal';
 import { cn, formatDate, formatCurrency, getStatusColor } from '@/lib/utils';
 import { getOrgThemeColor } from '@/lib/utils/orgTheme';
 import { FeesSkeleton } from './PortalSkeletonsA';
+import FeeYearSummary from './FeeYearSummary';
 
 export default function FeesTab() {
   const [records, setRecords] = useState<PortalFeeRecord[]>([]);
@@ -35,6 +36,7 @@ export default function FeesTab() {
           )}
         </CardContent>
       </Card>
+      <FeeYearSummary />
     </div>
   );
 }

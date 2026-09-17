@@ -7,8 +7,11 @@ const logger = new Logger("cleanup-job");
 // Retention windows (din) — env se override ho sakti hain.
 const AUDIT_LOG_RETENTION_DAYS = Number(process.env.AUDIT_LOG_RETENTION_DAYS) || 180;
 const NOTIFICATION_LOG_RETENTION_DAYS = Number(process.env.NOTIFICATION_LOG_RETENTION_DAYS) || 90;
-const CONDUCT_REMARK_RETENTION_DAYS = Number(process.env.CONDUCT_REMARK_RETENTION_DAYS) || 365;
-const HOMEWORK_BROADCAST_RETENTION_DAYS = Number(process.env.HOMEWORK_BROADCAST_RETENTION_DAYS) || 180;
+// Remarks/Homework ki PRIMARY retention academic-year based hai (saal + grace,
+// conductCleanup/homeworkCleanup dekhein). Ye sirf SAFETY NET hai — zyada lamba
+// rakha gaya hai taake year-based rule se pehle recent data na mita.
+const CONDUCT_REMARK_RETENTION_DAYS = Number(process.env.CONDUCT_REMARK_RETENTION_DAYS) || 730;
+const HOMEWORK_BROADCAST_RETENTION_DAYS = Number(process.env.HOMEWORK_BROADCAST_RETENTION_DAYS) || 730;
 
 function daysAgo(days) {
   const d = new Date();

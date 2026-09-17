@@ -173,6 +173,7 @@ class AttendanceService {
 
     await notificationService.notifyParentPortal({
       schoolId: student.schoolId,
+      recipientId: student.parent?.id,
       message: msg,
       title: "Late Arrival Alert",
       details: [

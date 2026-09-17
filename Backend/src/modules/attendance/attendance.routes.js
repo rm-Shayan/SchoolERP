@@ -215,6 +215,16 @@ router.post(
   attendanceController.cleanupPhantoms
 );
 
+/**
+ * POST /api/v1/attendance/alerts/send
+ * Manually force-send today's absent/late attendance alerts.
+ */
+router.post(
+  "/alerts/send",
+  authorize(["SUPER_ADMIN", "ADMIN"]),
+  attendanceController.sendAlerts
+);
+
 // ─── ARCHIVE ────────────────────────────────────────────────────────────────
 /**
  * POST /api/v1/attendance/archive

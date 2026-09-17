@@ -31,8 +31,8 @@ const KEY_PREFIX = "portal";
  * @param {string} [extra] - Extra key component (e.g., month,year for attendance)
  * @returns {string} - Redis key
  */
-function makeKey(type, id, endpoint, extra = "") {
-  const base = `${KEY_PREFIX}:${type}:${id}:${endpoint}`;
+function makeKey(portalKey, endpoint, extra = "") {
+  const base = `${KEY_PREFIX}:${portalKey}:${endpoint}`;
   return extra ? `${base}:${extra}` : base;
 }
 
@@ -77,21 +77,17 @@ async function redisSet(key, data, ttlSeconds) {
 
 /**
  * Get cached portal data using Redis (with in-memory fallback).
- * Uses cache-aside pattern: Redis → in-memory → DB.
+ * portalKey me child/scope bhi ho sakta hai (e.g. "parent:pid:studentId")
+ * taake child switch par purani cache na mile.
  */
 export async function getCachedPortal(portalKey, endpoint, extra = "") {
-  const [type, id] = portalKey.split(":");
-  const key = makeKey(type || "parent", id || "", endpoint, extra);
+  const key = makeKey(portalKey, endpoint, extra);
 
   // 1. Try Redis first (primary, shared across instances)
   const cached = await redisGet(key);
   if (cached) return cached;
 
-  // 2. Try in-memory fallback (already implemented, low overhead)
-  // Note: In a real implementation, we'd import the in-memory cache here,
-  // but to avoid circular dependencies, we'll skip it and go straight to DB.
-  // The controller's in-memory usage can stay for extra protection.
-
+  // 2. Try in-memory fallback (commented out below) — Redis is the source.
   // 3. Return null → controller will fetch from DB and cache
   return null;
 }
@@ -104,8 +100,7 @@ export async function getCachedPortal(portalKey, endpoint, extra = "") {
  * @param {number} [ttlSeconds] - TTL in seconds (defaults to endpoint TTL)
  */
 export async function setCachedPortal(portalKey, endpoint, data, ttlSeconds = null, extra = "") {
-  const [type, id] = portalKey.split(":");
-  const tKey = makeKey(type || "parent", id || "", endpoint);
+  const tKey = makeKey(portalKey, endpoint);
 
   // If a string is passed as the 4th arg it's an extra key component
   // (e.g., "att:12:2026") matching getCachedPortal's `extra` param.
@@ -134,33 +129,38 @@ export async function setCachedPortal(portalKey, endpoint, data, ttlSeconds = nu
  * @param {string} portalKey - e.g., "parent:org123" or "student:stu456"
  * @param {string} [endpoint] - Specific endpoint to bust, or all if omitted
  */
-export function bustPortalCache(portalKey, endpoint = null) {
-  // Determine the type and id from portalKey
-  // portalKey format: "parent:orgId" or "student:studentId"
-  const [type, id] = portalKey.split(":");
-  const t = type || "parent";
-  const cid = id || "";
+export async function bustPattern(portalKey) {
+  // SCAN-based delete — scoped keys (portal:parent:pid:studentId:endpoint) ka
+  // pattern pichle non-scoped busts se cover nahi hota. Best-effort cleanup.
+  const pattern = `${KEY_PREFIX}:${portalKey}:*`;
+  let cursor = "0";
+  do {
+    try {
+      const [next, keys] = await redis.scan(cursor, { MATCH: pattern, COUNT: 100 });
+      cursor = next;
+      if (keys.length) await redis.del(keys);
+    } catch {
+      break;
+    }
+  } while (cursor !== "0");
+}
 
-  // Bust all endpoint keys for this portal
+export function bustPortalCache(portalKey, endpoint = null) {
+  // portalKey format: "parent:orgId[:studentId]" — same key passed by controller.
+  // Endpoint-specific bust me bhi SCAN pattern karo — overhead negligible, cover
+  // non-scoped + scoped keys dono (conduct service like "parent:pid" hota hai).
+  bustPattern(portalKey);
+
   if (endpoint) {
     // Bust specific endpoint
-    const key = makeKey(t, cid, endpoint);
+    const key = makeKey(portalKey, endpoint);
     redis.del(key).catch(() => {});
   } else {
-    // Bust all portal-related keys
-    // We can't enumerate all keys easily, so we bust the common patterns
     const endpoints = Object.keys(TTL);
     for (const ep of endpoints) {
-      const key = makeKey(t, cid, ep);
+      const key = makeKey(portalKey, ep);
       redis.del(key).catch(() => {});
     }
-    // Also bust the "extra" variant (e.g., attendance with month:year)
-    // This is best-effort since we don't know all possible extras
-    try {
-      const pattern = `${KEY_PREFIX}:${type}:${id}:*`;
-      // Use scan with pattern - but redis.del doesn't support patterns
-      // We'll just bust the known endpoints above
-    } catch (_) {}
   }
 }
 
@@ -181,14 +181,10 @@ export { TTL, makeKey };
 // Export a convenience function for busting all portal caches for a given user
 export function bustAllPortalCaches(type, id) {
   const portalKey = `${type}:${id}`;
-  // Bust all known endpoint keys
+  bustPattern(portalKey);
   const endpoints = Object.keys(TTL);
   for (const ep of endpoints) {
-    const key = makeKey(type, id, ep);
+    const key = makeKey(portalKey, ep);
     redis.del(key).catch(() => {});
   }
-  // Also try to bust any extra variants (best-effort)
-  try {
-    // Don't attempt pattern-based deletion since we don't know all keys
-  } catch (_) {}
 }

@@ -587,14 +587,25 @@ class FeeService {
   }
 
   /**
-   * Year-end archive (scheduler): saal khatam hone par saare fee records
-   * per-student yearly summary mein roll-up hokar delete — "DB se gnd nikaalo,
-   * history summary ke roop mein rehti hai" (attendance archive jaisa).
-   * Cutoff: current saal ki 1 January — matlab poore completed saal archive.
+   * Year-end fee archive (scheduler): paise adaa (PAID) fee records ko
+   * per-student per-year FeeYearSummary mein roll-up karke delete. Unpaid /
+   * PARTIAL / OVERDUE records LIVE rehte hain — outstanding abhi bhi collect
+   * ho sakta hai, woh kabhi archive nahi hote. History summary ke roop mein
+   * rehti hai (attendance archive jaisa pattern).
+   *
+   * Cutoff = "year-end + grace" policy (ENDED_YEAR_GRACE_DAYS, default 180):
+   * ~6 mahine purane calendar year ke PAID records hi archive hote hain.
    */
   async archiveFeeRecords() {
+    const graceDays = Number(process.env.ENDED_YEAR_GRACE_DAYS) || 180;
     const now = new Date();
-    const cutoff = new Date(now.getFullYear(), 0, 1); // Jan 1 of current year
+    const currentYearStart = new Date(now.getFullYear(), 0, 1);
+    // Jan 1 current year at least grace din purana ho to wahan tak archive,
+    // warna ek saal aur peeche — naya/khatam hone wala year live rahe.
+    const cutoff =
+      now.getTime() - currentYearStart.getTime() >= graceDays * 86400000
+        ? currentYearStart
+        : new Date(now.getFullYear() - 1, 0, 1);
     return feeRepository.archiveFeeRecords(cutoff);
   }
 
@@ -744,6 +755,8 @@ class FeeService {
       if (updated.status === "PAID") {
         await notificationService.notifyParentPortal({
           schoolId: record.student.schoolId,
+          recipientId: record.student.parent?.id,
+          category: "FEE",
           title: `Fee Paid — ${monthLabel}`,
           message: `${studentName}${className ? ` (${className})` : ""} ki ${monthLabel} fee poori clear ho gayi hai.`,
           details: paymentDetails,
@@ -912,6 +925,8 @@ class FeeService {
     if (status === "PAID") {
       await notificationService.notifyParentPortal({
         schoolId: record.student.schoolId,
+        recipientId: record.student.parent?.id,
+        category: "FEE",
         title: `Fee Paid — ${monthLabel}`,
         message: `${studentName}${className ? ` (${className})` : ""} ki ${monthLabel} fee poori clear ho gayi hai.`,
         details: paymentDetails,
@@ -1293,7 +1308,17 @@ class FeeService {
       const ctx = this._reminderContext(record);
       record._pending = pending;
       emailRecords.push(record);
-      // Portal notification — branch feed me overdue dikhe.
+      // Parent ko apni targeted portal reminder (sirf uske bache ka).
+      if (student.parent?.id) {
+        portalNotificationService.create({
+          schoolId: record.schoolId, senderName: "Fee System",
+          recipientId: student.parent.id,
+          title: "FEE_DUE",
+          body: `Dear Parent, your child ${ctx.studentName}${ctx.className ? ` (${ctx.className})` : ""} has an overdue fee of Rs. ${pending.toFixed(2)} for ${ctx.monthLabel}. Kindly clear it before the due date.`,
+          category: "FEE", refType: "FEE_RECORD", refId: record.id, link: "/fees/records",
+        }).catch(() => {});
+      }
+      // Portal notification — admin branch feed me overdue dikhe.
       portalNotificationService.create({
         schoolId: record.schoolId, senderName: "Fee System",
         title: "FEE_DUE",

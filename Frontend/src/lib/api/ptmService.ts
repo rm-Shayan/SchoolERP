@@ -12,6 +12,8 @@ export interface PTMEvent {
   scope: PTMScope; scopeLabel?: string;
   classIds: string[]; sectionIds: string[]; studentId?: string | null;
   teachers: PTMTeacher[]; createdAt: string;
+  academicYearId?: string | null;
+  academicYear?: { id: string; name: string } | null;
 }
 
 export interface PTMPayload {

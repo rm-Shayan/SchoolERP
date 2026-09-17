@@ -5,6 +5,7 @@ import { useAppSelector } from '@/store/hooks';
 import { studyMaterialService, academicService } from '@/lib/api';
 import type { StudyMaterial } from '@/lib/api/studyMaterialService';
 import type { SectionOption, SubjectOption } from '@/features/teacher/components/parts/HomeworkForm';
+import type { AcademicYear } from '@/types';
 import { PageHeader, Button, Card, EmptyState, Select, Modal, CardGridSkeleton, ConfirmDialog } from '@/features/shared/components';
 import StudyMaterialCard from '@/features/shared/components/parts/StudyMaterialCard';
 import StudyMaterialForm from '@/features/shared/components/parts/StudyMaterialForm';
@@ -21,6 +22,8 @@ export default function StudyMaterialPage() {
   const [sectionId, setSectionId] = useState('');
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [subjectId, setSubjectId] = useState('');
+  const [years, setYears] = useState<AcademicYear[]>([]);
+  const [yearId, setYearId] = useState('');
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<StudyMaterial | null>(null);
@@ -32,7 +35,7 @@ export default function StudyMaterialPage() {
     setLoading(true);
     try {
       const [list, classes] = await Promise.all([
-        studyMaterialService.getAll({ sectionId: sectionId || undefined, subjectId: subjectId || undefined, pageSize: 100 }),
+        studyMaterialService.getAll({ sectionId: sectionId || undefined, subjectId: subjectId || undefined, academicYearId: yearId || undefined, pageSize: 100 }),
         academicService.getClassesBySchool(schoolId ?? ''),
       ]);
       setItems(list.items);
@@ -50,7 +53,13 @@ export default function StudyMaterialPage() {
       }
     } catch (err: any) { toast.error(err?.response?.data?.message ?? 'Failed to load'); }
     finally { setLoading(false); }
-  }, [schoolId, sectionId]);
+  }, [schoolId, sectionId, subjectId, yearId]);
+
+  useEffect(() => {
+    if (schoolId && years.length === 0) {
+      academicService.getYearsBySchool(schoolId).then(setYears).catch(() => {});
+    }
+  }, [schoolId, years.length]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -86,7 +95,10 @@ export default function StudyMaterialPage() {
         <StudyMaterialForm sections={sections} subjects={subjects} initialValues={editing ? { title: editing.title, description: editing.description ?? '', type: editing.type, file: null, linkUrl: editing.linkUrl ?? '', sectionId: editing.sectionId ?? '', subjectId: editing.subjectId ?? '' } : undefined} onSubmit={handleSubmit} onCancel={() => { setShowForm(false); setEditing(null); }} submitLabel={editing ? 'Update' : 'Create'} submitting={submitting} />
       </Modal>
       <ConfirmDialog open={!!deleting} title="Delete material?" message={`"${deleting?.title}" will be permanently deleted.`} confirmLabel="Delete" loading={deleteBusy} onConfirm={handleDelete} onCancel={() => setDeleting(null)} />
-      <div className="max-w-xs"><Select label="Filter by Section" placeholder="All sections" options={sections.map((s) => ({ value: s.id, label: s.label }))} value={sectionId} onChange={(e) => { setSectionId(e.target.value); load(); }} /></div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="max-w-xs w-full"><Select label="Filter by Section" placeholder="All sections" options={sections.map((s) => ({ value: s.id, label: s.label }))} value={sectionId} onChange={(e) => { setSectionId(e.target.value); load(); }} /></div>
+        <div className="max-w-xs w-full"><Select label="Academic Year" placeholder="All years" options={years.map((y) => ({ value: y.id, label: y.name }))} value={yearId} onChange={(e) => { setYearId(e.target.value); load(); }} /></div>
+      </div>
       {sectionId && (
         <div className="max-w-xs"><Select label="Filter by Subject" placeholder="All subjects" options={subjects.map((s) => ({ value: s.id, label: s.label }))} value={subjectId} onChange={(e) => { setSubjectId(e.target.value); load(); }} /></div>
       )}

@@ -8,6 +8,7 @@ import type {
   PortalOverview, PortalAttendanceResponse, PortalFeeResponse,
   PortalHomework, PortalCircular, PortalExamResult, PortalTimetableSlot,
   PortalConductRemark, PortalPTMSession, PortalLeaveRequest, PortalExamSheet,
+  PortalAttendanceYearSummary, PortalFeeYearSummary,
 } from '@/types/portal';
 import type { StudyMaterial } from './studyMaterialService';
 import { portalLoginRedirect } from '@/lib/utils/orgTheme';
@@ -65,8 +66,18 @@ export const portalDataService = {
     return res.data.data;
   },
 
+  async getAttendanceYearlySummaries(): Promise<PortalAttendanceYearSummary[]> {
+    const res = await getAxios().get<ApiResponse<PortalAttendanceYearSummary[]>>('/portal/attendance/yearly-summaries');
+    return res.data.data;
+  },
+
   async getFees(): Promise<PortalFeeResponse> {
     const res = await getAxios().get<ApiResponse<PortalFeeResponse>>('/portal/fees');
+    return res.data.data;
+  },
+
+  async getFeeYearlySummaries(): Promise<PortalFeeYearSummary[]> {
+    const res = await getAxios().get<ApiResponse<PortalFeeYearSummary[]>>('/portal/fees/yearly-summaries');
     return res.data.data;
   },
 

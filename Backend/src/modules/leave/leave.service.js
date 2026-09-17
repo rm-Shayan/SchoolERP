@@ -105,6 +105,21 @@ class LeaveService {
       ],
     }).catch(() => {});
 
+    // Portal notification — parent ko (uske bache ki leave approved/rejected).
+    if (leave.parent?.id) {
+      portalNotificationService.create({
+        schoolId,
+        senderName: "Leave Management",
+        recipientId: leave.parent.id,
+        title: status === "APPROVED" ? "LEAVE_APPROVED" : "LEAVE_REJECTED",
+        body: parentMsg,
+        category: "STUDENT",
+        refType: "LEAVE_REQUEST",
+        refId: leaveId,
+        link: "/leave",
+      }).catch(() => {});
+    }
+
     // Portal notification — branch feed ko review ka pata chale.
     portalNotificationService.create({
       schoolId,

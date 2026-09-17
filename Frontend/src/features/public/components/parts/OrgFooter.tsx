@@ -95,7 +95,7 @@ export default function OrgFooter({ org, theme }: OrgFooterProps) {
             <ul className="mt-5 space-y-3">
               {exploreLinks.map((item) => (
                 <li key={item.href}>
-                  <a href={item.href} className="text-sm text-gray-500 transition-colors hover:text-gray-900">{item.label}</a>
+                  <Link href={item.href} className="text-sm text-gray-500 transition-colors hover:text-gray-900">{item.label}</Link>
                 </li>
               ))}
             </ul>

@@ -283,6 +283,8 @@ model AcademicYear {
   feeStructures FeeStructure[]
   promotions    PromotionRecord[]
   conductRemarks ConductRemark[]
+  ptmSessions   PTMSession[]
+  studyMaterials StudyMaterial[]
 
   @@index([schoolId])
 }
@@ -1021,12 +1023,15 @@ model PTMSession {
   sectionIds  String[]   @default([]) // resolved sections; empty = whole school
   studentId   String?    // STUDENT scope: the single targeted child
   teacherIds  String[]   @default([]) // teachers attending this PTM
+  academicYearId String? // academic year this PTM belongs to (null = legacy/unknown)
   createdAt   DateTime   @default(now())
 
   school        School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  academicYear  AcademicYear?   @relation(fields: [academicYearId], references: [id], onDelete: SetNull)
   conductRemarks ConductRemark[] // remarks linked to this PTM session
 
   @@index([schoolId])
+  @@index([academicYearId])
 }
 
 model TimetableSlot {
@@ -1150,6 +1155,7 @@ model StudyMaterial {
   sectionId   String?
   subjectId   String?
   createdById String?
+  academicYearId String? // academic year this material belongs to (null = legacy/unknown)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -1157,11 +1163,13 @@ model StudyMaterial {
   section   Section? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
   subject   Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
   createdBy User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  academicYear AcademicYear? @relation(fields: [academicYearId], references: [id], onDelete: SetNull)
 
   @@index([schoolId])
   @@index([sectionId])
   @@index([subjectId])
   @@index([createdById])
+  @@index([academicYearId])
 }
 
 enum StudyMaterialType {

@@ -97,6 +97,9 @@ class StudyMaterialService {
     const schoolId = data.schoolId || user.schoolId;
     assertOwnSchool(user, schoolId);
 
+    const currentYear = await studyMaterialRepository.findCurrentAcademicYear(schoolId);
+    const academicYearId = data.academicYearId || currentYear?.id || null;
+
     const material = await studyMaterialRepository.create({
       schoolId,
       title: data.title,
@@ -107,6 +110,7 @@ class StudyMaterialService {
       sectionId: data.sectionId || null,
       subjectId: data.subjectId || null,
       createdById: user.id,
+      academicYearId,
     });
 
     emitToRoom(`school:${schoolId}`, "study_material_created", {
@@ -144,6 +148,7 @@ class StudyMaterialService {
       subjectId: query.subjectId,
       type: query.type,
       createdById: filterUserId,
+      academicYearId: query.academicYearId,
       page: Math.max(1, parseInt(query.page, 10) || 1),
       pageSize: Math.min(100, Math.max(1, parseInt(query.pageSize, 10) || 50)),
     });
@@ -219,7 +224,9 @@ class StudyMaterialService {
    * Portal endpoint — parents and students view study material for their sections.
    */
   async listForPortal(portal) {
-    return studyMaterialRepository.listForPortal(portal.sectionIds);
+    const schoolId = portal.schoolId || portal.user?.schoolId;
+    const currentYear = schoolId ? await studyMaterialRepository.findCurrentAcademicYear(schoolId) : null;
+    return studyMaterialRepository.listForPortal(portal.sectionIds, currentYear?.id || null);
   }
 }
 

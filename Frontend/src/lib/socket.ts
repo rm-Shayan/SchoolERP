@@ -29,7 +29,17 @@ function toLiveScanEvent(payload: any): LiveScanEvent {
  * Real-time scope guard — always mirror the server's list()/unreadCount()
  * rules so no socket event leaks another person's/another branch's
  * notification into this client's store.
+ *
+ * - SUPER_ADMIN: sab kuch (apne actions ke alawa).
+ * - PARENT/STUDENT: sirf apni targeted + school ke CIRCULAR announcements.
+ * - Staff: apni targeted + school/org feed sirf role-relevant category me.
  */
+const STAFF_CATEGORY_MATRIX: Record<string, string[] | null> = {
+  ADMIN: null,
+  TEACHER: ['STUDENT', 'ATTENDANCE', 'ACADEMIC', 'HOMEWORK', 'EXAM', 'PTM', 'CONDUCT', 'CIRCULAR', 'GENERAL'],
+  RECEPTIONIST: ['ADMISSION', 'STUDENT', 'ATTENDANCE', 'EXAM', 'PTM', 'CIRCULAR', 'GENERAL'],
+};
+
 function canReceive(n: PortalNotification): boolean {
   const user = store.getState().auth.user;
   if (!user) return false;
@@ -37,14 +47,19 @@ function canReceive(n: PortalNotification): boolean {
   // Super admin: sab dekh sakta hai apne actions ke alawa.
   if (user.role === 'SUPER_ADMIN') return n.senderId !== user.id;
 
+  // Staff — kisi aur ke liye targeted notification yahan nahi aani chahiye.
+  if (n.recipientId) return n.recipientId === user.id;
+
+  // Broadcast feed — sirf us role ki relevant category. ADMIN (null) = sab.
+  const relevant = STAFF_CATEGORY_MATRIX[user.role];
+  if (relevant === undefined) return false;
+  if (relevant !== null && !relevant.includes(n.category || 'GENERAL')) return false;
+
   // Same school
   if (n.schoolId && user.schoolId && n.schoolId === user.schoolId) return true;
 
   // Same org
   if (n.organizationId && user.organizationId && n.organizationId === user.organizationId) return true;
-
-  // Targeted to me
-  if (n.recipientId === user.id) return true;
 
   return false;
 }

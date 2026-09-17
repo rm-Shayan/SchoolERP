@@ -1,6 +1,7 @@
 import attendanceService from "./attendance.service.js";
 import attendanceArchiveService from "./attendanceArchive.service.js";
 import attendancePhantomService from "./attendancePhantom.service.js";
+import { runAttendanceAlertJob } from "../../jobs/cron/attendanceAlert.job.js";
 import ApiResponse from "../../lib/utils/ApiResponse.js";
 import ApiError from "../../lib/utils/ApiError.js";
 
@@ -330,6 +331,27 @@ class AttendanceController {
       }
       const result = await attendancePhantomService.deletePhantoms(schoolId, req.body.ids, req.user);
       return res.status(200).json(ApiResponse.ok("Phantom attendance cleanup complete", result));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * POST /api/v1/attendance/alerts/send
+   * Aaj ke absent/late attendance alerts ko abhi FORCE bhejein (cron ka wait
+   * nahi). Cron same-day dedup set kar deta hai taake baad me double na jaye.
+   * SUPER_ADMIN / ADMIN only.
+   */
+  sendAlerts = async (req, res, next) => {
+    try {
+      const result = await runAttendanceAlertJob({
+        force: true,
+        schoolId: req.user.schoolId || null,
+      });
+      if (!result.success) {
+        return next(ApiError.badRequestError(result.error || "Attendance alerts could not be sent"));
+      }
+      return res.status(200).json(ApiResponse.ok("Attendance alerts sent", result));
     } catch (error) {
       return next(error);
     }

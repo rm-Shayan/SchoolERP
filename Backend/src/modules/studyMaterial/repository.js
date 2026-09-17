@@ -1,6 +1,10 @@
 import prisma from "../../config/db.js";
 
 class StudyMaterialRepository {
+  async findCurrentAcademicYear(schoolId) {
+    return prisma.academicYear.findFirst({ where: { schoolId, isCurrent: true } });
+  }
+
   async create(data) {
     return prisma.studyMaterial.create({
       data,
@@ -8,6 +12,7 @@ class StudyMaterialRepository {
         section: { include: { class: true } },
         subject: { select: { id: true, name: true } },
         createdBy: { select: { id: true, name: true, role: true } },
+        academicYear: { select: { id: true, name: true } },
       },
     });
   }
@@ -19,6 +24,7 @@ class StudyMaterialRepository {
         section: { include: { class: true } },
         subject: { select: { id: true, name: true } },
         createdBy: { select: { id: true, name: true, role: true } },
+        academicYear: { select: { id: true, name: true } },
       },
     });
   }
@@ -29,6 +35,7 @@ class StudyMaterialRepository {
     if (filters.subjectId) where.subjectId = filters.subjectId;
     if (filters.type) where.type = filters.type;
     if (filters.createdById) where.createdById = filters.createdById;
+    if (filters.academicYearId) where.academicYearId = filters.academicYearId;
 
     const page = filters.page || 1;
     const pageSize = filters.pageSize || 50;
@@ -40,6 +47,7 @@ class StudyMaterialRepository {
           section: { include: { class: true } },
           subject: { select: { id: true, name: true } },
           createdBy: { select: { id: true, name: true, role: true } },
+          academicYear: { select: { id: true, name: true } },
         },
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * pageSize,
@@ -51,16 +59,22 @@ class StudyMaterialRepository {
     return { items, total, page, pageSize };
   }
 
-  async listForPortal(sectionIds) {
+  async listForPortal(sectionIds, academicYearId) {
     // Student/section na hone par empty [] — Prisma `in: []` valid hai, undefined nahi.
     const valid = (sectionIds ?? []).filter(Boolean);
     if (valid.length === 0) return [];
+    const where = {
+      sectionId: { in: valid },
+      // Legacy materials (no year) hamesha dikhen, baqi sirf current year ke.
+      OR: [{ academicYearId: null }, { academicYearId: academicYearId || null }],
+    };
     return prisma.studyMaterial.findMany({
-      where: { sectionId: { in: valid } },
+      where,
       include: {
         section: { select: { id: true, name: true, class: { select: { name: true } } } },
         subject: { select: { id: true, name: true } },
         createdBy: { select: { id: true, name: true } },
+        academicYear: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: "desc" },
       take: 50,
@@ -75,6 +89,7 @@ class StudyMaterialRepository {
         section: { include: { class: true } },
         subject: { select: { id: true, name: true } },
         createdBy: { select: { id: true, name: true, role: true } },
+        academicYear: { select: { id: true, name: true } },
       },
     });
   }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { applyPortalThemeToRoot, clearPortalThemeFromRoot } from '@/lib/theme';
 
 interface ErrorProps {
@@ -44,12 +45,12 @@ export default function LoginError({ error, reset }: ErrorProps) {
         >
           Try again
         </button>
-        <a
+        <Link
           href="/"
           className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
         >
           Go to Home
-        </a>
+        </Link>
       </div>
     </div>
   );

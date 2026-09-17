@@ -1,4 +1,5 @@
 import examRepository from "./repository.js";
+import prisma from "../../config/db.js";
 import ApiError from "../../lib/utils/ApiError.js";
 import { getEffectiveSchoolId, assertOwnSchool, assertSchoolAccess, assertSchoolExists } from "../../lib/scope.js";
 import notificationService from "../../services/notification.service.js";
@@ -275,6 +276,33 @@ class ExamService {
       title: "EXAM_PUBLISHED", body: `Results for "${exam.name}" published — ${activeCount} student(s) ke results ab portal me available hain.`,
       category: "EXAM", refType: "EXAM", refId: examId, link: "/exams",
     }).catch(() => {});
+
+    // Parents ko unke bache ke results ki targeted notification.
+    const activeStudentIds = Object.values(byStudent)
+      .filter(({ student }) => student.status === "ACTIVE")
+      .map(({ student }) => student.id);
+    if (activeStudentIds.length) {
+      try {
+        const parentRows = await prisma.student.findMany({
+          where: { id: { in: activeStudentIds }, parent: { isNot: null } },
+          select: { parentId: true },
+        });
+        const parentIds = [...new Set(parentRows.map((r) => r.parentId).filter(Boolean))];
+        await Promise.all(
+          parentIds.map((pid) =>
+            portalNotificationService.create({
+              schoolId: exam.schoolId, senderId: user.id, senderName: user.name,
+              recipientId: pid,
+              title: "EXAM_PUBLISHED",
+              body: `Results for "${exam.name}" are now available in your child's portal.`,
+              category: "EXAM", refType: "EXAM", refId: examId, link: "/results",
+            }).catch(() => {})
+          )
+        );
+      } catch (err) {
+        // Parent notification is best-effort — publish result kabhi fail nahi hona.
+      }
+    }
 
     emitToRoom(`school:${exam.schoolId}`, "exam_results_published", { examId, notified: activeCount });
     return { examId, notified: activeCount, students: Object.keys(byStudent).length };

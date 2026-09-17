@@ -13,6 +13,7 @@ export const createStudyMaterialSchema = z.object({
     linkUrl: z.string().url("Invalid link URL").optional(),
     sectionId: z.string().uuid("Invalid sectionId").optional(),
     subjectId: z.string().uuid("Invalid subjectId").optional(),
+    academicYearId: z.string().uuid("Invalid academicYearId").optional(),
   }),
 });
 
@@ -23,6 +24,7 @@ export const listStudyMaterialSchema = z.object({
     subjectId: z.string().uuid("Invalid subjectId").optional(),
     type: z.enum(["DOCUMENT", "VIDEO", "IMAGE", "LINK"]).optional(),
     createdById: z.string().uuid("Invalid createdById").optional(),
+    academicYearId: z.string().uuid("Invalid academicYearId").optional(),
     page: z.coerce.number().int().positive().optional(),
     pageSize: z.coerce.number().int().positive().max(100).optional(),
   }),
@@ -41,6 +43,7 @@ export const updateStudyMaterialSchema = z.object({
       linkUrl: z.string().url("Invalid link URL").optional(),
       sectionId: z.string().uuid("Invalid sectionId").optional(),
       subjectId: z.string().uuid("Invalid subjectId").optional(),
+      academicYearId: z.string().uuid("Invalid academicYearId").optional(),
     })
     .refine((body) => Object.keys(body).length > 0, {
       message: "At least one field is required to update",

@@ -19,6 +19,61 @@ async function resolveOrganizationId(schoolId) {
   return orgId;
 }
 
+/**
+ * Staff feed visibility — null-recipient (broadcast) notifications sirf us
+ * role ki relevant categories ko dikhte hain. ADMIN (branch head) sab dekh
+ * sakta hai. Receptionist ko USKE modules se related: admissions (front desk),
+ * attendance/gate, exam results, PTM (read-only), circulars + general — but
+ * FEE (oppose jaisi "Zainab ne fee jama nahi krwayi") aur staff/conduct
+ * academic feed NAHI.
+ */
+const CATEGORY_MATRIX = {
+  ADMIN: null, // all categories
+  TEACHER: ["STUDENT", "ATTENDANCE", "ACADEMIC", "HOMEWORK", "EXAM", "PTM", "CONDUCT", "CIRCULAR", "GENERAL"],
+  RECEPTIONIST: ["ADMISSION", "STUDENT", "ATTENDANCE", "EXAM", "PTM", "CIRCULAR", "GENERAL"],
+};
+
+/**
+ * Role-aware visibility WHERE — list/unreadCount/markRead/markAllRead sab yehi
+ * use karte hain taake har jagah same rules apply hon.
+ *
+ * - SUPER_ADMIN: sab kuch (apne actions ke alawa).
+ * - PARENT/STUDENT (portal): SIRF apni targeted (recipientId == me) + school
+ *   ke CIRCULAR announcements. Parsing kisi aur ka school/org feed NAHI hoti.
+ * - Staff: apni targeted + school/org feed sirf role-relevant category me.
+ */
+function visibilityWhere(user, filters = {}) {
+  const where = { channel: "PORTAL" };
+
+  if (user.role === "SUPER_ADMIN") {
+    if (filters.schoolId) where.schoolId = filters.schoolId;
+    else if (filters.organizationId) where.organizationId = filters.organizationId;
+    where.senderId = { not: user.id };
+    return where;
+  }
+
+  if (user.role === "PARENT" || user.role === "STUDENT") {
+    const or = [{ recipientId: user.id }];
+    // School-wide announcement (circular) har portal user ko dikhta hai —
+    // baki school feed targeted nahi hone par portal users ko NAHI.
+    if (user.schoolId) {
+      or.push({ recipientId: null, category: "CIRCULAR", schoolId: user.schoolId });
+    }
+    where.OR = or;
+    return where;
+  }
+
+  const relevant = CATEGORY_MATRIX[user.role];
+  const categoryClause = relevant ? { category: { in: relevant } } : {};
+  const or = [{ recipientId: user.id }];
+  if (user.schoolId) {
+    or.push({ recipientId: null, schoolId: user.schoolId, ...categoryClause });
+  }
+  or.push({ recipientId: null, schoolId: null, organizationId: user.organizationId || null, ...categoryClause });
+  where.OR = or;
+  return where;
+}
+
 const TITLE_MAP = {
   PTM_CREATED: "Parent-Teacher Meeting Scheduled",
   PTM_UPDATED: "Parent-Teacher Meeting Updated",
@@ -97,25 +152,7 @@ class PortalNotificationService {
   }
 
   async list(user, { schoolId, organizationId, category, unreadOnly, page = 1, pageSize = 30 }) {
-    const where = { channel: "PORTAL" };
-
-    if (user.role === "SUPER_ADMIN") {
-      if (schoolId) where.schoolId = schoolId;
-      else if (organizationId) where.organizationId = organizationId;
-      where.senderId = { not: user.id };
-    } else if (user.role === "ADMIN") {
-      where.OR = [
-        { recipientId: user.id },
-        { recipientId: null, organizationId: user.organizationId, schoolId: null },
-        { recipientId: null, schoolId: user.schoolId },
-      ];
-    } else {
-      where.OR = [
-        { recipientId: user.id },
-        { recipientId: null, schoolId: user.schoolId },
-        { recipientId: null, schoolId: null, organizationId: user.organizationId || null },
-      ];
-    }
+    const where = visibilityWhere(user, { schoolId, organizationId });
 
     if (category) where.category = category;
     if (unreadOnly) where.isRead = false;
@@ -128,9 +165,10 @@ class PortalNotificationService {
   }
 
   async markRead(user, ids) {
-    const where = { id: { in: ids }, channel: "PORTAL" };
-    if (user.role !== "SUPER_ADMIN") where.OR = [{ recipientId: user.id }, { recipientId: null }];
+    const where = visibilityWhere(user);
+    where.id = { in: ids };
     const result = await prisma.notificationLog.updateMany({ where, data: { isRead: true } });
+    if (result.count === 0) return { updated: 0 };
     emitToRoom("super_admins", "portal_notifications_read", { ids });
     if (user.schoolId) emitToRoom(`school:${user.schoolId}`, "portal_notifications_read", { ids });
     if (user.organizationId) emitToRoom(`org:${user.organizationId}`, "portal_notifications_read", { ids });
@@ -138,23 +176,8 @@ class PortalNotificationService {
   }
 
   async markAllRead(user, schoolId) {
-    const where = { isRead: false, channel: "PORTAL" };
-    if (user.role !== "SUPER_ADMIN") {
-      if (user.role === "ADMIN") {
-        where.OR = [
-          { organizationId: user.organizationId, schoolId: null },
-          { schoolId: user.schoolId },
-        ];
-      } else {
-        where.OR = [
-          { recipientId: user.id },
-          { recipientId: null, schoolId: user.schoolId },
-          { recipientId: null, schoolId: null, organizationId: user.organizationId || null },
-        ];
-      }
-    } else if (schoolId) {
-      where.schoolId = schoolId;
-    }
+    const where = visibilityWhere(user, { schoolId });
+    where.isRead = false;
     const result = await prisma.notificationLog.updateMany({ where, data: { isRead: true } });
     emitToRoom("super_admins", "portal_all_read", { schoolId: user.schoolId || schoolId || null });
     if (user.schoolId) emitToRoom(`school:${user.schoolId}`, "portal_all_read", {});
@@ -179,25 +202,8 @@ class PortalNotificationService {
   }
 
   async unreadCount(user, { schoolId, organizationId } = {}) {
-    const where = { isRead: false, channel: "PORTAL" };
-
-    if (user.role === "SUPER_ADMIN") {
-      if (schoolId) where.schoolId = schoolId;
-      else if (organizationId) where.organizationId = organizationId;
-      // Super admin apne khud ke actions ke notifications bhi dekh sakta hai
-    } else if (user.role === "ADMIN") {
-      where.OR = [
-        { recipientId: user.id },
-        { recipientId: null, organizationId: user.organizationId, schoolId: null },
-        { recipientId: null, schoolId: user.schoolId },
-      ];
-    } else {
-      where.OR = [
-        { recipientId: user.id },
-        { recipientId: null, schoolId: user.schoolId },
-        { recipientId: null, schoolId: null, organizationId: user.organizationId || null },
-      ];
-    }
+    const where = visibilityWhere(user, { schoolId, organizationId });
+    where.isRead = false;
 
     return prisma.notificationLog.count({ where });
   }

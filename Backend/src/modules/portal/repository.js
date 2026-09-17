@@ -50,6 +50,23 @@ class PortalRepository {
     });
   }
 
+  // Archived academic-year attendance history (per child per year roll-up).
+  async getAttendanceYearSummaries(studentIds) {
+    return prisma.attendanceYearSummary.findMany({
+      where: { studentId: { in: studentIds } },
+      orderBy: { yearLabel: "desc" },
+    });
+  }
+
+  // Archived fee years (paid records roll-up) — current/live fee records portal
+  // ke getFeeRecords/getFeeSummary se aate hain; ye sirf old-year history.
+  async getFeeYearSummaries(studentIds) {
+    return prisma.feeYearSummary.findMany({
+      where: { studentId: { in: studentIds } },
+      orderBy: { yearLabel: "desc" },
+    });
+  }
+
   // ── Fees ──────────────────────────────────────────────
 
   async getFeeRecords(studentIds) {
