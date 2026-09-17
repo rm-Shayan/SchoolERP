@@ -36,7 +36,10 @@ Express Backend (port 3000, ESM)
    │
    ├── BullMQ queues (Redis): organization-import, organization-delete, school-import,
    │                          staff-import, student-import  (workers: src/jobs/workers/)
-   ├── node-cron schedulers: auto-absent (8:30am Mon-Sat), fee reminder (9:00am daily)
+   ├── node-cron schedulers (scheduler.service.js): attendance auto-mark + alerts every 15 min
+    │                          Mon-Sat 7AM-6PM, fee reminder 9AM + due charges 9:15AM, pending-email
+    │                          retry every 30 min, nightly year-end cleanups + archives (2AM-3:50AM),
+    │                          academic-year auto-rollover 00:10, monthly auto-voucher 1st, 5min after midnight
    └── Email: DIRECT SMTP (Nodemailer) — Redis par DEPENDENT NAHI
 ```
 
@@ -422,10 +425,30 @@ workers par `drainDelay: 15` (idle polling 5s → 15s, 3x kam). Agar quota phir 
 
 ### node-cron schedulers (scheduler.service.js)
 
+Har job `withJobLock` se lock hoti hai (Redis SET NX EX). Timing + kaam:
+
 | Cron | Time | Job | Kya karta hai |
 |---|---|---|---|
-| `30 8 * * 1-6` | 8:30 AM Mon-Sat | `autoAbsent.job.js` | Har school ke ACTIVE students jo aaj bhi unscanned → **ABSENT record** + parent email + WS `auto_absent_completed` |
-| `0 9 * * *` | 9:00 AM daily | `feeReminder.job.js` | `runOverdueSweep()` (past-due → OVERDUE) + `sendReminders()` (unpaid/partial/overdue ko email) |
+| `10 0 * * *` | 00:10 daily | `academicYearRollover.job.js` | Latest year khatam (`endDate < aaj`) aur koi year aaj/aage se start nahi → **naya year banao**: `startDate = prev.endDate + 1 din`, duration = purane year ka month-span, `endDate = start + months − 1 din`, name `"2026-2027"` (start/end years), `isCurrent = true` + baaki off. `cacheDel(academic:years:{schoolId})` |
+| `*/15 7-18 * * 1-6` | Har 15 min Mon–Sat | `lateMark.job.js` + `attendanceAlert.job.js` | (1) cutoff → unmarked students **LATE**; absentTime → LATE (no checkIn) → **ABSENT** + portal notif; (2) alert-time par parents (absence **email per parent grouped**, late/absent portal notifs) + admin feed. Dedup: Redis key + in-memory fallback (`dedupCache.js`) — har school/date EK baar |
+| `0 9 * * *` | 9:00 AM daily | `feeReminder.job.js` | `sendPreDueReminders()` (due se 0-3 din) + `runOverdueSweep()` (past-due → OVERDUE + once-only overdue email). Dedup columns: `preDueReminderSentAt` / `reminderSentAt` |
+| `15 9 * * *` | 9:15 AM daily | `dueCharges.job.js` | OVERDUE records ke liye due charges |
+| `*/30 * * * *` | Har 30 min | `pendingEmail.job.js` | Pending email retry |
+| `0 2 * * *` | 2:00 AM | `homeworkCleanup.job.js` | Year-end homework cleanup (grace: `ENDED_YEAR_GRACE_DAYS`) |
+| `15 2 * * *` | 2:15 AM | `conductCleanup.job.js` | Year-end conduct remarks cleanup |
+| `30 2 * * *` | 2:30 AM | `examCleanup.job.js` | Year-end exam + terms cleanup |
+| `45 2 * * *` | 2:45 AM | `attendanceCleanup.job.js` | Year-end attendance archive → `AttendanceYearSummary` + raw delete |
+| `0 3 * * *` | 3:00 AM | `cleanup.job.js` | Data/session cleanup |
+| `30 3 * * *` | 3:30 AM | `feeArchive.job.js` | Fee year-end archive (**PAID only**) → `FeeYearSummary` |
+| `40 3 * * *` | 3:40 AM | `ptmCleanup.job.js` | Year-end PTM cleanup (ended year + grace; legacy null-year bhi) |
+| `50 3 * * *` | 3:50 AM | `studyMaterialCleanup.job.js` | Year-end study-material cleanup (ended year + grace; legacy null-year bhi) |
+| `5 0 1 * *` | 1st, 00:05 | `autoVoucher.job.js` | Agle mahine ke fee vouchers auto-generate |
+
+**Startup catchup** (`runStartupCatchup`): boot par ek baar — agar aaj ka LATE/ABSENT mark choot gaya to bana deta hai (DB-idempotent).
+
+**Reliability (root cause fix — Sep 2026):** `config/redis.js` par `enableOfflineQueue: false` (Redis down = turant throw,
+hang nahi) + `withJobLock`: Redis fail hone par job **bina lock run** hoti hai. Isligye fee/absent crons ab kabhi
+silently-fail nahi hote; aur dedup in-memory fallback rakh kar 15-min rerun par emails duplicate nahi hote.
 
 ---
 
@@ -504,6 +527,13 @@ POST /attendance/scan  (identifierCode, deviceId, method)
 - `manualOverride` — teacher/gate manual mark (upsert)
 - `markSectionBulkAttendance` — teacher poore section ka bulk
 - Daily report Redis cache: `attendance:daily:{schoolId}:{date}` 5 min TTL
+- **Alert job** (`attendanceAlert.job.js`): attendanceAlertTime (default 09:30) par hamein parent ko LATE/ABSENT —
+  absent email **har parent par grouped** (siblings ek mail), late/absent portal notification parent + staff feed.
+  Dedup: `att_alert:{school}:{date}` (Redis) + `dedupCache` in-memory — per school/date **EK baar**; upgrade hone par
+  (LATE→ABSENT 10:00) wali email chhut jaaye to next tick par catch ho jati hai.
+- **Manual trigger:** `POST /attendance/alerts/send` (SUPER_ADMIN/ADMIN) → `runAttendanceAlertJob({ force: true })` —
+  time-gate/dedup cross karke aaj ke alerts abhi bhejta hai (admin "Send Absent Alerts" button). Baad wala cron
+  same-day repeat nahi karta.
 
 ### 11.3 Fees (fee.service.js)
 
@@ -525,6 +555,14 @@ School → AcademicYear → Term → Exam (+ ExamResult)
       → Homework (broadcast), Conduct (remarks), Circular, PTM Session, Activity
 ```
 Har nested entity par `schoolId` scope check (`assertOwnSchool` / `assertSchoolAccess`).
+
+**Academic year:**
+- `isCurrent` year index hota hai; create/update par `setAcademicYearsCurrent(schoolId, exceptId)` baaki ko off karta hai.
+- **Auto-rollover:** `academicYearRollover.job.js` (daily 00:10) — school ka latest year khatam + koi naya na ho →
+  purane year ke **same month-spread** ka naya year banata hai (start = prev.endDate+1 din, end = start+N months−1 din, `"YYYY-YYYY"` name) aur `isCurrent` flip. Skip agar startDate aaj/aage ka year already exist kare.
+- **PTM + StudyMaterial** ab academic year se scoped hain (`academicYearId`, nullable + `onDelete: SetNull`):
+  create par current year auto-fill, list filter by year, portal sirf current-year + legacy (null) dikhata hai;
+  year-end cleanup crons (3:40 AM / 3:50 AM) ended-year + grace ke baad delete karte hain.
 
 ### 11.5 Promotions (promotion.service.js)
 
@@ -605,6 +643,8 @@ gate live view, import progress sab live update hote hain.
 | "Portal ka shared password kya hai?" | Default = school code. Branch admin Settings → Portal Access se custom set kar sakta hai |
 | "Portal mein kaun kaun si cheezein dikhengi?" | 14 tabs: overview, attendance, fees, homework, materials, notices, results, exams, timetable, conduct, PTM, leave, notifications, profile |
 | "Portal routes kaise kaam karte hain?" | Saare `/portal/*` routes `authenticateAnyPortal` middleware use karte hain — parent ya student JWT dono accept hote hain |
+| "Naya academic year khud banega?" | Haan — `academicYearRollover.job.js` daily 00:10. Latest year khatam + koi naya na ho to purane ke **same duration (months)** ka naya banata hai (`"2026-2027"`) aur `isCurrent` laga deta hai |
+| "Absent alerts manually bhej sakte hain?" | Haan — Attendance Records par **"Send Absent Alerts"** → `POST /attendance/alerts/send` (force, time/dedup cross; phir cron same-day repeat nahi). Fee ka manual "Send Reminders" pehle se hai |
 | "Org 'Not delivered' kab 'Delivered'?" | **Pehli baar Principal ke login karne par** (SETUP_PENDING → ACTIVE, `markDeliveredOnLogin`). Blocked rehne tak kabhi nahi |
 | "Branch block par kya hota hai?" | Us branch ke users lock + org PARTIALLY_BLOCKED + us branch ke sessions revoke |
 | "Org block par?" | Poori school (saari branches) cascade BLOCKED + sab roles lock + poore org ke sessions revoke — matlab "system band" |
@@ -676,5 +716,5 @@ sath kaam karte waqt dhyaan mein rakhne chahiyein:
 | QR identifier | `Backend/src/lib/identifier.js` |
 | Email delivery (SMTP direct, retries) | `Backend/src/services/email.service.js`, `email.templates.js`, `jobs/queues/email.queue.js` |
 | Import workers + org delete worker | `Backend/src/jobs/workers/*.js` |
-| Cron schedulers | `Backend/src/services/scheduler.service.js`, `jobs/autoAbsent.job.js`, `jobs/feeReminder.job.js` |
+| Cron schedulers | `Backend/src/services/scheduler.service.js`, `src/jobs/cron/*.job.js` (lateMark, attendanceAlert, feeReminder, dueCharges, pendingEmail, autoVoucher, cleanups, academicYearRollover) + `src/jobs/cron/dedupCache.js` |
 | Role home path, active school | `frontend/src/lib/utils/index.ts`, `store/slices/authHelpers.ts` |

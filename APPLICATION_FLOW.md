@@ -28,7 +28,7 @@ Platform Super Admin (system ka malik — SIRF 1, aap)
 | Frontend | **Next.js 16 (App Router)** + TypeScript, Redux Toolkit, Tailwind CSS |
 | Backend | Node.js (ESM) + Express |
 | Database | PostgreSQL (Neon) + Prisma ORM |
-| Cache/Queues | Redis (Upstash) — BullMQ workers (import/delete), caching |
+| Cache/Queues | Redis (Upstash) — BullMQ workers (import/delete), caching, node-cron schedulers |
 | Email | SMTP (Nodemailer) — direct, Redis-free |
 | Storage | Cloudinary / local disk (logos, avatars) |
 | Realtime | WebSocket (Socket.io rooms) |
@@ -528,7 +528,9 @@ sync; (3) Student record update — parent contact change; (4) Photo upload — 
 
 ---
 
-## 11. Background Jobs (BullMQ + Redis)
+## 11. Background Jobs — BullMQ + node-cron (schedulers)
+
+### (A) Import / Delete queues (BullMQ — Redis required)
 
 | Queue | Worker | Kaam |
 |---|---|---|
@@ -537,6 +539,32 @@ sync; (3) Student record update — parent contact change; (4) Photo upload — 
 | `school-import` | `school.import.worker.js` | Branch bulk import |
 | `staff-import` | `staffImport.queue.js` | Staff bulk import (emails direct SMTP) |
 | `student-import` | `studentImport.queue.js` | Students bulk import |
+
+### (B) Daily / routine schedulers (node-cron — `scheduler.service.js`)
+
+| Cron | Time | Job | Kya karta hai |
+|---|---|---|---|
+| `10 0 * * *` | 00:10 daily | `academicYearRollover.job.js` | Har school ka latest year khatam hua → **same duration (months)** ka naya academic year banao (`endDate+1 din` → start, purane span jitne months −1 din → end, name `"2026-2027"`) + naye ko `isCurrent` + baaki `setAcademicYearsCurrent`-style off. Agar koi year aaj/aage se start ho → skip |
+| `*/15 7-18 * * 1-6` | Har 15 min, Mon–Sat 7AM–6PM | `lateMark.job.js` + `attendanceAlert.job.js` | Attendance auto-mark (cutoff → LATE, absentTime → ABSENT, startup-catchup bhi boot par) + parent/admin alerts (absence **email grouped per parent**, late/absent portal notifs) — **har school/date EK baar** (Redis + in-memory dedup) |
+| `0 9 * * *` | 9:00 AM daily | `feeReminder.job.js` | Pre-due reminder (due se 3 din pehle) + overdue sweep (`FeeRecord.preDueReminderSentAt`/`reminderSentAt` dedup) |
+| `15 9 * * *` | 9:15 AM daily | `dueCharges.job.js` | OVERDUE records ke liye daily due charges |
+| `*/30 * * * *` | Har 30 min | `pendingEmail.job.js` | Pending email retry |
+| `0 2 * * *` | 2:00 AM daily | `homeworkCleanup.job.js` | Year-end homework cleanup |
+| `15 2 * * *` | 2:15 AM daily | `conductCleanup.job.js` | Year-end conduct remarks cleanup |
+| `30 2 * * *` | 2:30 AM daily | `examCleanup.job.js` | Year-end exam + terms cleanup |
+| `45 2 * * *` | 2:45 AM daily | `attendanceCleanup.job.js` | Year-end attendance archive (per-student summary + raw delete) |
+| `0 3 * * *` | 3:00 AM daily | `cleanup.job.js` | Data/session cleanup |
+| `30 3 * * *` | 3:30 AM daily | `feeArchive.job.js` | Fee year-end archive (**PAID only**) → `FeeYearSummary` |
+| `40 3 * * *` | 3:40 AM daily | `ptmCleanup.job.js` | Year-end PTM session cleanup (ended year + grace, legacy null-year bhi) |
+| `50 3 * * *` | 3:50 AM daily | `studyMaterialCleanup.job.js` | Year-end study-material cleanup (ended year + grace, legacy null-year bhi) |
+| `5 0 1 * *` | Har mahine 1st, 00:05 | `autoVoucher.job.js` | Agle mahine ke fee vouchers auto-generate |
+
+> **Cron reliability (root cause fix — Sep 2026):** pehle Redis down hon par `enableOfflineQueue` (default true)
+> ki wajah se `withJobLock` ki `redis.set()` HANG ho jati thi → har cron silently kabhi chalta hi nahi tha
+> (fee reminder + absent alerts exact symptom). Ab `config/redis.js` par `enableOfflineQueue: false`
+> (commands turant throw) aur `withJobLock` Redis fail hone par job ko **bina lock run** karta hai.
+> Alert/lateMark jobs Redis-dedup ke saath in-memory fallback (`jobs/cron/dedupCache.js`) rakhte hain
+> taake 15-min rerun par emails/notifications duplicate na jayein.
 
 **Email queue ab BullMQ use nahi karti** (direct SMTP) — Redis par load kam.
 
@@ -598,6 +626,8 @@ email to phir bhi chalegi (SMTP direct), lekin imports/caching fail ho sakte hai
 | "Portal ka shared password kya hai?" | Default = school code. Branch admin Settings → Portal Access se custom set kar sakta hai |
 | "Portal mein kaun kaun si cheezein dikhengi?" | 14 tabs: overview, attendance, fees, homework, materials, notices, results, exams, timetable, conduct, PTM, leave, notifications, profile |
 | "Portal routes kaise kaam karte hain?" | Saare `/portal/*` routes `authenticateAnyPortal` middleware use karte hain — parent ya student JWT dono accept hote hain |
+| "Naya academic year khud banega?" | Haan — `academicYearRollover.job.js` daily 00:10. Jis school ka latest year khatam (endDate < aaj) aur koi naya pehle se nahi → purane year ke **same duration (months)** ka naya banata hai (`"2026-2027"`) aur `isCurrent` laga deta hai |
+| "Absent alerts manually bhej sakte hain?" | Haan — admin Attendance Records page par **"Send Absent Alerts"** button → `POST /attendance/alerts/send` (force-send aaj ke alerts, time-gate/dedup cross karta hai; phir cron same-day repeat nahi karta). Fee ka manual "Send Reminders" pehle se hai |
 | "Staff/Principal ka photo nahi hai?" | Org logo dikhta hai as fallback (user photo → org logo → initials) |
 
 ---
