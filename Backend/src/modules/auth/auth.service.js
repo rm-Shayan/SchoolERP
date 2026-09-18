@@ -16,6 +16,7 @@ import { buildLoginUrl } from "../../services/email.templates.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import Logger from "../../lib/utils/logger.js";
 import redis from "../../config/redis.js";
+import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
 import userManagementService from "./userManagement.service.js";
 
 const logger = new Logger("auth-service");
@@ -297,6 +298,10 @@ class AuthService {
    * home branch when switching branches).
    */
   async getCurrentUser(userId, currentSchoolId) {
+    const cacheKey = `auth:me:${userId}:${currentSchoolId || "home"}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) return cached;
+
     const user = await authRepository.findById(userId);
     if (!user) throw ApiError.notFoundError("User not found");
 
@@ -312,7 +317,9 @@ class AuthService {
     }
 
     await attachAccessibleBranches(sessionUser, user);
-    return UserResponseDTO.toDTO(sessionUser);
+    const dto = UserResponseDTO.toDTO(sessionUser);
+    await cacheSet(cacheKey, dto, 60);
+    return dto;
   }
 
   /**

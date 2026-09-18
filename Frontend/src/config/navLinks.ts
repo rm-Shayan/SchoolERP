@@ -125,12 +125,6 @@ export const receptionistLinks: SidebarNavItem[] = [
     ],
   },
   {
-    title: 'Finance',
-    links: [
-      { label: 'Fee Records', path: '/branch/fees/records', icon: icon(I.banknotes) },
-    ],
-  },
-  {
     title: 'Attendance',
     links: [
       { label: 'Gate Scanner', path: '/branch/attendance/gate', icon: icon(I.qr) },

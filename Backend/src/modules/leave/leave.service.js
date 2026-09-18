@@ -5,6 +5,7 @@ import notificationService from "../../services/notification.service.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import redis from "../../config/redis.js";
 import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
+import { bustAllPortalCaches } from "../../lib/portalCache.js";
 
 class LeaveService {
   async listAll(schoolId, { status, page = 1, limit = 20 } = {}) {
@@ -66,6 +67,11 @@ class LeaveService {
       where: { id: leaveId },
       data: { status, reviewedBy: adminId, reviewedAt: new Date(), remarks: remarks || null },
     });
+
+    try {
+      if (leave.studentId) bustAllPortalCaches("student", leave.studentId);
+      if (leave.parent?.id) bustAllPortalCaches("parent", leave.parent.id);
+    } catch (_) {}
 
     if (status === "APPROVED") {
       const from = new Date(leave.dateFrom);

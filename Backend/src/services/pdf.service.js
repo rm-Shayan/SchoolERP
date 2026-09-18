@@ -485,7 +485,7 @@ class PdfService {
   // ═══════════════════════════════════════════════════════════════════════════
   async studentIdSlip({ schoolName, studentName, fatherName, className, sectionName, rollNumber,
     identifierCode, refNo, photoUrl, themeColor, logoUrl, validUntil, campusName, gender,
-    schoolAddress, schoolPhone }) {
+    schoolAddress, schoolPhone, contactPhone, emergencyPhone }) {
     const [photo, logo, qr, barcode] = await Promise.all([
       imageToBuffer(photoUrl),
       imageToBuffer(logoUrl),
@@ -498,6 +498,7 @@ class PdfService {
         schoolName, studentName, fatherName, className, sectionName, rollNumber,
         identifierCode, refNo, validUntil, campusName, themeColor,
         gender, photo, logo, barcode,
+        contactPhone, emergencyPhone,
       });
       // Page 2 — Back
       doc.addPage();
@@ -509,7 +510,7 @@ class PdfService {
   }
 
   _drawIdCardFront(doc, { schoolName, campusName, studentName, fatherName, className, sectionName,
-    rollNumber, identifierCode, refNo, validUntil, themeColor, gender, logo, photo, contactPhone, emergencyPhone }) {
+    rollNumber, identifierCode, refNo, validUntil, themeColor, gender, logo, photo, barcode, contactPhone, emergencyPhone }) {
     const theme = themeColor || C.primary;
     const W = 520, H = 330;
 
@@ -589,6 +590,11 @@ class PdfService {
       ry += rowH;
     });
 
+    // ── Code-128 barcode (identifier) ──
+    if (barcode) {
+      doc.image(barcode, dx, ry + 4, { fit: [dw, 40] });
+    }
+
     // ── Bottom accent band ──
     doc.save();
     doc.moveTo(0, H).lineTo(W, H).lineTo(W, H - 40)
@@ -658,6 +664,7 @@ class PdfService {
     const contactRows = [
       ["ADDRESS", schoolAddress || "School address"],
       ["CAMPUS", campusName || "Main Campus"],
+      ["PHONE", schoolPhone || "—"],
       ["ID NO", String(identifierCode || refNo || "—")],
     ];
     contactRows.forEach(([label, value], idx) => {
@@ -763,7 +770,7 @@ class PdfService {
     });
   }
 
-  _drawStaffIdCardFront(doc, { schoolName, campusName, themeColor, logo, photo, name, designation, employeeId, department, phone, validTill, refNo, qr }) {
+  _drawStaffIdCardFront(doc, { schoolName, campusName, themeColor, logo, photo, name, designation, employeeId, department, phone, email, validTill, refNo, qr }) {
     const theme = themeColor || C.primary;
     const W = 520, H = 330;
 
@@ -828,6 +835,7 @@ class PdfService {
       { label: "EMP ID",      value: String(employeeId || refNo || "—") },
       { label: "DEPARTMENT",  value: department || "—" },
       { label: "PHONE",       value: phone || "—" },
+      { label: "EMAIL",       value: email || "—" },
     ];
     const rowH = 22;
     rows.forEach((row) => {
@@ -837,7 +845,7 @@ class PdfService {
       doc.font(FONT.bold).fontSize(6).fillColor(theme)
          .text(row.label, dx + 4, ry + 4.5, { width: 76, characterSpacing: 0.3 });
       doc.font(FONT.bold).fontSize(10).fillColor(C.onSurface)
-         .text(String(row.value), dx + 92, ry + 2, { width: dw - 92 });
+         .text(String(row.value), dx + 92, ry + 2, { width: dw - 92, height: 14, ellipsis: true });
       ry += rowH;
     });
 

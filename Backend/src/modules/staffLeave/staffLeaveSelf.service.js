@@ -2,6 +2,7 @@ import prisma from "../../config/db.js";
 import ApiError from "../../lib/utils/ApiError.js";
 import { emitToRoom } from "../../config/websocket.js";
 import portalNotificationService from "../notification/notification.portalService.js";
+import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
 
 class StaffLeaveSelfService {
   async requestLeave(staffId, { dateFrom, dateTo, leaveType, reason }) {
@@ -57,6 +58,10 @@ class StaffLeaveSelfService {
   }
 
   async getMyLeaves(staffId, { status, page = 1, limit = 20 } = {}) {
+    const key = `staff-leave:my:${staffId}:${status || ""}:${page}:${limit}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
     const where = { staffId, leaveType: { not: null } };
     if (status) where.status = status;
 
@@ -70,7 +75,9 @@ class StaffLeaveSelfService {
       prisma.staffAttendance.count({ where }),
     ]);
 
-    return { requests, total, page, limit, totalPages: Math.ceil(total / limit) };
+    const result = { requests, total, page, limit, totalPages: Math.ceil(total / limit) };
+    await cacheSet(key, result, 30);
+    return result;
   }
 
   async updateOwn(staffId, leaveId, { dateFrom, dateTo, leaveType, reason }) {

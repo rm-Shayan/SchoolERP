@@ -334,6 +334,8 @@ class StudentService {
       identifierCode: newIdentifierCode,
       refNo: `ID-${updated.id.slice(0, 8)}`,
       photoUrl: updated.imageUrl || null,
+      contactPhone: updated.parent?.whatsappNo || updated.parent?.phone || null,
+      emergencyPhone: updated.parent?.phone || null,
       gender: updated.gender || null,
       themeColor: updated.school?.organization?.themeColor || "#2563eb",
       logoUrl: updated.school?.organization?.logoUrl || null,

@@ -12,6 +12,7 @@ import portalNotificationService from "../notification/notification.portalServic
 import { admissionImportQueue } from "../../jobs/queues/admissionImport.queue.js";
 import { emitToRoom } from "../../config/websocket.js";
 import { buildCsv } from "../../lib/utils/csv.js";
+import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
 
 const FLOW = [
   "INQUIRY",
@@ -445,6 +446,8 @@ class AdmissionService {
       identifierCode: student.identifierCode,
       refNo: `ID-${student.id.slice(0, 8)}`,
       photoUrl: student.imageUrl || null,
+      contactPhone: parent?.whatsappNo || parent?.phone || null,
+      emergencyPhone: parent?.phone || null,
       gender: student.gender || applicant.gender || null,
       themeColor: applicant.school?.organization?.themeColor || "#2563eb",
       logoUrl: applicant.school?.organization?.logoUrl || null,
@@ -578,16 +581,17 @@ class AdmissionService {
     const targetSchoolId = getEffectiveSchoolId(user, schoolId);
     assertSchoolAccess(user, targetSchoolId);
 
-    return admissionRepository.listApplicants({
-      schoolId: targetSchoolId,
-      status,
-      classId,
-      search,
-      from,
-      to,
-      page: Math.max(1, parseInt(page, 10) || 1),
-      pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50)),
+    const p = Math.max(1, parseInt(page, 10) || 1);
+    const ps = Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50));
+    const key = `admission:list:${targetSchoolId}:${status || ""}:${classId || ""}:${search || ""}:${from || ""}:${to || ""}:${p}:${ps}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
+    const result = await admissionRepository.listApplicants({
+      schoolId: targetSchoolId, status, classId, search, from, to, page: p, pageSize: ps,
     });
+    await cacheSet(key, result, 30);
+    return result;
   }
 
   /**
@@ -643,7 +647,12 @@ class AdmissionService {
   async getFunnel(user, schoolId) {
     const targetSchoolId = getEffectiveSchoolId(user, schoolId);
     assertSchoolAccess(user, targetSchoolId);
-    return admissionRepository.getFunnel(targetSchoolId);
+    const key = `admission:funnel:${targetSchoolId}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+    const result = await admissionRepository.getFunnel(targetSchoolId);
+    await cacheSet(key, result, 60);
+    return result;
   }
 
   /**

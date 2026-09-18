@@ -145,6 +145,7 @@ class DocumentsService {
       employeeId: u.username || u.id,
       department: u.school?.name || 'Administration',
       phone: u.phone || 'Not provided',
+      email: u.email || '—',
       validTill: endOfYear(),
       refNo: u.username || u.id,
       photoUrl: u.avatarUrl,

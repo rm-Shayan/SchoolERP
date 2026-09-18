@@ -66,7 +66,7 @@ export default function PortalNotificationBell() {
   useEffect(() => { load(); }, [load]);
   useEffect(() => { if (portalNotifications.length) load(); }, [portalNotifications.length, load]);
 
-  const openBell = () => { setOpen((o) => !o); setUnread(0); };
+  const openBell = () => { setOpen((o) => !o); };
 
   const markAllLocal = async () => {
     setUnread(0);
@@ -75,11 +75,15 @@ export default function PortalNotificationBell() {
   };
 
   const markRead = async (id: string) => {
+    const target = items.find((n) => n.id === id);
+    if (target && !target.isRead) setUnread((u) => Math.max(0, u - 1));
     setItems((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     await portalNotificationService.markRead([id]).catch(() => {});
   };
 
   const remove = async (id: string) => {
+    const target = items.find((n) => n.id === id);
+    if (target && !target.isRead) setUnread((u) => Math.max(0, u - 1));
     setItems((prev) => prev.filter((n) => n.id !== id));
     await portalNotificationService.remove([id]).catch(() => {});
   };
@@ -108,7 +112,7 @@ export default function PortalNotificationBell() {
         </svg>
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 text-white text-[9px] font-bold rounded-full flex items-center justify-center" style={{ backgroundColor: color }}>
-            {unread > 99 ? '99+' : unread > 9 ? '9+' : unread}
+            {unread}
           </span>
         )}
       </button>

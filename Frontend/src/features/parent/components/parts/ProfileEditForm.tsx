@@ -71,9 +71,9 @@ export default function ProfileEditForm({ parent, onSaved }: ProfileEditFormProp
               placeholder="you@example.com"
             />
           </div>
-          <div className="flex items-center justify-end gap-2 pt-1">
-            <span className="text-[11px] text-gray-400 mr-auto">WhatsApp number is managed by the school.</span>
-            <Button type="submit" loading={isSubmitting} size="sm">Save Changes</Button>
+          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-end">
+            <span className="text-[11px] text-gray-400 sm:mr-auto">WhatsApp number is managed by the school.</span>
+            <Button type="submit" loading={isSubmitting} size="sm" className="w-full sm:w-auto">Save Changes</Button>
           </div>
         </form>
       </CardContent>

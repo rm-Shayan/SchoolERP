@@ -40,43 +40,45 @@ export default function ResultsTab() {
         return (
           <Card key={exam.id}>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
                   <h3 className="font-semibold text-gray-900">{exam.name}</h3>
                   <p className="text-xs text-gray-500">{exam.term?.name} · {formatDate(exam.startDate)}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <p className="text-lg font-bold text-gray-900">{totalObtained}/{totalMax}</p>
                   <p className="text-xs text-gray-500">{pct}%</p>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="text-left py-2 font-medium text-gray-500">Subject</th>
-                    <th className="text-right py-2 font-medium text-gray-500">Marks</th>
-                    <th className="text-right py-2 font-medium text-gray-500">%</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((r) => {
-                    const p = Number(r.maxMarks) > 0 ? Math.round((Number(r.marksObtained) / Number(r.maxMarks)) * 100) : 0;
-                    return (
-                      <tr key={r.id} className="border-b border-gray-50 last:border-0">
-                        <td className="py-2 text-gray-900">{r.subject.name}</td>
-                        <td className="py-2 text-right text-gray-700">{r.marksObtained}/{r.maxMarks}</td>
-                        <td className="py-2 text-right">
-                          <span className={`font-medium ${p >= 80 ? 'text-green-600' : p >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                            {p}%
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[360px] text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="text-left py-2 font-medium text-gray-500">Subject</th>
+                      <th className="text-right py-2 font-medium text-gray-500">Marks</th>
+                      <th className="text-right py-2 font-medium text-gray-500">%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((r) => {
+                      const p = Number(r.maxMarks) > 0 ? Math.round((Number(r.marksObtained) / Number(r.maxMarks)) * 100) : 0;
+                      return (
+                        <tr key={r.id} className="border-b border-gray-50 last:border-0">
+                          <td className="py-2 text-gray-900">{r.subject.name}</td>
+                          <td className="py-2 text-right text-gray-700">{r.marksObtained}/{r.maxMarks}</td>
+                          <td className="py-2 text-right">
+                            <span className={`font-medium ${p >= 80 ? 'text-green-600' : p >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                              {p}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
         );

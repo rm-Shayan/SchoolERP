@@ -1,5 +1,6 @@
 import auditRepository from "./repository.js";
 import ApiError from "../../lib/utils/ApiError.js";
+import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
 
 class AuditService {
   /**
@@ -86,12 +87,16 @@ class AuditService {
   }
 
   async listLogs(user, { action, entityType, search, fromDate, toDate, page = 1, pageSize = 50 }) {
+    const p = Math.max(1, parseInt(page, 10) || 1);
+    const ps = Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50));
+    const key = `audit:list:${user.role}:${user.schoolId || ""}:${user.organizationId || ""}:${action || ""}:${entityType || ""}:${search || ""}:${fromDate || ""}:${toDate || ""}:${p}:${ps}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
     const where = this._buildWhere(user, { action, entityType, search, fromDate, toDate });
-    return auditRepository.list({
-      where,
-      page: Math.max(1, parseInt(page, 10) || 1),
-      pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50)),
-    });
+    const result = await auditRepository.list({ where, page: p, pageSize: ps });
+    await cacheSet(key, result, 30);
+    return result;
   }
 
   async exportCsv(user, params) {

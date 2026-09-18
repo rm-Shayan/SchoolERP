@@ -136,7 +136,7 @@ export async function bustPattern(portalKey) {
   let cursor = "0";
   do {
     try {
-      const [next, keys] = await redis.scan(cursor, { MATCH: pattern, COUNT: 100 });
+      const { cursor: next, keys } = await redis.scan(cursor, { MATCH: pattern, COUNT: 100 });
       cursor = next;
       if (keys.length) await redis.del(keys);
     } catch {

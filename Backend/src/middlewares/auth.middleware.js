@@ -7,6 +7,27 @@ import { setRequestOrganization, setRequestSchool } from "../lib/requestContext.
 
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_school_erp_token";
 
+// Single select shape for the "auth:student" entity cache. authenticateStudent
+// and authenticateAnyPortal share the same cache key, so their selects MUST be
+// identical — warna jo middleware pehle chale wahi shape cache kar deta hai aur
+// doosre ko sectionId/organizationId missing milta hai (student portal ke
+// homework/timetable/exams khaali dikhte hain).
+const PORTAL_STUDENT_SELECT = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  schoolId: true,
+  sectionId: true,
+  status: true,
+  isBlocked: true,
+  school: {
+    select: {
+      status: true,
+      organization: { select: { id: true, status: true } },
+    },
+  },
+};
+
 // Auth snapshot cache — har request par DB user lookup skip karta hai (H1).
 // Block/unblock/status changes apne aap token revoke karte hain (moderation
 // service), isliye chhota TTL security ke liye safe hai.
@@ -359,20 +380,7 @@ export const authenticateStudent = async (req, res, next) => {
     const student = await cachedLookup("auth:student", decoded.studentId, () =>
       prisma.student.findUnique({
         where: { id: decoded.studentId },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          schoolId: true,
-          status: true,
-          isBlocked: true,
-          school: {
-            select: {
-              status: true,
-              organization: { select: { status: true } },
-            },
-          },
-        },
+        select: PORTAL_STUDENT_SELECT,
       })
     );
 
@@ -485,11 +493,7 @@ export const authenticateAnyPortal = async (req, res, next) => {
       const student = await cachedLookup("auth:student", decoded.studentId, () =>
         prisma.student.findUnique({
           where: { id: decoded.studentId },
-          select: {
-            id: true, firstName: true, lastName: true,
-            schoolId: true, sectionId: true, status: true, isBlocked: true,
-            school: { select: { status: true, organization: { select: { id: true, status: true } } } },
-          },
+          select: PORTAL_STUDENT_SELECT,
         })
       );
       if (!student) return next(ApiError.unauthorizedError("Student account not found."));

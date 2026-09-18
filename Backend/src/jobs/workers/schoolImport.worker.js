@@ -101,6 +101,12 @@ const worker = new Worker(
           details: JSON.stringify({ source: "excel-import" }),
         });
 
+        // Idempotency marker PEHLE persist karo, branch admin email BAAD me —
+        // crash par retry skip karega, duplicate credentials mail nahi jayegi.
+        successCount++;
+        done.add(formattedCode);
+        await job.updateProgress({ done: [...done] });
+
         // Optional per-branch admin (Principal) — credentials are emailed
         if (adminEmail) {
           await createBranchAdmin({
@@ -112,12 +118,6 @@ const worker = new Worker(
             schoolName: school.name,
           });
         }
-
-        successCount++;
-        done.add(formattedCode);
-
-        // Persist processed set so retry skips already-done items (idempotency)
-        await job.updateProgress({ done: [...done] });
 
         // Broadcast progress via WebSocket
         const progressPercent = Math.round(((i + 1) / branches.length) * 100);

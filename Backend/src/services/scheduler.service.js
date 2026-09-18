@@ -32,12 +32,18 @@ const logger = new Logger("scheduler-service");
 async function withJobLock(name, seconds, fn) {
   const key = `cron:lock:${name}`;
   let acquired = false;
+  let lockHeld = false;
   try {
-    acquired = await redis.set(key, "1", { NX: true, EX: seconds });
+    const res = await redis.set(key, "1", { NX: true, EX: seconds });
+    acquired = res === "OK";
+    lockHeld = res === null;
   } catch (err) {
+    // Redis down → lock check impossible. Job ko SKIP mat karo (warna fee/
+    // absent alerts kabhi na chalein); bina lock chalao. Multi-instance me
+    // rare duplicate acceptable hai — silent "never fire" se behtar.
     logger.logger.warn(`[CRON] ${name} — Redis unavailable (${err.message}); running WITHOUT lock`);
   }
-  if (!acquired) {
+  if (lockHeld) {
     logger.logger.info(`[CRON] ${name} skipped — another instance holds the lock`);
     return;
   }

@@ -40,6 +40,9 @@ export const getDailyReport = async (schoolId, dateStr) => {
 };
 
 export const getMonthlyReport = async (schoolId, year, month) => {
+  const cacheKey = `staff-attendance:monthly:${schoolId}:${year}:${month}`;
+  try { const cached = await redis.get(cacheKey); if (cached) return JSON.parse(cached); } catch (_) {}
+
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0);
 
@@ -66,10 +69,15 @@ export const getMonthlyReport = async (schoolId, year, month) => {
   });
 
   const weeklyOff = Array.isArray(school?.weeklyOff) ? school.weeklyOff : [0, 6];
-  return { month, year, weeklyOff, records: Object.values(byStaff) };
+  const result = { month, year, weeklyOff, records: Object.values(byStaff) };
+  try { await redis.setEx(cacheKey, 120, JSON.stringify(result)); } catch (_) {}
+  return result;
 };
 
 export const getMyAttendance = async (staffId, { startDate, endDate } = {}) => {
+  const cacheKey = `staff-attendance:my:${staffId}:${startDate || ""}:${endDate || ""}`;
+  try { const cached = await redis.get(cacheKey); if (cached) return JSON.parse(cached); } catch (_) {}
+
   const where = { staffId };
   if (startDate || endDate) {
     where.date = {};
@@ -86,5 +94,7 @@ export const getMyAttendance = async (staffId, { startDate, endDate } = {}) => {
     leave: records.filter((r) => r.status === "LEAVE").length,
   };
 
-  return { records, summary };
+  const result = { records, summary };
+  try { await redis.setEx(cacheKey, 30, JSON.stringify(result)); } catch (_) {}
+  return result;
 };

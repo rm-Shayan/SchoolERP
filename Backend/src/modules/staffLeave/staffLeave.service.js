@@ -2,9 +2,14 @@ import prisma from "../../config/db.js";
 import ApiError from "../../lib/utils/ApiError.js";
 import { emitToRoom } from "../../config/websocket.js";
 import portalNotificationService from "../notification/notification.portalService.js";
+import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
 
 class StaffLeaveService {
   async listAll(schoolId, { status, staffId, page = 1, limit = 20 } = {}) {
+    const key = `staff-leave:list:${schoolId}:${status || ""}:${staffId || ""}:${page}:${limit}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
     const where = { schoolId, leaveType: { not: null } };
     if (status) where.status = status;
     if (staffId) where.staffId = staffId;
@@ -23,7 +28,9 @@ class StaffLeaveService {
       prisma.staffAttendance.count({ where }),
     ]);
 
-    return { requests, total, page, limit, totalPages: Math.ceil(total / limit) };
+    const result = { requests, total, page, limit, totalPages: Math.ceil(total / limit) };
+    await cacheSet(key, result, 30);
+    return result;
   }
 
   async review(schoolId, leaveId, { status, remarks }, adminId) {

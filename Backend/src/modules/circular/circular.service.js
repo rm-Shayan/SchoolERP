@@ -4,6 +4,7 @@ import { getEffectiveSchoolId, assertOwnSchool, assertSchoolAccess, assertSchool
 import notificationService from "../../services/notification.service.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import { emitToRoom } from "../../config/websocket.js";
+import { cacheGet, cacheSet, cacheInvalidatePrefix } from "../../lib/utils/cache.js";
 
 class CircularService {
   /**
@@ -26,6 +27,7 @@ class CircularService {
       mediaUrl: data.mediaUrl || null,
       audience,
     });
+    await cacheInvalidatePrefix("circular:list:");
 
     const message = `${data.title}\n\n${data.content}`;
     let notifiedParents = 0;
@@ -118,10 +120,15 @@ class CircularService {
     const targetSchoolId = getEffectiveSchoolId(user, schoolId);
     assertSchoolAccess(user, targetSchoolId);
 
-    return circularRepository.listCircularsBySchool(targetSchoolId, {
-      page: Math.max(1, parseInt(page, 10) || 1),
-      pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50)),
-    });
+    const p = Math.max(1, parseInt(page, 10) || 1);
+    const ps = Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50));
+    const key = `circular:list:${targetSchoolId}:${p}:${ps}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
+    const result = await circularRepository.listCircularsBySchool(targetSchoolId, { page: p, pageSize: ps });
+    await cacheSet(key, result, 60);
+    return result;
   }
 
   async getCircular(user, id) {
@@ -135,9 +142,9 @@ class CircularService {
     const circular = await this.getCircular(user, id);
     assertOwnSchool(user, circular.schoolId);
     await circularRepository.deleteCircular(id);
+    await cacheInvalidatePrefix("circular:list:");
 
-    portalNotificationService.create({
-      schoolId: circular.schoolId, senderId: user.id, senderName: user.name,
+    portalNotificationService.create({      schoolId: circular.schoolId, senderId: user.id, senderName: user.name,
       title: "CIRCULAR_DELETED",
       body: `"${circular.title}" circular delete kar di gayi.`,
       category: "CIRCULAR",
@@ -160,6 +167,7 @@ class CircularService {
     if (data.mediaUrl !== undefined) patch.mediaUrl = data.mediaUrl || null;
 
     const updated = await circularRepository.updateCircular(id, patch);
+    await cacheInvalidatePrefix("circular:list:");
 
     portalNotificationService.create({
       schoolId: circular.schoolId, senderId: user.id, senderName: user.name,

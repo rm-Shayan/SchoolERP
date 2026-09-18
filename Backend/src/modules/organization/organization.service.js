@@ -19,6 +19,7 @@ import portalNotificationService from "../notification/notification.portalServic
 import { encryptSecret } from "../../lib/utils/secretBox.js";
 import { buildExcelBuffer } from "../../lib/utils/excelExport.js";
 import prisma from "../../config/db.js";
+import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
 
 const ORG_CACHE_TTL = 3600; // 1 hour
 const OVERVIEW_CACHE_TTL = 120; // 120 seconds — dashboard freshness vs latency
@@ -730,12 +731,16 @@ class OrganizationService {
       throw ApiError.forbiddenError("You can only view your own organization's dashboard");
     }
 
+    const cacheKey = `superadmin:org-dashboard:${orgId}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) return cached;
+
     const org = await this.getOrganizationById(orgId);
     if (!org) throw ApiError.notFoundError("Organization not found");
 
     const data = await organizationRepository.orgDashboard(orgId, 12);
 
-    return {
+    const result = {
       organization: {
         id: org.id,
         name: org.name,
@@ -753,6 +758,8 @@ class OrganizationService {
       revenue: data.revenue,
       staff: data.staff,
     };
+    await cacheSet(cacheKey, result, 120);
+    return result;
   }
 
   /**
@@ -867,7 +874,11 @@ class OrganizationService {
    * School health audit — blocked branches, missing admins, zero-staff, empty orgs.
    */
   async getSchoolHealth() {
-    return organizationRepository.schoolHealth();
+    const cached = await cacheGet("superadmin:health");
+    if (cached) return cached;
+    const data = await organizationRepository.schoolHealth();
+    await cacheSet("superadmin:health", data, 60);
+    return data;
   }
 }
 

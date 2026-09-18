@@ -34,8 +34,13 @@ class AttendanceService {
    * List registered scan devices for a school branch
    */
   async listDevices(schoolId) {
+    const key = `attendance:devices:${schoolId}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
     const school = await prisma.school.findUnique({ where: { id: schoolId }, select: { scanDevices: true } });
-    return school?.scanDevices || [];
+    const devices = school?.scanDevices || [];
+    await cacheSet(key, devices, 120);
+    return devices;
   }
 
   /**
@@ -326,15 +331,25 @@ class AttendanceService {
   }
 
 async getStudentHistory(studentId, startDate, endDate) {
-    return attendanceRepository.getStudentAttendanceHistory(
+    const key = `attendance:student-history:${studentId}:${startDate || ""}:${endDate || ""}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+    const result = await attendanceRepository.getStudentAttendanceHistory(
       studentId,
       startDate ? new Date(startDate) : undefined,
       endDate ? new Date(endDate) : undefined
     );
+    await cacheSet(key, result, 60);
+    return result;
   }
 
   async getStudentYearlySummaries(studentId) {
-    return attendanceRepository.getStudentYearlySummaries(studentId);
+    const key = `attendance:student-yearly:${studentId}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+    const result = await attendanceRepository.getStudentYearlySummaries(studentId);
+    await cacheSet(key, result, 120);
+    return result;
   }
 
   /**
@@ -452,11 +467,16 @@ async getStudentHistory(studentId, startDate, endDate) {
    * GET /attendance/staff — branch ke active staff members (marking UI ke liye).
    */
   async getSchoolStaff(schoolId) {
-    return prisma.user.findMany({
+    const key = `attendance:staff:${schoolId}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+    const staff = await prisma.user.findMany({
       where: { schoolId, isActive: true, role: { notIn: ["SUPER_ADMIN"] } },
       select: { id: true, name: true, email: true, role: true, username: true, phone: true, avatarUrl: true },
       orderBy: { name: "asc" },
     });
+    await cacheSet(key, staff, 120);
+    return staff;
   }
 
   async updateRecord(schoolId, recordId, { status, remarks }) {

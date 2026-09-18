@@ -1,6 +1,7 @@
 import prisma from "../../config/db.js";
 import { emitToRoom } from "../../config/websocket.js";
 import Logger from "../../lib/utils/logger.js";
+import { cacheGet, cacheSet, cacheInvalidatePrefix } from "../../lib/utils/cache.js";
 
 const logger = new Logger("portal-notifications");
 
@@ -141,6 +142,7 @@ class PortalNotificationService {
       // taki socket payload aur list() dono consistent rahen.
       const payload = { ...notification, body: notification.message };
 
+      await cacheInvalidatePrefix("notif:portal:");
       emitToRoom("super_admins", "portal_notification_created", payload);
       if (schoolId) emitToRoom(`school:${schoolId}`, "portal_notification_created", payload);
       if (organizationId) emitToRoom(`org:${organizationId}`, "portal_notification_created", payload);
@@ -152,6 +154,10 @@ class PortalNotificationService {
   }
 
   async list(user, { schoolId, organizationId, category, unreadOnly, page = 1, pageSize = 30 }) {
+    const key = `notif:portal:list:${user.id}:${schoolId || ""}:${organizationId || ""}:${category || ""}:${unreadOnly ? 1 : 0}:${page}:${pageSize}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
     const where = visibilityWhere(user, { schoolId, organizationId });
 
     if (category) where.category = category;
@@ -161,7 +167,9 @@ class PortalNotificationService {
       prisma.notificationLog.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * pageSize, take: pageSize }),
       prisma.notificationLog.count({ where }),
     ]);
-    return { items: items.map((n) => ({ ...n, body: n.message })), total, page, pageSize };
+    const result = { items: items.map((n) => ({ ...n, body: n.message })), total, page, pageSize };
+    await cacheSet(key, result, 20);
+    return result;
   }
 
   async markRead(user, ids) {
@@ -169,6 +177,7 @@ class PortalNotificationService {
     where.id = { in: ids };
     const result = await prisma.notificationLog.updateMany({ where, data: { isRead: true } });
     if (result.count === 0) return { updated: 0 };
+    await cacheInvalidatePrefix("notif:portal:");
     emitToRoom("super_admins", "portal_notifications_read", { ids });
     if (user.schoolId) emitToRoom(`school:${user.schoolId}`, "portal_notifications_read", { ids });
     if (user.organizationId) emitToRoom(`org:${user.organizationId}`, "portal_notifications_read", { ids });
@@ -179,6 +188,7 @@ class PortalNotificationService {
     const where = visibilityWhere(user, { schoolId });
     where.isRead = false;
     const result = await prisma.notificationLog.updateMany({ where, data: { isRead: true } });
+    await cacheInvalidatePrefix("notif:portal:");
     emitToRoom("super_admins", "portal_all_read", { schoolId: user.schoolId || schoolId || null });
     if (user.schoolId) emitToRoom(`school:${user.schoolId}`, "portal_all_read", {});
     if (user.organizationId) emitToRoom(`org:${user.organizationId}`, "portal_all_read", {});
@@ -195,6 +205,7 @@ class PortalNotificationService {
       where.recipientId = user.id;
     }
     const result = await prisma.notificationLog.deleteMany({ where });
+    await cacheInvalidatePrefix("notif:portal:");
     emitToRoom("super_admins", "portal_notifications_deleted", { ids });
     if (user.schoolId) emitToRoom(`school:${user.schoolId}`, "portal_notifications_deleted", { ids });
     if (user.organizationId) emitToRoom(`org:${user.organizationId}`, "portal_notifications_deleted", { ids });
@@ -202,10 +213,16 @@ class PortalNotificationService {
   }
 
   async unreadCount(user, { schoolId, organizationId } = {}) {
+    const key = `notif:portal:count:${user.id}:${schoolId || ""}:${organizationId || ""}`;
+    const cached = await cacheGet(key);
+    if (cached !== undefined) return cached;
+
     const where = visibilityWhere(user, { schoolId, organizationId });
     where.isRead = false;
 
-    return prisma.notificationLog.count({ where });
+    const count = await prisma.notificationLog.count({ where });
+    await cacheSet(key, count, 20);
+    return count;
   }
 }
 

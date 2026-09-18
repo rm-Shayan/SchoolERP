@@ -44,7 +44,7 @@ export default function FeeYearSummary({ childId }: Props) {
   return (
     <Card>
       <div className="p-4">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-1">
           <h3 className="font-semibold text-gray-900 text-sm">Yearly Fee Summary</h3>
           <span className="text-xs text-gray-400">Archived paid records by year</span>
         </div>

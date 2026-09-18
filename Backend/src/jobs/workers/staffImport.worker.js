@@ -83,6 +83,13 @@ export const staffImportWorker = new Worker(
           },
         });
 
+        // Idempotency marker PEHLE persist karo, email BAAD me bhejo. Crash
+        // (email send ke baad, marker se pehle) par retry is item ko skip karega
+        // → duplicate credentials mail kabhi nahi. queueEmail fail hone par bhi
+        // email durable outbox me persist hoti hai, is liye marker pehle safe hai.
+        done.add(formattedEmail);
+        await job.updateProgress({ done: [...done] });
+
         // Fetch branch logo for email branding
         const targetSchool = targetSchoolId
           ? await prisma.school.findUnique({ where: { id: targetSchoolId }, select: { logoUrl: true, themeColor: true } })
@@ -108,10 +115,6 @@ export const staffImportWorker = new Worker(
         });
 
         successCount++;
-        done.add(formattedEmail);
-
-        // Persist processed set so retry skips already-done items (idempotency)
-        await job.updateProgress({ done: [...done] });
 
         const progressPercent = Math.round(((i + 1) / staffMembers.length) * 100);
         emitToRoom(`job:${job.id}`, "staff_import_progress", {

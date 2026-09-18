@@ -1,4 +1,4 @@
-// Smart loader — NODE_ENV=local → dev.env, warna .env (src/config/env.js)
+
 import "./src/config/env.js";
 import { defineConfig, env } from "prisma/config";
 

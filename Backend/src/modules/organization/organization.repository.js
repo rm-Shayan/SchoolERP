@@ -385,7 +385,9 @@ class OrganizationRepository {
           WHERE "schoolId" IS NOT NULL AND role = 'ADMIN'
         )
         AND s.id NOT IN (
-          SELECT DISTINCT value::text FROM "User", jsonb_array_elements_text(COALESCE("branchAccess", '[]'::jsonb)) WHERE role = 'ADMIN'
+          SELECT DISTINCT value::text FROM "User", jsonb_array_elements_text(
+            CASE WHEN jsonb_typeof("branchAccess") = 'array' THEN "branchAccess" ELSE '[]'::jsonb END
+          ) WHERE role = 'ADMIN'
         )
         ORDER BY o.name, s.name
       `,

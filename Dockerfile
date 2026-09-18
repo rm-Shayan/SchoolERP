@@ -41,6 +41,9 @@ USER appuser
 
 ENV NODE_ENV=production
 ENV PORT=5000
+# Cron + attendance automation school-local (PKT) time me chalein. Runtime TZ
+# env se override ho sakta hai.
+ENV TZ=Asia/Karachi
 EXPOSE 5000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \

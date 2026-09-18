@@ -17,6 +17,7 @@ import { staffImportQueue } from "../../jobs/queues/staffImport.queue.js";
 import Logger from "../../lib/utils/logger.js";
 import smtpSettingsService from "../smtpSettings/smtpSettings.service.js";
 import storageSettingsService from "../storageSettings/storageSettings.service.js";
+import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
 
 const logger = new Logger("user-management-service");
 
@@ -249,6 +250,10 @@ class UserManagementService {
     if (requester.role !== ROLES.SUPER_ADMIN) {
       throw ApiError.forbiddenError("Only Super Admins can list unassigned admins.");
     }
+    const cacheKey = `auth:unassigned-admins:${page}:${pageSize}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) return cached;
+
     const where = { role: ROLES.ADMIN, isActive: true, schoolId: null };
     const [users, total] = await Promise.all([
       prisma.user.findMany({
@@ -260,7 +265,9 @@ class UserManagementService {
       }),
       prisma.user.count({ where }),
     ]);
-    return { items: users, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+    const result = { items: users, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+    await cacheSet(cacheKey, result, 30);
+    return result;
   }
 
   /**
@@ -368,6 +375,10 @@ class UserManagementService {
   }
 
   async listUsers(requester, { page = 1, pageSize = 50 } = {}) {
+    const key = `users:list:${requester.role}:${requester.organizationId || ""}:${requester.schoolId || ""}:${page}:${pageSize}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
     let result;
     if (requester.role === ROLES.SUPER_ADMIN) {
       result = await authRepository.findUsersByOrganization(requester.organizationId, { page, pageSize });
@@ -378,11 +389,13 @@ class UserManagementService {
     } else {
       throw ApiError.forbiddenError("You do not have permission to view user accounts.");
     }
-    return {
+    const out = {
       items: result.items.map(UserResponseDTO.toDTO), total: result.total,
       page: result.page, pageSize: result.pageSize,
       totalPages: Math.ceil(result.total / result.pageSize),
     };
+    await cacheSet(key, out, 30);
+    return out;
   }
 
   async exportStaffExcel(requester) {
@@ -402,15 +415,21 @@ class UserManagementService {
 
   async listAllUsersPlatform(requester, { page = 1, pageSize = 50, search, role, isActive, hasBlockReason, organizationId } = {}) {
     if (requester.role !== ROLES.SUPER_ADMIN) throw ApiError.forbiddenError("Only Super Admins can view the platform-wide user directory.");
+    const key = `users:platform:${page}:${pageSize}:${search || ""}:${role || ""}:${isActive ?? ""}:${hasBlockReason ?? ""}:${organizationId || ""}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
     const [result, stats] = await Promise.all([
       authRepository.findAllUsersPlatform({ page, pageSize, search, role, isActive, hasBlockReason, organizationId }),
       authRepository.platformUserStats(),
     ]);
-    return {
+    const out = {
       stats, items: result.items.map(UserResponseDTO.toDTO), total: result.total,
       page: result.page, pageSize: result.pageSize,
       totalPages: Math.ceil(result.total / result.pageSize),
     };
+    await cacheSet(key, out, 30);
+    return out;
   }
 
   /**
@@ -420,7 +439,11 @@ class UserManagementService {
     if (requester.role !== ROLES.SUPER_ADMIN) throw ApiError.forbiddenError("Only Super Admins can access the platform directory.");
     const p = Math.max(1, parseInt(filters.page, 10) || 1);
     const ps = Math.min(100, Math.max(1, parseInt(filters.pageSize, 10) || 50));
-    return authRepository.listPlatformDirectory({
+    const key = `users:directory:${filters.type || "all"}:${filters.search || ""}:${filters.organizationId || ""}:${filters.schoolId || ""}:${filters.role || ""}:${filters.status || ""}:${filters.classId || ""}:${filters.sectionId || ""}:${p}:${ps}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
+    const result = await authRepository.listPlatformDirectory({
       type: filters.type || "all",
       search: filters.search,
       organizationId: filters.organizationId,
@@ -431,6 +454,8 @@ class UserManagementService {
       sectionId: filters.sectionId,
       page: p, pageSize: ps,
     });
+    await cacheSet(key, result, 30);
+    return result;
   }
 
   async exportAllUsersPlatform(requester, filters = {}) {

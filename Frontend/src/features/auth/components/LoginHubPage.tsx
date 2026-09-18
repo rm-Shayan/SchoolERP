@@ -21,7 +21,7 @@ interface LoginHubPageProps {
   initialBranding?: SchoolBranding | null;
 }
 
-const DEFAULT_THEME = '#6366f1';
+const DEFAULT_THEME = '#7c3aed';
 
 export default function LoginHubPage({ orgSlug, code, initialBranding }: LoginHubPageProps) {
   const { branding, setBranding } = useOrgBranding({ code, slug: orgSlug, initialBranding });

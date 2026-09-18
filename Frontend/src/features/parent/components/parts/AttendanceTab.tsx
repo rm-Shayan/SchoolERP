@@ -110,7 +110,7 @@ function SummaryCards({ summary }: { summary: PortalAttendanceSummary }) {
     ...(summary.halfDay > 0 ? [{ label: 'Half Day', value: summary.halfDay, color: '#0891b2' }] : []),
   ];
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       {items.map((s) => (
         <Card key={s.label} className="p-3 text-center">
           <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>

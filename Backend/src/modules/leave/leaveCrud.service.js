@@ -5,8 +5,16 @@ import notificationService from "../../services/notification.service.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import redis from "../../config/redis.js";
 import { cacheInvalidatePrefix } from "../../lib/utils/cache.js";
+import { bustAllPortalCaches } from "../../lib/portalCache.js";
 
 class LeaveCrudService {
+  _bustPortal(studentId, parentId) {
+    try {
+      if (studentId) bustAllPortalCaches("student", studentId);
+      if (parentId) bustAllPortalCaches("parent", parentId);
+    } catch (_) {}
+  }
+
   async create(schoolId, { studentId, dateFrom, dateTo, reason, status = "PENDING" }, adminId) {
     const student = await prisma.student.findFirst({
       where: { id: studentId, schoolId, status: "ACTIVE" },
@@ -46,6 +54,7 @@ class LeaveCrudService {
 
     const leave = await prisma.leaveRequest.create({ data });
     await cacheInvalidatePrefix(`leave:list:${schoolId}:`);
+    this._bustPortal(studentId, student.parentId);
 
     if (status === "APPROVED") {
       await this._applyAttendance(schoolId, studentId, from, to, reason);
@@ -107,6 +116,7 @@ class LeaveCrudService {
 
     const updated = await prisma.leaveRequest.update({ where: { id }, data });
     await cacheInvalidatePrefix(`leave:list:${schoolId}:`);
+    this._bustPortal(leave.studentId, leave.student?.parentId);
 
     // Status PENDING → APPROVED hon par student ke attendance par LEAVE apply
     // karo + parent ko email + portal notification (create() jaisa hi behavior).
@@ -155,6 +165,7 @@ class LeaveCrudService {
     if (!leave) throw ApiError.notFoundError("Leave request not found");
     await prisma.leaveRequest.delete({ where: { id } });
     await cacheInvalidatePrefix(`leave:list:${schoolId}:`);
+    this._bustPortal(leave.studentId, leave.parentId);
     emitToRoom(`school:${schoolId}`, "leave_request_deleted", { id });
     return { success: true };
   }

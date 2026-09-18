@@ -1,6 +1,7 @@
 import notificationRepository from "./repository.js";
 import redis from "../../config/redis.js";
 import { getEffectiveSchoolId, assertSchoolAccess } from "../../lib/scope.js";
+import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
 
 function redisGet(key) {
   try { return redis.get(key).then(JSON.parse).catch(() => null); } catch { return null; }
@@ -43,7 +44,12 @@ class NotificationModuleService {
   async getDeliveryStatus(user, { schoolId, fromDate, toDate }) {
     const targetSchoolId = this._resolveSchoolId(user, schoolId);
     if (targetSchoolId) assertSchoolAccess(user, targetSchoolId);
-    return notificationRepository.getDeliveryStatus(targetSchoolId, { fromDate, toDate });
+    const key = `notif:status:${targetSchoolId || "platform"}:${fromDate || ""}:${toDate || ""}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+    const result = await notificationRepository.getDeliveryStatus(targetSchoolId, { fromDate, toDate });
+    await cacheSet(key, result, 60);
+    return result;
   }
 
   async listLogs(user, { schoolId, status, channel, page = 1, pageSize = 50 }) {

@@ -36,3 +36,11 @@ if (existsSync(envPath)) {
   }
 }
 // else: file missing → env vars are already the source of truth (Docker/prod).
+
+// ── Timezone (cron + attendance automation) ──────────────────────────
+// Production container default UTC hoti hai; school times (attendance
+// cutoff/absent, fee reminder 9AM) PKT me hain. Bina is ke node-cron window
+// (7-18 UTC = 12PM-11PM PKT) aur now.getHours() UTC dono PKT school times se
+// mismatch ho jate hain → absent/late alerts miss. Explicit TZ env override
+// kar sakta hai; warna Asia/Karachi default.
+if (!process.env.TZ) process.env.TZ = process.env.CRON_TZ || "Asia/Karachi";

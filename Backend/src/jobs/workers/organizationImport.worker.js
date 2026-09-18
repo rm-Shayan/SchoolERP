@@ -102,6 +102,13 @@ const worker = new Worker(
           details: JSON.stringify({ source: "excel-import", code: formattedCode }),
         });
 
+        // Idempotency marker PEHLE persist karo, admin credentials email BAAD me
+        // bhejo — crash (email ke baad, marker se pehle) par retry skip karega,
+        // duplicate mail nahi jayegi.
+        successCount++;
+        done.add(formattedCode);
+        await job.updateProgress({ done: [...done] });
+
         // If Excel contains AdminEmail, auto-create the branch Principal (ADMIN)
         // of the default branch and email credentials. (Pakistani school model:
         // the person designated here is the Branch Head / Principal.)
@@ -148,12 +155,6 @@ const worker = new Worker(
             allowHolderAsRecipient: true,
           });
         }
-
-        successCount++;
-        done.add(formattedCode);
-
-        // Persist processed set so retry skips already-done items (idempotency)
-        await job.updateProgress({ done: [...done] });
 
         // Broadcast progress via WebSocket
         const progressPercent = Math.round(((i + 1) / organizations.length) * 100);

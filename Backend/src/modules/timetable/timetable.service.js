@@ -5,6 +5,7 @@ import { assertOwnSchool, assertSchoolAccess } from "../../lib/scope.js";
 import { timetableImportQueue } from "../../jobs/queues/timetableImport.queue.js";
 import { buildCsv } from "../../lib/utils/csv.js";
 import { emitToRoom } from "../../config/websocket.js";
+import { cacheGet, cacheSet, cacheInvalidatePrefix } from "../../lib/utils/cache.js";
 
 class TimetableService {
   async createSlot(user, sectionId, data) {
@@ -43,15 +44,23 @@ class TimetableService {
     });
 
     const schoolId = section.class.schoolId;
+    await cacheInvalidatePrefix("timetable:");
     emitToRoom(`school:${schoolId}`, "timetable_slot_created", { ...slot, schoolId });
     return slot;
   }
 
   async listSlotsBySection(user, sectionId) {
+    const key = `timetable:section:${sectionId}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
     const section = await timetableRepository.sectionExists(sectionId);
     if (!section) throw ApiError.notFoundError("Section not found");
     assertSchoolAccess(user, section.class.schoolId);
-    return timetableRepository.listSlotsBySection(sectionId);
+
+    const slots = await timetableRepository.listSlotsBySection(sectionId);
+    await cacheSet(key, slots, 60);
+    return slots;
   }
 
   async getSlot(user, id) {
@@ -99,6 +108,7 @@ class TimetableService {
 
     const updated = await timetableRepository.updateSlot(id, updateData);
     const schoolId = slot.section.class.schoolId;
+    await cacheInvalidatePrefix("timetable:");
     emitToRoom(`school:${schoolId}`, "timetable_slot_updated", { ...updated, schoolId });
     return updated;
   }
@@ -108,6 +118,7 @@ class TimetableService {
     assertOwnSchool(user, slot.section.class.schoolId);
     await timetableRepository.deleteSlot(id);
     const schoolId = slot.section.class.schoolId;
+    await cacheInvalidatePrefix("timetable:");
     emitToRoom(`school:${schoolId}`, "timetable_slot_deleted", { id, sectionId: slot.sectionId, schoolId });
     return true;
   }
@@ -122,6 +133,7 @@ class TimetableService {
     assertOwnSchool(user, section.class.schoolId);
     const { count } = await timetableRepository.deleteBySectionAndDay(sectionId, dayOfWeek);
     const schoolId = section.class.schoolId;
+    await cacheInvalidatePrefix("timetable:");
     emitToRoom(`school:${schoolId}`, "timetable_cleared", { sectionId, dayOfWeek: dayOfWeek ?? null, deletedCount: count, schoolId });
     return { deletedCount: count };
   }
@@ -130,11 +142,19 @@ class TimetableService {
     const section = await timetableRepository.sectionExists(sectionId);
     if (!section) throw ApiError.notFoundError("Section not found");
     assertOwnSchool(user, section.class.schoolId);
-    return timetableRepository.reorderSlots(sectionId, dayOfWeek, slotIds);
+    const result = await timetableRepository.reorderSlots(sectionId, dayOfWeek, slotIds);
+    await cacheInvalidatePrefix("timetable:");
+    return result;
   }
 
   async listSlotsByTeacher(user, teacherId, { dayOfWeek }) {
-    return timetableRepository.listSlotsByTeacher(teacherId, { dayOfWeek });
+    const key = `timetable:teacher:${teacherId}:${dayOfWeek ?? "all"}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+
+    const slots = await timetableRepository.listSlotsByTeacher(teacherId, { dayOfWeek });
+    await cacheSet(key, slots, 60);
+    return slots;
   }
 
   /**
