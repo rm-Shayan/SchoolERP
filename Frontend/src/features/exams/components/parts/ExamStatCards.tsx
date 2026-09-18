@@ -29,7 +29,7 @@ export default function ExamStatCards({ exams, terms }: Props) {
   }, [exams, terms]);
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {stats.map((s, i) => (
         <StatsCard key={s.title} index={i} {...s} />
       ))}

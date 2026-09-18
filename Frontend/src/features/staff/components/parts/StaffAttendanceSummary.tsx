@@ -95,7 +95,7 @@ export default function StaffAttendanceSummary({ staffId }: Props) {
         <Card>
           <CardContent className="p-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">This Month</h4>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <StatChip label="Present" value={ms.present} color="bg-emerald-100 text-emerald-700" />
               <StatChip label="Late" value={ms.late} color="bg-amber-100 text-amber-700" />
               <StatChip label="Absent" value={ms.absent} color="bg-red-100 text-red-700" />

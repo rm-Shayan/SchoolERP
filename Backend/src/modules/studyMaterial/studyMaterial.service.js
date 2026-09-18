@@ -4,6 +4,7 @@ import { assertOwnSchool, assertSchoolAccess } from "../../lib/scope.js";
 import { emitToRoom } from "../../config/websocket.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import prisma from "../../config/db.js";
+import { cacheGet, cacheSet, cacheInvalidatePrefix } from "../../lib/utils/cache.js";
 
 class StudyMaterialService {
   /**
@@ -128,6 +129,7 @@ class StudyMaterialService {
       user,
     });
 
+    await cacheInvalidatePrefix(`studyMaterial:list:${schoolId}:`);
     return material;
   }
 
@@ -142,16 +144,23 @@ class StudyMaterialService {
     // All staff in the branch see every material (general + section-specific).
     // `createdById` remains an optional explicit filter for the caller.
     const filterUserId = query.createdById || undefined;
+    const p = Math.max(1, parseInt(query.page, 10) || 1);
+    const ps = Math.min(100, Math.max(1, parseInt(query.pageSize, 10) || 50));
+    const cacheKey = `studyMaterial:list:${schoolId}:${query.sectionId || "_"}:${query.subjectId || "_"}:${query.type || "_"}:${filterUserId || "_"}:${query.academicYearId || "_"}:${p}:${ps}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) return cached;
 
-    return studyMaterialRepository.listBySchool(schoolId, {
+    const items = await studyMaterialRepository.listBySchool(schoolId, {
       sectionId: query.sectionId,
       subjectId: query.subjectId,
       type: query.type,
       createdById: filterUserId,
       academicYearId: query.academicYearId,
-      page: Math.max(1, parseInt(query.page, 10) || 1),
-      pageSize: Math.min(100, Math.max(1, parseInt(query.pageSize, 10) || 50)),
+      page: p,
+      pageSize: ps,
     });
+    await cacheSet(cacheKey, items, 45);
+    return items;
   }
 
   async getOne(user, id) {
@@ -192,6 +201,7 @@ class StudyMaterialService {
       user,
     });
 
+    await cacheInvalidatePrefix(`studyMaterial:list:${material.schoolId}:`);
     return updated;
   }
 
@@ -217,6 +227,7 @@ class StudyMaterialService {
     });
 
     await studyMaterialRepository.delete(id);
+    await cacheInvalidatePrefix(`studyMaterial:list:${material.schoolId}:`);
     return true;
   }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { useRouter } from 'next/navigation';
 import { PageHeader, Card, Button } from '@/features/shared/components';
@@ -22,8 +22,14 @@ const SAMPLE_ROWS: Record<ImportType, string> = {
 export default function ImportGuidePage() {
   const { isAdmin } = useRoleAccess();
   const router = useRouter();
-  if (!isAdmin) { router.replace('/branch/dashboard'); return null; }
   const [activeTab, setActiveTab] = useState<ImportType>('students');
+  useEffect(() => {
+    if (isAdmin) return;
+    router.replace('/branch/dashboard');
+  }, [isAdmin, router]);
+
+  if (!isAdmin) return null;
+
   const columns = COLUMNS_BY_TYPE[activeTab];
   const requiredCount = columns.filter((c) => c.req).length;
 

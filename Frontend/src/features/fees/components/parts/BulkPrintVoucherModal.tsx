@@ -98,7 +98,7 @@ export default function BulkPrintVoucherModal({ open, schoolId, month, year, onC
     <Modal open={open} onClose={onClose} title="Bulk Fee Vouchers" size="lg">
         <div className="space-y-4">
           <div className="rounded-2xl border border-primary-100 bg-primary-50 p-3 text-xs text-primary-800">Choose a class for selected students, or All Classes for one school-wide PDF.</div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Class</label>
               <select value={classId} onChange={(e) => handleClassChange(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500">
@@ -123,7 +123,7 @@ export default function BulkPrintVoucherModal({ open, schoolId, month, year, onC
             <StudentSelectList students={students} selected={selected} loading={fetching}
               onToggle={toggle} onToggleAll={toggleAll} allSelected={allSelected} someSelected={someSelected} />
           )}
-        <div className="flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-4">
+        <div className="flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-4 [&>button]:max-sm:flex-1">
           <Button size="sm" variant="outline" onClick={onClose}>Cancel</Button>
           <Button size="sm" variant="outline" loading={loading} onClick={handleView}>View PDF</Button>
           <Button size="sm" loading={loading} onClick={handlePrint} disabled={classId ? selected.size === 0 : false}

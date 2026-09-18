@@ -3,6 +3,7 @@ import ApiError from "../../lib/utils/ApiError.js";
 import { emitToRoom } from "../../config/websocket.js";
 import notificationService from "../../services/notification.service.js";
 import portalNotificationService from "../notification/notification.portalService.js";
+import { cacheInvalidatePrefix } from "../../lib/utils/cache.js";
 
 class LeaveRequestService {
   async requestLeave(parentId, { studentId, dateFrom, dateTo, reason }) {
@@ -34,6 +35,7 @@ class LeaveRequestService {
       },
       include: { student: { select: { firstName: true, lastName: true } } },
     });
+    await cacheInvalidatePrefix(`leave:list:${student.schoolId}:`);
 
     const admins = await notificationService.getSchoolAdmins(student.schoolId);
     const studentName = `${student.firstName} ${student.lastName}`;

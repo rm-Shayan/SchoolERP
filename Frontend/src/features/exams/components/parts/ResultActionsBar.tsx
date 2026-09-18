@@ -11,7 +11,7 @@ interface Props {
 export default function ResultActionsBar({ students, saving, onSave, onPickStudent }: Props) {
   return (
     <>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+      <div className="mt-4 flex flex-col-reverse items-stretch gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
           {students.map((s) => (
             <button
@@ -24,7 +24,7 @@ export default function ResultActionsBar({ students, saving, onSave, onPickStude
             </button>
           ))}
         </div>
-        <Button onClick={onSave} loading={saving}>
+        <Button onClick={onSave} loading={saving} className="w-full sm:w-auto">
           Save Results
         </Button>
       </div>

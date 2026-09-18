@@ -64,7 +64,7 @@ export default function StaffIdCardPage() {
         ) : filtered.length === 0 ? (
           <Card><EmptyState title="No staff found" description="Add staff members to generate ID cards." /></Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 overflow-x-auto py-1 justify-items-center">
             {filtered.map((member) => (
               <div key={member.id} onClick={() => toggleSelect(member.id)}
                 className={`cursor-pointer rounded-2xl border-2 p-4 transition-all ${(selectedIds.has(member.id) || viewAll) ? 'border-primary-500 bg-primary-50/30 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow'}`}>

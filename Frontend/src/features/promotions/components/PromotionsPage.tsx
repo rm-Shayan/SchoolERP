@@ -117,7 +117,7 @@ export default function PromotionsPage() {
     : `This will mark ${count} student(s) as dropped out.`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <PromotionHero />
       <Card className="overflow-hidden">
         <div className="border-b border-gray-100 bg-gray-50/70 px-5 py-3">
@@ -140,7 +140,7 @@ export default function PromotionsPage() {
       </Card>
 
       <Card className="overflow-hidden">
-        <div className="flex items-center justify-between gap-3 border-b border-gray-100 bg-gray-50/70 px-5 py-3">
+        <div className="flex flex-col flex-wrap items-start gap-3 border-b border-gray-100 bg-gray-50/70 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-sm font-semibold text-gray-900">2 · {isLastClass ? 'Students to Graduate' : 'Students to Promote'} <span className="ml-1 inline-flex rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">{selected.size}/{students.length}</span></h3>
           {students.length > 0 && <button onClick={toggleAll} className="text-sm font-medium text-primary-600 hover:text-primary-700">{selected.size === students.length ? 'Unselect all' : 'Select all'}</button>}
         </div>

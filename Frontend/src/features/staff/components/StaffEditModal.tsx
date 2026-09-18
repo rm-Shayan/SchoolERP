@@ -113,7 +113,7 @@ export default function StaffEditModal({ open, member, onClose, onUpdated }: Sta
         {/* Password reset — admin sets a new password for the staff member to log in with */}
         <StaffPasswordReset member={member} />
 
-        <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
+        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100">
           <Button type="submit" loading={isSubmitting}>Save Changes</Button>
           <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
           <div className="flex-1" />

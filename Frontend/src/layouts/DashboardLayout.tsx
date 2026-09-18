@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAppSelector } from '@/store/hooks';
 import Sidebar from './Sidebar';
@@ -32,7 +32,7 @@ export default function DashboardLayout({ links, title, children }: DashboardLay
   useSocket();
   const pathname = usePathname();
   const router = useRouter();
-  const { organization, school, user } = useAppSelector((s) => s.auth);
+  const { organization, user } = useAppSelector((s) => s.auth);
 
   const themeColor = organization?.themeColor ?? null;
   const themeStyle = orgThemeStyle(themeColor);
@@ -83,7 +83,7 @@ export default function DashboardLayout({ links, title, children }: DashboardLay
           </div>
         )}
         <Navbar title={title} onMenuClick={() => setMobileOpen(true)} />
-        <main className="p-3 sm:p-4 md:p-6">
+        <main className="p-3 sm:p-4 md:p-6 lg:p-8">
           <PortalErrorBoundary section="Page">
             {children}
           </PortalErrorBoundary>

@@ -4,6 +4,7 @@ import { emitToRoom } from "../../config/websocket.js";
 import notificationService from "../../services/notification.service.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import redis from "../../config/redis.js";
+import { cacheInvalidatePrefix } from "../../lib/utils/cache.js";
 
 class LeaveCrudService {
   async create(schoolId, { studentId, dateFrom, dateTo, reason, status = "PENDING" }, adminId) {
@@ -44,6 +45,7 @@ class LeaveCrudService {
     }
 
     const leave = await prisma.leaveRequest.create({ data });
+    await cacheInvalidatePrefix(`leave:list:${schoolId}:`);
 
     if (status === "APPROVED") {
       await this._applyAttendance(schoolId, studentId, from, to, reason);
@@ -104,6 +106,7 @@ class LeaveCrudService {
     if (dateTo !== undefined) data.dateTo = new Date(dateTo);
 
     const updated = await prisma.leaveRequest.update({ where: { id }, data });
+    await cacheInvalidatePrefix(`leave:list:${schoolId}:`);
 
     // Status PENDING → APPROVED hon par student ke attendance par LEAVE apply
     // karo + parent ko email + portal notification (create() jaisa hi behavior).
@@ -151,6 +154,7 @@ class LeaveCrudService {
     const leave = await prisma.leaveRequest.findFirst({ where: { id, schoolId } });
     if (!leave) throw ApiError.notFoundError("Leave request not found");
     await prisma.leaveRequest.delete({ where: { id } });
+    await cacheInvalidatePrefix(`leave:list:${schoolId}:`);
     emitToRoom(`school:${schoolId}`, "leave_request_deleted", { id });
     return { success: true };
   }

@@ -4,11 +4,16 @@ import { emitToRoom } from "../../config/websocket.js";
 import notificationService from "../../services/notification.service.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import redis from "../../config/redis.js";
+import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
 
 class LeaveService {
   async listAll(schoolId, { status, page = 1, limit = 20 } = {}) {
     const where = { schoolId };
     if (status) where.status = status;
+
+    const cacheKey = `leave:list:${schoolId}:${status || "_"}:${page}:${limit}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) return cached;
 
     const [requests, total] = await Promise.all([
       prisma.leaveRequest.findMany({
@@ -32,7 +37,9 @@ class LeaveService {
       prisma.leaveRequest.count({ where }),
     ]);
 
-    return { requests, total, page, limit, totalPages: Math.ceil(total / limit) };
+    const result = { requests, total, page, limit, totalPages: Math.ceil(total / limit) };
+    await cacheSet(cacheKey, result, 45);
+    return result;
   }
 
   async review(schoolId, leaveId, { status, remarks }, adminId) {

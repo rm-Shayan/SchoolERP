@@ -63,7 +63,7 @@ export default function ExtendDueDateModal({ record, onClose, onExtended }: Exte
         {/* Quick presets */}
         <div>
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Quick Extend</p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {PRESETS.map((p) => (
               <button key={p.days} type="button"
                 onClick={() => setValue('dueDate', addDays(currentDue, p.days))}

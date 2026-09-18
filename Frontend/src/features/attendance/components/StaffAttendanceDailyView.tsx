@@ -114,7 +114,7 @@ export default function StaffAttendanceDailyView() {
       {loading ? <Card><div className="p-8"><div className="animate-pulse space-y-3">{[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-14 bg-gray-100 rounded-xl" />)}</div></div></Card>
         : staffOnly.length === 0 ? <Card><EmptyState title="No staff found" description="Add staff to track attendance." /></Card>
         : <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[760px] text-sm">
             <thead><tr className="border-b border-gray-100 bg-gray-50/80">
               <th className="text-left py-3 px-4 text-[11px] font-bold text-gray-500 uppercase">Staff</th>
               <th className="text-left py-3 px-4 text-[11px] font-bold text-gray-500 uppercase">Role</th>

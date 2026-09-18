@@ -81,7 +81,7 @@ export default function AdmissionsPage() {
   const handleChanged = (updated: Applicant) => { setApplicants((prev) => prev.map((a) => (a.id === updated.id ? updated : a))); setSelected(updated); };
   const handleRemoved = async (id: string) => { setApplicants((prev) => prev.filter((a) => a.id !== id)); setSelected(null); await load(); };
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <PageHeader
         title="Admissions"
         description="Every applicant from inquiry to enrollment — paginated, searchable, full pipeline."

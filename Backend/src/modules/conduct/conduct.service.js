@@ -4,6 +4,7 @@ import { getEffectiveSchoolId, assertOwnSchool, assertSchoolAccess } from "../..
 import portalNotificationService from "../notification/notification.portalService.js";
 import { emitToRoom } from "../../config/websocket.js";
 import { bustPortalCache } from "../../lib/portalCache.js";
+import { cacheGet, cacheSet, cacheInvalidatePrefix } from "../../lib/utils/cache.js";
 
 class ConductService {
   /** Remark change hone par parent/student ka cached /conduct stale ho jata
@@ -88,6 +89,8 @@ class ConductService {
     });
 
     this.bustConductPortals({ studentId: student.id, parentId: student.parent?.id });
+    await cacheInvalidatePrefix(`conduct:list:${student.schoolId}:`);
+    await cacheInvalidatePrefix(`conduct:mine:${student.schoolId}:`);
 
     return {
       ...remark,
@@ -112,11 +115,18 @@ class ConductService {
 
   async listByTeacher(user, query) {
     assertSchoolAccess(user, user.schoolId);
-    return conductRepository.listRemarksByTeacher(user.id, {
-      page: Math.max(1, parseInt(query.page, 10) || 1),
-      pageSize: Math.min(100, Math.max(1, parseInt(query.pageSize, 10) || 50)),
+    const p = Math.max(1, parseInt(query.page, 10) || 1);
+    const ps = Math.min(100, Math.max(1, parseInt(query.pageSize, 10) || 50));
+    const cacheKey = `conduct:mine:${user.schoolId}:${user.id}:${query.academicYearId || "_"}:${p}:${ps}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) return cached;
+    const remarks = await conductRepository.listRemarksByTeacher(user.id, {
+      page: p,
+      pageSize: ps,
       academicYearId: query.academicYearId || undefined,
     });
+    await cacheSet(cacheKey, remarks, 45);
+    return remarks;
   }
 
   async listBySection(user, sectionId, query) {
@@ -137,12 +147,19 @@ class ConductService {
     // school token-se locked hai; SUPER_ADMIN ko explicit campus chahiye.
     const targetSchoolId = getEffectiveSchoolId(user, query.schoolId || user.schoolId);
     assertSchoolAccess(user, targetSchoolId);
-    return conductRepository.listRemarksBySchool(targetSchoolId, {
+    const p = Math.max(1, parseInt(query.page, 10) || 1);
+    const ps = Math.min(100, Math.max(1, parseInt(query.pageSize, 10) || 25));
+    const cacheKey = `conduct:list:${targetSchoolId}:${query.type || "_"}:${query.teacherId || "_"}:${p}:${ps}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) return cached;
+    const remarks = await conductRepository.listRemarksBySchool(targetSchoolId, {
       type: query.type || undefined,
       teacherId: query.teacherId || undefined,
-      page: Math.max(1, parseInt(query.page, 10) || 1),
-      pageSize: Math.min(100, Math.max(1, parseInt(query.pageSize, 10) || 25)),
+      page: p,
+      pageSize: ps,
     });
+    await cacheSet(cacheKey, remarks, 45);
+    return remarks;
   }
 
   async getRemark(user, id) {
@@ -179,6 +196,8 @@ class ConductService {
     }).catch(() => {});
 
     this.bustConductPortals({ studentId: remark.student.id, parentId: remark.student.parent?.id });
+    await cacheInvalidatePrefix(`conduct:list:${remark.student.schoolId}:`);
+    await cacheInvalidatePrefix(`conduct:mine:${remark.student.schoolId}:`);
     return updated;
   }
 
@@ -205,6 +224,8 @@ class ConductService {
     }).catch(() => {});
 
     this.bustConductPortals({ studentId: remark.student.id, parentId: remark.student.parent?.id });
+    await cacheInvalidatePrefix(`conduct:list:${remark.student.schoolId}:`);
+    await cacheInvalidatePrefix(`conduct:mine:${remark.student.schoolId}:`);
 
     return true;
   }

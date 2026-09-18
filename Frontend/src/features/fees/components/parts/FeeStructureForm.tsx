@@ -97,14 +97,14 @@ export default function FeeStructureForm({ open, schoolId, classes, years, metaL
 
           <div className="space-y-2">
             {lineItems.map((item, idx) => (
-              <div key={idx} className="flex items-center gap-2 p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors group">
+              <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors group">
                 <span className="w-7 h-7 rounded-lg bg-primary-100 text-primary-700 flex items-center justify-center text-[11px] font-bold shrink-0">
                   {idx + 1}
                 </span>
                 <Input placeholder="Title (e.g. Tuition Fee)" value={item.title}
                   onChange={(e) => updateItem(idx, { title: e.target.value })} className="flex-1 !h-10 !text-sm !bg-white" />
                 <Input placeholder="Amount" type="number" value={item.amount}
-                  onChange={(e) => updateItem(idx, { amount: e.target.value })} className="w-32 !h-10 !text-sm !bg-white" />
+                  onChange={(e) => updateItem(idx, { amount: e.target.value })} className="w-full sm:w-32 !h-10 !text-sm !bg-white" />
                 {lineItems.length > 1 && (
                   <button type="button" onClick={() => removeItem(idx)}
                     className="shrink-0 p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-50 group-hover:opacity-100">

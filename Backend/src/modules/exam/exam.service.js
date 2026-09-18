@@ -5,6 +5,7 @@ import { getEffectiveSchoolId, assertOwnSchool, assertSchoolAccess, assertSchool
 import notificationService from "../../services/notification.service.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import { emitToRoom } from "../../config/websocket.js";
+import { cacheGet, cacheSet, cacheInvalidatePrefix } from "../../lib/utils/cache.js";
 
 class ExamService {
   /**
@@ -102,19 +103,27 @@ class ExamService {
       category: "EXAM", refType: "EXAM", refId: exam.id, link: "/exams",
     }).catch(() => {});
 
+    await cacheInvalidatePrefix(`exam:list:${targetSchoolId}:`);
     return exam;
   }
 
   async listExams(user, schoolId, { termId, academicYearId, page = 1, pageSize = 50 }) {
     const targetSchoolId = getEffectiveSchoolId(user, schoolId);
     assertSchoolAccess(user, targetSchoolId);
+    const p = Math.max(1, parseInt(page, 10) || 1);
+    const ps = Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50));
+    const cacheKey = `exam:list:${targetSchoolId}:${termId || "_"}:${academicYearId || "_"}:${p}:${ps}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) return cached;
 
-    return examRepository.listExamsBySchool(targetSchoolId, {
+    const exams = await examRepository.listExamsBySchool(targetSchoolId, {
       termId,
       academicYearId,
-      page: Math.max(1, parseInt(page, 10) || 1),
-      pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50)),
+      page: p,
+      pageSize: ps,
     });
+    await cacheSet(cacheKey, exams, 45);
+    return exams;
   }
 
   async getExam(user, id) {
@@ -135,6 +144,7 @@ class ExamService {
       category: "EXAM", refType: "EXAM", refId: id, link: "/exams",
     }).catch(() => {});
 
+    await cacheInvalidatePrefix(`exam:list:${exam.schoolId}:`);
     return true;
   }
 
@@ -175,6 +185,7 @@ class ExamService {
     }).catch(() => {});
 
     emitToRoom(`school:${exam.schoolId}`, "exam_date_sheet_updated", { examId: id });
+    await cacheInvalidatePrefix(`exam:list:${exam.schoolId}:`);
     return updated;
   }
 
@@ -235,6 +246,7 @@ class ExamService {
       examId,
       count: results.length,
     });
+    await cacheInvalidatePrefix(`exam:list:${exam.schoolId}:`);
 
     return results;
   }
@@ -305,6 +317,7 @@ class ExamService {
     }
 
     emitToRoom(`school:${exam.schoolId}`, "exam_results_published", { examId, notified: activeCount });
+    await cacheInvalidatePrefix(`exam:list:${exam.schoolId}:`);
     return { examId, notified: activeCount, students: Object.keys(byStudent).length };
   }
 

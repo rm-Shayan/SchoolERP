@@ -56,14 +56,14 @@ export default function GateScanPage({ embedded = false }: GateScanPageProps) {
     return (
       <div className="space-y-4">
         <PageHeader title="Gate Attendance" description="Scan student QR codes at the entry gate" />
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-          <div className="xl:col-span-1 space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-1 space-y-4">
             <QrCameraFeed onScan={handleScan} isProcessing={scanning} dark={false} />
             <ManualEntryCard dark={false} scanning={scanning} onScan={handleScan} />
             {error && <div className="rounded-xl p-3 text-sm bg-red-50 border border-red-200 text-red-700">{error}</div>}
             {lastResult && <ScanResultCard result={lastResult} dark={false} />}
           </div>
-          <div className="xl:col-span-2">
+          <div className="lg:col-span-2">
             <ScanHistoryTable scans={scanHistory} dark={false} />
           </div>
         </div>
@@ -101,9 +101,9 @@ export default function GateScanPage({ embedded = false }: GateScanPageProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
           {/* Left column — scanner + manual + result */}
-          <div className="xl:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-4">
             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-primary-600 animate-pulse" />
@@ -127,7 +127,7 @@ export default function GateScanPage({ embedded = false }: GateScanPageProps) {
           </div>
 
           {/* Right column — scan history */}
-          <div className="xl:col-span-3">
+          <div className="lg:col-span-3">
             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden h-full flex flex-col">
               <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-slate-800">Today's Scan History</h2>

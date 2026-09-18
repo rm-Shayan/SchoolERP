@@ -16,7 +16,6 @@ const PAGE_SIZE = 25;
 export default function NotificationLogsPage() {
   const { isAdmin } = useRoleAccess();
   const router = useRouter();
-  if (!isAdmin) { router.replace('/branch/dashboard'); return null; }
   const { school } = useAppSelector((s) => s.auth);
   const [data, setData] = useState<NotificationLogsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,6 +52,13 @@ export default function NotificationLogsPage() {
   }, [load]);
 
   const totalPages = useMemo(() => (data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1), [data]);
+
+  useEffect(() => {
+    if (isAdmin) return;
+    router.replace('/branch/dashboard');
+  }, [isAdmin, router]);
+
+  if (!isAdmin) return null;
 
   return (
     <div className="space-y-6">

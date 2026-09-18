@@ -97,7 +97,7 @@ export default function LeaveFormModal({ open, kind, editItem, onClose, onSaved 
         ) : (
           <Select label="Staff" value={form.staffId} onChange={(e) => set('staffId', e.target.value)} options={staff} placeholder="Select staff" />
         )}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input label="From" type="date" value={form.dateFrom} onChange={(e) => set('dateFrom', e.target.value)} />
           <Input label="To" type="date" value={form.dateTo} onChange={(e) => set('dateTo', e.target.value)} />
         </div>

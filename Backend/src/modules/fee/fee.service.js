@@ -503,7 +503,12 @@ class FeeService {
 
     // studentIds empty → school ke saare students
     if (!studentIds?.length) {
-      return feeRepository.listFeeRecordsBySchool(targetSchoolId, { status, dueDateBefore, dueDateAfter });
+      const cacheKey = `fee:bulk:${targetSchoolId}:${status || "_"}:${dueDateBefore || "_"}:${dueDateAfter || "_"}`;
+      const cached = await cacheGet(cacheKey);
+      if (cached) return cached;
+      const bulk = await feeRepository.listFeeRecordsBySchool(targetSchoolId, { status, dueDateBefore, dueDateAfter });
+      await cacheSet(cacheKey, bulk, 15);
+      return bulk;
     }
 
     // Validate all students belong to this school (batch)
@@ -663,6 +668,7 @@ class FeeService {
       });
       if (allocationOutcome?.duplicate) return allocationOutcome;
       cacheInvalidatePrefix(`fee:records:${record.student.schoolId}:`);
+      cacheInvalidatePrefix(`fee:bulk:${record.student.schoolId}:`);
       emitToRoom(`school:${record.student.schoolId}`, "fee_payment_recorded", { feeRecordId, amount: paidAmount });
       // Portal notification for admin
       const sName = `${record.student.firstName} ${record.student.lastName}`;
@@ -719,6 +725,7 @@ class FeeService {
       const updated = periodOutcome.updated;
       const payment = periodOutcome.payment;
       cacheInvalidatePrefix(`fee:records:${record.student.schoolId}:`);
+      cacheInvalidatePrefix(`fee:bulk:${record.student.schoolId}:`);
       // Receipt mein selected months dikhao.
       const receiptPeriods = periods
         .filter((p) => wanted.has(`${p.year}-${p.month}`))
@@ -882,6 +889,7 @@ class FeeService {
     const status = updated.status;
 
     cacheInvalidatePrefix(`fee:records:${record.student.schoolId}:`);
+    cacheInvalidatePrefix(`fee:bulk:${record.student.schoolId}:`);
 
     // Receipt PDF (PRD §4) — "kis month ki fee" bhi likha hota hai.
     const receiptMonth = new Date(record.dueDate).toLocaleString("en-PK", { month: "long", year: "numeric" });

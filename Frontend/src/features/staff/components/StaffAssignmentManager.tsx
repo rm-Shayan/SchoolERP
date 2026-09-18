@@ -99,7 +99,7 @@ export default function StaffAssignmentManager({ teacherId, schoolId }: Props) {
         <div className="space-y-2">
           {assignments.map((a) => (
             <div key={a.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
-              <div className="flex flex-wrap gap-1.5 items-center">
+              <div className="flex flex-wrap gap-1.5 items-center min-w-0 flex-1">
                 <Badge>{a.class?.name ?? '—'}</Badge>
                 {a.section?.name && <Badge>{a.section.name}</Badge>}
                 {a.subject?.name ? (

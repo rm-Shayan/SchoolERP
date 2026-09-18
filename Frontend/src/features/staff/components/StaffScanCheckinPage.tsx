@@ -85,7 +85,7 @@ export default function StaffScanCheckinPage({ embedded }: StaffScanCheckinProps
             {busy && <p className="text-xs text-gray-500">Processing…</p>}
 
             <form
-              className="flex gap-2"
+              className="flex flex-col gap-2 sm:flex-row"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (manual.trim() && !busy) {
@@ -99,7 +99,7 @@ export default function StaffScanCheckinPage({ embedded }: StaffScanCheckinProps
                 onChange={(e: any) => setManual(e.target.value)}
                 placeholder="Paste QR token if camera is unavailable"
               />
-              <Button type="submit" disabled={busy || !manual.trim()}>
+              <Button type="submit" disabled={busy || !manual.trim()} className="w-full sm:w-auto sm:shrink-0">
                 Check in
               </Button>
             </form>
@@ -116,10 +116,10 @@ export default function StaffScanCheckinPage({ embedded }: StaffScanCheckinProps
                 {results.map((r) => (
                   <li
                     key={r.id}
-                    className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${kindStyles[r.kind]}`}
+                    className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm ${kindStyles[r.kind]}`}
                   >
-                    <span className="font-medium">{r.name}</span>
-                    <span className="text-xs">
+                    <span className="font-medium truncate min-w-0">{r.name}</span>
+                    <span className="text-xs text-right shrink-0">
                       {r.message} · {r.time}
                     </span>
                   </li>

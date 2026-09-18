@@ -26,7 +26,7 @@ export default function AcademicSetupPage() {
   const step = STEP_MAP[tab];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <PageHeader
         title="Academic Setup"
         description="Set up your academic year step by step: year → sections → classes → subjects."

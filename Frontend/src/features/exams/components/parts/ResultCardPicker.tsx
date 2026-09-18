@@ -30,7 +30,7 @@ export default function ResultCardPicker({ examId, students, loading }: ResultCa
           value={cardStudent?.id ?? ''}
           onChange={(e) => setCardStudent(students.find((s) => s.id === e.target.value) ?? null)}
         />
-        <Button disabled={!cardStudent} onClick={() => setPreviewStudent(cardStudent)}>
+        <Button disabled={!cardStudent} onClick={() => setPreviewStudent(cardStudent)} className="w-full sm:w-auto">
           View Result Card
         </Button>
         <ResultCardModal examId={examId} student={previewStudent} onClose={() => setPreviewStudent(null)} />

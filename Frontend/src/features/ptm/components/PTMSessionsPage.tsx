@@ -112,7 +112,7 @@ export default function PTMSessionsPage() {
           title={tab === 'upcoming' ? 'No upcoming PTMs' : 'No past PTMs'}
           description={tab === 'upcoming' ? 'Schedule a new PTM session to notify parents.' : 'Previously conducted PTM sessions will appear here.'} /></CardContent></Card>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {active.map((s) => <PTMSessionCard key={s.id} session={s} onEdit={isReadOnly ? undefined : (sess) => { setEditing(sess); setShowForm(true); }} onDelete={isReadOnly ? undefined : remove} />)}
         </div>
       )}

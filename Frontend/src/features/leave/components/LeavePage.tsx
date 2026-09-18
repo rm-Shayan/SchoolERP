@@ -72,7 +72,7 @@ export default function LeavePage() {
         <Button onClick={openCreate}>New Leave</Button>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto">
         {FILTERS.map((f) => (
           <button key={f} onClick={() => setFilter(f)} className={filterCls(filter === f)}>
             {f.charAt(0) + f.slice(1).toLowerCase()}
@@ -118,4 +118,4 @@ export default function LeavePage() {
 const tabCls = (active: boolean) =>
   `px-4 py-2 text-sm font-medium rounded-lg ${active ? 'bg-primary-600 text-white' : 'bg-white border text-gray-600 hover:bg-gray-50'}`;
 const filterCls = (active: boolean) =>
-  `px-3 py-1.5 text-xs font-medium rounded-md ${active ? 'bg-primary-50 text-primary-700' : 'bg-gray-100 text-gray-500'}`;
+  `px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap ${active ? 'bg-primary-50 text-primary-700' : 'bg-gray-100 text-gray-500'}`;

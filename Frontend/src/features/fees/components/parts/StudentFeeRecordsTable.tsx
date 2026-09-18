@@ -128,12 +128,12 @@ export default function StudentFeeRecordsTable({ students, loading, onRemind, on
 
       {/* Desktop table */}
       <div className="hidden sm:block overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[720px] text-sm">
           <thead><tr className="bg-slate-50/80 text-left text-[10px] uppercase tracking-[0.14em] text-slate-400">
-            <th className="py-3 px-4 font-bold w-[220px]">Student</th>
-            <th className="py-3 px-4 font-bold">Open Months</th>
-            <th className="py-3 px-4 font-bold text-right w-[140px]">Outstanding</th>
-            {!readOnly && <th className="py-3 px-4 font-bold text-right w-[240px]">Actions</th>}
+            <th className="py-3 px-4 font-bold min-w-[220px]">Student</th>
+            <th className="py-3 px-4 font-bold min-w-[160px]">Open Months</th>
+            <th className="py-3 px-4 font-bold text-right min-w-[140px]">Outstanding</th>
+            {!readOnly && <th className="py-3 px-4 font-bold text-right min-w-[240px]">Actions</th>}
           </tr></thead>
           <tbody>{filtered.map((g) => <StudentRow key={g.studentId} g={g} onCollect={setPayingStudent} onViewVoucher={setViewStudent} onRemind={onRemind} readOnly={readOnly} />)}</tbody>
         </table>

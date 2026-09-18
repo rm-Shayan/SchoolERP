@@ -26,7 +26,7 @@ export default function LeaveTable({ items, kind, onApprove, onReject, onEdit, o
   }
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm min-w-[640px]">
         <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
           <tr>
             <th className="text-left p-3">{kind === 'student' ? 'Student' : 'Staff'}</th>

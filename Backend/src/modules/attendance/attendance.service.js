@@ -6,6 +6,7 @@ import redis from "../../config/redis.js";
 import notificationService from "../../services/notification.service.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import { buildMonthlyReport } from "./monthlyReport.js";
+import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
 
 class AttendanceService {
   /**
@@ -220,6 +221,7 @@ class AttendanceService {
       const dateKey = date.toISOString().split("T")[0];
       await redis.del(`attendance:daily:${schoolId}:${dateKey}`);
       await redis.del(`attendance:daily:v2:${schoolId}:${dateKey}`);
+      await redis.del(`attendance:monthly:${schoolId}:${dateKey.slice(0, 7)}`);
     } catch (_) {}
   }
 
@@ -284,7 +286,12 @@ class AttendanceService {
   }
 
   async getMonthlyReport(schoolId, year, month) {
-    return buildMonthlyReport(attendanceRepository, schoolId, year, month);
+    const key = `attendance:monthly:${schoolId}:${year}-${String(month).padStart(2, "0")}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+    const report = await buildMonthlyReport(attendanceRepository, schoolId, year, month);
+    await cacheSet(key, report, 60);
+    return report;
   }
 
   // ─── OFF DAYS / HOLIDAYS ────────────────────────────────────────────────
@@ -318,11 +325,11 @@ class AttendanceService {
     return { weeklyOff: clean };
   }
 
-  async getStudentHistory(studentId, startDate, endDate) {
+async getStudentHistory(studentId, startDate, endDate) {
     return attendanceRepository.getStudentAttendanceHistory(
       studentId,
-      startDate,
-      endDate
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined
     );
   }
 

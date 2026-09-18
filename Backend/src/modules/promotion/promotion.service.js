@@ -11,6 +11,7 @@ import { emitToRoom } from "../../config/websocket.js";
 import { buildCsv } from "../../lib/utils/csv.js";
 import prisma from "../../config/db.js";
 import { assertSectionHasSeat, assertSectionHasSeats } from "../../lib/capacity.js";
+import { cacheGet, cacheSet, cacheInvalidatePrefix } from "../../lib/utils/cache.js";
 
 const LIFECYCLE_STATUS = {
   GRADUATED: "GRADUATED",
@@ -73,7 +74,11 @@ class PromotionService {
         remarks: remarks || null,
       },
       client
-    );
+    ).then(async (record) => {
+      await cacheInvalidatePrefix(`promotion:list:${student.schoolId}:`);
+      await cacheInvalidatePrefix(`students:list:${student.schoolId}:`);
+      return record;
+    });
   }
 
   /**
@@ -329,6 +334,8 @@ class PromotionService {
       action: LIFECYCLE_STATUS[status],
       remarks: remarks || null,
     });
+    await cacheInvalidatePrefix(`promotion:list:${student.schoolId}:`);
+    await cacheInvalidatePrefix(`students:list:${student.schoolId}:`);
 
     emitToRoom(`school:${student.schoolId}`, "student_status_changed", {
       studentId: student.id,
@@ -372,15 +379,23 @@ class PromotionService {
     const targetSchoolId = getEffectiveSchoolId(user, schoolId);
     assertSchoolAccess(user, targetSchoolId);
 
-    return promotionRepository.listPromotions({
+    const p = Math.max(1, parseInt(page, 10) || 1);
+    const ps = Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50));
+    const cacheKey = `promotion:list:${targetSchoolId}:${studentId || "_"}:${sectionId || "_"}:${academicYearId || "_"}:${action || "_"}:${p}:${ps}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) return cached;
+
+    const result = await promotionRepository.listPromotions({
       schoolId: targetSchoolId,
       studentId,
       sectionId,
       academicYearId,
       action,
-      page: Math.max(1, parseInt(page, 10) || 1),
-      pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50)),
+      page: p,
+      pageSize: ps,
     });
+    await cacheSet(cacheKey, result, 45);
+    return result;
   }
 
   async getRecord(user, id) {

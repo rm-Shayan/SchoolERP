@@ -125,13 +125,21 @@ class AcademicService {
       startDate: new Date(data.startDate),
       endDate: new Date(data.endDate),
     });
-    await cacheDel(`academic:years:${year.schoolId}`);
+    await Promise.all([
+      cacheDel(`academic:years:${year.schoolId}`),
+      cacheDel(`academic:terms:${academicYearId}`),
+    ]);
     return result;
   }
 
   async listTerms(user, academicYearId) {
     const year = await this.getAcademicYear(user, academicYearId);
-    return academicRepository.listTermsByYear(year.id);
+    const key = `academic:terms:${year.id}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+    const terms = await academicRepository.listTermsByYear(year.id);
+    await cacheSet(key, terms, YEARS_TTL);
+    return terms;
   }
 
   async updateTerm(user, id, data) {
@@ -140,7 +148,10 @@ class AcademicService {
     const year = await this.getAcademicYear(user, term.academicYearId);
     assertOwnSchool(user, year.schoolId);
     const result = await academicRepository.updateTerm(id, _coerceDates(data));
-    await cacheDel(`academic:years:${year.schoolId}`);
+    await Promise.all([
+      cacheDel(`academic:years:${year.schoolId}`),
+      cacheDel(`academic:terms:${term.academicYearId}`),
+    ]);
     return result;
   }
 
@@ -156,7 +167,10 @@ class AcademicService {
       );
     }
     const result = await academicRepository.deleteTerm(id);
-    await cacheDel(`academic:years:${year.schoolId}`);
+    await Promise.all([
+      cacheDel(`academic:years:${year.schoolId}`),
+      cacheDel(`academic:terms:${term.academicYearId}`),
+    ]);
     return result;
   }
 
@@ -183,23 +197,36 @@ class AcademicService {
   }
 
   async getClass(user, id) {
+    const cacheKey = `academic:class:${id}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached && cached.schoolId) {
+      assertSchoolAccess(user, cached.schoolId);
+      return cached;
+    }
     const cls = await academicRepository.findClassById(id);
     if (!cls) throw ApiError.notFoundError("Class not found");
     assertSchoolAccess(user, cls.schoolId);
+    await cacheSet(cacheKey, cls, CLASSES_TTL);
     return cls;
   }
 
   async updateClass(user, id, data) {
     const cls = await _owned(user, this.getClass(user, id), "Class", (c) => c.schoolId);
     const result = await academicRepository.updateClass(id, data);
-    await cacheDel(`academic:classes:${cls.schoolId}`);
+    await Promise.all([
+      cacheDel(`academic:classes:${cls.schoolId}`),
+      cacheDel(`academic:class:${id}`),
+    ]);
     return result;
   }
 
   async deleteClass(user, id) {
     const cls = await _owned(user, this.getClass(user, id), "Class", (c) => c.schoolId);
     const result = await academicRepository.deleteClass(id);
-    await cacheDel(`academic:classes:${cls.schoolId}`);
+    await Promise.all([
+      cacheDel(`academic:classes:${cls.schoolId}`),
+      cacheDel(`academic:class:${id}`),
+    ]);
     return result;
   }
 
@@ -247,26 +274,43 @@ class AcademicService {
       capacity: data.capacity ?? undefined,
       roomNumber: data.roomNumber ?? undefined,
     });
-    await cacheDel(`academic:classes:${cls.schoolId}`);
+    await Promise.all([
+      cacheDel(`academic:classes:${cls.schoolId}`),
+      cacheDel(`academic:sections:${classId}`),
+      cacheDel(`academic:class:${classId}`),
+    ]);
     return result;
   }
 
   async listSections(user, classId) {
     const cls = await this.getClass(user, classId);
-    return academicRepository.listSectionsByClass(cls.id);
+    const key = `academic:sections:${cls.id}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+    const sections = await academicRepository.listSectionsByClass(cls.id);
+    await cacheSet(key, sections, CLASSES_TTL);
+    return sections;
   }
 
   async updateSection(user, id, data) {
     const section = await _owned(user, academicRepository.findSectionById(id), "Section", (s) => s.class.schoolId);
     const result = await academicRepository.updateSection(id, data);
-    await cacheDel(`academic:classes:${section.class.schoolId}`);
+    await Promise.all([
+      cacheDel(`academic:classes:${section.class.schoolId}`),
+      cacheDel(`academic:sections:${section.classId}`),
+      cacheDel(`academic:class:${section.classId}`),
+    ]);
     return result;
   }
 
   async deleteSection(user, id) {
     const section = await _owned(user, academicRepository.findSectionById(id), "Section", (s) => s.class.schoolId);
     const result = await academicRepository.deleteSection(id);
-    await cacheDel(`academic:classes:${section.class.schoolId}`);
+    await Promise.all([
+      cacheDel(`academic:classes:${section.class.schoolId}`),
+      cacheDel(`academic:sections:${section.classId}`),
+      cacheDel(`academic:class:${section.classId}`),
+    ]);
     return result;
   }
 
@@ -279,26 +323,43 @@ class AcademicService {
       name: data.name,
       code: data.code || null,
     });
-    await cacheDel(`academic:classes:${cls.schoolId}`);
+    await Promise.all([
+      cacheDel(`academic:classes:${cls.schoolId}`),
+      cacheDel(`academic:subjects:${classId}`),
+      cacheDel(`academic:class:${classId}`),
+    ]);
     return result;
   }
 
   async listSubjects(user, classId) {
     const cls = await this.getClass(user, classId);
-    return academicRepository.listSubjectsByClass(cls.id);
+    const key = `academic:subjects:${cls.id}`;
+    const cached = await cacheGet(key);
+    if (cached) return cached;
+    const subjects = await academicRepository.listSubjectsByClass(cls.id);
+    await cacheSet(key, subjects, CLASSES_TTL);
+    return subjects;
   }
 
   async updateSubject(user, id, data) {
     const subject = await _owned(user, academicRepository.findSubjectById(id), "Subject", (s) => s.class.schoolId);
     const result = await academicRepository.updateSubject(id, data);
-    await cacheDel(`academic:classes:${subject.class.schoolId}`);
+    await Promise.all([
+      cacheDel(`academic:classes:${subject.class.schoolId}`),
+      cacheDel(`academic:subjects:${subject.classId}`),
+      cacheDel(`academic:class:${subject.classId}`),
+    ]);
     return result;
   }
 
   async deleteSubject(user, id) {
     const subject = await _owned(user, academicRepository.findSubjectById(id), "Subject", (s) => s.class.schoolId);
     const result = await academicRepository.deleteSubject(id);
-    await cacheDel(`academic:classes:${subject.class.schoolId}`);
+    await Promise.all([
+      cacheDel(`academic:classes:${subject.class.schoolId}`),
+      cacheDel(`academic:subjects:${subject.classId}`),
+      cacheDel(`academic:class:${subject.classId}`),
+    ]);
     return result;
   }
 }

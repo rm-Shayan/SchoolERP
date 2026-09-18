@@ -4,6 +4,7 @@ import { getEffectiveSchoolId, assertOwnSchool, assertSchoolAccess, assertSchool
 import notificationService from "../../services/notification.service.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import { emitToRoom } from "../../config/websocket.js";
+import { cacheGet, cacheSet, cacheInvalidatePrefix } from "../../lib/utils/cache.js";
 
 // RFC-style practical check: malformed addresses ko SMTP call tak na le kar jayein.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
@@ -121,18 +122,26 @@ class PtmService {
       this._notifyTeachers(targetSchoolId, data.teacherIds, user, session, "scheduled").catch(() => {});
     }
 
+    await cacheInvalidatePrefix(`ptm:list:${targetSchoolId}:`);
     return { session, notifiedParents: null };
   }
 
   async listSessions(user, schoolId, { page = 1, pageSize = 50, academicYearId }) {
     const targetSchoolId = getEffectiveSchoolId(user, schoolId);
     assertSchoolAccess(user, targetSchoolId);
+    const p = Math.max(1, parseInt(page, 10) || 1);
+    const ps = Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50));
+    const cacheKey = `ptm:list:${targetSchoolId}:${academicYearId || "_"}:${p}:${ps}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) return cached;
     const result = await ptmRepository.listSessionsBySchool(targetSchoolId, {
-      page: Math.max(1, parseInt(page, 10) || 1),
-      pageSize: Math.min(100, Math.max(1, parseInt(pageSize, 10) || 50)),
+      page: p,
+      pageSize: ps,
       academicYearId: academicYearId || undefined,
     });
-    return { ...result, items: await this.decorateSessions(targetSchoolId, result.items) };
+    const decorated = { ...result, items: await this.decorateSessions(targetSchoolId, result.items) };
+    await cacheSet(cacheKey, decorated, 45);
+    return decorated;
   }
 
   async getSession(user, id) {
@@ -209,6 +218,7 @@ class PtmService {
       category: "PTM", refType: "PTM_SESSION", refId: id, link: "/ptm",
     }).catch(() => {});
 
+    await cacheInvalidatePrefix(`ptm:list:${existing.schoolId}:`);
     return updated;
   }
 
@@ -237,6 +247,7 @@ class PtmService {
       this._notifyTeachers(session.schoolId, session.teacherIds, user, session, "cancelled").catch(() => {});
     }
 
+    await cacheInvalidatePrefix(`ptm:list:${session.schoolId}:`);
     return true;
   }
 

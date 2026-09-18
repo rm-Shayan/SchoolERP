@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { useRouter } from 'next/navigation';
@@ -24,7 +24,6 @@ export default function BranchTimetablePage() {
   const { user, school } = useAppSelector((s) => s.auth);
   const { isAdmin } = useRoleAccess();
   const router = useRouter();
-  if (!isAdmin) { router.replace('/branch/dashboard'); return null; }
   const schoolId = school?.id ?? user?.schoolId;
   const sections = useSectionOptions(schoolId);
   const [sectionId, setSectionId] = useState('');
@@ -47,6 +46,13 @@ export default function BranchTimetablePage() {
   const filteredSlots = useMemo(() => selectedDay ? slots.filter((s) => s.dayOfWeek === selectedDay) : slots, [slots, selectedDay]);
   const sortedSlots = useMemo(() => [...filteredSlots].sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime)), [filteredSlots]);
 
+  useEffect(() => {
+    if (isAdmin) return;
+    router.replace('/branch/dashboard');
+  }, [isAdmin, router]);
+
+  if (!isAdmin) return null;
+
   const handleDelete = async () => {
     if (!deleting) return;
     try { await deleteSlot(deleting.id).unwrap(); toast.success('Deleted'); setDeleting(null); }
@@ -62,7 +68,7 @@ export default function BranchTimetablePage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Timetable Management" description="Create and manage class timetables."
-        actions={sectionId ? <div className="flex gap-2">
+        actions={sectionId ? <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" onClick={() => setShowImport(true)}>Import</Button>
           <Button size="sm" variant="outline" onClick={async () => { await timetableService.exportCsv(sectionId); toast.success('Exported'); }}>Export</Button>
           {slots.length > 0 && <Button size="sm" variant="outline" onClick={() => timetableService.downloadSectionPdf(sectionId)}>PDF</Button>}
