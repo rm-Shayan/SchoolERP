@@ -7,7 +7,7 @@ class SmtpSettingsController {
     try {
       const result = await smtpSettingsService.getStatus(
         req.user,
-        req.query.organizationId || null,
+        req.query.organizationId || req.user?.organizationId || null,
         req.query.schoolId || null
       );
       return res.status(200).json(ApiResponse.ok("SMTP settings fetched", result));
