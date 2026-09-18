@@ -597,6 +597,38 @@ email to phir bhi chalegi (SMTP direct), lekin imports/caching fail ho sakte hai
 
 ---
 
+## 11.5 Demo / Client Presentation (`scripts/demo-data.js`)
+
+Client ke paas ja kar **sirf school ka naam** do — script sab kuch khud bana leta hai:
+
+```
+cd Backend && npm run demo -- --name "ABC School"
+```
+
+- **Auto-provisioning**: naam se org code derive hota hai (`ABC-SCHOOL`-style),
+  org + `"… Main Campus"` branch banti hai (`ACTIVE`), aur har module ka sample
+  data seed hota hai (classes/sections, teachers, students+parents, fee records
+  PAID/PARTIAL/UNPAID/OVERDUE, exams/results, timetable, attendance, circulars,
+  PTM, homework, conduct remarks, applicants).
+- **Credentials file (bangaya hi deliverable)**: `Backend/demo-info/<code>.md` +
+  `<code>.json` — usme Admin/Teacher/Parent/Student **sab portals ke login** aur
+  **sab demo URLs** likhe hote hain. File kholo → har portal me login karo.
+- **Kaat ki kam**: same `--code` dobara run karo → wahi tenant reuse hota hai
+  (data double nahi banta). `--reset --yes` = wipe + fresh. `--students/--teachers
+  /--months` se size control. `--out` se file folder badlo. `--no-file` se file
+  band.
+- **Production handoff**: demo se jo data bana hai wahi production environment me
+  serve ho sakta hai — tenant-apart-isolation by design (org code unique hai).
+  Final sign-off par: naya environment banao → same `npm run demo -- --name "..."`
+  seed karo → client ko branded login link (`/o/{slug}` + school code) do.
+
+> **Demo login credentials har role ka fixed hain** (seed-data.js): ADMIN =
+> `Admin@123`, TEACHER = `Teacher@123`, Parent/Student portal = phone/roll +
+> **school code as shared password**. Ye sari info `demo-info/<code>.md` me likhi
+> jati hai.
+
+---
+
 ## 12. Caching & Realtime
 
 - **Redis caches**: `orgs:all`, `org:{id}`, `superadmin:overview`, `schools:all`, `schools:org:{id}`,
@@ -667,6 +699,13 @@ cd frontend/nextjs && npm run build   # build + typecheck
 
 # Seed platform super admin
 cd Backend && npx prisma db seed    # superadmin@schoolerp.com / superadmin123
+
+# Client demo — sirf school ka naam do → data seed + credentials file
+cd Backend && npm run demo -- --name "ABC School"
+cd Backend && npm run demo -- --name "ABC School" --reset --yes   # wipe + fresh
+
+# Deliver demo tenant ke saath (email hamesha tenant-first — school ka apna SMTP)
+cd Backend && npm run demo -- --name "ABC School" --code ABC --out ./demo-info
 
 # Migrations (jab DB reachable ho)
 cd Backend && npx prisma migrate deploy
