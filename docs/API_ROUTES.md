@@ -2,7 +2,7 @@
 
 > Base URL: `/api/v1` (all routes below are relative to this prefix)
 
-**Total routes: 322** (319 API routes + 3 infra: `/health`, `/ready`, `/metrics`)
+**Total routes: 325** (322 API routes + 3 infra: `/health`, `/ready`, `/metrics`)
 
 ---
 
@@ -591,7 +591,7 @@
 
 ---
 
-## Portal (17)
+## Portal (19)
 
 > All portal routes require either a **Parent** or **Student** JWT via `authenticateAnyPortal`.
 > Routes are served at `/api/v1/portal/*`.
@@ -609,19 +609,21 @@
 |---|--------|-------|------|-------------|
 | 3 | GET | `/portal/overview` | Any Portal | Aggregated dashboard: attendance, fees, homework, circulars, study material counts |
 | 4 | GET | `/portal/attendance` | Any Portal | Monthly attendance summary (?month=&year=) |
-| 5 | GET | `/portal/fees` | Any Portal | Fee records + summary (total charged, paid, outstanding) |
-| 6 | GET | `/portal/homework` | Any Portal | Recent homework broadcasts for child's section |
-| 7 | GET | `/portal/circulars` | Any Portal | School circulars (PARENTS + ALL audience) |
-| 8 | GET | `/portal/results` | Any Portal | Exam results across all exams |
-| 9 | GET | `/portal/timetable` | Any Portal | Weekly timetable slots for child's section |
-| 10 | GET | `/portal/timetable/pdf` | Any Portal | Download timetable as PDF |
-| 11 | GET | `/portal/conduct` | Any Portal | Conduct remarks from teachers |
-| 12 | GET | `/portal/ptm` | Any Portal | Upcoming PTM sessions (scheduled, future) |
-| 13 | GET | `/portal/leave` | Any Portal | Leave requests for this parent's children |
-| 14 | POST | `/portal/leave` | Any Portal | Submit leave request (studentId, dateFrom, dateTo, reason) |
-| 15 | GET | `/portal/exams` | Any Portal | Exam date sheets for child's classes |
-| 16 | GET | `/portal/exams/:examId/date-sheet` | Any Portal | Download exam date sheet as PDF |
-| 17 | GET | `/portal/study-material` | Any Portal | Study materials for child's section |
+| 5 | GET | `/portal/attendance/yearly-summaries` | Any Portal | Yearly attendance summaries for child |
+| 6 | GET | `/portal/fees` | Any Portal | Fee records + summary (total charged, paid, outstanding) |
+| 7 | GET | `/portal/fees/yearly-summaries` | Any Portal | Yearly fee summaries for child |
+| 8 | GET | `/portal/homework` | Any Portal | Recent homework broadcasts for child's section |
+| 9 | GET | `/portal/circulars` | Any Portal | School circulars (PARENTS + ALL audience) |
+| 10 | GET | `/portal/results` | Any Portal | Exam results across all exams |
+| 11 | GET | `/portal/timetable` | Any Portal | Weekly timetable slots for child's section |
+| 12 | GET | `/portal/timetable/pdf` | Any Portal | Download timetable as PDF |
+| 13 | GET | `/portal/conduct` | Any Portal | Conduct remarks from teachers |
+| 14 | GET | `/portal/ptm` | Any Portal | Upcoming PTM sessions (scheduled, future) |
+| 15 | GET | `/portal/leave` | Any Portal | Leave requests for this parent's children |
+| 16 | POST | `/portal/leave` | Any Portal | Submit leave request (studentId, dateFrom, dateTo, reason) |
+| 17 | GET | `/portal/exams` | Any Portal | Exam date sheets for child's classes |
+| 18 | GET | `/portal/exams/:examId/date-sheet` | Any Portal | Download exam date sheet as PDF |
+| 19 | GET | `/portal/study-material` | Any Portal | Study materials for child's section |
 
 ### Portal Data Access Rules
 
@@ -630,6 +632,7 @@
 | Overview | All linked children | Own data only |
 | Attendance | All linked children | Own only |
 | Fees | All linked children | Own only |
+| Attendance / Fees yearly-summaries | All linked children | Own only |
 | Homework | All child sections | Own section only |
 | Circulars | School-wide | School-wide |
 | Results | All linked children | Own only |
@@ -698,7 +701,7 @@
 
 ---
 
-## Documents (6)
+## Documents (7)
 
 | # | Method | Route | Role |
 |---|--------|-------|------|
@@ -708,6 +711,7 @@
 | 4 | GET | `/documents/staff-id-card/:id` | ALL_STAFF (PDF) |
 | 5 | GET | `/documents/staff/:id/qr` | ALL_STAFF (QR code) |
 | 6 | POST | `/documents/tc/:id` | MANAGEMENT (Transfer Certificate PDF) |
+| 7 | GET | `/documents/tc/:id` | ALL_STAFF (Transfer Certificate download) |
 
 ---
 
@@ -749,11 +753,11 @@
 | Audit Logs | 2 |
 | Leave (Student) | 7 |
 | Teaching Assignments | 5 |
-| **Portal** | **17** |
+| **Portal** | **19** |
 | SMTP Settings | 4 |
 | Storage Settings | 3 |
 | Staff Leave | 8 |
 | Staff Attendance | 11 |
-| Documents | 6 |
+| Documents | 7 |
 | Study Material | 5 |
-| **Total** | **322** |
+| **Total** | **325** |
