@@ -78,6 +78,12 @@ class AttendanceRepository {
   }
 
   async getStudentAttendanceHistory(studentId, startDate, endDate) {
+    if (startDate !== undefined && !(startDate instanceof Date)) {
+      throw new Error(`getStudentAttendanceHistory: startDate must be a Date object, got ${typeof startDate}`);
+    }
+    if (endDate !== undefined && !(endDate instanceof Date)) {
+      throw new Error(`getStudentAttendanceHistory: endDate must be a Date object, got ${typeof endDate}`);
+    }
     return prisma.attendanceRecord.findMany({
       where: {
         studentId,

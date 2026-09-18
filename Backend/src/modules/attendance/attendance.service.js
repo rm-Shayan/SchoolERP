@@ -331,6 +331,18 @@ class AttendanceService {
   }
 
 async getStudentHistory(studentId, startDate, endDate) {
+    const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+    if (startDate !== undefined && startDate !== null && startDate !== "") {
+      if (!DATE_RE.test(String(startDate)) || Number.isNaN(new Date(startDate).getTime())) {
+        throw ApiError.badRequestError("Invalid startDate — expected YYYY-MM-DD");
+      }
+    }
+    if (endDate !== undefined && endDate !== null && endDate !== "") {
+      if (!DATE_RE.test(String(endDate)) || Number.isNaN(new Date(endDate).getTime())) {
+        throw ApiError.badRequestError("Invalid endDate — expected YYYY-MM-DD");
+      }
+    }
+
     const key = `attendance:student-history:${studentId}:${startDate || ""}:${endDate || ""}`;
     const cached = await cacheGet(key);
     if (cached) return cached;
