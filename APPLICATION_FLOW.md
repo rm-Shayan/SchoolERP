@@ -29,8 +29,8 @@ Platform Super Admin (system ka malik — SIRF 1, aap)
 | Backend | Node.js (ESM) + Express |
 | Database | PostgreSQL (Neon) + Prisma ORM |
 | Cache/Queues | Redis (Upstash) — BullMQ workers (import/delete), caching, node-cron schedulers |
-| Email | SMTP (Nodemailer) — direct, Redis-free |
-| Storage | Cloudinary / local disk (logos, avatars) |
+| Email | SMTP (Nodemailer) — tenant-first routing + durable outbox (PendingEmail) |
+| Storage | Cloudinary / local disk (logos, avatars) — tenant-first creds |
 | Realtime | WebSocket (Socket.io rooms) |
 
 > Frontend Vite se **Next.js App Router** par migrate ho chuka hai (`frontend/nextjs`) — har route
@@ -330,8 +330,28 @@ document ka rule todta hai. Design decision se pehle flag karna chahiye.
 
 ## 9. Emails (kab kya jati hai)
 
-Email system **Redis-free** hai (`email.queue.js`) — direct SMTP, 3 retries, kabhi throw nahi karta.
-Redis down ho ya quota khatam → emails phir bhi jati hain (jab tak SMTP creds sahi hain).
+Email core **Redis-free** hai — direct SMTP (`email.service.js`) + **durable outbox** (`emailOutbox.js` →
+`PendingEmail` table). Send fail ho ya SMTP quota khatam → mail outbox mein PENDING, aur `pendingEmail`
+cron (har 30 min) 5 attempts tak retry karta hai — kabhi throw nahi karta, Redis down ho ya quota khatam
+→ emails phir bhi jati hain (jab tak SMTP creds sahi hain).
+
+Email har send par **tenant-first failover chain** use karta hai (`email.service.js`):
+
+```
+Branch PRIMARY SMTP  →  Org PRIMARY SMTP  →  Org/Branch SECONDARY  →  Platform env (LAST)
+```
+
+- Har **school/branch business mail** (`notification.service.js`) apna `schoolId` → `organizationId` resolve
+  kar ke `queueEmail(..., allowPlatformFallback: false)` ke saath bhejta hai → platform (super admin) SMTP
+  **chain se hata diya jata hai**. Mails school ke apne SMTP account se jati hain (`From` = tenant ka
+  authenticated account). Platform env sirf SUPER_ADMIN platform-critical mail (OTP, provisioning) par
+  allowed hai.
+- Har SMTP send **durable outbox** (`PendingEmail`) mein persist hota hai — instant fail par `pendingEmail`
+  cron (har 30 min) 5 attempts tak retry karta hai, chamk kar drop nahi hota. BullMQ ki email queue ab use
+  nahi hoti.
+- **Cloudinary bhi tenant-first** hai (`storage.service.js`): resolution order **branch override
+  (`OrgSecrets` + schoolId) → org default (`schoolId=null`) → platform env (sirf super-admin)**. Tenant
+  contexts (org/branch) kabhi platform Cloudinary par upload nahi karte.
 
 | Trigger | Template | Kisko | Content |
 |---|---|---|---|
@@ -371,7 +391,7 @@ school ka **naam + logo DB se load** kare (generic `/admin/login` nahi).
 - Org ka `themeColor` **DB mein store** hota hai (create/edit se set hota hai)
 - `GET /schools/branding?slug=` → `themeColor` return karta hai (fallback `#2563eb`)
 - Login hub (`LoginHubPage`) `applyOrgThemeToRoot(themeColor)` call karta hai — CSS `--color-primary-*` vars override hote hain, poore UI par theme apply hota hai
-- Jab `themeColor` null ho → `DEFAULT_THEME = '#6366f1'` (indigo) apply hota hai
+- Jab `themeColor` null ho → `DEFAULT_THEME = '#7c3aed'` (platform violet) apply hota hai — root landing, super-admin console aur portal login ka common default (indigo `#6366f1` ab use nahi hota)
 - BrandPanel left side par inline gradient `linear-gradient(135deg, themeColor, darkenHex(themeColor))` use karta hai
 - `AuthLayout` background `to-primary-50/30` use karta hai (CSS variable, dynamic)
 - Notifications: LinkedIn-style — unread par full theme color bg, read par subtle `rgba(themeColor, 0.06)` tint
@@ -564,7 +584,10 @@ sync; (3) Student record update — parent contact change; (4) Photo upload — 
 > (fee reminder + absent alerts exact symptom). Ab `config/redis.js` par `enableOfflineQueue: false`
 > (commands turant throw) aur `withJobLock` Redis fail hone par job ko **bina lock run** karta hai.
 > Alert/lateMark jobs Redis-dedup ke saath in-memory fallback (`jobs/cron/dedupCache.js`) rakhte hain
-> taake 15-min rerun par emails/notifications duplicate na jayein.
+> taake 15-min rerun par emails/notifications duplicate na jayein. **Container TZ = `Asia/Karachi`** set
+> hai (`env.js` default + `Dockerfile` `ENV TZ`) — node-cron 7AM-6PM windows Windows/host TZ me misalign
+> nahi hote. Har cron job ka manual verification script chal kar **saare 15 jobs OK** confirm ho chuke hain
+> (Sep 18, 2026).
 
 **Email queue ab BullMQ use nahi karti** (direct SMTP) — Redis par load kam.
 

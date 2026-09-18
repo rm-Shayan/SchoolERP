@@ -161,6 +161,14 @@ async function printCredentials(org, branch, seeded) {
   const admin = staff.find((u) => u.role === 'ADMIN');
   const teachers = staff.filter((u) => u.role === 'TEACHER');
 
+  // Portal demo ke liye 1 student + uska parent chahiye (login creds).
+  const sample = await prisma.student.findFirst({
+    where: { schoolId: branch.id },
+    select: { rollNumber: true, firstName: true, lastName: true, parent: { select: { whatsappNo: true } } },
+  });
+
+  const base = process.env.CLIENT_URL || 'http://localhost:3000';
+
   console.log('\n================ DEMO TENANT READY ================');
   console.log(`Organization : ${org.name}  (code: ${org.code}, slug: ${org.slug})`);
   console.log(`Branch       : ${branch.name}  (code: ${branch.code})`);
@@ -169,7 +177,15 @@ async function printCredentials(org, branch, seeded) {
   console.log('\nLogin credentials:');
   if (admin) console.log(`  ADMIN    : ${admin.email} / Admin@123`);
   teachers.forEach((t, idx) => console.log(`  TEACHER  : ${t.email} / Teacher@123`));
-  console.log('\nLogin URL options: school code login (code + email + password) ya direct email + password.');
+  if (sample) {
+    const portalPass = branch.portalPassword ? '(custom portal password)' : `(school code = ${branch.code})`;
+    console.log(`  PARENT   : phone ${sample.parent.whatsappNo} + portal password ${portalPass}`);
+    console.log(`  STUDENT  : roll ${sample.rollNumber} + portal password ${portalPass}`);
+  }
+  console.log('\nDemo URLs:');
+  console.log(`  Public org page + admission : ${base}/o/${org.slug}`);
+  console.log(`  Branch dashboard            : ${base}/login?code=${branch.code}`);
+  console.log(`  Parent/student portal       : ${base}/parent/login (code: ${branch.code})`);
   console.log('====================================================');
 }
 
