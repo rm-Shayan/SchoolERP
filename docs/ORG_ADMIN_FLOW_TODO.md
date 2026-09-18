@@ -148,9 +148,3 @@
 
 - Subdomain ka **local browser test** (`hosts` file se) — code ready hai, sirf verify karna hai (see #44)
 - Dynamic slug routes ko `/o/{slug}/*` ke andar migrate karna (abhi redirect alias hai)
-
----
-<tool_call>
-<function=bash>
-<parameter=workdir>
-D:\saas\ERP

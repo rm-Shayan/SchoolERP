@@ -638,8 +638,8 @@ gate live view, import progress sab live update hote hain.
 | "2nd branch par naya admin kaise?" | Branch create par **"Naya Principal banao"** (default/recommended) — naya ADMIN + uski apni credentials email |
 | "2nd branch wahi admin manage kare?" | Ab **ye option nahi hai** — "Wahi admin manage kare" (org-level handover) REMOVE ho chuka hai. Har branch ka apna ADMIN (Principal) hota hai. Agar pehla principal nayi branch bhi manage kare, to usse wahan naye principal ke roop mein re-assign karein |
 | "Staff login par password kya hota hai?" | Diya gaya password; **imported staff jinka password set nahi** → school code hi default password (case-insensitive fallback). **Ab portal password bhi accept hota hai** — individual bcrypt → portal password → school code |
-| "Parent portal mein kitne bachche dikhenge?" | Saare linked children (siblings) — sibling selector se switch. Student portal mein sirf khud ka data |
-| "Portal login kaise hota hai?" | 2 tarike: (1) Direct — school code + phone/roll + portal password, (2) OTP — WhatsApp par OTP. Dono 30-day JWT dete hain |
+| "Parent portal mein kitne bachche dikhenge?" | Saare linked children (siblings) — child switcher se switch (har GET par `studentId` param). Student portal mein sirf khud ka data |
+| "Portal login kaise hota hai?" | 2 tarike: (1) Direct — school code + phone/roll + portal password, (2) OTP — WhatsApp number se trigger, OTP email par aata hai (WhatsApp API future scope). Dono 30-day JWT dete hain |
 | "Portal ka shared password kya hai?" | Default = school code. Branch admin Settings → Portal Access se custom set kar sakta hai |
 | "Portal mein kaun kaun si cheezein dikhengi?" | 14 tabs: overview, attendance, fees, homework, materials, notices, results, exams, timetable, conduct, PTM, leave, notifications, profile |
 | "Portal routes kaise kaam karte hain?" | Saare `/portal/*` routes `authenticateAnyPortal` middleware use karte hain — parent ya student JWT dono accept hote hain |
@@ -659,15 +659,15 @@ gate live view, import progress sab live update hote hain.
 
 ## 14. Quick References
 
-**API surface (322 routes)** — `API_ROUTES.md` mein full table. Key groups:
+**API surface (320 routes)** — `API_ROUTES.md` mein full table. Key groups:
 - Auth (35): login, refresh, me, logout(-all), change-password, users CRUD, parent/student OTP + direct login, switch-branch, assign-branch
 - Organizations (14), Schools (15) — SUPER_ADMIN / MANAGEMENT (incl. export, branding, logo, portal-password)
 - Academic (26) — years/terms/classes/sections/subjects
-- Students (12), Admissions (19), Fees (25), Attendance (19), Homework (5), Exams (10),
+- Students (13 — incl. `/students/stats`), Admissions (19), Fees (25), Attendance (22), Homework (5), Exams (10),
   Conduct (8), Circulars (4), PTM (5), Timetable (12), Activities (5), Notifications (8),
   Moderation (10), Audit (2), Promotions (10), Leave (7), Teaching Assignments (5)
-- **Portal (17)** — parent/student dashboard routes (overview, attendance, fees, homework, materials, notices, results, exams, timetable, conduct, PTM, leave, study-material, timetable-pdf, exam-date-sheet, profile)
-- SMTP (4), Storage (3), Staff Leave (8), Staff Attendance (11), Documents (6), Study Material (5)
+- **Portal (19)** — parent/student dashboard routes (overview, attendance + yearly-summaries, fees + yearly-summaries, homework, materials, circulars, results, exams + date-sheet, timetable + pdf, conduct, PTM, leave, study-material, profile patch/avatar)
+- SMTP (4), Storage (3), Staff Leave (8), Staff Attendance (11), Documents (7), Study Material (5)
 - Infra (3): `/health`, `/ready`, `/metrics`
 
 **Admin console pages (current):** Dashboard, Organizations (+ create/detail), Branches,
@@ -677,9 +677,9 @@ Settings (**Platform tab** — delivery status).
 **Dev commands**
 ```bash
 cd Backend && npm run dev          # backend :3000
-cd frontend && npm run dev         # frontend :5173
+cd Frontend && npm run dev         # frontend (Next.js)
 cd Backend && npx prisma db seed   # superadmin@schoolerp.com / superadmin123
-cd frontend && npm run build && npm run lint
+cd Frontend && npm run build && npm run lint
 ```
 
 ---

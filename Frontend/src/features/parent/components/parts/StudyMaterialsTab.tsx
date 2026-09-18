@@ -47,7 +47,7 @@ export default function StudyMaterialsTab() {
 
   if (items.length === 0) {
     return (
-      <Card className="p-8">
+      <Card className="p-4 sm:p-8">
         <EmptyState title="No study materials" description="Your teachers haven't uploaded any materials yet." />
       </Card>
     );
@@ -79,7 +79,7 @@ export default function StudyMaterialsTab() {
       </div>
 
       {filtered.length === 0 ? (
-        <Card className="p-8">
+        <Card className="p-4 sm:p-8">
           <EmptyState title={`No ${TYPE_CONFIG[filter]?.label.toLowerCase() ?? ''} materials`} description="Nothing here yet for this category." />
         </Card>
       ) : (

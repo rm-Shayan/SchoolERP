@@ -187,3 +187,18 @@
 | 83 | **`PortalTab` type updated** — `'conduct'` and `'ptm'` added to union type + TABS array with icons (check-circle for conduct, users for PTM) | ✅ Done |
 | 84 | **`ConductSkeleton` + `PTMSkeleton`** — loading skeletons added to `PortalSkeletonsB.tsx` | ✅ Done |
 | 85 | **Wired into both views** — `ParentPortalView` + `StudentPortalView` dono mein `TAB_CONTENT.conduct = ConductTab` + `TAB_CONTENT.ptm = PTMTab` | ✅ Done |
+
+---
+
+## ✅ New Tabs & Extensions (synced 2026-09-18)
+
+| # | Item | Status |
+|---|---|---|
+| 86 | **`NotificationsTab`** — `GET /notifications/portal` list + `markRead` + `markAllRead` via `portalNotificationService`; type-badged notifications | ✅ Done |
+| 87 | **`ExamSheetTab`** — `GET /portal/exams` exam sheets + `/portal/exams/:id/date-sheet` PDF download (`getExams`/date-sheet blob) | ✅ Done |
+| 88 | **`PortalSettingsTab` + `ProfileEditForm`** — parent/student contact edit; student photo `canEditPhoto={!studentMode}` (read-only) | ✅ Done |
+| 89 | **`AttendanceYearSummary`** — `/portal/attendance/yearly-summaries` year view (TODO #7) | ✅ Done |
+| 90 | **`FeeYearSummary`** — `/portal/fees/yearly-summaries` year-level fee summary | ✅ Done |
+| 91 | **Child-scoped GET** — `portalDataService` har GET par `activeChildId` as `studentId` param bhejta hai (backend child scoping; ChildSwitcher/ChildSelector replace SiblingSelector) | ✅ Done |
+| 92 | **Sidebar nav** — `PortalTabHost` + `PORTAL_GROUPS` (Academics/Resources/Support/Account) + `MobileBottomNav` (4 primary + More); `portalTabs.ts` = single source of tabs | ✅ Done |
+| 93 | **Timetable PDF** — `/portal/timetable/pdf` blob download (`saveBlob`) | ✅ Done |

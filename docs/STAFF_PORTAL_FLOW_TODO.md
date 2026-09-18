@@ -8,9 +8,9 @@
 
 | # | Item | Status |
 |---|---|---|
-| 1 | **Proper Teacher Dashboard** — `/teacher/dashboard` abhi placeholder hai. Chahiye: aaj ke periods (timetable se), meri classes/sections summary, recent homework/remarks, pending results count | ⏳ Pending |
-| 2 | **Accountant routing fix** — `getRoleHomePath` mein `ACCOUNTANT` case add karo → `{base}/branch/dashboard`. Abhi `/login` par redirect hota hai | ⏳ Pending |
-| 3 | **Accountant in seed** — `Backend/prisma/seed.js` mein ACCOUNTANT role ka test user add karo (jaise abhi ADMIN/TEACHER hota hai) | ⏳ Pending |
+| 1 | **Proper Teacher Dashboard** — `/teacher/dashboard` ab completed hai (`TeacherDashboard.tsx`: stats, today's timetable, upcoming PTMs, recent homework) | ✅ Done |
+| 2 | **Accountant routing** — ACCOUNTANT role **remove ho chuka** (`constants.js` mein sirf 4 roles). `getRoleHomePath` ab ADMIN/RECEPTIONIST/TEACHER 3 roles handle karta hai | ❌ Removed (role gone) |
+| 3 | **Accountant in seed** — ACCOUNTANT role ab exist nahi karta (seed mein ADMIN/TEACHER hain) | ❌ Removed (role gone) |
 
 ---
 
@@ -18,8 +18,8 @@
 
 | # | Item | Status |
 |---|---|---|
-| 4 | **Homework Edit/Delete UI** — backend `PUT /homework/:id` + `DELETE /homework/:id` ready hain. Cards par edit/delete actions + edit modal nahi | ⏳ Pending |
-| 5 | **Conduct Remarks history view** — backend `GET /remarks/students/:id` ready; teacher ke paas sirf form hai, apni purani remarks ki list nahi | ⏳ Pending |
+| 4 | **Homework Edit/Delete UI** — `HomeworkPage.tsx` mein edit modal + delete action exist | ✅ Done |
+| 5 | **Conduct Remarks history view** — `ConductRemarksPage.tsx` mein "Your Remarks History" list + remark total | ✅ Done |
 | 6 | **Teacher attendance scope audit** — SectionAttendancePage mein section dropdown **saare school sections** dikhata hai. Teacher ko sirf apni assignments dikhani chahiye | ⏳ Pending |
 | 7 | **Homework list pagination UI** — backend `page/pageSize` support karta hai; frontend saara load karta hai | ⏳ Pending |
 
@@ -43,7 +43,7 @@
 
 | # | Item | Status |
 |---|---|---|
-| 15 | **Substitute Teacher UI** — backend module complete hai, frontend page nahi | ⏳ Future |
+| 15 | **Substitute Teacher UI** — backend substitute engine **ab exist nahi karta** (koi substitute module nahi) — full feature future scope | ⏳ Future |
 | 16 | **Teacher dashboard timeline** — aaj ka period-by-period schedule with current period highlight | ⏳ Future |
 | 17 | **Staff attendance reports** — monthly/quarterly summary reports with export | ⏳ Future |
 | 18 | **Leave balance tracking** — remaining leaves count per staff member | ⏳ Future |

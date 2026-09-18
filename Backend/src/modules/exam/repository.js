@@ -96,7 +96,7 @@ class ExamRepository {
         where,
         include: {
           term: { include: { academicYear: true } },
-          papers: { include: { subject: true, section: true, class: true } },
+          papers: true, // Only fetch flat paper data, omitting heavy joins for class/section/subject
           _count: { select: { results: true } },
         },
         orderBy: { startDate: "desc" },

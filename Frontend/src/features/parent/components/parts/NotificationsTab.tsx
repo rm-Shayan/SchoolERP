@@ -84,7 +84,7 @@ export default function NotificationsTab() {
       </div>
 
       {filtered.length === 0 ? (
-        <Card className="p-8 text-center">
+        <Card className="p-4 sm:p-8 text-center">
           <p className="text-sm text-gray-500">{filter === 'unread' ? 'All caught up! No unread notifications.' : 'No notifications yet.'}</p>
         </Card>
       ) : (

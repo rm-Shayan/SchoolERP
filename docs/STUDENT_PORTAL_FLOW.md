@@ -3,6 +3,10 @@
 > Singleton portal concept: Parent aur Student alag logins, lekin **ek hi merged dashboard**
 > (`/parent/dashboard`) jo token type ke hisaab se view switch karta hai. Alag `/student`
 > routes nahi — sab `/parent/*` par hai.
+>
+> **Last synced: 2026-09-18** — tabs model refreshed (14 tabs via `portalTabs.ts`), child
+> scoping via `studentId` GET param, `NotificationsTab` + `ExamSheetTab` + `PortalSettingsTab`
+> verified in code.
 
 ---
 
@@ -19,9 +23,9 @@ Login (/parent/login)
    └─ Student tab → POST /auth/student/login (schoolCode + rollNumber + password)
          │
          ▼
-   /parent/dashboard (ParentPortalPage = token router)
-      ├─ parentToken  → ParentPortalView  (children[] + SiblingSelector)
-      └─ studentToken → StudentPortalView (single student)
+/parent/dashboard (ParentPortalPage = token router)
+       ├─ parentToken  → ParentPortalView  (children[] + ChildSwitcher)
+       └─ studentToken → StudentPortalView (single student)
 ```
 
 **Tech Stack (portal-specific):**
@@ -125,20 +129,20 @@ ParentPortalPage (client component)
    ├─ localStorage.studentToken? → StudentPortalView
    └─ localStorage.parentToken?  → ParentPortalView
 ```
+Note: SiblingSelector ab `ChildSwitcher.tsx` + `ChildSelector.tsx` hain (child per-GET param
+`studentId` bheja jata hai — backend child-scoped, not keyed tab reload).
 
 ### 4.2 ParentPortalView
 
 - `parentService.getMe()` → profile (name, whatsappNo, children[])
-- `SiblingSelector` — horizontal chip list (active child select)
-- `ChildSummaryCard` — School / Class / Section / Roll No + status badge
-- `PortalTabNav` — desktop top tabs + mobile bottom nav (8 tabs)
-- Tab content: `TAB_CONTENT[tab]` (record map)
+- `ChildSwitcher` — child select + `ChildSummaryCard` (School / Class / Section / Roll No + status badge)
 - WebSocket: `usePortalSocket(sectionIds, schoolId)` — all children's sections join
+- Sidebar (desktop) + `MobileBottomNav` (mobile) me tab navigation diya jata hai
 
 ### 4.3 StudentPortalView
 
 - `portalService.studentGetMe()` → student profile (masked parentWhatsapp)
-- Same `ChildSummaryCard` + `PortalTabNav` (no SiblingSelector — single student)
+- Same `ChildSummaryCard` + tab navigation (no ChildSwitcher — single student)
 - Same tab content components (shared)
 - WebSocket: `usePortalSocket([sectionId], schoolId)` — single section join
 
@@ -153,22 +157,31 @@ ParentPortalPage (client component)
 `portalDataService.getAxios()` picks `studentToken` ya `parentToken` based on localStorage.
 401 interceptor → clear token + redirect to `/parent/login`.
 
-### 4.5 Tabs — Current State
+### 4.5 Tabs — Current State (14 tabs)
+
+Portal ab sidebar (desktop) + MobileBottomNav (mobile: 4 primary + "More" grid) se navigate
+karta hai. Tab definitions: `parts/portalTabs.ts` → `PORTAL_TABS` (key/label/icon) +
+`PORTAL_GROUPS` (grouped sidebar).
 
 | Tab | Component | API Endpoint | Data |
 |---|---|---|---|
 | Overview | `OverviewTab` | `/portal/overview` | Attendance ring, fee status, homework/circular counts, live events |
+| Notifications | `NotificationsTab` | `/notifications/portal` | In-app notification list + mark-read/mark-all-read (`portalNotificationService`) |
 | Attendance | `AttendanceTab` | `/portal/attendance` | Calendar heat-strip + month stats + live feed |
 | Fees | `FeesTab` | `/portal/fees` | Fee records (expandable cards) + payment history + summary cards |
 | Homework | `HomeworkTab` | `/portal/homework` | Teacher-grouped cards + socket events |
 | Materials | `StudyMaterialsTab` | `/portal/study-material` | Study materials list with type badges |
 | Notices | `NoticesTab` | `/portal/circulars` | Circular cards + socket events |
 | Results | `ResultsTab` | `/portal/results` | Exam-wise marks table |
-| Timetable | `TimetableTab` | `/portal/timetable` | Weekly grid (day → slots) |
-| Leave | `LeaveRequestsTab` | `/portal/leave` | Request list + form |
+| Timetable | `TimetableTab` | `/portal/timetable` | Weekly grid (day → slots) + PDF download |
+| Exams | `ExamSheetTab` | `/portal/exams` + `/portal/exams/:id/date-sheet` (PDF) | Exam sheets + date-sheet download |
 | Conduct | `ConductTab` | `/portal/conduct` | Teacher remarks with type badges (POSITIVE/NEGATIVE/etc) |
 | PTM | `PTMTab` | `/portal/ptm` | Upcoming PTM sessions (date, time, location) |
-| Profile | `ProfileTab` | localStorage | Parent: name/WhatsApp/phone/email + children. Student: name/roll/school/class/section |
+| Leave | `LeaveRequestsTab` | `/portal/leave` | Request list + form |
+| Settings & Profile | `PortalSettingsTab` | localStorage + `/portal/profile` edit | `ProfileEditForm` (parent/student contact edit; student photo read-only) |
+
+Extra: `AttendanceYearSummary` (`/portal/attendance/yearly-summaries`), `FeeYearSummary`
+(`/portal/fees/yearly-summaries`) — year-level summary views.
 
 ---
 
@@ -200,7 +213,8 @@ Redux store. Used in `OverviewLiveEvents`, `AttendanceTab` (live feed), `Homewor
 
 ## 6. Mobile Responsiveness
 
-- `PortalTabNav`: desktop = horizontal top tabs, mobile = **fixed bottom nav** (8 icons)
+- `MobileBottomNav`: mobile = bottom nav with 4 primary tabs (Overview/Attendance/Fees/Homework) + "More" button → full tab grid
+- Desktop = `PortalTabHost` sidebar with `PORTAL_GROUPS` (Academics / Resources / Support / Account)
 - `ChildSummaryCard`: 2-col mobile → 4-col desktop grid
 - `FeesTab` table: `overflow-x-auto` for mobile scroll
 - `AttendanceTab` calendar: `grid-cols-7` (always fits)
@@ -211,10 +225,10 @@ Redux store. Used in `OverviewLiveEvents`, `AttendanceTab` (live feed), `Homewor
 
 ## 7. Parent-Specific Features
 
-### 7.1 Sibling Selector
-- Parent ke multiple children → horizontal chip list (active child highlighted)
-- Tab content **keyed by child ID** → child switch karne par data reload hota hai
-- `ChildSummaryCard` updated child ke details dikhata hai
+### 7.1 Child Switcher
+- Parent ke multiple children → child selector + summary card (active child highlighted)
+- Har GET request par `activeChildId` localStorage se `studentId` param ke roop mein bheja jata hai → backend us child par scope karta hai
+- `ChildSwitcher.tsx` + `ChildSelector.tsx` — parent me child switch par data re-fetch
 
 ### 7.2 Leave Requests
 - `LeaveRequestsTab` — request list + "New Request" button
@@ -228,7 +242,7 @@ Redux store. Used in `OverviewLiveEvents`, `AttendanceTab` (live feed), `Homewor
 ## 8. Student-Specific Features
 
 ### 8.1 Single Student View
-- SiblingSelector nahi — single student ka profile dikhta hai
+- ChildSwitcher nahi — single student ka profile dikhta hai
 - `ChildSummaryCard` with student details
 - Same tabs as parent (shared components)
 - Leave form mein child selector nahi (sirf apni leave)
@@ -262,13 +276,16 @@ Redux store. Used in `OverviewLiveEvents`, `AttendanceTab` (live feed), `Homewor
 | Parent view | `Frontend/src/features/parent/components/ParentPortalView.tsx` |
 | Student view | `Frontend/src/features/parent/components/StudentPortalView.tsx` |
 | Login forms | `ParentLoginForms.tsx` + `StudentLoginForm.tsx` |
-| Tab navigation | `Frontend/src/features/parent/components/parts/PortalTabNav.tsx` |
+| Tab defs | `Frontend/src/features/parent/components/parts/portalTabs.ts` (PORTAL_TABS + PORTAL_GROUPS) |
+| Tab host / nav | `Frontend/src/features/parent/components/parts/PortalTabHost.tsx` + `MobileBottomNav.tsx` |
 | Tab components | `Frontend/src/features/parent/components/parts/OverviewTab.tsx` (+ siblings) |
-| Shared cards | `Frontend/src/features/parent/components/portalCards.tsx` |
-| Sibling selector | `Frontend/src/features/parent/components/SiblingSelector.tsx` |
-| Profile tab | `Frontend/src/features/parent/components/parts/ProfileTab.tsx` |
+| Shared cards | `Frontend/src/features/parent/components/parts/portalChildGroup.tsx` + `PortalInfoRow.tsx` |
+| Child switcher | `Frontend/src/features/parent/components/parts/ChildSwitcher.tsx` + `ChildSelector.tsx` |
+| Settings / profile | `Frontend/src/features/parent/components/parts/PortalSettingsTab.tsx` + `ProfileEditForm.tsx` |
 | Conduct tab | `Frontend/src/features/parent/components/parts/ConductTab.tsx` |
 | PTM tab | `Frontend/src/features/parent/components/parts/PTMTab.tsx` |
+| Notifications tab | `Frontend/src/features/parent/components/parts/NotificationsTab.tsx` |
+| Exam sheet tab | `Frontend/src/features/parent/components/parts/ExamSheetTab.tsx` |
 | Leave form | `Frontend/src/features/parent/components/parts/LeaveForm.tsx` |
 | API: parent auth | `Frontend/src/lib/api/parentService.ts` |
 | API: student auth | `Frontend/src/lib/api/portalService.ts` |

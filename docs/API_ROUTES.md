@@ -2,7 +2,9 @@
 
 > Base URL: `/api/v1` (all routes below are relative to this prefix)
 
-**Total routes: 325** (322 API routes + 3 infra: `/health`, `/ready`, `/metrics`)
+> **Last synced:** 2026-09-18 — verified against `Backend/src/app.js` + `Backend/src/modules/**/routes.js`.
+
+**Total routes: 320** (317 API routes + 3 infra: `/health`, `/ready`, `/metrics`)
 
 ---
 
@@ -85,7 +87,7 @@
 
 | # | Method | Route | Role |
 |---|--------|-------|------|
-| 28 | POST | `/auth/parent/request-otp` | Public (WhatsApp OTP) |
+| 28 | POST | `/auth/parent/request-otp` | Public (OTP via email — WhatsApp API future) |
 | 29 | POST | `/auth/parent/verify-otp` | Public → returns parent JWT |
 | 30 | POST | `/auth/parent/login` | Public (school code + phone + password) |
 | 31 | GET | `/auth/parent/me` | Parent |
@@ -95,7 +97,7 @@
 | # | Method | Route | Role |
 |---|--------|-------|------|
 | 32 | POST | `/auth/student/login` | Public (school code + roll number) |
-| 33 | POST | `/auth/student/request-otp` | Public (OTP to parent WhatsApp) |
+| 33 | POST | `/auth/student/request-otp` | Public (OTP to parent email) |
 | 34 | POST | `/auth/student/verify-otp` | Public → returns student JWT |
 | 35 | GET | `/auth/student/me` | Student (profile read-only) |
 
@@ -204,7 +206,7 @@
 
 ---
 
-## Students (12)
+## Students (13)
 
 | # | Method | Route | Role |
 |---|--------|-------|------|
@@ -212,14 +214,15 @@
 | 2 | POST | `/students/schools/:schoolId/import` | MANAGEMENT (.xlsx bulk import) |
 | 3 | POST | `/students/schools/:schoolId` | MANAGEMENT + RECEPTIONIST |
 | 4 | GET | `/students` | ALL_STAFF |
-| 5 | GET | `/students/export` | ALL_STAFF (CSV) |
-| 6 | GET | `/students/:id` | ALL_STAFF |
-| 7 | PATCH | `/students/:id` | MANAGEMENT + RECEPTIONIST |
-| 8 | DELETE | `/students/:id` | SUPER_ADMIN only (hard delete) |
-| 9 | POST | `/students/:id/photo` | MANAGEMENT + RECEPTIONIST |
-| 10 | PATCH | `/students/:id/status` | MANAGEMENT (graduate/dropout/transfer) |
-| 11 | POST | `/students/:id/rollback` | MANAGEMENT (undo lifecycle → ACTIVE) |
-| 12 | POST | `/students/:id/reissue-id` | MANAGEMENT (reissue QR/RFID) |
+| 5 | GET | `/students/stats` | ALL_STAFF (lightweight dashboard counts) |
+| 6 | GET | `/students/export` | ALL_STAFF (CSV) |
+| 7 | GET | `/students/:id` | ALL_STAFF |
+| 8 | PATCH | `/students/:id` | MANAGEMENT + RECEPTIONIST |
+| 9 | DELETE | `/students/:id` | SUPER_ADMIN only (hard delete) |
+| 10 | POST | `/students/:id/photo` | MANAGEMENT + RECEPTIONIST |
+| 11 | PATCH | `/students/:id/status` | MANAGEMENT (graduate/dropout/transfer) |
+| 12 | POST | `/students/:id/rollback` | MANAGEMENT (undo lifecycle → ACTIVE) |
+| 13 | POST | `/students/:id/reissue-id` | MANAGEMENT (reissue QR/RFID) |
 
 ---
 
@@ -310,7 +313,7 @@
 
 ---
 
-## Attendance (19)
+## Attendance (22)
 
 ### Gate Scan & Sync
 
@@ -359,19 +362,25 @@
 | 16 | PUT | `/attendance/:id` | SUPER_ADMIN, ADMIN, TEACHER, RECEPTIONIST |
 | 17 | DELETE | `/attendance/:id` | SUPER_ADMIN, ADMIN, RECEPTIONIST |
 
-### Archive
-
-| # | Method | Route | Role |
-|---|--------|-------|------|
-| 18 | POST | `/attendance/archive` | SUPER_ADMIN, ADMIN (summarize + delete raw) |
-| 19 | POST | `/attendance/archive/auto` | SUPER_ADMIN (auto-archive across all schools) |
-
 ### Phantom Cleanup (old timezone-bug artifacts)
 
 | # | Method | Route | Role |
 |---|--------|-------|------|
-| 20 | GET | `/attendance/phantoms?dateFrom&dateTo` | SUPER_ADMIN, ADMIN (preview only — deletes nothing) |
-| 21 | POST | `/attendance/phantoms/cleanup` | SUPER_ADMIN, ADMIN (body `{ ids: [...] }` — re-verified server-side) |
+| 18 | GET | `/attendance/phantoms?dateFrom&dateTo` | SUPER_ADMIN, ADMIN (preview only — deletes nothing) |
+| 19 | POST | `/attendance/phantoms/cleanup` | SUPER_ADMIN, ADMIN (body `{ ids: [...] }` — re-verified server-side) |
+
+### Manual Alert Send
+
+| # | Method | Route | Role |
+|---|--------|-------|------|
+| 20 | POST | `/attendance/alerts/send` | SUPER_ADMIN, ADMIN (force-send absent/late alerts) |
+
+### Archive
+
+| # | Method | Route | Role |
+|---|--------|-------|------|
+| 21 | POST | `/attendance/archive` | SUPER_ADMIN, ADMIN (summarize + delete raw) |
+| 22 | POST | `/attendance/archive/auto` | SUPER_ADMIN (auto-archive across all schools) |
 
 ---
 
@@ -736,10 +745,10 @@
 | Organizations | 14 |
 | Schools | 15 |
 | Academic | 26 |
-| Students | 12 |
+| Students | 13 |
 | Admissions | 19 |
 | Fees | 25 |
-| Attendance | 19 |
+| Attendance | 22 |
 | Homework | 5 |
 | Exams | 10 |
 | Conduct | 8 |
@@ -760,4 +769,4 @@
 | Staff Attendance | 11 |
 | Documents | 7 |
 | Study Material | 5 |
-| **Total** | **325** |
+| **Total** | **320** |

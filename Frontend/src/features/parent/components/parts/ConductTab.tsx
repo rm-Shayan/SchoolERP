@@ -31,7 +31,7 @@ export default function ConductTab() {
 
   if (remarks.length === 0) {
     return (
-      <Card className="p-8">
+      <Card className="p-4 sm:p-8">
         <EmptyState title="No remarks yet" description="Teacher conduct remarks will appear here." />
       </Card>
     );

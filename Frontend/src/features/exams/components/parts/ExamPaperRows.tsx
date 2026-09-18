@@ -68,7 +68,7 @@ export default function ExamPaperRows({ rows, classes, onRowsChange }: Props) {
             <div key={row.key} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Paper {idx + 1}</span>
-                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-red-600 hover:bg-red-50"
+                <Button type="button" size="sm" variant="ghost" className="h-6 px-2 text-xs text-red-600 hover:bg-red-50"
                   onClick={() => onRowsChange(rows.filter((r) => r.key !== row.key))}>
                   Remove
                 </Button>
@@ -97,7 +97,7 @@ export default function ExamPaperRows({ rows, classes, onRowsChange }: Props) {
           );
         })}
       </div>
-      <Button size="sm" variant="outline" onClick={() => onRowsChange([...rows, emptyRow()])}>
+      <Button type="button" size="sm" variant="outline" onClick={() => onRowsChange([...rows, emptyRow()])}>
         + Add Paper
       </Button>
     </div>

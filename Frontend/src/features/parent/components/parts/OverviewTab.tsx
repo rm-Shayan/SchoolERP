@@ -45,7 +45,7 @@ function AttendanceRing({ percentage, summary }: { percentage: number; summary: 
       <CardHeader className="pb-2">
         <h3 className="font-semibold text-gray-900 text-sm">Attendance This Month</h3>
       </CardHeader>
-      <CardContent className="flex items-center gap-6 pt-0">
+      <CardContent className="flex flex-wrap items-center gap-4 pt-0">
         <div className="relative w-24 h-24 shrink-0">
           <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r={r} fill="none" stroke="#f3f4f6" strokeWidth="8" />
@@ -53,7 +53,7 @@ function AttendanceRing({ percentage, summary }: { percentage: number; summary: 
           </svg>
           <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-gray-900">{percentage}%</span>
         </div>
-        <div className="grid grid-cols-2 gap-2 text-sm flex-1">
+        <div className="grid grid-cols-2 gap-2 text-sm flex-1 min-w-[170px]">
           <StatChip label="Present" value={summary.present} color="#22c55e" />
           <StatChip label="Late" value={summary.late} color="#f59e0b" />
           <StatChip label="Absent" value={summary.absent} color="#ef4444" />

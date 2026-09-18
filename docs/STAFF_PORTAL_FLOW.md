@@ -1,8 +1,9 @@
 # Staff Portal Flow — Simplified (Code-Verified)
 
-> **Abhi ke liye:** Teacher, Receptionist, Accountant — in 3 roles ke liye portal.
+> **Abhi ke liye:** Teacher, Receptionist — in 2 roles ke liye portal.
 > Saath mein: Staff Attendance, Staff Leave, Teaching Assignments — ye sab bhi cover hota hai.
-> Baaki roles (GATE_STAFF etc.) future mein custom add honge.
+> GATE_STAFF / ACCOUNTANT roles **remove ho chuke hain** (`src/constants.js` mein sirf 4 roles
+> hain) — gate scanning + fees ab branch `ADMIN` + `RECEPTIONIST` handle karte hain.
 >
 > Todos: `docs/STAFF_PORTAL_FLOW_TODO.md` • Completed: `docs/STAFF_PORTAL_FLOW_DONE.md`
 
@@ -14,15 +15,15 @@
 |---|---|---|---|
 | `ADMIN` (Principal) | Branch Head | `/branch/*` | Saara branch manage (see ORG_ADMIN_FLOW) |
 | `TEACHER` | Class Teacher | `/teacher/*` | Student attendance, homework, conduct remarks, timetable, exams, staff leave |
-| `RECEPTIONIST` | Front Desk | `/branch/*` | Admissions, student inquiries, front desk kaam |
-| `ACCOUNTANT` | Fee Staff | `/branch/*` | Fee structures, fee records, fee collection |
+| `RECEPTIONIST` | Front Desk | `/branch/*` | Admissions, student inquiries, gate scan, front desk kaam |
 
 **New Features Covered:**
-- **Staff Attendance** — Admin staff ki attendance mark karta hai (daily + monthly views)
+- **Staff Attendance** — Admin/Receptionist staff ki attendance mark karta hai (daily + monthly views)
 - **Staff Leave** — Teachers apni leave request kar sakte hain, admin approve/reject karta hai
 - **Teaching Assignments** — Teacher-grouped cards, assign/remove functionality
 
-**Note:** GATE_STAFF, SUPER_ADMIN etc. baad mein add honge. Abhi sirf ye 4.
+**Note:** GATE_STAFF / ACCOUNTANT roles remove hain (prisma migration + `constants.js` sync).
+Fees ab `ADMIN` handle karta hai (FINANCE = SUPER_ADMIN + ADMIN).
 
 ---
 
@@ -35,7 +36,6 @@ Login (/login, branded ?org={slug})
         ADMIN        → {base}/branch/dashboard
         TEACHER      → {base}/teacher/dashboard
         RECEPTIONIST → {base}/branch/dashboard  (same as ADMIN)
-        ACCOUNTANT   → {base}/branch/dashboard  (same as ADMIN)
 ```
 
 ### Portal Password (Singleton)
@@ -127,7 +127,7 @@ Teacher self-service ke liye `/teacher/leave` par jaake leave request kar sakta 
 
 ## 4. Receptionist Portal (`/branch/*`)
 
-> **2026-09-07 update:** Receptionist ka apna dedicated nav links hai (Front Desk, Finance, Attendance, Academics, Communication groups). Branch layout detects RECEPTIONIST role and shows `receptionistLinks` instead of `adminLinks`.
+> **2026-09-07 update:** Receptionist ka apna dedicated nav links hai (Front Desk, Finance, Attendance, Academics, Communication groups). Branch layout detects RECEPTIONIST role and shows `receptionistLinks` instead of `adminLinks`. (Finance tabs read-only — fee structures/collection ADMIN-only hain.)
 
 ### 4.1 Admission Pipeline
 
@@ -176,11 +176,14 @@ INQUIRY → TEST_SCHEDULED → TEST_PASSED / TEST_FAILED → FORM_SUBMITTED
 
 ---
 
-## 5. Accountant Portal (`/branch/*`)
+## 5. Fees (ADMIN — FINANCE group)
+
+> **ACCOUNTANT role remove ho chuka hai** (`constants.js` mein sirf 4 roles hain) — fees ab
+> branch `ADMIN` (Principal) handle karta hai, `FINANCE` group = SUPER_ADMIN + ADMIN.
 
 ### 5.1 Fee Management
 
-Accountant ka main kaam — **fees handle karna:**
+Branch ADMIN ka kaam — **fees handle karna:**
 
 | Task | Route | Kya karta hai |
 |---|---|---|
@@ -198,7 +201,7 @@ Accountant ka main kaam — **fees handle karna:**
 5. Daily scheduler: overdue sweep (past-due → OVERDUE) + reminder emails
 ```
 
-### 5.3 What Accountant CAN Do
+### 5.3 What Fee-Admin CAN Do
 
 | Page | Route | Access |
 |---|---|---|
@@ -206,8 +209,8 @@ Accountant ka main kaam — **fees handle karna:**
 | Fee Records | `/branch/fees/records` | ✅ FINANCE group |
 | Fee Collection | `/branch/fees/collection` | ✅ FINANCE group |
 | Dashboard | `/branch/dashboard` | ✅ ALL_STAFF |
-| Students (read) | `/branch/students` | ✅ ALL_STAFF |
-| Attendance (read) | `/branch/attendance/records` | ✅ ALL_STAFF |
+| Students | `/branch/students` | ✅ ALL_STAFF |
+| Attendance | `/branch/attendance/records` | ✅ ALL_STAFF |
 
 ### 5.4 What Accountant CANNOT Do
 
@@ -307,12 +310,15 @@ Staff leave request karta hai, admin approve/reject karta hai. Real-time updates
 
 | Group | Roles | Use |
 |---|---|---|
-| `ALL_STAFF` | SUPER_ADMIN, ADMIN, TEACHER, GATE_STAFF, ACCOUNTANT, RECEPTIONIST | Read operations |
+| `ALL_STAFF` | SUPER_ADMIN, ADMIN, TEACHER, RECEPTIONIST | Read operations |
 | `MANAGEMENT` | SUPER_ADMIN, ADMIN | Staff CRUD, settings, imports |
 | `ACADEMIC` | SUPER_ADMIN, ADMIN, TEACHER | Homework, study materials, conduct, timetable |
-| `FINANCE` | SUPER_ADMIN, ADMIN, ACCOUNTANT | Fee structures/records/collection |
+| `FINANCE` | SUPER_ADMIN, ADMIN | Fee structures/records/collection |
 | `ADMISSIONS` | SUPER_ADMIN, ADMIN, RECEPTIONIST | Admission pipeline |
-| `ATTENDANCE` | SUPER_ADMIN, ADMIN, GATE_STAFF, TEACHER | Attendance marking |
+| `ATTENDANCE` | SUPER_ADMIN, ADMIN, RECEPTIONIST, TEACHER | Attendance marking |
+
+> GATE_STAFF / ACCOUNTANT roles **remove ho chuke hain** (`src/constants.js` mein sirf 4 roles)
+> — gate scanning + fees ab ADMIN + RECEPTIONIST (ATTENDANCE/ADMISSIONS groups) handle karte hain.
 
 ---
 

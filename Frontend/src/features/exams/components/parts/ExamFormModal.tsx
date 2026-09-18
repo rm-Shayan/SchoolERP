@@ -81,6 +81,65 @@ export default function ExamFormModal({ open, onClose, onSaved, schoolId, terms,
     },
   });
 
+  const autoGenerate = () => {
+    if (!values.startDate || !values.endDate) {
+      toast.error('Please select both Start Date and End Date first');
+      return;
+    }
+    
+    const start = new Date(values.startDate);
+    const end = new Date(values.endDate);
+    if (start > end) {
+      toast.error('Start Date must be before End Date');
+      return;
+    }
+
+    const availableDates: string[] = [];
+    const current = new Date(start);
+    while (current <= end) {
+      if (current.getDay() !== 0) {
+        availableDates.push(current.toISOString().slice(0, 10));
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    if (availableDates.length === 0) {
+      toast.error('No valid working days between the selected dates (skipping Sundays)');
+      return;
+    }
+
+    const newRows: PaperRow[] = [];
+    
+    classes.forEach(c => {
+      if (!c.subjects || c.subjects.length === 0) return;
+      
+      c.subjects.forEach((subj, idx) => {
+        const dateIdx = idx % availableDates.length;
+        const dateStr = availableDates[dateIdx];
+        
+        newRows.push({
+          key: Math.random().toString(36).substring(7),
+          classId: c.id,
+          subjectId: subj.id,
+          sectionId: '',
+          date: dateStr,
+          startTime: '09:00',
+          endTime: '12:00',
+          maxMarks: '100',
+          roomNumber: ''
+        });
+      });
+    });
+
+    if (newRows.length === 0) {
+      toast.error('No subjects found in any class to generate papers');
+      return;
+    }
+
+    setRows(newRows);
+    toast.success(`Auto-generated ${newRows.length} papers across ${classes.length} classes`);
+  };
+
   return (
     <Modal open={open} onClose={onClose} title={exam ? 'Edit Exam & Date Sheet' : 'Create New Exam'} size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -128,7 +187,12 @@ export default function ExamFormModal({ open, onClose, onSaved, schoolId, terms,
         </div>
 
         <div>
-          <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Date Sheet — Papers</h4>
+          <div className="mb-2 flex items-center justify-between">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Date Sheet — Papers</h4>
+            <Button type="button" size="sm" variant="outline" onClick={autoGenerate}>
+              ✨ Auto-Generate Papers
+            </Button>
+          </div>
           <ExamPaperRows rows={rows} classes={classes} onRowsChange={setRows} />
         </div>
 

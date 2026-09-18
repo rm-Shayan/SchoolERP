@@ -1,5 +1,7 @@
 # School ERP — Complete Application Flow
 
+> **Last synced:** 2026-09-18 — verified against `Backend/src` (routes, jobs, workers, queues).
+>
 > Yeh document poori application ka end-to-end flow hai — kaun kya create karta hai, roles kya hain,
 > login kaise hota hai, org/branch/user kaise block hote hain, emails kab jati hain, aur har portal mein
 > kya kya hota hai. Code se mila kar likha gaya hai — exact behavior, guess nahi.
@@ -33,8 +35,8 @@ Platform Super Admin (system ka malik — SIRF 1, aap)
 | Storage | Cloudinary / local disk (logos, avatars) — tenant-first creds |
 | Realtime | WebSocket (Socket.io rooms) |
 
-> Frontend Vite se **Next.js App Router** par migrate ho chuka hai (`frontend/nextjs`) — har route
-> server-component wrapper hai (`src/app/**/page.tsx`), actual UI `src/features/**/components` mein.
+> Frontend Vite se **Next.js App Router** par migrate ho chuka hai (`Frontend/src`) — har route
+> server-component wrapper hai (`Frontend/src/app/**/page.tsx`), actual UI `Frontend/src/features/**/components` mein.
 > Backend port **5000**, frontend dev default port par chalta hai.
 
 ---
@@ -155,8 +157,8 @@ Har branch ka **ek shared password** hota hai jo parents/students apne phone/rol
 **Tarika 2 — OTP Flow:**
 | Portal | Step 1 | Step 2 |
 |--------|--------|--------|
-| Parent | `POST /auth/parent/request-otp` (WhatsApp number) | `POST /auth/parent/verify-otp` → parent JWT |
-| Student | `POST /auth/student/request-otp` (card ID → OTP to parent WhatsApp) | `POST /auth/student/verify-otp` → student JWT |
+| Parent | `POST /auth/parent/request-otp` (WhatsApp number → OTP email) | `POST /auth/parent/verify-otp` → parent JWT |
+| Student | `POST /auth/student/request-otp` (card ID → OTP to parent email) | `POST /auth/student/verify-otp` → student JWT |
 
 - `verifyPortalPassword()` dono direct-login flows mein use hota hai
 - **Staff login bhi portal password accept karta hai** — staff login check order: (1) individual bcrypt password, (2) portal password (singleton), (3) school code fallback
@@ -493,7 +495,7 @@ sync; (3) Student record update — parent contact change; (4) Photo upload — 
 
 **Login (2 tarike):**
 1. **Direct login:** School Code + Phone + shared portal password → `POST /auth/parent/login`
-2. **OTP flow:** WhatsApp number → `POST /auth/parent/request-otp` → OTP verify → `POST /auth/parent/verify-otp`
+2. **OTP flow:** WhatsApp number → `POST /auth/parent/request-otp` (OTP email bheja jata hai) → `POST /auth/parent/verify-otp`
 
 **Profile:** `GET /auth/parent/me` — returns parent info + linked children array (siblings supported).
 
@@ -530,7 +532,7 @@ sync; (3) Student record update — parent contact change; (4) Photo upload — 
 
 **Login (2 tarike):**
 1. **Direct login:** School Code + Roll Number + shared portal password → `POST /auth/student/login`
-2. **OTP flow:** Card ID → `POST /auth/student/request-otp` → OTP sent to parent's WhatsApp → `POST /auth/student/verify-otp`
+2. **OTP flow:** Card ID → `POST /auth/student/request-otp` → OTP sent to parent's email → `POST /auth/student/verify-otp`
 
 **Profile:** `GET /auth/student/me` — returns student profile (read-only). Token stored as `studentToken` in localStorage.
 
@@ -554,11 +556,13 @@ sync; (3) Student record update — parent contact change; (4) Photo upload — 
 
 | Queue | Worker | Kaam |
 |---|---|---|
-| `organization-import` | `organization.import.worker.js` | Excel se org bulk import |
-| `organization-delete` | `organization.delete.worker.js` | Org delete (platform admin detach, baaki cascade) |
-| `school-import` | `school.import.worker.js` | Branch bulk import |
-| `staff-import` | `staffImport.queue.js` | Staff bulk import (emails direct SMTP) |
-| `student-import` | `studentImport.queue.js` | Students bulk import |
+| `organization-import` | `organizationImport.worker.js` | Excel se org bulk import |
+| `organization-delete` | `organizationDelete.worker.js` | Org delete (platform admin detach, baaki cascade) |
+| `school-import` | `schoolImport.worker.js` | Branch bulk import |
+| `staff-import` | `staffImport.worker.js` | Staff bulk import (emails direct SMTP) |
+| `student-import` | `studentImport.worker.js` | Students bulk import |
+| `admission-import` | `admissionImport.worker.js` | Admission applicants bulk import |
+| `timetable-import` | `timetableImport.worker.js` | Section timetable bulk import |
 
 ### (B) Daily / routine schedulers (node-cron — `scheduler.service.js`)
 
@@ -677,7 +681,7 @@ cd Backend && npm run demo -- --name "ABC School"
 | "Receptionist kya nahi kar sakta?" | Student delete/import/ID-reissue/TC/rollback, staff mgmt, academic setup, fee structures/collection, promotions, settings — sab ADMIN-only |
 | "GATE_STAFF / ACCOUNTANT role kahan gaye?" | Remove ho chuke — ab sirf 4 roles hain (SUPER_ADMIN/ADMIN/TEACHER/RECEPTIONIST). Gate + fees ADMIN/RECEPTIONIST handle karte hain |
 | "Parent portal mein kitne bachche dikhenge?" | Saare linked children (siblings) — sibling selector se switch. Student portal mein sirf khud ka data |
-| "Portal login kaise hota hai?" | 2 tarike: (1) Direct — school code + phone/roll + portal password, (2) OTP — WhatsApp par OTP. Dono 30-day JWT dete hain |
+| "Portal login kaise hota hai?" | 2 tarike: (1) Direct — school code + phone/roll + portal password, (2) OTP — WhatsApp number se trigger, OTP email par aata hai. Dono 30-day JWT dete hain |
 | "Portal ka shared password kya hai?" | Default = school code. Branch admin Settings → Portal Access se custom set kar sakta hai |
 | "Portal mein kaun kaun si cheezein dikhengi?" | 14 tabs: overview, attendance, fees, homework, materials, notices, results, exams, timetable, conduct, PTM, leave, notifications, profile |
 | "Portal routes kaise kaam karte hain?" | Saare `/portal/*` routes `authenticateAnyPortal` middleware use karte hain — parent ya student JWT dono accept hote hain |
@@ -693,9 +697,9 @@ cd Backend && npm run demo -- --name "ABC School"
 # Backend (port 5000)
 cd Backend && npm run dev          # node --watch with .env
 
-# Frontend (Next.js App Router — frontend/nextjs)
-cd frontend/nextjs && npm run dev
-cd frontend/nextjs && npm run build   # build + typecheck
+# Frontend (Next.js App Router — Frontend/src)
+cd Frontend && npm run dev
+cd Frontend && npm run build   # build + typecheck
 
 # Seed platform super admin
 cd Backend && npx prisma db seed    # superadmin@schoolerp.com / superadmin123
@@ -711,5 +715,5 @@ cd Backend && npm run demo -- --name "ABC School" --code ABC --out ./demo-info
 cd Backend && npx prisma migrate deploy
 
 # Verify frontend types
-cd frontend/nextjs && npx tsc --noEmit
+cd Frontend && npx tsc --noEmit
 ```

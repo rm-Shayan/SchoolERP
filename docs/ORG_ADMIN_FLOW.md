@@ -73,7 +73,7 @@ Visitor → /o/{slug}/admission
 Backend admission module (`src/modules/admission/`) — public endpoints bane:
 `GET /admissions/public/classes?schoolId=`, `POST /admissions/public/inquiry`
 (koi auth nahi, `router.use(authenticate)` se pehle registered). Form frontend
-bana hua hai (`frontend/nextjs/src/features/public/components/`).
+bana hua hai (`Frontend/src/features/public/components/`).
 
 ### 2.3 Public Branding — Har Page Par DB Se Data
 
@@ -119,11 +119,11 @@ server-component wrappers + client feature components):
 
 | Cheez | Kya hota hai | File |
 |---|---|---|
-| Sidebar | Org logo + branch name (title) + org name (subtitle) | `frontend/nextjs/src/layouts/Sidebar.tsx` |
-| Navbar | **Branch ka naam** heading mein (org title subtitle) | `frontend/nextjs/src/layouts/Navbar.tsx` |
+| Sidebar | Org logo + branch name (title) + org name (subtitle) | `Frontend/src/layouts/Sidebar.tsx` |
+| Navbar | **Branch ka naam** heading mein (org title subtitle) | `Frontend/src/layouts/Navbar.tsx` |
 | Dashboard header | Org name (small) + **branch name (bada heading)** | `features/school/components/AdminDashboard.tsx` |
 | Data scope | `lib/scope.js` — branch-scoped queries (har user apni branch par locked) | `Backend/src/lib/scope.js` |
-| Pages | dashboard, students, admissions, academic, staff (+ password reset), teaching-assignments, fees, attendance, exams, ptm, promotions, study-material, announcements, settings | `frontend/nextjs/src/features/school/*`, route wrappers `src/app/o/[slug]/branch/*` |
+| Pages | dashboard, students, admissions, academic, staff (+ password reset), teaching-assignments, fees, attendance, exams, ptm, promotions, study-material, announcements, settings | `Frontend/src/features/school/*`, route wrappers `Frontend/src/app/o/[slug]/branch/*` |
 
 **TC & Lifecycle Operations:** Branch ADMIN (Principal) can:
 - Issue Transfer Certificate (TC) for ACTIVE students → formal A4 PDF, student status → GRADUATED/DROPPED_OUT/TRANSFERRED_OUT
@@ -157,10 +157,10 @@ kisi bhi staff ka naya password set kar sakta hai (`POST /auth/users/:id/reset-p
 | Org create + slug | `Backend/src/modules/organization/organization.service.js`, `provision.js` |
 | Public branding endpoint | `Backend/src/modules/school/school.service.js` → `branding()` |
 | Login, tokens, forgot-password | `Backend/src/modules/auth/auth.service.js` |
-| Slug route `/o/[slug]` | `frontend/nextjs/src/app/o/[slug]/page.tsx` (Next.js file-based routing) |
-| Subdomain detect | `frontend/nextjs/src/features/auth/components/EntryRouter.tsx` |
-| Branded login screen (SSR-friendly) | `frontend/nextjs/src/features/auth/components/LoginCard.tsx`, `app/login/page.tsx` (server comp reads searchParams) |
-| Branch portal | `frontend/nextjs/src/features/school/*`, layouts `frontend/nextjs/src/layouts/*` |
+| Slug route `/o/[slug]` | `Frontend/src/app/o/[slug]/page.tsx` (Next.js file-based routing) |
+| Subdomain detect | `Frontend/src/features/auth/components/EntryRouter.tsx` |
+| Branded login screen (SSR-friendly) | `Frontend/src/features/auth/components/LoginCard.tsx`, `Frontend/src/app/login/page.tsx` (server comp reads searchParams) |
+| Branch portal | `Frontend/src/features/school/*`, layouts `Frontend/src/layouts/*` |
 | Portal Access settings (shared parent/student password) | `features/school/components/parts/PortalAccessSection.tsx`, backend `school.service.js` |
 | Admission (backend) | `Backend/src/modules/admission/*` |
 | Org admin TODO | `docs/ORG_ADMIN_FLOW_TODO.md` |

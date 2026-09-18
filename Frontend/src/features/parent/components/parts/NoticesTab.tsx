@@ -33,7 +33,7 @@ export default function NoticesTab() {
   if (loading) return <NoticesSkeleton />;
 
   if (allItems.length === 0) {
-    return <Card className="p-8"><EmptyState title="No notices yet" description="School circulars will appear here." /></Card>;
+    return <Card className="p-4 sm:p-8"><EmptyState title="No notices yet" description="School circulars will appear here." /></Card>;
   }
 
   return (

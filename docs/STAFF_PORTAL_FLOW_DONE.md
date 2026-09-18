@@ -104,8 +104,11 @@
 
 | # | Item | Status |
 |---|---|---|
-| 43 | **Substitute engine** — assign with free-slot overlap + WebSocket + delete | ✅ Backend Done |
-| 44 | **Leave module** — parent request + review API | ✅ Backend Done |
+| 43 | **Leave module (student)** — parent request + review API | ✅ Backend Done |
+
+> **Substitute engine / ACCOUNTANT role:** koi substitute module ab exist nahi karta aur ACCOUNTANT
+> role remove hai (`constants.js` mein sirf 4 roles) — purane items #43-substitute / #46-47 (ACCOUNTANT
+> routing + seed) stale hain, mark out.
 
 ---
 
@@ -126,6 +129,6 @@
 
 | # | Item | Status |
 |---|---|---|
-| 45 | `/teacher/dashboard` placeholder (TODO #1) | ⚠️ Pending |
-| 46 | `ACCOUNTANT` routing missing in `getRoleHomePath` (TODO #2) | ⚠️ Pending |
-| 47 | Accountant not in seed script (TODO #3) | ⚠️ Pending |
+| 45 | `/teacher/dashboard` — ab **real TeacherDashboard component** hai (placeholder nahi) | ✅ Done |
+| 46 | `getRoleHomePath` ACCOUNTANT case — role **removed** (sirf ADMIN/RECEPTIONIST/TEACHER) | ❌ Removed |
+| 47 | ACCOUNTANT in seed — role **removed** (seed: SUPER_ADMIN/ADMIN/TEACHER) | ❌ Removed |

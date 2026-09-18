@@ -86,25 +86,27 @@
 - [x] **Activity table preserved** — kept for activity detection/logging (separate from Circulars)
 - [x] **ActivityService** — CRUD endpoints exist for activity logging
 
-## Backend APIs (220+ routes)
+## Backend APIs (320 routes)
 
-- [x] **Auth (30)** — login, refresh, me, logout(-all), change-password, users CRUD,
+- [x] **Auth (35)** — login, refresh, me, logout(-all), change-password, users CRUD,
   parent OTP (request/verify/me), student direct login + OTP + me
 - [x] **Organizations (14)** — CRUD + import-excel + export + **health** + **branches-health**
-- [x] **Schools/Branches (14)** — CRUD + import-excel + export + **admin reassign**
-- [x] **Portal Notifications (5)** — list, unread-count, read, read-all, **send-from-super-admin**
-- [x] **SMTP Settings (3)** — GET/PUT/DELETE per-tenant
+- [x] **Schools/Branches (15)** — CRUD + import-excel + export + **admin reassign** + portal-password
+- [x] **Portal Notifications (8)** — logs/status, portal list, unread-count, mark-read, mark-all-read,
+  delete, **send (super admin)**
+- [x] **SMTP Settings (4)** — GET/PUT/DELETE + test-send, per-tenant
 - [x] **Storage Settings (3)** — GET/PUT/DELETE per-tenant
 - [x] **Moderation (10)** — block/unblock: organization (cascade), school, user, student, parent
 - [x] **Academic (26)** — Years, terms, classes, sections, subjects, templates
-- [x] **Students (10)** — CRUD, import, photo, status, ID card
-- [x] **Admissions (18)** — Pipeline, enroll, advance fee, import
-- [x] **Fees (23)** — Structures, records, payments, vouchers, reminders
-- [x] **Attendance (11)** — Scan, sync, bulk mark, reports, archive
+- [x] **Students (13)** — CRUD, import, stats, photo, status, rollback, ID card
+- [x] **Admissions (19)** — Pipeline, enroll, advance fee, import, slip downloads
+- [x] **Fees (25)** — Structures, records, payments, vouchers, reminders, due charges
+- [x] **Attendance (22)** — Scan, sync, bulk mark, devices, off-days, reports, override,
+  phantom cleanup, manual alerts, archive
 - [x] **Activities (5)** — CRUD for activity detection/logging
 - [x] **Circulars (4)** — with optional `eventDate` field
-- [x] **Baaki modules** — Homework (4), Exams (8), Conduct (4), PTM (5), Timetable (6),
-  Promotions (8), Substitutes (4)
+- [x] **Baaki modules** — Homework (5), Exams (10), Conduct (8), PTM (5), Timetable (12),
+  Promotions (10), Leave (7), Teaching Assignments (5), Audit Logs (2)
 
 ## Core Flows (Code-Verified)
 
@@ -136,7 +138,8 @@
 
 - [x] **BullMQ queues** — organization-import, organization-delete, school-import, staff-import,
   student-import (`drainDelay: 15` — Upstash quota save)
-- [x] **Auto-absent job** — 8:30 AM Mon–Sat: unscanned students → ABSENT + parent email + WS
+- [x] **Auto-absent + alerts job** — `*/15 7-18 * * 1-6` Mon–Sat: unattended scans → LATE/ABSENT
+  (`lateMark.job.js`) + parent/admin alerts (`attendanceAlert.job.js`) — grouped per parent, Redis dedup
 - [x] **Fee reminder job** — 9:00 AM daily: overdue sweep (OVERDUE) + reminders email
 
 ## Caching & Realtime

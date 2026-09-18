@@ -48,7 +48,7 @@ export default function HomeworkTab({ children }: { children?: PortalChildBrief[
   if (loading) return <HomeworkSkeleton />;
 
   if (allItems.length === 0) {
-    return <Card className="p-8"><EmptyState title="No homework assigned" description="Check back later for updates." /></Card>;
+    return <Card className="p-4 sm:p-8"><EmptyState title="No homework assigned" description="Check back later for updates." /></Card>;
   }
 
   if (children?.length) {

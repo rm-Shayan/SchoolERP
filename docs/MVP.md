@@ -2,7 +2,7 @@
 
 ## Status: MVP ACHIEVED (with polish items below)
 
-Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + portal routes audit (2 Sep 2026) + lifecycle updates (7 Sep 2026), this project has **all core modules implemented** — both backend (28 modules, 322 endpoints, 40+ data models) and frontend (500+ components, 4 role-based portals). The platform is functional end-to-end. Build passes, backend tests pass, lint fixed (oxlint), and hardening (security headers, CORS, rate limits) is in place.
+Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + portal routes audit (2 Sep 2026) + lifecycle updates (7 Sep 2026) + docs re-sync (18 Sep 2026), this project has **all core modules implemented** — both backend (28 modules, 320 endpoints, 40+ data models) and frontend (500+ components, 4 role-based portals). The platform is functional end-to-end. Build passes, backend tests pass, lint fixed (oxlint), and hardening (security headers, CORS, rate limits) is in place.
 
 ---
 
@@ -198,7 +198,7 @@ Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + port
 - [x] Portal notifications inbox (realtime via WS)
 - [x] PDF downloads (timetable PDF, exam date sheet PDF)
 - [x] Direct login (school code + phone/roll + portal password)
-- [x] OTP login (WhatsApp OTP for parent, student OTP via parent WhatsApp)
+- [x] OTP login (email OTP for parent — WhatsApp API future scope; student OTP to parent email)
 - [x] authenticateAnyPortal middleware (parent + student JWT both accepted on /portal/* routes)
 - [x] Portal exam sheet tab with date sheet PDF
 - [x] PortalErrorBoundary for all portal tabs
@@ -217,7 +217,7 @@ Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + port
 ### Infrastructure
 - [x] WebSocket (Socket.io + Redis pub/sub)
 - [x] BullMQ background jobs (7 import queues)
-- [x] 11 cron jobs (late mark, attendance alerts, fees, due charges, auto voucher, homework cleanup, conduct cleanup, exam cleanup, attendance archive, data cleanup, pending email retry)
+- [x] 15 cron jobs in `src/jobs/cron/` (academicYearRollover, attendanceAlert, attendanceCleanup, autoVoucher, cleanup, conductCleanup, dueCharges, examCleanup, feeArchive, feeReminder, homeworkCleanup, lateMark, pendingEmail, ptmCleanup, studyMaterialCleanup) + `dedupCache.js` helper
 - [x] Rate limiting
 - [x] Email outbox with retry
 - [x] Prometheus metrics
@@ -348,10 +348,10 @@ Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + port
 |  +-- /o/[slug]/*   -> Org-branded routes                  |
 +-----------------------------------------------------------+
 |  Backend (Express + Prisma + Redis)                        |
-|  +-- 28 modules, 322 REST endpoints                       |
+|  +-- 28 modules, 320 REST endpoints                       |
 |  +-- Socket.io (real-time events)                         |
-|  +-- BullMQ (7 import workers)                            |
-|  +-- node-cron (11 scheduled jobs)                        |
+|  +-- BullMQ (7 import queues)                            |
+|  +-- node-cron (15 scheduled jobs)                        |
 +-----------------------------------------------------------+
 |  Data (PostgreSQL + Redis)                                 |
 |  +-- 40 Prisma models                                     |
@@ -362,4 +362,4 @@ Based on full codebase audit (31 Aug 2026) + session updates (1 Sep 2026) + port
 ---
 
 ## Last Updated
-07 September 2026 — Student lifecycle (TC, rollback, bulk graduate/dropout), receptionist portal, access control hardening. 322 API routes across 28 modules, 14 portal tabs, 40+ Prisma models.
+18 September 2026 — docs re-synced: 320 API routes across 28 modules, 14 portal tabs, 40+ Prisma models, 15 cron jobs + 7 BullMQ queues.

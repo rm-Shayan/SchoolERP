@@ -87,7 +87,7 @@ export default function StudentLoginForm({ themeColor }: StudentLoginFormProps) 
           required
         />
         {slug && (
-          <div className="-mt-3 mb-1 flex items-center gap-2 text-xs text-slate-500">
+          <div className="-mt-3 mb-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
             <span className="font-medium text-slate-400">School slug:</span>
             <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-slate-600">{slug}</span>
           </div>

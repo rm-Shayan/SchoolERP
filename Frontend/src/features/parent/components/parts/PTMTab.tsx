@@ -19,7 +19,7 @@ export default function PTMTab() {
 
   if (sessions.length === 0) {
     return (
-      <Card className="p-8">
+      <Card className="p-4 sm:p-8">
         <EmptyState title="No upcoming PTM sessions" description="Parent-Teacher meeting schedules will appear here." />
       </Card>
     );

@@ -100,7 +100,7 @@ export default function PortalSettingsTab({ activeChildId, onChildChange }: Port
               <div className="h-1.5" style={{ background: `linear-gradient(90deg, ${color}, ${color}aa)` }} />
               <CardContent className="p-5">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-4">Academic Details</h3>
-                <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
                   <InfoRow label="Roll Number" value={student?.rollNumber} accent={color} />
                   <InfoRow label="Class" value={student?.class?.name} accent={color} />
                   <InfoRow label="Section" value={student?.section?.name} accent={color} />

@@ -35,7 +35,7 @@ export default function TimetableTab() {
   if (loading) return <TimetableSkeleton />;
 
   if (slots.length === 0) {
-    return <Card className="p-8"><EmptyState title="No timetable set" description="Your class timetable will appear here once published." /></Card>;
+    return <Card className="p-4 sm:p-8"><EmptyState title="No timetable set" description="Your class timetable will appear here once published." /></Card>;
   }
 
   const activeDays = DAYS.map((_, i) => i + 1).filter((d) => byDay.has(d));

@@ -101,8 +101,8 @@ Organization (tenant)
 
 ### 4.1 Authentication & Authorization
 - **Staff login:** school code + email/username/phone + password → JWT access/refresh token rotation
-- **Parent login (2 methods):** Direct (school code + phone + portal password) or OTP (WhatsApp)
-- **Student login (2 methods):** Direct (school code + roll number + portal password) or OTP (via parent WhatsApp)
+- **Parent login (2 methods):** Direct (school code + phone + portal password) or OTP (email — WhatsApp API future scope)
+- **Student login (2 methods):** Direct (school code + roll number + portal password) or OTP (email to parent)
 - **Portal JWT:** parent (30 days, type: parent, studentIds[], sectionIds[]) / student (30 days, type: student, sectionIds[])
 - **authenticateAnyPortal** middleware: accepts both parent + student JWTs on `/portal/*` routes
 - **Staff login also accepts portal password** (bcrypt → portal password → school code fallback)
@@ -333,7 +333,7 @@ Organization (tenant)
 ### 4.21 Platform Infrastructure
 - **WebSocket (Socket.io):** Redis pub/sub adapter, room-based isolation, JWT auth
 - **Background jobs (BullMQ):** 7 import queues with progress tracking
-- **Cron jobs (node-cron):** 11 scheduled jobs (late mark, fee reminders, auto vouchers, cleanup, archive)
+- **Cron jobs (node-cron):** 15 scheduled jobs (academicYearRollover, attendanceAlert, attendanceCleanup, autoVoucher, cleanup, conductCleanup, dueCharges, examCleanup, feeArchive, feeReminder, homeworkCleanup, lateMark, pendingEmail, ptmCleanup, studyMaterialCleanup)
 - **Rate limiting:** Login (20/15min), OTP (10/15min), sensitive ops (30/15min), global (300/min)
 - **Email outbox:** Durable PendingEmail table with retry worker
 - **Metrics:** Prometheus endpoint (`/metrics`)
@@ -462,5 +462,5 @@ Organization (tenant)
 | Email | Nodemailer with tenant-first SMTP chain + announcement emails |
 | PDF | PDFKit |
 | Auth | JWT (access + refresh rotation), bcrypt |
-| Scheduling | node-cron (11 jobs) |
+| Scheduling | node-cron (15 jobs) |
 | Build | Turbopack (frontend), ES Modules (backend) |

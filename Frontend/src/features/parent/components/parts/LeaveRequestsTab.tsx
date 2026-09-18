@@ -44,7 +44,7 @@ export default function LeaveRequestsTab({ children }: { children: ChildInfo[] }
       )}
 
       {requests.length === 0 ? (
-        <Card className="p-8">
+        <Card className="p-4 sm:p-8">
           <EmptyState title="No leave requests" description="Submit a leave request for your child using the button above." />
         </Card>
       ) : (

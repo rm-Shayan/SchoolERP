@@ -250,7 +250,7 @@ noAdmin = school NOT IN (
 
 ```
 SUPER_ADMIN (platform) -> kisi ko bhi block kar sakta hai
-ADMIN (branch)         -> sirf apni branch ke TEACHER/GATE_STAFF/ACCOUNTANT/RECEPTIONIST
+ADMIN (branch)         -> sirf apni branch ke TEACHER/RECEPTIONIST (GATE_STAFF/ACCOUNTANT roles removed)
 block hone par: isActive=false + meta + saare sessions revoke
 unblock: isActive=true + meta clear
 ```
@@ -263,11 +263,12 @@ unblock: isActive=true + meta clear
 
 | Route | Method | Description |
 |---|---|---|
-| `/notifications/portal/list` | GET | Paginated notification list |
+| `/notifications/portal` | GET | Paginated notification list |
 | `/notifications/portal/unread-count` | GET | Unread count for bell badge |
-| `/notifications/portal/:id/read` | PATCH | Mark single as read |
-| `/notifications/portal/read-all` | PATCH | Mark all as read |
-| `/notifications/portal/send-from-super-admin` | POST | Announcement + email to target admins |
+| `/notifications/portal/mark-read` | POST | Mark single as read (body `{ id }`) |
+| `/notifications/portal/mark-all-read` | POST | Mark all as read |
+| `/notifications/portal/delete` | POST | Delete notification (body `{ id }`) |
+| `/notifications/portal/send` | POST | SUPER_ADMIN only — announce + email to target admins |
 
 ### 8.2 Super Admin Self-Notifications
 

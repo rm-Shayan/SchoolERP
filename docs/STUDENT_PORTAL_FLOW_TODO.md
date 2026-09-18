@@ -11,17 +11,19 @@
 | # | Item | Status |
 |---|---|---|
 | 5 | **Leave Request Status Updates (Realtime)** — leave request create hone par WebSocket `leave_request_created` event aata hai, lekin frontend tab mein **status change realtime nahi dikhta** — approve/reject hone par refresh chahiye ya WS listener | ⏳ Pending |
-| 7 | **Attendance Year View** — `AttendanceTab` sirf month view dikhata hai. Year summary (totalPresent/totalDays/percentage across months) + month selector improvement | ⏳ Pending |
+| 7 | **Attendance Year View** — `AttendanceYearSummary.tsx` + `/portal/attendance/yearly-summaries` **ab done** (year summary + month selector) | ✅ Done |
 | 9 | **Session Expiry UX** — 401 par seedha redirect hota hai. Better UX: token expiry se 5 min pehle warning dialog → "Your session is about to expire" → extend/logout option | ⏳ Pending |
 | 10 | **Loading Skeletons — Har Tab Mein** — `PortalSkeletonsA` aur `PortalSkeletonsB` hain lekin sab tabs mein nahi use ho rahe. Overview, Attendance, Fees, Homework, Notices, Results, Timetable sab mein consistent skeletons | ⏳ Pending |
 | 11 | **Conduct Remarks Filter** — conduct tab mein teacher/type/date filter add karo (backend `GET /remarks/students/:id` ready hai) | ⏳ Pending |
 | 12 | **PTM Session RSVP** — PTM session par "Attending" / "Not Attending" mark karo (backend extension chahiye — currently read-only) | ⏳ Pending |
 | 13 | **Leave Request Cancel** — parent/student leave request cancel kar sake (PENDING status par) — backend `PATCH /leave/:id/cancel` banana padega | ⏳ Pending |
 | 14 | **Branded Login Pages** — `/o/{slug}/parent` aur `/o/{slug}/student` dedicated branded login pages (abhi sirf `/parent/login` hai, slug-based branding `?code=` se aati hai) | ⏳ Pending |
-| 15 | **Notification Inbox** — parent/student ko school se notifications aayein (fee reminders, absence alerts, circulars) — persisted read status ke saath. Abhi sirf email se jate hain | ⏳ Pending |
+| 15 | **Notification Inbox** — **ab done** (`NotificationsTab` + `/notifications/portal`, mark-read/mark-all-read via `portalNotificationService`); remaining: realtime auto-refresh on new notification | ✅ Done |
 | 16 | **Fee Receipt Download** — parent fee receipt PDF download kar sake (backend `fee-receipt-*.pdf` generate hota hai lekin portal se accessible nahi) | ⏳ Pending |
 | 17 | **Admission Status Check** — parent apne bachche ka admission status dekh sake (INQUIRY → ENROLLED pipeline) — `Applicant` model ready hai, portal endpoint nahi | ⏳ Pending |
 | 18 | **Dark Mode** — portal mein dark mode support (Tailwind `dark:` classes) — low priority | ⏳ Pending |
+| 19 | **Exam date-sheet** — `ExamSheetTab` + `/portal/exams/:id/date-sheet` (PDF) **ab done** | ✅ Done |
+| 20 | **Profile edit (parent/student)** — `PortalSettingsTab` + `ProfileEditForm` **ab done** (student photo read-only) | ✅ Done |
 
 ---
 

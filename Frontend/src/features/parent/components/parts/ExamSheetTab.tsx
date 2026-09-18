@@ -47,7 +47,7 @@ export default function ExamSheetTab() {
   if (loading) return <ListSkeleton count={3} />;
 
   if (exams.length === 0) {
-    return <Card className="p-8"><EmptyState title="No exams scheduled" description="Date sheets for your child's class will appear here once published." /></Card>;
+    return <Card className="p-4 sm:p-8"><EmptyState title="No exams scheduled" description="Date sheets for your child's class will appear here once published." /></Card>;
   }
 
   return (

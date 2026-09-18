@@ -118,7 +118,7 @@ export default function PortalNotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-1 w-[380px] max-w-[calc(100vw-2rem)] bg-white rounded-lg border border-gray-200 z-50 overflow-hidden" style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08)' }}>
+        <div className="absolute -right-14 mt-1 w-[380px] max-w-[calc(100vw-1rem)] bg-white rounded-lg border border-gray-200 z-50 overflow-hidden" style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08)' }}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
             <h3 className="text-base font-semibold text-gray-900">Notifications</h3>
             <div className="flex items-center gap-2">
