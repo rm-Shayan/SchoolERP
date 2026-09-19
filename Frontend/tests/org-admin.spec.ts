@@ -4,32 +4,32 @@ const BASE = 'http://localhost:3000';
 const API = 'http://localhost:5000/api/v1';
 
 const PAGES: { name: string; path: string }[] = [
-  { name: 'Dashboard', path: '/o/oxford/branch/dashboard' },
-  { name: 'Students', path: '/o/oxford/branch/students' },
-  { name: 'Staff', path: '/o/oxford/branch/staff' },
-  { name: 'Admissions', path: '/o/oxford/branch/admissions' },
-  { name: 'Academic', path: '/o/oxford/branch/academic' },
-  { name: 'Fees Structures', path: '/o/oxford/branch/fees/structures' },
-  { name: 'Fees Records', path: '/o/oxford/branch/fees/records' },
-  { name: 'Exams', path: '/o/oxford/branch/exams' },
-  { name: 'Attendance Live', path: '/o/oxford/branch/attendance/live' },
-  { name: 'PTM', path: '/o/oxford/branch/ptm' },
-  { name: 'Promotions', path: '/o/oxford/branch/promotions' },
-  { name: 'Announcements', path: '/o/oxford/branch/announcements/circulars' },
-  { name: 'Settings', path: '/o/oxford/branch/settings' },
+  { name: 'Dashboard', path: '/o/iqra/branch/dashboard' },
+  { name: 'Students', path: '/o/iqra/branch/students' },
+  { name: 'Staff', path: '/o/iqra/branch/staff' },
+  { name: 'Admissions', path: '/o/iqra/branch/admissions' },
+  { name: 'Academic', path: '/o/iqra/branch/academic' },
+  { name: 'Fees Structures', path: '/o/iqra/branch/fees/structures' },
+  { name: 'Fees Records', path: '/o/iqra/branch/fees/records' },
+  { name: 'Exams', path: '/o/iqra/branch/exams' },
+  { name: 'Attendance Live', path: '/o/iqra/branch/attendance/live' },
+  { name: 'PTM', path: '/o/iqra/branch/ptm' },
+  { name: 'Promotions', path: '/o/iqra/branch/promotions' },
+  { name: 'Announcements', path: '/o/iqra/branch/announcements/circulars' },
+  { name: 'Settings', path: '/o/iqra/branch/settings' },
 ];
 
 test('staff login with credentials redirects to branch dashboard', async ({ page }) => {
   await page.goto(BASE);
   await page.evaluate(() => localStorage.clear());
   await page.goto(`${BASE}/login`);
-  await page.getByPlaceholder('e.g. GULSHAN-01').fill('OX-F34-01');
+  await page.getByPlaceholder('e.g. GULSHAN-01').fill('iqra-01');
   await page.getByPlaceholder('you@example.com or username').fill('areesharao9@gmail.com');
-  await page.getByPlaceholder('••••••••').fill('areesharao');
+  await page.getByPlaceholder('••••••••').fill('iqra');
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await page.waitForURL('**/o/oxford/branch/dashboard', { timeout: 20000 });
-  await expect(page).toHaveURL(/o\/oxford\/branch\/dashboard/);
-  await expect(page.getByText(/Oxford Islamic Scientific School/i).first()).toBeVisible();
+  await page.waitForURL('**/o/iqra/branch/dashboard', { timeout: 20000 });
+  await expect(page).toHaveURL(/o\/iqra\/branch\/dashboard/);
+  await expect(page.getByText(/Iqra Riaz Ul Atfal/i).first()).toBeVisible();
 });
 
 for (const p of PAGES) {
@@ -51,7 +51,7 @@ test('API flow: /auth/me returns admin profile', async ({ page }) => {
   expect(res.ok()).toBeTruthy();
   const json = await res.json();
   expect(json.data.role).toBe('ADMIN');
-  expect(json.data.organization.slug).toBe('oxford');
+  expect(json.data.organization.slug).toBe('iqra');
 });
 
 test('API flow: branch students list loads', async ({ page }) => {
@@ -73,7 +73,7 @@ test('API flow: branch (school) detail loads for ADMIN', async ({ page }) => {
 });
 
 test('Leave hub: tab switch between Staff and Student leave', async ({ page }) => {
-  await page.goto(`${BASE}/o/oxford/branch/leave`);
+  await page.goto(`${BASE}/o/iqra/branch/leave`);
   await expect(page.getByRole('button', { name: 'Staff Leave' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Student Leave' })).toBeVisible();
   await page.getByRole('button', { name: 'Student Leave' }).click();
@@ -82,7 +82,7 @@ test('Leave hub: tab switch between Staff and Student leave', async ({ page }) =
 });
 
 test('Attendance Records hub: tab switch Student/Staff', async ({ page }) => {
-  await page.goto(`${BASE}/o/oxford/branch/attendance/records`);
+  await page.goto(`${BASE}/o/iqra/branch/attendance/records`);
   await expect(page.getByRole('button', { name: 'Student Records' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Staff Records' })).toBeVisible();
   await page.getByRole('button', { name: 'Staff Records' }).click();
@@ -91,7 +91,7 @@ test('Attendance Records hub: tab switch Student/Staff', async ({ page }) => {
 });
 
 test('Staff list: clicking a row opens detail drawer with Profile/Scan/Leaves tabs', async ({ page }) => {
-  await page.goto(`${BASE}/o/oxford/branch/staff`);
+  await page.goto(`${BASE}/o/iqra/branch/staff`);
   await page.waitForTimeout(1200);
   await page.locator('table tbody tr').first().click();
   await expect(page.getByRole('button', { name: 'Profile' })).toBeVisible();
@@ -100,7 +100,7 @@ test('Staff list: clicking a row opens detail drawer with Profile/Scan/Leaves ta
 });
 
 test('Sidebar: redundant pages merged (no Staff ID Cards / Scan Check-in / Staff Attendance)', async ({ page }) => {
-  await page.goto(`${BASE}/o/oxford/branch/dashboard`);
+  await page.goto(`${BASE}/o/iqra/branch/dashboard`);
   await page.waitForTimeout(800);
   await expect(page.getByRole('link', { name: 'Staff ID Cards' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Scan Check-in' })).toHaveCount(0);
@@ -110,10 +110,10 @@ test('Sidebar: redundant pages merged (no Staff ID Cards / Scan Check-in / Staff
 test('Student portal: login opens unified dashboard + slug auto-fills', async ({ page }) => {
   await page.goto(`${BASE}/parent/login`);
   await page.getByRole('button', { name: 'Student (Roll No)' }).click();
-  await page.getByPlaceholder('e.g. GULSHAN-01').fill('OX-F34-01');
+  await page.getByPlaceholder('e.g. GULSHAN-01').fill('iqra-01');
   await expect(page.getByText('School slug:')).toBeVisible();
   await page.getByPlaceholder('e.g. 104').fill('101');
-  await page.getByPlaceholder('••••••••').fill('oxford');
+  await page.getByPlaceholder('••••••••').fill('iqra');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.waitForURL('**/parent/dashboard');
   await expect(page.getByText('Student Portal', { exact: true })).toBeVisible();

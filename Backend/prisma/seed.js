@@ -21,9 +21,9 @@ const CLASS_NAMES = [
 // Class 1–5 ko standard subjects dete hain (PlayGroup/Nursery/KG me nahi).
 const SUBJECT_NAMES = ["Urdu", "English", "Mathematics", "General Science", "Islamiat", "Social Studies"];
 
-// Oxford (Sindh Board) — Pakistani school: PlayGroup tak Class 8.
-const OXFORD_SLUG = "oxford";
-const OXFORD_CLASSES = [
+// Iqra (Sindh Board) — Pakistani school: PlayGroup tak Class 8.
+const IQRA_SLUG = "iqra";
+const IQRA_CLASSES = [
   "PlayGroup",
   "Nursery",
   "KG",
@@ -334,30 +334,30 @@ async function main() {
     console.log("Fee structure seeded.");
   }
 
-  // ── 10. Oxford (Sindh Board) — default academic setup ───────────
-  const oxfordOrg = await prisma.organization.findUnique({ where: { slug: OXFORD_SLUG } });
-  if (oxfordOrg) {
-    const oxSchools = await prisma.school.findMany({
-      where: { organizationId: oxfordOrg.id },
+  // ── 10. Iqra (Sindh Board) — default academic setup ───────────
+  const iqraOrg = await prisma.organization.findUnique({ where: { slug: IQRA_SLUG } });
+  if (iqraOrg) {
+    const iqraSchools = await prisma.school.findMany({
+      where: { organizationId: iqraOrg.id },
       select: { id: true, name: true, code: true },
     });
-    if (oxSchools.length === 0) {
-      console.log("Oxford org mila, lekin koi school (branch) nahi — academic setup skip.");
+    if (iqraSchools.length === 0) {
+      console.log("Iqra org mila, lekin koi school (branch) nahi — academic setup skip.");
     }
-    for (const oxSchool of oxSchools) {
-      const oxYear = await ensureAcademicYear(oxSchool.id);
-      const oxClasses = await ensureClasses(oxSchool.id, {
-        classNames: OXFORD_CLASSES,
+    for (const iqraSchool of iqraSchools) {
+      const iqraYear = await ensureAcademicYear(iqraSchool.id);
+      const iqraClasses = await ensureClasses(iqraSchool.id, {
+        classNames: IQRA_CLASSES,
         subjectsFrom: 3, // Class 1–8 ko Sindh Board subjects
         subjectNames: SINDH_SUBJECTS,
       });
       console.log(
-        `Oxford → ${oxSchool.name} (${oxSchool.code}): year ${oxYear.created ? "created" : "exists"}, ` +
-          `classes created: ${oxClasses.created} (${OXFORD_CLASSES.length} total), subjects linked Class 1-8.`
+        `Iqra → ${iqraSchool.name} (${iqraSchool.code}): year ${iqraYear.created ? "created" : "exists"}, ` +
+          `classes created: ${iqraClasses.created} (${IQRA_CLASSES.length} total), subjects linked Class 1-8.`
       );
     }
   } else {
-    console.log(`Oxford org (slug: ${OXFORD_SLUG}) nahi mila — skip.`);
+    console.log(`Iqra org (slug: ${IQRA_SLUG}) nahi mila — skip.`);
   }
 
   console.log("\nSeed complete.");

@@ -21,8 +21,9 @@ import IssueTCModal from './parts/IssueTCModal';
 import { getLastClassIds, studentCreatePayload, studentUpdatePayload } from './parts/helpers';
 
 export default function StudentsPage() {
-  const { user, school } = useAppSelector((s) => s.auth);
+  const { user, school, organization } = useAppSelector((s) => s.auth);
   const { isAdmin, isReceptionist } = useRoleAccess();
+  const themeColor = organization?.themeColor || school?.themeColor || undefined;
   const schoolId = school?.id ?? user?.schoolId;
   const [classes, setClasses] = useState<Class[]>([]);
   const [classesLoading, setClassesLoading] = useState(true);
@@ -110,7 +111,7 @@ export default function StudentsPage() {
           : 'Manage all enrolled students in this branch.'}
         actions={<StudentsHeaderActions onAdd={() => { setFormStudent(null); setFormMode('create'); }} onImport={isReceptionist ? undefined : () => setShowImport(true)} onExport={exportCsv} />} />
 
-      <StudentStats summary={summary} adminOnly={!isReceptionist} />
+      <StudentStats summary={summary} adminOnly={!isReceptionist} themeColor={themeColor} />
 
       <StudentToolbar search={search} onSearchChange={setSearch} statusFilter={statusFilter} onStatusChange={setStatusFilter} sectionFilter={sectionFilter} onSectionChange={setSectionFilter} classes={classes} classesLoading={classesLoading} resultCount={total} />
 

@@ -22,6 +22,9 @@ build/
 logs/
 *.log
 
+# Production presentation credentials
+production-credentials/
+
 # Uploads (user files — never commit)
 uploads/
 
