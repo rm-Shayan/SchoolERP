@@ -23,7 +23,7 @@ export default function AdminFields({
       {showUsername && (
         <Input label="Username (optional)" name="adminUsername" placeholder="e.g. admin_001" value={values.adminUsername} onChange={onChange} />
       )}
-      <Input label="Password" name="adminPassword" type="password" placeholder="Min 8 characters" value={values.adminPassword} onChange={onChange} required error={errors.adminPassword} />
+      <Input label="Password" name="adminPassword" type="password" placeholder="Min 4 characters" value={values.adminPassword} onChange={onChange} required error={errors.adminPassword} />
       <Input label="Phone (optional)" name="adminPhone" placeholder="03001234567" value={values.adminPhone} onChange={onChange} error={errors.adminPhone} />
     </div>
   );

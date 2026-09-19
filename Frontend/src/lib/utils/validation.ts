@@ -33,9 +33,9 @@ export function isValidSlug(slug: string): boolean {
   return SLUG_REGEX.test(slug.trim());
 }
 
-// Minimum password rule used by account creation forms (blank = auto-generated).
+// Minimum password rule used by login and account creation forms (blank = auto-generated).
 export function isValidPassword(password: string): boolean {
-  return password.length >= 5;
+  return password.length >= 4 && password.length <= 72;
 }
 
 // Strong password rule used by change-password (matches backend regex).
@@ -85,7 +85,7 @@ export const isNumber = (msg = 'Must be a number'): Validator => (value) =>
 export const positiveNumber = (msg = 'Must be greater than zero'): Validator => (value) =>
   value === '' || value === undefined || value === null || Number(value) > 0 ? undefined : msg;
 
-export const isPassword = (msg = 'Password must be at least 5 characters'): Validator => (value) =>
+export const isPassword = (msg = 'Password must be at least 4 characters'): Validator => (value) =>
   typeof value === 'string' && value !== '' && !isValidPassword(value) ? msg : undefined;
 
 export const strongPassword = (msg = 'Use 8+ chars with upper, lower and number'): Validator => (value) =>

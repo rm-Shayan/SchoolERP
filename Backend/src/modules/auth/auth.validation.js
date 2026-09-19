@@ -106,7 +106,8 @@ export const createUserSchema = z.object({
     email: z.string().email("Invalid email address"),
     password: z
       .string()
-      .min(5, "Password must be at least 5 characters")
+      .min(4, "Password must be at least 4 characters")
+      .max(72, "Password must be at most 72 characters")
       .optional(),
     phone: z.string().optional(),
     role: z.enum([...staffRoleValues, "STUDENT"], {
@@ -169,7 +170,7 @@ export const adminResetPasswordSchema = z.object({
     id: z.string().uuid("Invalid user ID"),
   }),
   body: z.object({
-    newPassword: z.string().min(8, "Password must be at least 8 characters"),
+    newPassword: z.string().min(4, "Password must be at least 4 characters").max(72, "Password must be at most 72 characters"),
   }),
 });
 
