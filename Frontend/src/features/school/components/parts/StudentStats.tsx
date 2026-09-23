@@ -66,7 +66,7 @@ export function StudentStats({ summary, adminOnly = false, themeColor }: Student
       {cards.map((card) => (
         <div
           key={card.label}
-          className="group relative overflow-hidden rounded-3xl border border-primary-100 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-5 shadow-lg shadow-primary-500/5 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-xl hover:shadow-primary-500/10"
+          className="group relative overflow-hidden rounded-3xl border border-primary-100 bg-white backdrop-blur-xl p-5 shadow-lg shadow-primary-500/5 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-xl hover:shadow-primary-500/10"
         >
           <div className={`absolute top-0 left-0 w-full h-1 ${card.tint} opacity-60 group-hover:opacity-100 transition-opacity duration-300`} />
 
@@ -74,16 +74,16 @@ export function StudentStats({ summary, adminOnly = false, themeColor }: Student
             <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${card.iconTint} shadow-inner transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}>
               {card.icon}
             </div>
-            <span className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-right">
+            <span className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500 text-right">
               {card.sub}
             </span>
           </div>
 
           <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1" style={themed}>
+            <p className="text-sm font-medium text-gray-600 mb-1" style={themed}>
               {card.label}
             </p>
-            <p className="text-3xl font-black tabular-nums tracking-tight text-gray-900 dark:text-white transition-all duration-300">
+            <p className="text-3xl font-black tabular-nums tracking-tight text-gray-900 transition-all duration-300">
               {summary ? card.get(summary) : '—'}
             </p>
           </div>

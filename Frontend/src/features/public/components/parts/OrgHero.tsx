@@ -36,14 +36,14 @@ export default function OrgHero({ org, gradient }: OrgHeroProps) {
       <div className="relative mx-auto grid min-h-[100svh] max-w-7xl items-center gap-12 px-4 pb-20 pt-28 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8 lg:px-8 lg:pt-16">
         {/* Left content */}
         <div className="pu-fade-up max-w-2xl">
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-white/10 py-1.5 pl-2 pr-4 text-xs font-semibold uppercase tracking-[0.18em] backdrop-blur-md">
+          <div className="inline-flex max-w-full items-center gap-2.5 rounded-full border border-white/20 bg-white/10 py-1.5 pl-2 pr-4 text-xs font-semibold uppercase tracking-[0.18em] backdrop-blur-md">
             <span className="pu-pulse-dot h-2 w-2 rounded-full bg-emerald-400" />
             Admissions Open 2026–27
           </div>
 
-          <h1 className="mt-7 text-5xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-[4.25rem]">
+          <h1 className="mt-7 text-4xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-[4.25rem]">
             Welcome to
-            <span className="block bg-gradient-to-r from-white via-white/90 to-white/55 bg-clip-text text-transparent">
+            <span className="block [overflow-wrap:anywhere] bg-gradient-to-r from-white via-white/90 to-white/55 bg-clip-text text-transparent">
               {org.name}
             </span>
           </h1>
@@ -53,10 +53,10 @@ export default function OrgHero({ org, gradient }: OrgHeroProps) {
             parent communication, all beautifully connected in one place.
           </p>
 
-          <div className="mt-9 flex flex-wrap items-center gap-3.5">
+          <div className="mt-9 flex w-full flex-wrap items-center gap-3.5 sm:w-auto">
             <Link
               href={`/o/${org.slug}/admission`}
-              className="group inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-bold shadow-2xl shadow-black/20 transition-all duration-300 hover:scale-[1.03]"
+              className="group inline-flex items-center gap-2 rounded-full bg-white px-6 py-4 text-sm font-bold shadow-2xl shadow-black/20 transition-all duration-300 hover:scale-[1.03] sm:px-8"
               style={{ color: theme }}
             >
               Apply for Admission
@@ -66,13 +66,13 @@ export default function OrgHero({ org, gradient }: OrgHeroProps) {
             </Link>
             <Link
               href={buildOrgLoginHref(org)}
-              className="inline-flex items-center rounded-full border border-white/30 px-8 py-4 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-white/50 hover:bg-white/10"
+              className="inline-flex items-center rounded-full border border-white/30 px-6 py-4 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-white/50 hover:bg-white/10 sm:px-8"
             >
               Sign In
             </Link>
             <button
               onClick={copyLink}
-              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-4 text-sm font-medium text-white/85 backdrop-blur-sm transition-all duration-300 hover:border-white/40 hover:text-white"
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-4 text-sm font-medium text-white/85 backdrop-blur-sm transition-all duration-300 hover:border-white/40 hover:text-white sm:px-5"
             >
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
                 <path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z" />
