@@ -12,6 +12,7 @@ import {
   updateWeeklyOffSchema,
   phantomQuerySchema,
   phantomCleanupSchema,
+  bulkMarkSchema,
 } from "./attendance.validation.js";
 import { validate } from "../../middlewares/validate.middleware.js";
 import { authenticate, authorize } from "../../middlewares/auth.middleware.js";
@@ -69,6 +70,18 @@ router.post(
   authorize(["SUPER_ADMIN", "ADMIN", "TEACHER", "RECEPTIONIST"]),
   validate(bulkSectionAttendanceSchema),
   attendanceController.markSectionBulkAttendance
+);
+
+/**
+ * POST /api/v1/attendance/bulk-mark
+ * Scope-based one-click bulk marking (outage backfill etc.).
+ * Full audit trail — never silent.
+ */
+router.post(
+  "/bulk-mark",
+  authorize(["SUPER_ADMIN", "ADMIN", "RECEPTIONIST"]),
+  validate(bulkMarkSchema),
+  attendanceController.bulkMark
 );
 
 /**

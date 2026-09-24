@@ -1,6 +1,8 @@
 import attendanceService from "./attendance.service.js";
 import attendanceArchiveService from "./attendanceArchive.service.js";
 import attendancePhantomService from "./attendancePhantom.service.js";
+import auditService from "../audit/audit.service.js";
+import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../audit/actions.js";
 import { runAttendanceAlertJob } from "../../jobs/cron/attendanceAlert.job.js";
 import ApiResponse from "../../lib/utils/ApiResponse.js";
 import ApiError from "../../lib/utils/ApiError.js";
@@ -180,6 +182,52 @@ class AttendanceController {
       return res
         .status(200)
         .json(ApiResponse.ok("Section bulk attendance updated successfully", records));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * POST /api/v1/attendance/bulk-mark
+   * Scope-based one-click bulk marking (outage backfill etc.)
+   * Body: { sectionId?, classId?, date, status?, remarks? }
+   * Scope precedence handled inside service (sectionId > classId > whole school).
+   */
+  bulkMark = async (req, res, next) => {
+    try {
+      const schoolId = req.user?.schoolId || req.body.schoolId;
+      if (!schoolId) {
+        return next(ApiError.badRequestError("School ID is required"));
+      }
+
+      const result = await attendanceService.bulkMark(schoolId, req.body);
+
+      // Always audit bulk operations — never silent. Fire-and-forget so the
+      // successful response is never blocked by an audit hiccup.
+      try {
+        await auditService.record({
+          actorId: req.user?.id,
+          actorName: req.user?.name,
+          actorRole: req.user?.role,
+          action: AUDIT_ACTIONS.BULK_MARK_ATTENDANCE,
+          entityType: AUDIT_ENTITY_TYPES.SCHOOL,
+          entityId: schoolId,
+          entityName: req.user?.schoolName || "School",
+          organizationId: req.user?.organizationId,
+          schoolId,
+          ipAddress: req.ip,
+          details: JSON.stringify({
+            scope: result.scope,
+            date: req.body?.date,
+            total: result.total,
+            marked: result.marked,
+          }),
+        });
+      } catch (_) {}
+
+      return res
+        .status(200)
+        .json(ApiResponse.ok("Bulk attendance marked successfully", result));
     } catch (error) {
       return next(error);
     }

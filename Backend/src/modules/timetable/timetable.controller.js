@@ -1,6 +1,7 @@
 import timetableService from "./timetable.service.js";
 import { asyncHandler } from "../../lib/utils/asyncHandler.js";
 import ApiResponse from "../../lib/utils/ApiResponse.js";
+import ApiError from "../../lib/utils/ApiError.js";
 import { sendCsv } from "../../lib/utils/csv.js";
 import { streamPdf, buildTimetablePdf } from "../../lib/pdf/reportPdf.js";
 
@@ -78,7 +79,7 @@ class TimetableController {
    * Bulk import timetable from Excel — queued, async progress via WebSocket.
    */
   importTimetable = asyncHandler(async (req, res) => {
-    if (!req.file) throw new Error("No file uploaded");
+    if (!req.file) throw ApiError.badRequestError("No file uploaded");
     const result = await timetableService.importTimetable(req.user, req.params.sectionId, req.file.buffer);
     return res.status(202).json(ApiResponse.ok("Timetable import job queued", result));
   });

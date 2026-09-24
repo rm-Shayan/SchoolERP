@@ -111,3 +111,15 @@ export const phantomCleanupSchema = z.object({
   }),
 });
 
+export const bulkMarkSchema = z.object({
+  body: z.object({
+    // Scope: sectionId > classId > (nothing => whole school). Exactly one level is applied.
+    sectionId: z.string().uuid("Invalid section ID").optional(),
+    classId: z.string().uuid("Invalid class ID").optional(),
+    schoolId: z.string().uuid("Invalid school ID").optional(),
+    date: z.string().min(1, "Date is required (YYYY-MM-DD)"),
+    status: z.enum(["PRESENT", "LATE", "ABSENT", "LEAVE", "HALF_DAY"]).default("PRESENT"),
+    remarks: z.string().max(500).optional(),
+  }),
+});
+

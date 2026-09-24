@@ -686,9 +686,11 @@ class SchoolService {
       }
     }
 
-    const schools = organizationId
+    const list = organizationId
       ? await schoolRepository.listByOrganization(organizationId)
       : await schoolRepository.listAll();
+
+    const schools = list.items || [];
 
     return buildExcelBuffer({
       sheetName: "Branches",

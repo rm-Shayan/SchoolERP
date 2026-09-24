@@ -9,6 +9,7 @@ import { attendanceAlertsService } from '@/lib/api/attendanceAlertsService';
 import DailyAttendanceView from './parts/DailyAttendanceView';
 import MonthlyAttendanceView from './parts/MonthlyAttendanceView';
 import AttendanceRulesPanel from './parts/AttendanceRulesPanel';
+import BulkMarkModal from './BulkMarkModal';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 
 type Tab = 'daily' | 'monthly';
@@ -27,6 +28,7 @@ export default function AttendanceRecordsPage() {
   const isReceptionist = role === 'RECEPTIONIST';
   const [tab, setTab] = useState<Tab>('daily');
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [sending, setSending] = useState(false);
 
   const handleSendAlerts = async () => {
@@ -57,6 +59,14 @@ export default function AttendanceRecordsPage() {
                 </svg>
                 {sending ? 'Sending...' : 'Send Absent Alerts'}
               </button>
+              <button onClick={() => setBulkOpen(true)}
+                className={cn(ACTION_BTN,
+                  'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-primary-50 hover:text-primary-700 hover:ring-primary-200')}>
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Bulk Mark
+              </button>
               <button onClick={() => setRulesOpen((v) => !v)}
                 className={cn(ACTION_BTN,
                   rulesOpen ? 'bg-primary-600 text-white shadow-sm' : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-primary-50 hover:text-primary-700 hover:ring-primary-200')}>
@@ -81,6 +91,8 @@ export default function AttendanceRecordsPage() {
       <p className="-mt-3 text-xs text-gray-400">{TABS.find((t) => t.key === tab)?.desc}</p>
 
       {rulesOpen && schoolId && <AttendanceRulesPanel schoolId={schoolId} onClose={() => setRulesOpen(false)} />}
+
+      <BulkMarkModal open={bulkOpen} onClose={() => setBulkOpen(false)} />
 
       {tab === 'daily' ? <DailyAttendanceView /> : <MonthlyAttendanceView />}
     </div>

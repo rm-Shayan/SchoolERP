@@ -144,10 +144,12 @@ class StaffLeaveService {
   }
 
   async remove(schoolId, id) {
-    const leave = await prisma.staffAttendance.findFirst({ where: { id, schoolId, leaveType: { not: null } } });
+    const where = { id, leaveType: { not: null } };
+    if (schoolId) where.schoolId = schoolId;
+    const leave = await prisma.staffAttendance.findFirst({ where });
     if (!leave) throw ApiError.notFoundError("Leave request not found");
     await prisma.staffAttendance.delete({ where: { id } });
-    emitToRoom(`school:${schoolId}`, "staff_leave_request_deleted", { id });
+    emitToRoom(`school:${leave.schoolId}`, "staff_leave_request_deleted", { id });
     return { success: true };
   }
 }

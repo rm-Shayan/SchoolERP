@@ -586,6 +586,78 @@ async getStudentHistory(studentId, startDate, endDate) {
 
     return { updated: results.length };
   }
+
+  /**
+   * POST /api/v1/attendance/bulk-mark
+   * Scope-based one-click bulk marking (outage backfill etc.).
+   * Scope precedence: sectionId > classId > (nothing) => whole school.
+   * Marks PRESENT (or given status) for every active student in scope — good
+   * for when gate devices were down all day and you need a clean backfill,
+   * with a full audit trail (always run via controller so audit + socket both fire).
+   */
+  async bulkMark(schoolId, { sectionId, classId, date, status = "PRESENT", remarks }) {
+    if (!schoolId || !date) {
+      throw ApiError.badRequestError("schoolId and date are required");
+    }
+
+    // Same UTC-midnight convention as processScan/manualOverride — see comment there.
+    const [by, bm, bd] = String(date).split("-").map(Number);
+    const targetDate = new Date(Date.UTC(by, (bm || 1) - 1, bd || 1));
+    if (
+      !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(String(date)) ||
+      Number.isNaN(targetDate.getTime()) ||
+      targetDate.getUTCMonth() !== (bm || 1) - 1 ||
+      targetDate.getUTCDate() !== (bd || 1)
+    ) {
+      throw ApiError.badRequestError("Invalid date — expected YYYY-MM-DD");
+    }
+
+    // Resolve scope → target students.
+    let students;
+    if (sectionId) {
+      students = await prisma.student.findMany({
+        where: { schoolId, sectionId, status: "ACTIVE" },
+        select: { id: true },
+      });
+    } else if (classId) {
+      students = await prisma.student.findMany({
+        where: { schoolId, status: "ACTIVE", section: { classId } },
+        select: { id: true },
+      });
+    } else {
+      students = await prisma.student.findMany({
+        where: { schoolId, status: "ACTIVE" },
+        select: { id: true },
+      });
+    }
+
+    if (students.length === 0) {
+      return { scope: sectionId ? "SECTION" : classId ? "CLASS" : "SCHOOL", total: 0, marked: 0 };
+    }
+
+    // Neon pooler latency + school-wide scope me ek bade batch ne Prisma ke
+    // default 5s txn timeout ko tod diya tha (P2028). Chunked + explicit
+    // timeout: har chunk independent txn, safe rehne ke liye 60s cap.
+    const results = [];
+    const CHUNK_SIZE = 50;
+    for (let i = 0; i < students.length; i += CHUNK_SIZE) {
+      const chunk = students.slice(i, i + CHUNK_SIZE).map((s) =>
+        prisma.attendanceRecord.upsert({
+          where: { studentId_date: { studentId: s.id, date: targetDate } },
+          create: { studentId: s.id, date: targetDate, status, remarks: remarks || null },
+          update: { status, ...(remarks !== undefined && { remarks }) },
+        })
+      );
+      const r = await prisma.$transaction(chunk, { timeout: 60_000 });
+      results.push(...r);
+    }
+
+    const scope = sectionId ? "SECTION" : classId ? "CLASS" : "SCHOOL";
+    try { await attendanceService._invalidateDailyCache(schoolId, targetDate); } catch (_) {}
+    emitToRoom(`school:${schoolId}`, "portal:attendance_marked", { scope, date, action: "bulk", count: results.length });
+
+    return { scope, total: students.length, marked: results.length };
+  }
 }
 
 const attendanceService = new AttendanceService();

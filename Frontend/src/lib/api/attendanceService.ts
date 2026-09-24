@@ -84,6 +84,23 @@ export const attendanceService = {
     await api.post('/attendance/section-bulk', data);
   },
 
+  // POST /attendance/bulk-mark — SUPER_ADMIN, ADMIN, RECEPTIONIST
+  // Scope-based one-click bulk marking (outage backfill etc.).
+  // Scope precedence: sectionId > classId > (nothing) => whole school.
+  bulkMarkStudents: async (data: {
+    sectionId?: string;
+    classId?: string;
+    date: string;
+    status?: AttendanceStatus;
+    remarks?: string;
+  }): Promise<{ scope: 'SCHOOL' | 'CLASS' | 'SECTION'; total: number; marked: number }> => {
+    const res = await api.post<ApiResponse<{ scope: 'SCHOOL' | 'CLASS' | 'SECTION'; total: number; marked: number }>>(
+      '/attendance/bulk-mark',
+      data
+    );
+    return res.data.data;
+  },
+
   // GET /attendance/staff — SUPER_ADMIN, ADMIN
   getStaffAttendance: async (schoolId?: string): Promise<User[]> => {
     const res = await api.get<ApiResponse<User[]>>('/attendance/staff', { params: { schoolId } });

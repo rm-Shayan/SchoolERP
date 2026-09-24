@@ -44,6 +44,7 @@ export const AUDIT_ACTIONS = {
 
   // Attendance data hygiene
   CLEANUP_ATTENDANCE: "CLEANUP_ATTENDANCE", // phantom duplicate attendance records deleted
+  BULK_MARK_ATTENDANCE: "BULK_MARK_ATTENDANCE", // scope-based bulk attendance marking (outage backfill etc.)
 };
 
 // Display labels for the frontend Activity Log.
@@ -76,6 +77,7 @@ export const AUDIT_ACTION_LABELS = {
   [AUDIT_ACTIONS.BLOCK_PARENT]: "Parent blocked",
   [AUDIT_ACTIONS.UNBLOCK_PARENT]: "Parent unblocked",
   [AUDIT_ACTIONS.CLEANUP_ATTENDANCE]: "Phantom attendance records deleted",
+  [AUDIT_ACTIONS.BULK_MARK_ATTENDANCE]: "Attendance bulk marked",
 };
 
 // Entity types stored in AuditLog.entityType
