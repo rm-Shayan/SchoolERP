@@ -1,6 +1,7 @@
 import ApiResponse from "../../lib/utils/ApiResponse.js";
 import staffLeaveService from "./staffLeave.service.js";
 import staffLeaveSelfService from "./staffLeaveSelf.service.js";
+import { getEffectiveSchoolId } from "../../lib/scope.js";
 
 class StaffLeaveController {
   requestLeave = async (req, res, next) => {
@@ -52,7 +53,7 @@ class StaffLeaveController {
 
   remove = async (req, res, next) => {
     try {
-      const schoolId = req.user?.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.query.schoolId);
       const result = await staffLeaveService.remove(schoolId, req.params.id);
       return res.status(200).json(ApiResponse.ok("Staff leave deleted", result));
     } catch (error) {
