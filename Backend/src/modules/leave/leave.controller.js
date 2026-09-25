@@ -1,4 +1,5 @@
 import ApiResponse from "../../lib/utils/ApiResponse.js";
+import ApiError from "../../lib/utils/ApiError.js";
 import leaveService from "./leave.service.js";
 import leaveRequestService from "./leaveRequest.service.js";
 import leaveCrudService from "./leaveCrud.service.js";
@@ -32,6 +33,7 @@ class LeaveController {
   review = async (req, res, next) => {
     try {
       const schoolId = req.user?.schoolId;
+      if (!schoolId) return next(ApiError.badRequestError("School ID is required"));
       const { status, remarks } = req.body;
       const result = await leaveService.review(schoolId, req.params.id, { status, remarks }, req.user?.id);
       return res.status(200).json(ApiResponse.ok(`Leave request ${status.toLowerCase()}`, result));
@@ -43,6 +45,7 @@ class LeaveController {
   create = async (req, res, next) => {
     try {
       const schoolId = req.user?.schoolId;
+      if (!schoolId) return next(ApiError.badRequestError("School ID is required"));
       const result = await leaveCrudService.create(schoolId, req.body, req.user?.id);
       return res.status(201).json(ApiResponse.created("Student leave created", result));
     } catch (error) {
@@ -53,6 +56,7 @@ class LeaveController {
   update = async (req, res, next) => {
     try {
       const schoolId = req.user?.schoolId;
+      if (!schoolId) return next(ApiError.badRequestError("School ID is required"));
       const result = await leaveCrudService.update(schoolId, req.params.id, req.body, req.user?.id);
       return res.status(200).json(ApiResponse.ok("Student leave updated", result));
     } catch (error) {
@@ -63,6 +67,7 @@ class LeaveController {
   remove = async (req, res, next) => {
     try {
       const schoolId = req.user?.schoolId;
+      if (!schoolId) return next(ApiError.badRequestError("School ID is required"));
       const result = await leaveCrudService.remove(schoolId, req.params.id);
       return res.status(200).json(ApiResponse.ok("Student leave deleted", result));
     } catch (error) {
