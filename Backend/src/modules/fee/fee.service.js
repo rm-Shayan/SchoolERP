@@ -1578,9 +1578,8 @@ class FeeService {
    * Class ke saare students ke fee vouchers ek PDF mein.
    * Returns PDF buffer — caller sends as attachment.
    */
-  async generateBulkVouchers(user, { classId, month, year, status, studentIds }) {
-    const schoolId = user.schoolId;
-    assertOwnSchool(user, schoolId);
+  async generateBulkVouchers(user, { classId, month, year, status, studentIds, schoolId: requestedSchoolId }) {
+    const schoolId = getEffectiveSchoolId(user, requestedSchoolId);
 
     // 1. Fetch bulk fee records for the class (filtered by studentIds if provided)
     const records = await feeRepository.findBulkFeeRecordsForClass({
