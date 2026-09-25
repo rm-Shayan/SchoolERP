@@ -316,12 +316,12 @@ class FeeController {
    * Class ke saare students ke vouchers ka ek PDF — one-click print.
    */
   bulkVouchers = asyncHandler(async (req, res) => {
-    const { classId, month, year, status, studentIds } = req.query;
+    const { classId, month, year, status, studentIds, schoolId } = req.query;
     // studentIds can be comma-separated: ?studentIds=id1,id2,id3
     const ids = studentIds ? studentIds.split(",").filter(Boolean) : undefined;
     try {
       const pdf = await feeService.generateBulkVouchers(req.user, {
-        classId, month, year, status, studentIds: ids,
+        classId, month, year, status, studentIds: ids, schoolId,
       });
       if (!pdf) {
         return res.status(404).json(ApiResponse.notFound("No vouchers generated"));
