@@ -380,14 +380,20 @@ class OrganizationRepository {
         SELECT s.id, s.name, s.code, s."organizationId", o.name AS "orgName"
         FROM "School" s
         JOIN "Organization" o ON o.id = s."organizationId"
-        WHERE s.id NOT IN (
-          SELECT DISTINCT "schoolId" FROM "User"
-          WHERE "schoolId" IS NOT NULL AND role = 'ADMIN'
-        )
-        AND s.id NOT IN (
-          SELECT DISTINCT value::text FROM "User", jsonb_array_elements_text(
-            CASE WHEN jsonb_typeof("branchAccess") = 'array' THEN "branchAccess" ELSE '[]'::jsonb END
-          ) WHERE role = 'ADMIN'
+        WHERE NOT EXISTS (
+          -- Branch has an admin if an ADMIN's home schoolId matches OR the
+          -- branch id is in their branchAccess array. No array expansion:
+          -- non-array (scalar/JSON null) branchAccess simply never matches,
+          -- instead of raising 22023 "cannot extract elements from a scalar".
+          SELECT 1 FROM "User" u
+          WHERE u.role = 'ADMIN'
+            AND (
+              u."schoolId" = s.id
+              OR (
+                jsonb_typeof(u."branchAccess") = 'array'
+                AND u."branchAccess" @> jsonb_build_array(s.id)
+              )
+            )
         )
         ORDER BY o.name, s.name
       `,
