@@ -1,6 +1,7 @@
 import ApiResponse from "../../lib/utils/ApiResponse.js";
 import staffLeaveService from "./staffLeave.service.js";
 import staffLeaveSelfService from "./staffLeaveSelf.service.js";
+import { getEffectiveSchoolId } from "../../lib/scope.js";
 
 class StaffLeaveController {
   requestLeave = async (req, res, next) => {
@@ -15,7 +16,7 @@ class StaffLeaveController {
 
   listAll = async (req, res, next) => {
     try {
-      const schoolId = req.user?.schoolId || req.params.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.query.schoolId || req.params.schoolId);
       const { status, staffId, page, limit } = req.query;
       const result = await staffLeaveService.listAll(schoolId, {
         status,

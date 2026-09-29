@@ -24,13 +24,25 @@ class AuthController {
 
   /**
    * POST /api/v1/auth/forgot-password
-   * Emails a temporary password. Generic response — no account enumeration.
+   * Emails a single-use password-reset link. The current password is NOT
+   * changed here. Generic response — no account enumeration.
    */
   forgotPassword = asyncHandler(async (req, res) => {
     await authService.forgotPassword(req.body.email);
     return res
       .status(200)
-      .json(ApiResponse.ok("If an account exists for this email, a new password has been sent.", { sent: true }));
+      .json(ApiResponse.ok("If an account exists for this email, a password reset link has been sent.", { sent: true }));
+  });
+
+  /**
+   * POST /api/v1/auth/reset-password
+   * Consumes the reset token from the emailed link and sets a new password.
+   */
+  resetPassword = asyncHandler(async (req, res) => {
+    await authService.resetPassword(req.body.token, req.body.newPassword);
+    return res
+      .status(200)
+      .json(ApiResponse.ok("Password updated. Please sign in with your new password.", { updated: true }));
   });
 
   /**

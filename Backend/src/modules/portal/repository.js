@@ -26,8 +26,13 @@ class PortalRepository {
     };
     const uniqueDates = new Set(records.map((r) => r.date.toISOString().split("T")[0]));
     summary.uniqueDays = uniqueDates.size;
-    summary.percentage = summary.uniqueDays > 0
-      ? Math.round(((summary.present + summary.late + summary.halfDay * 0.5) / summary.uniqueDays) * 100)
+    // Denominator har record (student-day) hona chahiye, warna multi-child parent
+    // ke liye unique dates se divide karne par 100%+ aa jata tha (M10).
+    summary.percentage = summary.totalDays > 0
+      ? Math.min(
+          100,
+          Math.round(((summary.present + summary.late + summary.halfDay * 0.5) / summary.totalDays) * 100)
+        )
       : 0;
 
     return { records, summary };
@@ -83,11 +88,12 @@ class PortalRepository {
   async getFeeSummary(studentIds) {
     const records = await prisma.feeRecord.findMany({
       where: { studentId: { in: studentIds } },
-      select: { totalAmount: true, paidAmount: true, status: true, dueDate: true },
+      select: { totalAmount: true, paidAmount: true, dueCharges: true, status: true, dueDate: true },
     });
 
     const totalCharged = records.reduce((s, r) => s + Number(r.totalAmount), 0);
     const totalPaid = records.reduce((s, r) => s + Number(r.paidAmount), 0);
+    const totalLateCharges = records.reduce((s, r) => s + Number(r.dueCharges || 0), 0);
     const unpaid = records.filter((r) => r.status === "UNPAID" || r.status === "OVERDUE").length;
     const partial = records.filter((r) => r.status === "PARTIAL").length;
     const paid = records.filter((r) => r.status === "PAID").length;
@@ -95,7 +101,8 @@ class PortalRepository {
     return {
       totalCharged: totalCharged.toFixed(2),
       totalPaid: totalPaid.toFixed(2),
-      outstanding: (totalCharged - totalPaid).toFixed(2),
+      // Parent ko baaki raqam me late fee bhi dikhni chahiye (M3).
+      outstanding: (totalCharged + totalLateCharges - totalPaid).toFixed(2),
       recordCount: records.length,
       unpaid, partial, paid,
     };

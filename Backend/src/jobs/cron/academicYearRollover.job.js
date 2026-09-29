@@ -82,15 +82,26 @@ export async function runAcademicYearRolloverJob() {
       const endDate = addDaysUTC(addMonthsUTC(startDate, months), -1);
       const name = `${startDate.getUTCFullYear()}-${endDate.getUTCFullYear()}`;
 
-      await prisma.academicYear.updateMany({
-        where: { schoolId: school.id },
-        data: { isCurrent: false },
-      });
-      await prisma.academicYear.create({
-        data: { schoolId: school.id, name, startDate, endDate, isCurrent: true },
-      });
-      await cacheDel(`academic:years:${school.id}`);
-      created++;
+      // Purana current year demote + naya current year create — ek hi
+      // transaction me, warna create fail hone par school ke paas koi
+      // isCurrent year nahi bachta (M9). Ek school ki failure baaki schools
+      // ko rokni nahi chahiye.
+      try {
+        await prisma.$transaction([
+          prisma.academicYear.updateMany({
+            where: { schoolId: school.id },
+            data: { isCurrent: false },
+          }),
+          prisma.academicYear.create({
+            data: { schoolId: school.id, name, startDate, endDate, isCurrent: true },
+          }),
+        ]);
+        await cacheDel(`academic:years:${school.id}`);
+        created++;
+      } catch (err) {
+        logger.logger.error(`[AcYear] ${school.name}: rollover failed — ${err.message}`);
+        continue;
+      }
 
       logger.logger.info(
         `[AcYear] ${school.name}: rolled over "${prev.name}" (${months} months) → "${name}" ${startDate.toISOString().slice(0, 10)} to ${endDate.toISOString().slice(0, 10)}`

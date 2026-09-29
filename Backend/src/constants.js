@@ -66,6 +66,19 @@ export const OTP = {
 };
 
 // ==========================================
+// PASSWORD RESET CONSTANTS
+// ==========================================
+
+/**
+ * Staff "forgot password" reset link (M8). Token single-use hota hai aur DB me
+ * sirf uska hash store hota hai — expiry ke baad link kaam nahi karta.
+ */
+export const PASSWORD_RESET = {
+  EXPIRY_MINUTES: 30,
+  MIN_PASSWORD_LENGTH: 8,
+};
+
+// ==========================================
 // JWT CONSTANTS
 // ==========================================
 

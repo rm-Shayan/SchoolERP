@@ -44,7 +44,6 @@ export default function AddBranchModal({ open, onClose, organizationId, onCreate
       phone: isPhonePK(),
       adminEmail: mode === 'new' ? composeValidators(required('Admin email is required'), isEmail()) : undefined,
       existingAdminEmail: mode === 'existing' ? composeValidators(required('Email is required'), isEmail()) : undefined,
-      ...(mode === 'new' ? { smtpUsername: required('Gmail is required'), smtpPassword: required('App password is required'), cloudName: required('Cloud name is required'), cloudApiKey: required('API key is required'), cloudApiSecret: required('API secret is required') } : {}),
     },
     onSubmit: async (v) => {
       const ok = await onCreate({ ...v, organizationId: effectiveOrgId });
@@ -134,7 +133,7 @@ export default function AddBranchModal({ open, onClose, organizationId, onCreate
           )}
         </div>
 
-        <BranchSecretsFields values={values} errors={errors} onChange={handleChange} required={mode === 'new'} />
+        <BranchSecretsFields values={values} errors={errors} onChange={handleChange} />
 
         <div className="flex gap-3 pt-2">
           <Button type="submit" loading={isSubmitting}>Create Branch</Button>

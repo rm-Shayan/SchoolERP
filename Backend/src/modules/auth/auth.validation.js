@@ -37,6 +37,16 @@ export const forgotPasswordSchema = z.object({
   }),
 });
 
+export const resetPasswordSchema = z.object({
+  body: z.object({
+    token: z.string().trim().min(1, "Reset token is required"),
+    newPassword: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(128, "Password is too long"),
+  }),
+});
+
 export const logoutSchema = z.object({
   body: z.object({
     refreshToken: z.string().min(1, "Refresh token is required"),
@@ -80,26 +90,6 @@ const staffRoleValues = [
   ROLES.RECEPTIONIST,
 ];
 
-const smtpSchema = z.preprocess((v) => {
-  if (typeof v === 'string') { try { return JSON.parse(v); } catch { return undefined; } }
-  return v;
-}, z.object({
-  host: z.string().min(1, "SMTP host is required"),
-  port: z.preprocess((v) => Number(v), z.number().int().positive()),
-  secure: z.preprocess((v) => v === 'true' || v === true, z.boolean()),
-  username: z.string().email("Invalid SMTP email"),
-  password: z.string().min(1, "SMTP password is required"),
-}).optional());
-
-const cloudinarySchema = z.preprocess((v) => {
-  if (typeof v === 'string') { try { return JSON.parse(v); } catch { return undefined; } }
-  return v;
-}, z.object({
-  cloudName: z.string().min(1, "Cloud Name is required"),
-  apiKey: z.string().min(1, "API Key is required"),
-  apiSecret: z.string().min(1, "API Secret is required"),
-}).optional());
-
 export const createUserSchema = z.object({
   body: z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -121,9 +111,6 @@ export const createUserSchema = z.object({
     teacherClassId: z.string().uuid("Invalid class ID").optional(),
     teacherSectionId: z.string().uuid("Invalid section ID").optional(),
     teacherSubjectId: z.string().uuid("Invalid subject ID").optional(),
-    // Integration settings for ADMIN role
-    smtp: smtpSchema,
-    cloudinary: cloudinarySchema,
   }),
 });
 

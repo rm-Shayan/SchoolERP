@@ -5,7 +5,6 @@ import { Modal, Input, Select, Button } from '@/features/shared/components';
 import { getRoleLabel } from '@/lib/utils';
 import StudentFields from './StudentFields';
 import TeacherAssignmentFields from './TeacherAssignmentFields';
-import AdminIntegrationFields from './AdminIntegrationFields';
 import { useCreateUserForm } from './useCreateUserForm';
 
 const ROLES = ['ADMIN', 'TEACHER', 'RECEPTIONIST', 'STUDENT'];
@@ -55,8 +54,6 @@ export default function CreateUserModal({ open, onClose, onCreated }: Props) {
         {f.isTeacher && f.values.schoolId && (
           <TeacherAssignmentFields schoolId={f.values.schoolId} values={f.values} errors={f.errors} onChange={f.handleChange as any} />
         )}
-
-        {f.isAdmin && <AdminIntegrationFields values={f.values} errors={f.errors} onChange={f.handleChange} onBlur={f.handleBlur} />}
 
         {!f.isAdmin && !f.isStudent && (f.portalPwd !== null ? (
           <div className="rounded-xl border border-green-200 bg-green-50 p-3">

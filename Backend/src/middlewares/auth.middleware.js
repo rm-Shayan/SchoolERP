@@ -4,8 +4,9 @@ import redis from "../config/redis.js";
 import ApiError from "../lib/utils/ApiError.js";
 import { BLOCKED_MESSAGE } from "../constants.js";
 import { setRequestOrganization, setRequestSchool } from "../lib/requestContext.js";
+import { getJwtSecret } from "../config/secrets.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "super_secret_school_erp_token";
+const JWT_SECRET = getJwtSecret();
 
 // Single select shape for the "auth:student" entity cache. authenticateStudent
 // and authenticateAnyPortal share the same cache key, so their selects MUST be

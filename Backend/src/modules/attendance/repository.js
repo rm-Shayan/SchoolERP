@@ -1,6 +1,15 @@
 import prisma from "../../config/db.js";
 
 class AttendanceRepository {
+  // Tenant-scope check ke liye sirf student ka schoolId — cross-branch
+  // attendance reads rokne ke liye (H3).
+  async findStudentSchoolId(studentId) {
+    return prisma.student.findUnique({
+      where: { id: studentId },
+      select: { id: true, schoolId: true },
+    });
+  }
+
   // Student Identifier Lookup + Fee Records (merged for gate scan speed)
   // Agar termRange diya ho to fee records bhi ek hi query mein aa jayenge.
   async findStudentByIdentifierCode(identifierCode, termRange = null) {

@@ -56,7 +56,7 @@ class SchoolRepository {
         role: "ADMIN",
         isActive: true,
       },
-      select: { id: true, name: true, email: true, role: true },
+      select: { id: true, name: true, email: true, role: true, schoolId: true },
     });
   }
 
@@ -216,7 +216,8 @@ class SchoolRepository {
       `,
       prisma.$queryRaw`
         SELECT COALESCE(SUM("totalAmount"), 0)::float8 AS "totalDue",
-               COALESCE(SUM("paidAmount"), 0)::float8 AS "totalPaid"
+               COALESCE(SUM("paidAmount"), 0)::float8 AS "totalPaid",
+               COALESCE(SUM("dueCharges"), 0)::float8 AS "totalDueCharges"
         FROM "FeeRecord"
         WHERE "studentId" IN (SELECT "id" FROM "Student" WHERE "schoolId" = ${schoolId})
       `,
@@ -245,11 +246,13 @@ class SchoolRepository {
     const fee = feeAgg[0] || {};
     const totalDue = fee.totalDue || 0;
     const totalPaid = fee.totalPaid || 0;
+    const totalDueCharges = fee.totalDueCharges || 0;
 
     return {
       enrollment: { monthly: monthKeys.map((m) => ({ key: m.key, label: m.label, count: m.count })) },
       attendance: { monthly: monthKeys.map((m) => ({ key: m.key, label: m.label, rate: m.rate })) },
-      fees: { totalDue, totalPaid, totalPending: totalDue - totalPaid },
+      // Pending me late fee dueCharges bhi shamil (M3).
+      fees: { totalDue, totalPaid, totalPending: totalDue + totalDueCharges - totalPaid },
       students: studentCount,
       staff: staffCount,
     };

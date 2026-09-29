@@ -7,9 +7,62 @@ import notificationService from "../../services/notification.service.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import pdfService from "../../services/pdf.service.js";
 import { emitToRoom } from "../../config/websocket.js";
-import { cacheGet, cacheSet, cacheInvalidatePrefix } from "../../lib/utils/cache.js";
+import { cacheGet, cacheSet, cacheDel, cacheInvalidatePrefix } from "../../lib/utils/cache.js";
+import { feeBalance, feeStatusAfterPayment } from "../../lib/utils/money.js";
+
+// Payment transaction tuning (C5) — serializable retries + sane DB timeouts.
+const PAYMENT_TX_MAX_RETRIES = 3;
+const PAYMENT_TX_MAX_WAIT = 10000;
+const PAYMENT_TX_TIMEOUT = 20000;
 
 class FeeService {
+  /**
+   * Fee mutation ke baad saare affected caches drop karo. Pehle sirf
+   * `fee:records:`/`fee:bulk:` clear hote the, isliye payment ke baad
+   * dashboard summary (`fee:summary:`) aur single-record read (`fee:rec:`)
+   * stale reh jate the (M5). Optional feeRecordId diya to uska exact key bhi.
+   */
+  _invalidateFeeRecordCaches(schoolId, feeRecordId) {
+    if (schoolId) {
+      cacheInvalidatePrefix(`fee:records:${schoolId}:`);
+      cacheInvalidatePrefix(`fee:bulk:${schoolId}:`);
+      cacheInvalidatePrefix(`fee:summary:${schoolId}:`);
+    }
+    if (feeRecordId) cacheDel(`fee:rec:${feeRecordId}`);
+  }
+
+  /**
+   * FeeRecord.paidAmount har payment me read-modify-write hota hai. Default
+   * READ COMMITTED isolation me do concurrent payments same record par dono
+   * STALE `paidAmount` padh kar update kar dete hain — dono FeePayment rows ban
+   * jaate hain lekin sirf ek `paidAmount` survive karta hai, yaani paisa silently
+   * LOST ho jata tha (C5).
+   *
+   * SERIALIZABLE isolation + bounded retry se conflicting transaction abort
+   * hokar fresh read ke saath dobara chalta hai. Prisma P2034 (write conflict)
+   * aur Postgres 40001 (serialization failure) / 40P01 (deadlock) retryable hain.
+   */
+  async _runPaymentTransaction(fn) {
+    let attempt = 0;
+    for (;;) {
+      try {
+        return await prisma.$transaction(fn, {
+          isolationLevel: "Serializable",
+          maxWait: PAYMENT_TX_MAX_WAIT,
+          timeout: PAYMENT_TX_TIMEOUT,
+        });
+      } catch (err) {
+        const code = err?.code || err?.meta?.code;
+        const retryable = code === "P2034" || code === "40001" || code === "40P01";
+        if (retryable && attempt < PAYMENT_TX_MAX_RETRIES) {
+          attempt += 1;
+          continue;
+        }
+        throw err;
+      }
+    }
+  }
+
   // ──────────────────────────────────────────
   // FEE STRUCTURES (PRD §4 — year-aware)
   // ──────────────────────────────────────────
@@ -131,6 +184,9 @@ class FeeService {
       );
     }
     cacheInvalidatePrefix(`fee:structures:${structure.schoolId}:`);
+    // fee:struct:{id} (300s) ko bhi drop karo warna updated read purana data
+    // deta rehta (M6).
+    cacheDel(`fee:struct:${id}`);
     const updated = await feeRepository.findFeeStructureById(id);
 
     portalNotificationService.create({
@@ -155,6 +211,7 @@ class FeeService {
     const name = structure.name;
     await feeRepository.deleteFeeStructure(id);
     cacheInvalidatePrefix(`fee:structures:${structure.schoolId}:`);
+    cacheDel(`fee:struct:${id}`);
 
     portalNotificationService.create({
       schoolId: structure.schoolId, senderId: user.id, senderName: user.name,
@@ -176,7 +233,7 @@ class FeeService {
   async generateMonthlyFees(user, { schoolId, sectionId, classId, structureId, month, year, dueDay, months = 1 }) {
     const targetSchoolId = getEffectiveSchoolId(user, schoolId);
     assertOwnSchool(user, targetSchoolId);
-    cacheInvalidatePrefix(`fee:records:${targetSchoolId}:`);
+    this._invalidateFeeRecordCaches(targetSchoolId);
     let result = { created: 0, skipped: 0, dueDay };
     for (let offset = 0; offset < Number(months); offset += 1) {
       const date = new Date(Date.UTC(year, month - 1 + offset, 1));
@@ -199,7 +256,7 @@ class FeeService {
     });
     if (!school) return { skipped: true, reason: "School not found" };
     try {
-      cacheInvalidatePrefix(`fee:records:${schoolId}:`);
+      this._invalidateFeeRecordCaches(schoolId);
       return await this._generateMonthlyFeesCore(schoolId, {
         month,
         year,
@@ -452,7 +509,10 @@ class FeeService {
       throw ApiError.badRequestError("Due date cannot be in the past");
     }
 
-    const updated = await feeRepository.updateFeeRecordDueDate(recordId, newDue);
+    // Sirf OVERDUE record ko UNPAID par reset karo — PAID/PARTIAL ka status
+    // waise hi rehna chahiye jab sirf due date extend ho rahi ho (H5).
+    const nextStatus = record.status === "OVERDUE" ? "UNPAID" : undefined;
+    const updated = await feeRepository.updateFeeRecordDueDate(recordId, newDue, nextStatus);
     emitToRoom(`school:${record.student.schoolId}`, "fee_due_date_updated", {
       feeRecordId: recordId,
       dueDate: newDue,
@@ -567,6 +627,8 @@ class FeeService {
       b.recordCount += s.recordCount;
       b.totalCharged += Number(s.totalCharged);
       b.totalPaid += Number(s.totalPaid);
+      // Outstanding archived rows se bhi derive karo (pehle hamesha 0 rehta tha).
+      b.outstanding += Number(s.totalCharged) - Number(s.totalPaid);
       b.paidRecords += s.paidRecords;
       b.partialRecords += s.partialRecords;
       b.unpaidRecords += s.unpaidRecords;
@@ -581,6 +643,8 @@ class FeeService {
       const paid = Number(rec.paidAmount);
       b.totalCharged += charged;
       b.totalPaid += paid;
+      // Outstanding = totalAmount + late fee dueCharges - paidAmount (H12).
+      b.outstanding += charged + Number(rec.dueCharges || 0) - paid;
       if (rec.status === "PAID") b.paidRecords++;
       else if (rec.status === "PARTIAL") b.partialRecords++;
       else if (rec.status === "OVERDUE") b.overdueRecords++;
@@ -647,11 +711,16 @@ class FeeService {
     if (paidAmount <= 0) throw ApiError.badRequestError("Payment amount must be positive");
 
     if (Array.isArray(allocations) && allocations.length) {
-      const items = await feeRepository.findFeeRecordsByIds(allocations.map((a) => a.recordId), record.studentId);
-      const byId = new Map(items.map((item) => [item.id, item]));
       const allocatedTotal = allocations.reduce((sum, item) => sum + Number(item.amount), 0);
       if (Math.abs(allocatedTotal - paidAmount) > 0.5) throw ApiError.badRequestError("Payment total does not match month allocation");
-      const allocationOutcome = await prisma.$transaction(async (tx) => {
+      const allocationOutcome = await this._runPaymentTransaction(async (tx) => {
+        // Fresh read andar — serializable isolation sirf tabhi protect karta hai
+        // jab read aur write SAME transaction me ho (C5).
+        const items = await tx.feeRecord.findMany({
+          where: { id: { in: allocations.map((a) => a.recordId) }, studentId: record.studentId },
+          orderBy: { dueDate: "asc" },
+        });
+        const byId = new Map(items.map((item) => [item.id, item]));
         const paymentIds = [];
         for (const allocation of allocations) {
           const item = byId.get(allocation.recordId);
@@ -673,8 +742,7 @@ class FeeService {
         throw err;
       });
       if (allocationOutcome?.duplicate) return allocationOutcome;
-      cacheInvalidatePrefix(`fee:records:${record.student.schoolId}:`);
-      cacheInvalidatePrefix(`fee:bulk:${record.student.schoolId}:`);
+      this._invalidateFeeRecordCaches(record.student.schoolId, feeRecordId);
       emitToRoom(`school:${record.student.schoolId}`, "fee_payment_recorded", { feeRecordId, amount: paidAmount });
       // Portal notification for admin
       const sName = `${record.student.firstName} ${record.student.lastName}`;
@@ -689,28 +757,39 @@ class FeeService {
     // Specific months pay kar rahe hain? (merged voucher se "sirf October" ya
     // "2 of 4 months" wala scenario). Har selected period UNPAID → PAID mark hoga.
     if (Array.isArray(periodMonths) && periodMonths.length) {
-      const periods = Array.isArray(record.periods) ? record.periods.map((p) => ({ ...p })) : [];
-      if (!periods.length) throw ApiError.badRequestError("Is record mein month breakdown nahi hai — poora payment karo");
-      let selectedTotal = 0;
+      if (!Array.isArray(record.periods) || !record.periods.length) {
+        throw ApiError.badRequestError("Is record mein month breakdown nahi hai — poora payment karo");
+      }
       const wanted = new Set(periodMonths.map((m) => `${m.year}-${m.month}`));
-      for (const p of periods) {
-        const key = `${p.year}-${p.month}`;
-        if (wanted.has(key) && p.status !== "PAID") {
-          selectedTotal += Number(p.amount);
-          p.status = "PAID";
+      const periodOutcome = await this._runPaymentTransaction(async (tx) => {
+        // Fresh record + period math andar — transaction ke bahar stale
+        // `record.periods` likhne se doosre payment ke period marks overwrite
+        // ho jaate the (C5).
+        const fresh = await tx.feeRecord.findUnique({
+          where: { id: feeRecordId },
+          select: { id: true, totalAmount: true, dueCharges: true, paidAmount: true, periods: true },
+        });
+        if (!fresh) throw ApiError.notFoundError("Fee record not found");
+        const periods = Array.isArray(fresh.periods) ? fresh.periods.map((p) => ({ ...p })) : [];
+        if (!periods.length) throw ApiError.badRequestError("Is record mein month breakdown nahi hai — poora payment karo");
+        let selectedTotal = 0;
+        for (const p of periods) {
+          const key = `${p.year}-${p.month}`;
+          if (wanted.has(key) && p.status !== "PAID") {
+            selectedTotal += Number(p.amount);
+            p.status = "PAID";
+          }
         }
-      }
-      if (selectedTotal <= 0) throw ApiError.badRequestError("Selected months already paid ya invalid hain");
-      if (Math.abs(selectedTotal - paidAmount) > 0.5) {
-        throw ApiError.badRequestError(`Amount Rs. ${paidAmount} selected months (Rs. ${selectedTotal.toFixed(2)}) se match nahi kar raha`);
-      }
-      const newPaid = Number(record.paidAmount) + paidAmount;
-      const allPaid = periods.every((p) => p.status === "PAID");
-      const periodOutcome = await prisma.$transaction(async (tx) => {
+        if (selectedTotal <= 0) throw ApiError.badRequestError("Selected months already paid ya invalid hain");
+        if (Math.abs(selectedTotal - paidAmount) > 0.5) {
+          throw ApiError.badRequestError(`Amount Rs. ${paidAmount} selected months (Rs. ${selectedTotal.toFixed(2)}) se match nahi kar raha`);
+        }
+        const newPaid = Number((Number(fresh.paidAmount) + paidAmount).toFixed(2));
+        const allPaid = periods.every((p) => p.status === "PAID");
         const recUpdated = await tx.feeRecord.update({
           where: { id: record.id },
           data: {
-            paidAmount: Number(newPaid.toFixed(2)),
+            paidAmount: newPaid,
             status: allPaid ? "PAID" : "PARTIAL",
             periods,
           },
@@ -719,7 +798,7 @@ class FeeService {
           data: { feeRecordId, amount: Number(paidAmount.toFixed(2)), method, reference: reference || null },
         });
         await this._writeReplay(tx, idempotencyKey, record, [recPayment.id], paidAmount, method);
-        return { updated: recUpdated, payment: recPayment };
+        return { updated: recUpdated, payment: recPayment, periods, newPaid };
       }).catch(async (err) => {
         if (err && err.__idempotencyConflict) {
           const replayed = await prisma.feePaymentReplay.findUnique({ where: { idempotencyKey } });
@@ -730,8 +809,8 @@ class FeeService {
       if (periodOutcome?.duplicate) return periodOutcome;
       const updated = periodOutcome.updated;
       const payment = periodOutcome.payment;
-      cacheInvalidatePrefix(`fee:records:${record.student.schoolId}:`);
-      cacheInvalidatePrefix(`fee:bulk:${record.student.schoolId}:`);
+      const { periods, newPaid } = periodOutcome;
+      this._invalidateFeeRecordCaches(record.student.schoolId, feeRecordId);
       // Receipt mein selected months dikhao.
       const receiptPeriods = periods
         .filter((p) => wanted.has(`${p.year}-${p.month}`))
@@ -813,16 +892,25 @@ class FeeService {
     }
 
     if (allocateOpenRecords || (Array.isArray(recordIds) && recordIds.length)) {
-      const open = allocateOpenRecords
-        ? await feeRepository.findOpenRecordsForStudent(record.studentId, record.student.schoolId)
-        : await feeRepository.findFeeRecordsByIds(recordIds, record.studentId);
-      let remaining = paidAmount;
-      let first = null;
+      let firstId = null;
       // Batch all payment writes in a single transaction (H2 fix). The "exceeds
-      // balance" check runs BEFORE the loop so a bad request never partially commits.
-      const openOutcome = await prisma.$transaction(async (tx) => {
+      // balance" check runs BEFORE the loop so a bad request never partially
+      // commits. Open records andar re-read hote hain — stale list se
+      // allocation karne par dusre payment ka paidAmount overwrite ho jata tha
+      // (C5).
+      const openOutcome = await this._runPaymentTransaction(async (tx) => {
+        const open = allocateOpenRecords
+          ? await tx.feeRecord.findMany({
+              where: { studentId: record.studentId, status: { not: "PAID" }, student: { schoolId: record.student.schoolId } },
+              orderBy: { dueDate: "asc" },
+            })
+          : await tx.feeRecord.findMany({
+              where: { id: { in: recordIds }, studentId: record.studentId },
+              orderBy: { dueDate: "asc" },
+            });
         const openBalance = open.reduce((s, r) => s + Math.max(0, Number(r.totalAmount) + Number(r.dueCharges || 0) - Number(r.paidAmount || 0)), 0);
         if (paidAmount > openBalance) throw ApiError.badRequestError("Payment exceeds selected fee balance");
+        let remaining = paidAmount;
         const paymentIds = [];
         for (const item of open) {
           if (remaining <= 0) break;
@@ -834,7 +922,7 @@ class FeeService {
           const nextPaid = Number(item.paidAmount || 0) + applied;
           await tx.feeRecord.update({ where: { id: item.id }, data: { paidAmount: Number(nextPaid.toFixed(2)), status: nextPaid >= Number(item.totalAmount) + Number(item.dueCharges || 0) ? "PAID" : "PARTIAL" } });
           remaining -= applied;
-          if (!first) first = item;
+          if (!firstId) firstId = item.id;
         }
         await this._writeReplay(tx, idempotencyKey, record, paymentIds, paidAmount, method);
       }).catch(async (err) => {
@@ -845,13 +933,14 @@ class FeeService {
         throw err;
       });
       if (openOutcome?.duplicate) return openOutcome;
-      return { payment: null, feeRecord: await feeRepository.findFeeRecordById(first?.id || feeRecordId), receiptPdf: null, allocated: true };
+      this._invalidateFeeRecordCaches(record.student.schoolId, feeRecordId);
+      return { payment: null, feeRecord: await feeRepository.findFeeRecordById(firstId || feeRecordId), receiptPdf: null, allocated: true };
     }
 
     // Idempotency guard — pehle se fully-paid record dobara pay nahi ho sakti
     // (double-click / duplicate submit par cash double nahi hoga, duplicate
     // receipt/email bhi nahi jayegi).
-    const currentBalance = Number(record.totalAmount) + Number(record.dueCharges || 0) - Number(record.paidAmount || 0);
+    const currentBalance = feeBalance(record);
     if (currentBalance <= 0) {
       throw ApiError.badRequestError("This fee record is already fully paid. No further payment is required.");
     }
@@ -859,20 +948,22 @@ class FeeService {
     // Concurrency-safe write: the read + increment live in ONE transaction, so
     // two users recording payments at the same time can never lost-update the
     // balance. The idempotency replay row is persisted in the same transaction.
-    const baseOutcome = await prisma.$transaction(async (tx) => {
+    const baseOutcome = await this._runPaymentTransaction(async (tx) => {
       const fresh = await tx.feeRecord.findUnique({
         where: { id: feeRecordId },
         select: { id: true, totalAmount: true, dueCharges: true, paidAmount: true, periods: true },
       });
       if (!fresh) throw ApiError.notFoundError("Fee record not found");
-      const balance = Number(fresh.totalAmount) + Number(fresh.dueCharges || 0) - Number(fresh.paidAmount || 0);
+      const balance = feeBalance(fresh);
       if (balance <= 0) throw ApiError.badRequestError("This fee record is already fully paid. No further payment is required.");
       const createdPayment = await tx.feePayment.create({
         data: { feeRecordId, amount: Number(paidAmount.toFixed(2)), method, reference: reference || null },
       });
-      const newPaid = Number(fresh.paidAmount) + Number(paidAmount.toFixed(2));
-      const total = Number(fresh.totalAmount);
-      const status = newPaid >= total ? "PAID" : "PARTIAL";
+      const newPaid = Number((Number(fresh.paidAmount) + Number(paidAmount.toFixed(2))).toFixed(2));
+      // PAID tabhi jab paidAmount ne totalAmount + dueCharges cover kar liya ho —
+      // dueCharges ko chhodna C3 bug tha (fully-paid record par penalty baaki reh
+      // jati thi). Cent-based compare float drift se bachata hai (M1).
+      const status = feeStatusAfterPayment(fresh.totalAmount, fresh.dueCharges, newPaid);
       const periodsUpdate = Array.isArray(fresh.periods) && fresh.periods.length
         ? { periods: fresh.periods.map((p) => ({ ...p, status: status === "PAID" ? "PAID" : p.status })) }
         : {};
@@ -891,11 +982,10 @@ class FeeService {
     const payment = baseOutcome.payment;
     const updated = baseOutcome.updated;
     const newPaid = Number(updated.paidAmount);
-    const total = Number(record.totalAmount);
+    const total = Number(updated.totalAmount);
     const status = updated.status;
 
-    cacheInvalidatePrefix(`fee:records:${record.student.schoolId}:`);
-    cacheInvalidatePrefix(`fee:bulk:${record.student.schoolId}:`);
+    this._invalidateFeeRecordCaches(record.student.schoolId, feeRecordId);
 
     // Receipt PDF (PRD §4) — "kis month ki fee" bhi likha hota hai.
     const receiptMonth = new Date(record.dueDate).toLocaleString("en-PK", { month: "long", year: "numeric" });
@@ -918,7 +1008,7 @@ class FeeService {
     // Channel policy: FULL payment → sirf portal (in-app) notification, NO
     // email. PARTIAL payment → parent ko updated FEE VOUCHER email hota hai
     // (remaining balance ke saath) — "fee paid" wala receipt message NAHI.
-    const balance = Math.max(0, total - newPaid);
+    const balance = Math.max(0, feeBalance(updated));
     const monthLabel = new Date(record.dueDate).toLocaleString("en-PK", { month: "long", year: "numeric" });
     const className = `${record.student.section?.class?.name || ""} ${record.student.section?.name || ""}`.trim();
     const studentName = `${record.student.firstName} ${record.student.lastName}`;
@@ -1316,7 +1406,7 @@ class FeeService {
     for (const record of dueRecords) {
       const student = record.student;
       if (!student || student.status !== "ACTIVE") continue;
-      const pending = Number(record.totalAmount) - Number(record.paidAmount);
+      const pending = Number(record.totalAmount) - Number(record.paidAmount) + Number(record.dueCharges || 0);
       if (pending <= 0) continue;
 
       const ctx = this._reminderContext(record);
@@ -1325,7 +1415,7 @@ class FeeService {
       // Parent ko apni targeted portal reminder (sirf uske bache ka).
       if (student.parent?.id) {
         portalNotificationService.create({
-          schoolId: record.schoolId, senderName: "Fee System",
+          schoolId: student.schoolId, senderName: "Fee System",
           recipientId: student.parent.id,
           title: "FEE_DUE",
           body: `Dear Parent, your child ${ctx.studentName}${ctx.className ? ` (${ctx.className})` : ""} has an overdue fee of Rs. ${pending.toFixed(2)} for ${ctx.monthLabel}. Kindly clear it before the due date.`,
@@ -1334,7 +1424,7 @@ class FeeService {
       }
       // Portal notification — admin branch feed me overdue dikhe.
       portalNotificationService.create({
-        schoolId: record.schoolId, senderName: "Fee System",
+        schoolId: student.schoolId, senderName: "Fee System",
         title: "FEE_DUE",
         body: `${ctx.studentName}${ctx.className ? ` (${ctx.className})` : ""} has an overdue fee: Rs. ${pending.toFixed(2)} for ${ctx.monthLabel}.`,
         category: "FEE", refType: "FEE_RECORD", refId: record.id, link: "/fees/records",
@@ -1373,7 +1463,7 @@ class FeeService {
     for (const record of records) {
       const student = record.student;
       if (!student || student.status !== "ACTIVE") continue;
-      const pending = Number(record.totalAmount) - Number(record.paidAmount);
+      const pending = Number(record.totalAmount) - Number(record.paidAmount) + Number(record.dueCharges || 0);
       if (pending <= 0) continue;
 
       const ctx = this._reminderContext(record);
@@ -1518,7 +1608,7 @@ class FeeService {
   }
 
   async _calculateDueChargesForSchool(targetSchoolId) {
-    const records = await feeRepository.findOverdueRecordsWithStudent();
+    const records = await feeRepository.findOverdueRecordsWithStudent(targetSchoolId);
     if (!records.length) return 0;
 
     const now = new Date();

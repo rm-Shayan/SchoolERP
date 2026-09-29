@@ -17,7 +17,6 @@ import { metricsHandler } from "./config/metrics.js";
 import { isReady } from "./config/readiness.js";
 import { getRedisStats, getRedisInfo } from "./config/redisStats.js";
 import { requestContextMiddleware } from "./lib/requestContext.js";
-import initMonitoring from "./config/monitoring.js";
 import routes from "./routes/index.js";
 import "./services/storage.service.js";
 
@@ -25,7 +24,10 @@ const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === "production";
 
-initMonitoring();
+// Sentry.init() yahan NAHI ho sakta — express line 1 par already import ho
+// chuka hota hai, to uska instrumentation miss ho jata tha. Ab woh
+// src/config/sentry.instrumentation.js me hai, jo `node --import` se
+// app ke kisi bhi module se pehle chalta hai. Dekho package.json scripts.
 
 // Trust first proxy — required for express-rate-limit to read X-Forwarded-For
 // accurately. Without this, rate-limit throws ERR_ERL_UNEXPECTED_X_FORWARDED_FOR

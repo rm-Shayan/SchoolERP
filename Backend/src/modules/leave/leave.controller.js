@@ -2,6 +2,7 @@ import ApiResponse from "../../lib/utils/ApiResponse.js";
 import leaveService from "./leave.service.js";
 import leaveRequestService from "./leaveRequest.service.js";
 import leaveCrudService from "./leaveCrud.service.js";
+import { getEffectiveSchoolId } from "../../lib/scope.js";
 
 class LeaveController {
   requestLeave = async (req, res, next) => {
@@ -16,7 +17,10 @@ class LeaveController {
 
   listAll = async (req, res, next) => {
     try {
-      const schoolId = req.user?.schoolId || req.params.schoolId;
+      // SUPER_ADMIN ko explicit schoolId chahiye; branch staff apne school tak
+      // locked rehta hai. `||` fallback undefined par Prisma ka tenant filter
+      // silently drop kar deta tha (H2) — ab fail-closed.
+      const schoolId = getEffectiveSchoolId(req.user, req.query.schoolId || req.params.schoolId);
       const { status, page, limit } = req.query;
       const result = await leaveService.listAll(schoolId, {
         status,

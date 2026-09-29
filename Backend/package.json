@@ -5,14 +5,15 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "dev": "node --env-file=dev.env --watch src/index.js",
-    "start": "node src/index.js",
-    "start:local": "node --env-file=dev.env src/index.js",
+    "dev": "node --import ./src/config/sentry.instrumentation.js --env-file=dev.env --watch src/index.js",
+    "start": "node --import ./src/config/sentry.instrumentation.js src/index.js",
+    "start:local": "node --import ./src/config/sentry.instrumentation.js --env-file=dev.env src/index.js",
     "test": "node --test",
     "seed": "node --env-file=dev.env scripts/seed-data.js",
     "demo": "node --env-file=dev.env scripts/demo-data.js",
     "clean": "node --env-file=dev.env scripts/clean-org-data.js",
-    "sync:neon": "node --env-file=dev.env scripts/sync-from-neon.js"
+    "sync:neon": "node --env-file=dev.env scripts/sync-from-neon.js",
+    "rotate:key": "node scripts/rotate-mail-enc-key.js"
   },
   "keywords": [],
   "author": "rm-shayan",

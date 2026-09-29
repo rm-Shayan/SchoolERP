@@ -9,6 +9,7 @@ import { bustAllPortalCaches } from "../../lib/portalCache.js";
 
 class LeaveService {
   async listAll(schoolId, { status, page = 1, limit = 20 } = {}) {
+    if (!schoolId) throw ApiError.badRequestError("schoolId is required");
     const where = { schoolId };
     if (status) where.status = status;
 

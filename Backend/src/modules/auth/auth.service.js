@@ -5,19 +5,20 @@ import prisma from "../../config/db.js";
 import authRepository from "./repository.js";
 import { UserResponseDTO, ParentPortalDTO, StudentPortalDTO } from "./auth.dto.js";
 import ApiError from "../../lib/utils/ApiError.js";
-import { ROLES, OTP, JWT, BLOCKED_MESSAGE } from "../../constants.js";
+import { ROLES, OTP, JWT, PASSWORD_RESET, BLOCKED_MESSAGE } from "../../constants.js";
 import auditService from "../audit/audit.service.js";
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../audit/actions.js";
 import organizationService from "../organization/organization.service.js";
 import storageService from "../../services/storage.service.js";
 import { sendEmail, sendOtpEmail } from "../../services/email.service.js";
 import { queueEmail } from "../../services/emailOutbox.js";
-import { buildLoginUrl } from "../../services/email.templates.js";
+import { buildLoginUrl, buildResetUrl } from "../../services/email.templates.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import Logger from "../../lib/utils/logger.js";
 import redis from "../../config/redis.js";
 import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
 import userManagementService from "./userManagement.service.js";
+import { getJwtSecret } from "../../config/secrets.js";
 
 const logger = new Logger("auth-service");
 
@@ -51,10 +52,13 @@ async function cacheUser(user) {
 const generateSecureToken = () => crypto.randomBytes(64).toString("hex");
 
 /**
- * Generate a 6-digit numeric OTP
+ * Generate a 6-digit numeric OTP.
+ * crypto.randomInt (CSPRNG) use karta hai — Math.random predictable hai (M7).
  */
 const generateOtp = () =>
-  Math.floor(100000 + Math.random() * 900000).toString();
+  crypto
+    .randomInt(10 ** (OTP.LENGTH - 1), 10 ** OTP.LENGTH)
+    .toString();
 
 /**
  * Hash a value using SHA-256 (for tokens and OTPs stored in DB)
@@ -122,7 +126,7 @@ const attachAccessibleBranches = async (sessionUser, user) => {
 const signAccessToken = (payload) =>
   jwt.sign(
     payload,
-    process.env.JWT_SECRET || "super_secret_school_erp_token",
+    getJwtSecret(),
     { expiresIn: JWT.ACCESS_EXPIRY }
   );
 
@@ -132,7 +136,7 @@ const signAccessToken = (payload) =>
 const signParentToken = (payload) =>
   jwt.sign(
     payload,
-    process.env.JWT_SECRET || "super_secret_school_erp_token",
+    getJwtSecret(),
     { expiresIn: JWT.PARENT_EXPIRY }
   );
 
@@ -142,7 +146,7 @@ const signParentToken = (payload) =>
 const signStudentToken = (payload) =>
   jwt.sign(
     payload,
-    process.env.JWT_SECRET || "super_secret_school_erp_token",
+    getJwtSecret(),
     { expiresIn: JWT.STUDENT_EXPIRY }
   );
 
@@ -604,25 +608,46 @@ class AuthService {
   _assertCanAccessUser(requester, target) { return userManagementService._assertCanAccessUser(requester, target); }
 
   /**
-   * Self-service forgot password (staff accounts): email par temporary password
-   * bhejta hai. Enumeration se bachne ke liye response hamesha generic hota hai.
+   * Self-service forgot password (staff accounts).
+   *
+   * M8: pehle ye email me ek temporary password bhejta tha aur turant user ka
+   * REAL password overwrite kar deta tha — koi bhi jo email address jaanta tha
+   * use "forgot password" press karke victim ko lock out kar sakta tha, aur
+   * victim ko apna original password wapas nahi milta tha.
+   *
+   * Ab sirf ek single-use, time-limited reset LINK bheja jata hai. User ka
+   * password is call par BILKUL nahi chhuta — wo sirf `resetPassword` me token
+   * verify hone ke baad set hota hai. Enumeration se bachne ke liye response
+   * hamesha generic rehta hai, chahe email exist kare ya na kare.
    */
   async forgotPassword(email) {
     const normalized = String(email || "").trim().toLowerCase();
     const user = await authRepository.findByEmail(normalized);
 
     if (user && user.isActive) {
-      const tempPassword = `Sch-${crypto.randomBytes(5).toString("base64url")}1!`;
-      const hashed = await bcrypt.hash(tempPassword, 12);
-      await authRepository.updateUser(user.id, { password: hashed });
-      await authRepository.revokeAllRefreshTokens(user.id);
+      // Purane unused tokens invalidate — ek active reset link rahe.
+      await prisma.passwordResetToken.updateMany({
+        where: { userId: user.id, isUsed: false },
+        data: { isUsed: true, usedAt: new Date() },
+      });
 
-      // Branded login link (org slug + school code) — recipient ko /login par
-      // le jaata hai jahan theme or logo already loaded ho.
+      // Raw token sirf email me jaata hai; DB me sirf uska SHA-256 hash.
+      const rawToken = crypto.randomBytes(32).toString("base64url");
+      await prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          tokenHash: hashValue(rawToken),
+          expiresAt: new Date(Date.now() + PASSWORD_RESET.EXPIRY_MINUTES * 60 * 1000),
+        },
+      });
+
       const loginUrl = buildLoginUrl({
         orgSlug: user.organization?.slug || null,
         schoolCode: user.school?.code || null,
       });
+      // Reset link apna alag page hai; login URL par path "jod"na query string
+      // tod deta hai, isliye base CLIENT_URL se banao.
+      const resetUrl = `${buildResetUrl()}?token=${encodeURIComponent(rawToken)}`;
 
       auditService.record({
         actorId: user.id,
@@ -642,17 +667,70 @@ class AuthService {
         allowHolderAsRecipient: true,
         organizationId: user.organizationId || undefined,
         schoolId: user.schoolId || undefined,
-        subject: "Your SchoolERP account - new password",
+        subject: "Reset your SchoolERP password",
         html: `
           <p>Hello <b>${user.name}</b>,</p>
-          <p>A new password was requested for your account.</p>
-          <p style="font-size:18px;font-weight:bold;letter-spacing:1px;">${tempPassword}</p>
-          <p>Please sign in with this password. You can change it later from Settings → Security.</p>
+          <p>A password reset was requested for your account. Your current password has NOT been changed.</p>
+          <p>To set a new password, open this link (valid for ${PASSWORD_RESET.EXPIRY_MINUTES} minutes):</p>
+          <p><a href="${resetUrl}" style="color:#4f46e5;font-weight:bold;">Set a new password</a></p>
+          <p>If you did not request this, you can safely ignore this email — nothing has changed on your account.</p>
           <p>Sign in here: <a href="${loginUrl}" style="color:#4f46e5;">${loginUrl}</a></p>
         `,
-        text: `Your new SchoolERP password: ${tempPassword}\n\nSign in here: ${loginUrl}`,
+        text: `Reset your SchoolERP password (valid ${PASSWORD_RESET.EXPIRY_MINUTES} minutes):\n${resetUrl}\n\nYour current password has NOT changed. If you did not request this, ignore this email.`,
       }).catch(() => {});
     }
+
+    return true;
+  }
+
+  /**
+   * Token ke through naya password set karo (M8). Token single-use hai, expire
+   * ho chuka ho to reject — aur password set karte hi saare refresh tokens
+   * revoke ho jaate hain taake purane sessions chale na sakein.
+   */
+  async resetPassword(token, newPassword) {
+    const raw = String(token || "").trim();
+    if (!raw) throw ApiError.badRequestError("Reset token is required");
+
+    if (!newPassword || String(newPassword).length < PASSWORD_RESET.MIN_PASSWORD_LENGTH) {
+      throw ApiError.badRequestError(`Password must be at least ${PASSWORD_RESET.MIN_PASSWORD_LENGTH} characters`);
+    }
+
+    const row = await prisma.passwordResetToken.findUnique({
+      where: { tokenHash: hashValue(raw) },
+      include: { user: { select: { id: true, name: true, isActive: true, organizationId: true, schoolId: true } } },
+    });
+
+    // Sab failure modes ek hi message dete hain — token ki validity leak na ho.
+    const invalid = () => ApiError.badRequestError("This password reset link is invalid or has expired. Please request a new one.");
+    if (!row || row.isUsed || row.expiresAt.getTime() < Date.now() || !row.user.isActive) {
+      throw invalid();
+    }
+
+    const hashed = await bcrypt.hash(String(newPassword), 12);
+
+    // Token consume + password set ek hi transaction me — dobara use possible na ho.
+    await prisma.$transaction(async (tx) => {
+      const claimed = await tx.passwordResetToken.updateMany({
+        where: { id: row.id, isUsed: false },
+        data: { isUsed: true, usedAt: new Date() },
+      });
+      if (claimed.count === 0) throw invalid(); // already consumed by a parallel request
+      await tx.user.update({ where: { id: row.userId }, data: { password: hashed } });
+      await tx.refreshToken.updateMany({ where: { userId: row.userId, isRevoked: false }, data: { isRevoked: true } });
+    });
+
+    auditService.record({
+      actorId: row.userId,
+      actorName: row.user.name,
+      actorRole: "SYSTEM",
+      action: AUDIT_ACTIONS.RESET_STAFF_PASSWORD,
+      entityType: AUDIT_ENTITY_TYPES.USER,
+      entityId: row.userId,
+      entityName: row.user.name,
+      organizationId: row.user.organizationId,
+      schoolId: row.user.schoolId,
+    });
 
     return true;
   }

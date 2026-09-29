@@ -75,49 +75,60 @@ class AttendanceArchiveService {
         case "LATE": s.daysLate++; break;
         case "ABSENT": s.daysAbsent++; break;
         case "LEAVE": s.daysLeave++; break;
-        case "HALF_DAY": s.daysPresent += 0.5; break;
-        case "MANUAL": s.daysManual++; break;
+        // HALF_DAY ko 1 present count karo — daysPresent Int hai, 0.5 store nahi
+        // ho sakta (pehle += 0.5 Int upsert par crash karta tha).
+        case "HALF_DAY": s.daysPresent++; break;
+        // Enum value MANUAL_OVERRIDE hai (pehle "MANUAL" case match hi nahi hota,
+        // is liye manual overrides kisi bucket mein count nahi hote the).
+        case "MANUAL_OVERRIDE": s.daysManual++; break;
       }
     }
 
-    // Step 4: Upsert summaries + delete raw records in batches
+    // Step 4 + 5: summaries upsert aur raw delete ek hi transaction mein —
+    // warna beech mein fail hone par summary aur raw data out-of-sync ho jaate
+    // hain (H11).
     let summariesCreated = 0;
     const batchSize = 500;
 
-    for (const [studentId, stats] of summaryMap) {
-      if (stats.totalDays === 0) continue; // no records to archive
+    const totalDeleted = await prisma.$transaction(
+      async (tx) => {
+        for (const [studentId, stats] of summaryMap) {
+          if (stats.totalDays === 0) continue; // no records to archive
 
-      await prisma.attendanceYearSummary.upsert({
-        where: { studentId_yearLabel: { studentId, yearLabel } },
-        create: {
-          studentId,
-          schoolId,
-          yearLabel,
-          dateFrom,
-          dateTo,
-          ...stats,
-        },
-        update: {
-          dateFrom,
-          dateTo,
-          ...stats,
-        },
-      });
-      summariesCreated++;
-    }
+          await tx.attendanceYearSummary.upsert({
+            where: { studentId_yearLabel: { studentId, yearLabel } },
+            create: {
+              studentId,
+              schoolId,
+              yearLabel,
+              dateFrom,
+              dateTo,
+              ...stats,
+            },
+            update: {
+              dateFrom,
+              dateTo,
+              ...stats,
+            },
+          });
+          summariesCreated++;
+        }
 
-    // Step 5: Delete raw attendance records in batches
-    let totalDeleted = 0;
-    for (let i = 0; i < studentIds.length; i += batchSize) {
-      const batch = studentIds.slice(i, i + batchSize);
-      const result = await prisma.attendanceRecord.deleteMany({
-        where: {
-          studentId: { in: batch },
-          date: { gte: dateFrom, lte: dateTo },
-        },
-      });
-      totalDeleted += result.count;
-    }
+        let deleted = 0;
+        for (let i = 0; i < studentIds.length; i += batchSize) {
+          const batch = studentIds.slice(i, i + batchSize);
+          const result = await tx.attendanceRecord.deleteMany({
+            where: {
+              studentId: { in: batch },
+              date: { gte: dateFrom, lte: dateTo },
+            },
+          });
+          deleted += result.count;
+        }
+        return deleted;
+      },
+      { timeout: 30000 }
+    );
 
     logger.logger.info(
       `[Archive] Done: ${totalDeleted} records deleted, ${summariesCreated} summaries created for ${students.length} students`

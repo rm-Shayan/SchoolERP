@@ -23,7 +23,7 @@ export default function BranchSettingsCard({ school, orgName, onUpdated }: Branc
     try {
       const [smtp, storage] = await Promise.allSettled([
         smtpSettingsService.getStatus(school.organizationId, school.id),
-        storageSettingsService.getStatus(school.organizationId),
+        storageSettingsService.getStatus(school.organizationId, school.id),
       ]);
       if (smtp.status === 'fulfilled') setSmtpStatus(smtp.value);
       if (storage.status === 'fulfilled') setStorageStatus(storage.value);
@@ -68,7 +68,7 @@ export default function BranchSettingsCard({ school, orgName, onUpdated }: Branc
       {expanded && (
         <div className="border-t border-gray-100 space-y-4 p-4 sm:p-5 bg-gray-50/30">
           <SmtpSettingsSection organizationId={school.organizationId} schoolId={school.id} />
-          <StorageSettingsSection organizationId={school.organizationId} />
+          <StorageSettingsSection organizationId={school.organizationId} schoolId={school.id} />
         </div>
       )}
     </Card>

@@ -64,11 +64,28 @@ export async function buildMonthlyReport(repository, schoolId, year, month) {
   const classMap = new Map();
   const totals = { totalMarked: 0, present: 0, late: 0, absent: 0, leave: 0, halfDay: 0, manualOverride: 0 };
 
+  // AttendanceStatus enum value → summary counter key. Enum UPPERCASE hai,
+  // summary keys camelCase — bina is map ke counts hamesha 0 rehte the.
+  // PENDING_LEAVE / APPROVED_LEAVE / REJECTED_LEAVE ko `leave` me fold karte
+  // hain kyunki frontend sirf yahi counters render karta hai.
+  const STATUS_TO_COUNTER = {
+    PRESENT: "present",
+    LATE: "late",
+    ABSENT: "absent",
+    LEAVE: "leave",
+    HALF_DAY: "halfDay",
+    MANUAL_OVERRIDE: "manualOverride",
+    PENDING_LEAVE: "leave",
+    APPROVED_LEAVE: "leave",
+    REJECTED_LEAVE: "leave",
+  };
+
   for (const node of sectionMap.values()) {
     // 6 separate filter() passes ki jagah single loop me counts.
     const counts = { present: 0, late: 0, absent: 0, leave: 0, halfDay: 0, manualOverride: 0 };
     for (const r of node.records) {
-      if (counts[r.status] !== undefined) counts[r.status] += 1;
+      const counter = STATUS_TO_COUNTER[r.status];
+      if (counter) counts[counter] += 1;
     }
 
     node.summary = {

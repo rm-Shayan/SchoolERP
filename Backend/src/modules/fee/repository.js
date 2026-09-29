@@ -273,14 +273,6 @@ class FeeRepository {
     });
   }
 
-  /** Specific monthly records (selected months) pay karne ke liye. */
-  async findFeeRecordsByIds(ids, studentId) {
-    return prisma.feeRecord.findMany({
-      where: { id: { in: ids }, studentId },
-      orderBy: { dueDate: "asc" },
-    });
-  }
-
   /** Archived year summary rows — per-student yearly view ke liye. */
   async listFeeYearSummariesByStudent(studentId) {
     return prisma.feeYearSummary.findMany({
@@ -463,12 +455,16 @@ class FeeRepository {
     return this.listFeeRecordsByStudentIds(students.map((s) => s.id), { status, dueDateBefore, dueDateAfter });
   }
 
-  /** Overdue records with their student's section/class — overdue sweep ke liye. */
-  async findOverdueRecordsWithStudent() {
+  /** Overdue records with their student's section/class — due-charges job ke liye. */
+  async findOverdueRecordsWithStudent(schoolId) {
     return prisma.feeRecord.findMany({
       where: {
-        status: { in: ["UNPAID", "PARTIAL"] },
+        // 09:00 sweep UNPAID/PARTIAL ko OVERDUE kar deta hai; 09:15 job ko wahi
+        // rows chahiye. Sirf ["UNPAID","PARTIAL"] query karne se job kuch nahi
+        // dhoondta tha (H4).
+        status: { in: ["OVERDUE", "PARTIAL"] },
         dueDate: { lt: new Date() },
+        ...(schoolId ? { student: { schoolId } } : {}),
       },
       include: {
         student: {
@@ -508,12 +504,16 @@ class FeeRepository {
     return prisma.feeRecord.update({ where: { id }, data });
   }
 
-  /** Ek student ka due date extend karo (is month ke liye). OVERDUE → UNPAID reset. */
-  async updateFeeRecordDueDate(id, dueDate) {
-    return prisma.feeRecord.update({
-      where: { id },
-      data: { dueDate, status: "UNPAID", reminderSentAt: null },
-    });
+  /**
+   * Ek student ka due date extend karo (is month ke liye).
+   * `status` optional — OVERDUE record ko UNPAID par reset karne ke liye service
+   * decide karta hai. Pehle har case me UNPAID set hota tha, isliye PAID record
+   * ka due date badalne par wo dobara UNPAID ho jata tha (H5).
+   */
+  async updateFeeRecordDueDate(id, dueDate, status) {
+    const data = { dueDate, reminderSentAt: null };
+    if (status) data.status = status;
+    return prisma.feeRecord.update({ where: { id }, data });
   }
 
   /** Overdue ho chuke records jinhe reminder abhi nahi bheja gaya (once-only). */
@@ -644,7 +644,8 @@ class FeeRepository {
     return {
       total: agg._count._all,
       collected: Number(paidAmount.toFixed(2)),
-      outstanding: Number((totalAmount - paidAmount).toFixed(2)),
+      // Outstanding me late fee dueCharges bhi count hoti hai (M3).
+      outstanding: Number((totalAmount + totalCharges - paidAmount).toFixed(2)),
       totalCharges: Number(totalCharges.toFixed(2)),
       counts,
     };

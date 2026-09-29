@@ -1,13 +1,14 @@
 import crypto from "crypto";
+import { getEncryptionSecret } from "../../config/secrets.js";
 
 // ── AES-256-GCM encryption for tenant SMTP passwords at rest ──
-// Key MAIL_ENC_KEY env se aati hai (32-byte hex). Missing ho to JWT_SECRET
-// se derive ho jati hai (dev-friendly) + warning log — production mein
-// MAIL_ENC_KEY set karna zaroori hai, warna key rotation ka koi control nahi.
+// Key MAIL_ENC_KEY env se aati hai (32-byte hex). Production me missing ho to
+// startup par fail hota hai (C2) — warna public fallback key se data decrypt
+// ho sakta tha. Local/dev me fallback allowed hai.
 let cachedKey = null;
 function getKey() {
   if (cachedKey) return cachedKey;
-  const secret = process.env.MAIL_ENC_KEY || process.env.JWT_SECRET || "school-erp-dev-only";
+  const secret = getEncryptionSecret();
   if (!process.env.MAIL_ENC_KEY) {
     console.warn(
       "[crypto] MAIL_ENC_KEY not set — deriving from fallback. Set a 64-char hex key in .env for production."
@@ -19,11 +20,7 @@ function getKey() {
 
 /** Encrypt a secret → "iv.tag.ciphertext" (all base64). */
 export function encryptSecret(plain) {
-  const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv("aes-256-gcm", getKey(), iv);
-  const enc = Buffer.concat([cipher.update(String(plain), "utf8"), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  return [iv, tag, enc].map((b) => b.toString("base64")).join(".");
+  return encryptSecretWith(plain, getKey());
 }
 
 /**
@@ -31,12 +28,32 @@ export function encryptSecret(plain) {
  * Returns null on tamper/failure — callers must treat null as "creds broken".
  */
 export function decryptSecret(payload) {
+  return decryptSecretWith(payload, getKey());
+}
+
+// ── Explicit-key variants ──────────────────────────────────────────────
+// Rotation scripts (scripts/rotate-mail-enc-key.js) ko ek key se decrypt
+// karke DOOSRI key se encrypt karna hota hai, jabki process.env me abhi
+// purani key lagi hui hai. Isliye key ko argument me lene wala core yahan
+// hai aur upar wale wrappers ambient key use karte hain.
+
+/** Encrypt with an explicit 32-byte key. */
+export function encryptSecretWith(plain, key) {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const enc = Buffer.concat([cipher.update(String(plain), "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return [iv, tag, enc].map((b) => b.toString("base64")).join(".");
+}
+
+/** Decrypt with an explicit 32-byte key. Returns null on any failure. */
+export function decryptSecretWith(payload, key) {
   try {
     const [ivB64, tagB64, dataB64] = String(payload).split(".");
     if (!ivB64 || !tagB64 || !dataB64) return null;
     const decipher = crypto.createDecipheriv(
       "aes-256-gcm",
-      getKey(),
+      key,
       Buffer.from(ivB64, "base64")
     );
     decipher.setAuthTag(Buffer.from(tagB64, "base64"));
@@ -48,3 +65,14 @@ export function decryptSecret(payload) {
     return null;
   }
 }
+
+/** The raw 32-byte key derived from a secret string (sha256). */
+export function deriveKey(secret) {
+  return crypto.createHash("sha256").update(String(secret)).digest();
+}
+
+/** The secret currently backing the at-rest encryption (for rotation tools). */
+export function currentSecret() {
+  return getEncryptionSecret();
+}
+

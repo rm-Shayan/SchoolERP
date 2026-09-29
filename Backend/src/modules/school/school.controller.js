@@ -18,7 +18,7 @@ class SchoolController {
 
   portalPasswordStatus = async (req, res, next) => {
     try {
-      const result = await schoolService.getPortalPasswordStatus(req.params.id);
+      const result = await schoolService.getPortalPasswordStatus(req.user, req.params.id);
       return res.status(200).json(ApiResponse.ok("Portal password status fetched", result));
     } catch (error) {
       return next(error);
@@ -148,7 +148,7 @@ class SchoolController {
 
   getById = async (req, res, next) => {
     try {
-      const school = await schoolService.getById(req.params.id);
+      const school = await schoolService.getById(req.params.id, req.user);
       return res.status(200).json(ApiResponse.ok("School fetched successfully", school));
     } catch (error) {
       return next(error);
@@ -157,7 +157,7 @@ class SchoolController {
 
   analytics = async (req, res, next) => {
     try {
-      const data = await schoolService.getAnalytics(req.params.id);
+      const data = await schoolService.getAnalytics(req.params.id, req.user);
       return res.status(200).json(ApiResponse.ok("Branch analytics fetched", data));
     } catch (error) {
       return next(error);
@@ -186,7 +186,7 @@ class SchoolController {
       }
       const schoolId = req.body.schoolId || req.query.schoolId || null;
       const organizationId = req.user?.organizationId || null;
-      const result = await schoolService.uploadLogo(req.file.buffer, schoolId, organizationId);
+      const result = await schoolService.uploadLogo(req.file.buffer, schoolId, organizationId, req.user);
       return res.status(200).json(ApiResponse.ok("Logo uploaded successfully", result));
     } catch (error) {
       return next(error);

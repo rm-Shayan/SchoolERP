@@ -128,16 +128,13 @@ class SchoolService {
       }
     }
 
-    // Naya admin → SMTP + Cloudinary zaroori (koi previous account nahi jisse
-    // inherit karein). Existing admin → optional; agar diye to wohi isi branch
-    // ke liye use honge, warna org/platform wale fallback ho jaate hain.
+    // SMTP + Cloudinary ab hamesha OPTIONAL hain — chahe new admin bane ya
+    // existing. Credentials branch (school) level par set hote hain, admin par
+    // nahi. Existing admin mode me jo categories provide nahi hui unhe admin ke
+    // home-branch/org se COPY kar ke nayi branch par LAGAA dete hain (inherit),
+    // warna nayi branch khaali reh kar silent fallback par chali jaati hai.
     const hasSmtp = !!(smtp?.host && smtp?.username);
     const hasCloud = !!(cloudinary?.cloudName && cloudinary?.apiKey);
-    if (!existingAdminEmail && (!hasSmtp || !hasCloud)) {
-      throw ApiError.badRequestError(
-        "SMTP and Cloudinary credentials are required when creating a new branch admin."
-      );
-    }
 
     const school = await schoolRepository.create({
       name,
@@ -171,6 +168,56 @@ class SchoolService {
     let cloudinarySetting = null;
     if (hasCloud) {
       cloudinarySetting = await storageSettingsService.provision(organizationId, cloudinary, school.id);
+    }
+
+    // ── Existing-admin mode: unprovided credentials ko INHERIT karo ────────
+    // Agar admin ne SMTP/Cloudinary khud nahi diye, to nayi branch unhe us
+    // admin ke "effective scope" se copy kar leti hai — pehle uske home branch
+    // ki rows, warna org-default ki. Isse nayi branch kabhi khaali nahi rehti
+    // aur same credentials par shuru hoti hai; baad me admin har branch ki
+    // settings alag edit kar sakta hai (branch-settings screen se).
+    if (existingAdmin) {
+      const sourceScope = existingAdmin.schoolId || null;
+      const sourceRows = sourceScope
+        ? await prisma.orgSecrets.findMany({
+            where: { organizationId, OR: [{ schoolId: sourceScope }, { schoolId: null }] },
+          })
+        : await prisma.orgSecrets.findMany({ where: { organizationId, schoolId: null } });
+
+      const providedSecondary = !!(smtp?.secondary?.host && smtp?.secondary?.username);
+      const maskSecret = (r) => {
+        const d = r.data || {};
+        return {
+          ...(r.category === "SMTP"
+            ? { host: d.host, port: d.port, secure: d.secure, username: d.username, fromName: d.fromName, dailyLimit: d.dailyLimit }
+            : { provider: d.provider, cloudName: d.cloudName, apiKey: d.apiKey }),
+          id: r.id, organizationId: r.organizationId, schoolId: r.schoolId, tier: r.tier,
+          isVerified: r.isVerified, lastVerifiedAt: r.lastVerifiedAt, lastError: r.lastError,
+        };
+      };
+
+      for (const row of sourceRows) {
+        if (row.category === "SMTP") {
+          if ((row.tier === "PRIMARY" && hasSmtp) || (row.tier === "SECONDARY" && providedSecondary)) continue;
+        } else if (row.category === "CLOUDINARY" && hasCloud) {
+          continue;
+        }
+        const exists = await prisma.orgSecrets.findFirst({
+          where: { organizationId, schoolId: school.id, category: row.category, tier: row.tier },
+        });
+        if (exists) continue;
+        const copy = await prisma.orgSecrets.create({
+          data: {
+            organizationId, schoolId: school.id, category: row.category, tier: row.tier,
+            data: row.data, isVerified: row.isVerified, lastVerifiedAt: row.lastVerifiedAt, lastError: row.lastError,
+          },
+        });
+        if (row.category === "SMTP" && !smtpSetting && copy.tier === "PRIMARY") {
+          smtpSetting = maskSecret(copy);
+        } else if (row.category === "CLOUDINARY" && !cloudinarySetting) {
+          cloudinarySetting = maskSecret(copy);
+        }
+      }
     }
 
     emitToRoom("super_admins", "school_created", { schoolId: school.id, name: school.name, organizationId });
@@ -226,34 +273,57 @@ class SchoolService {
     return { school, admin: created.user, adminCredentials: created.credentials, smtpSetting, cloudinarySetting };
   }
 
-  async getById(id) {
+  async getById(id, requester = null) {
     const cacheKey = `school:${id}`;
+    let shaped;
     try {
       const cached = await redis.get(cacheKey);
-      if (cached) return JSON.parse(cached);
+      if (cached) shaped = JSON.parse(cached);
     } catch (err) {
       // Fall back to DB
     }
 
-    const school = await schoolRepository.findById(id);
-    if (!school) {
-      throw ApiError.notFoundError("School not found");
+    if (!shaped) {
+      const school = await schoolRepository.findById(id);
+      if (!school) {
+        throw ApiError.notFoundError("School not found");
+      }
+
+      // Rename the repository's `users` (branch ADMINs) to `admins` for the API.
+      const { users, ...rest } = school;
+      shaped = { ...rest, admins: users ?? [] };
+
+      try {
+        await redis.setEx(cacheKey, SCHOOL_CACHE_TTL, JSON.stringify(shaped));
+      } catch (err) {
+        // Non-blocking
+      }
     }
 
-    // Rename the repository's `users` (branch ADMINs) to `admins` for the API.
-    const { users, ...rest } = school;
-    const shaped = { ...rest, admins: users ?? [] };
-
-    try {
-      await redis.setEx(cacheKey, SCHOOL_CACHE_TTL, JSON.stringify(shaped));
-    } catch (err) {
-      // Non-blocking
-    }
-
+    // Cache hit par bhi scope check — warna branch admin doosri branch cached
+    // data padh leta (H6).
+    if (requester) this._assertCanViewSchool(requester, shaped);
     return shaped;
   }
 
-  async getAnalytics(schoolId) {
+  /**
+   * Read-scope: SUPER_ADMIN sab; warna same organization aur (branch-locked
+   * ADMIN ke liye) apni hi branch. Org-wide ADMIN (schoolId null) apni org ki
+   * koi bhi branch dekh sakta hai.
+   */
+  _assertCanViewSchool(requester, school) {
+    if (requester.role === "SUPER_ADMIN") return;
+    const sameOrg =
+      requester.organizationId && requester.organizationId === school.organizationId;
+    const branchOk = requester.schoolId ? requester.schoolId === school.id : true;
+    if (!sameOrg || !branchOk) {
+      throw ApiError.forbiddenError("You can only access schools within your own organization.");
+    }
+  }
+
+  async getAnalytics(schoolId, requester = null) {
+    // Analytics bhi branch-scoped hai — cross-branch read rok (H7).
+    if (requester) await this.getById(schoolId, requester);
     const cacheKey = `school:analytics:${schoolId}`;
     try {
       const cached = await redis.get(cacheKey);
@@ -513,13 +583,15 @@ class SchoolService {
    * When `schoolId` is provided, the upload overwrites the branch's existing
    * logo (same Cloudinary public_id) instead of creating a new file.
    */
-  async uploadLogo(buffer, schoolId, organizationId) {
+  async uploadLogo(buffer, schoolId, organizationId, requester = null) {
     if (!buffer || buffer.length === 0) {
       throw ApiError.badRequestError("Please upload an image file");
     }
     let existingUrl = null;
     if (schoolId) {
-      const school = await this.getById(schoolId);
+      // Cross-branch logo overwrite rok (H8) — scoped read bhi org/branch check
+      // karta hai.
+      const school = await this.getById(schoolId, requester);
       existingUrl = school.logoUrl || null;
     }
     const { url } = await storageService.uploadImage({ buffer, folder: "school-logos", existingUrl, organizationId, schoolId });
@@ -811,7 +883,9 @@ class SchoolService {
   }
 
   /** Settings UI ko batata hai ke custom password active hai ya default. */
-  async getPortalPasswordStatus(schoolId) {
+  async getPortalPasswordStatus(requester, schoolId) {
+    // Cross-branch status/schoolCode leak rok (H9) — siblings ki tarah scope check.
+    assertOwnSchool(requester, schoolId);
     const school = await prisma.school.findUnique({
       where: { id: schoolId },
       select: { id: true, code: true, portalPassword: true },

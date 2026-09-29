@@ -25,8 +25,9 @@ export function hasBranchCloud(v: BranchSecretsValues): boolean {
   return Boolean(v.cloudName?.trim() && v.cloudApiKey?.trim() && v.cloudApiSecret?.trim());
 }
 
-// New admin → SMTP + Cloudinary required (no previous account to inherit from).
-// Existing admin → optional; provided fields will be used as-is.
+// SMTP/Cloudinary ab DONO modes me optional hain. Existing admin mode me
+// backend unhe admin ke current branch/org se is nayi branch par copy (inherit)
+// kar deta hai. Pehle wale "required" koi rule nahi hai.
 export function branchCreatePayload(values: BranchFormValues, organizationId: string) {
   const existingEmail = values.existingAdminEmail?.trim();
   return {

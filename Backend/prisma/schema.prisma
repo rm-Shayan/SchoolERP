@@ -384,6 +384,7 @@ model User {
   teacherAssignments TeacherAssignment[]
   conductRemarks     ConductRemark[]
   refreshTokens      RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
   homeworkBroadcasts HomeworkBroadcast[]
   staffAttendances   StaffAttendance[]
   staffLeaveReviews  StaffAttendance[] @relation("StaffLeaveReviewer")
@@ -424,6 +425,28 @@ model OtpCode {
   createdAt   DateTime @default(now())
 
   @@index([identifier, otpType])
+}
+
+// Staff "forgot password" ka single-use reset token (M8).
+// Pehle flow me email sirf ek temporary password bhejta tha aur turant account
+// ka asli password overwrite kar deta tha — yaani koi bhi jo email address
+// jaanta tha (koi bhi jisne "forgot password" press kiya) victim ko lock out kar
+// sakta tha, aur victim ko apna original password pata nahi rehta. Ab email me
+// sirf link jata hai; password TAB badalta hai jab user token verify karke naya
+// password set karta hai.
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique // SHA-256 of the raw token — raw token kabhi store nahi hota
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Parent {
@@ -842,6 +865,11 @@ model FeeRecord {
   @@index([status, dueDate])
   @@index([dueDate])
   @@index([dueDate, status])
+  // Ek student ka ek due-date pe sirf EK voucher ho sakta hai. Bina is
+  // constraint ke `findExistingRecordsForDate` check aur bulk insert ke beech
+  // race ho sakta tha aur same month ka duplicate voucher ban jata tha (C6).
+  // `createFeeRecords` ka `skipDuplicates: true` isi par depend karta hai.
+  @@unique([studentId, dueDate])
 }
 
 model FeePayment {

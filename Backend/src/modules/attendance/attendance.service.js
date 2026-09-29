@@ -7,6 +7,7 @@ import notificationService from "../../services/notification.service.js";
 import portalNotificationService from "../notification/notification.portalService.js";
 import { buildMonthlyReport } from "./monthlyReport.js";
 import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
+import { assertSchoolAccess } from "../../lib/scope.js";
 
 class AttendanceService {
   /**
@@ -330,7 +331,13 @@ class AttendanceService {
     return { weeklyOff: clean };
   }
 
-async getStudentHistory(studentId, startDate, endDate) {
+async getStudentHistory(studentId, startDate, endDate, requester) {
+    // Cross-branch read rok: student ka school requester ke scope se match kare
+    // (H3). SUPER_ADMIN sirf tab pass hota hai jab wo org-wide ho.
+    const student = await attendanceRepository.findStudentSchoolId(studentId);
+    if (!student) throw ApiError.notFoundError("Student not found");
+    assertSchoolAccess(requester, student.schoolId);
+
     const key = `attendance:student-history:${studentId}:${startDate || ""}:${endDate || ""}`;
     const cached = await cacheGet(key);
     if (cached) return cached;
@@ -343,7 +350,11 @@ async getStudentHistory(studentId, startDate, endDate) {
     return result;
   }
 
-  async getStudentYearlySummaries(studentId) {
+  async getStudentYearlySummaries(studentId, requester) {
+    const student = await attendanceRepository.findStudentSchoolId(studentId);
+    if (!student) throw ApiError.notFoundError("Student not found");
+    assertSchoolAccess(requester, student.schoolId);
+
     const key = `attendance:student-yearly:${studentId}`;
     const cached = await cacheGet(key);
     if (cached) return cached;

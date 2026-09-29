@@ -6,6 +6,7 @@ import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
 
 class StaffLeaveService {
   async listAll(schoolId, { status, staffId, page = 1, limit = 20 } = {}) {
+    if (!schoolId) throw ApiError.badRequestError("schoolId is required");
     const key = `staff-leave:list:${schoolId}:${status || ""}:${staffId || ""}:${page}:${limit}`;
     const cached = await cacheGet(key);
     if (cached) return cached;

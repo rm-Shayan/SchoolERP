@@ -6,6 +6,7 @@ import {
   switchBranchSchema,
   logoutSchema,
   forgotPasswordSchema,
+  resetPasswordSchema,
   updateOwnProfileSchema,
   changePasswordSchema,
   createUserSchema,
@@ -114,13 +115,25 @@ router.post("/logout-all", authenticate, authController.logoutAllDevices);
 
 /**
  * POST /api/v1/auth/forgot-password
- * Self-service reset - temporary password emailed (public, rate-limited).
+ * Self-service reset - single-use reset LINK emailed (public, rate-limited).
+ * Password is NOT changed by this call.
  */
 router.post(
   "/forgot-password",
   sensitiveLimiter,
   validate(forgotPasswordSchema),
   authController.forgotPassword
+);
+
+/**
+ * POST /api/v1/auth/reset-password
+ * Consume the emailed reset token and set a new password (public, rate-limited).
+ */
+router.post(
+  "/reset-password",
+  sensitiveLimiter,
+  validate(resetPasswordSchema),
+  authController.resetPassword
 );
 
 /**

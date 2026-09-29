@@ -15,8 +15,6 @@ import { buildCsv } from "../../lib/utils/csv.js";
 import { buildExcelBuffer } from "../../lib/utils/excelExport.js";
 import { staffImportQueue } from "../../jobs/queues/staffImport.queue.js";
 import Logger from "../../lib/utils/logger.js";
-import smtpSettingsService from "../smtpSettings/smtpSettings.service.js";
-import storageSettingsService from "../storageSettings/storageSettings.service.js";
 import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
 
 const logger = new Logger("user-management-service");
@@ -221,23 +219,10 @@ class UserManagementService {
       }
     }
 
-    // ── SMTP settings provision for ADMIN ──
-    if (data.role === ROLES.ADMIN && data.smtp?.host && data.smtp?.username) {
-      try {
-        await smtpSettingsService.provision(organizationId, schoolId || null, data.smtp);
-      } catch (err) {
-        logger.warn(`SMTP provision failed for org ${organizationId}: ${err.message}`);
-      }
-    }
-
-    // ── Cloudinary settings provision for ADMIN ──
-    if (data.role === ROLES.ADMIN && data.cloudinary?.cloudName && data.cloudinary?.apiKey) {
-      try {
-        await storageSettingsService.provision(organizationId, data.cloudinary);
-      } catch (err) {
-        logger.warn(`Cloudinary provision failed for org ${organizationId}: ${err.message}`);
-      }
-    }
+    // NOTE: SMTP/Cloudinary AB admin (user) level par kabhi provision nahi hote.
+    // Credentials hamesha BRANCH (school) level par hote hain — admin create
+    // ya branch create me optional. Branch-create me existing-admin mode unhe
+    // branch par inherit kar leta hai; baad me branch-settings se edit hote hain.
 
     return UserResponseDTO.toDTO(newUser);
   }
@@ -552,8 +537,17 @@ class UserManagementService {
 
   _assertCanAccessUser(requester, target) {
     if (requester.role === ROLES.SUPER_ADMIN) return;
-    if (requester.role === ROLES.ADMIN && requester.organizationId === target.organizationId) return;
-    throw ApiError.forbiddenError("You cannot access this user account.");
+    if (requester.role !== ROLES.ADMIN) {
+      throw ApiError.forbiddenError("You cannot access this user account.");
+    }
+    if (requester.organizationId !== target.organizationId) {
+      throw ApiError.forbiddenError("You cannot access this user account.");
+    }
+    // Branch ADMIN sirf apni branch ke users manage kar sakta hai (H1). Org-wide
+    // ADMIN (schoolId null) organization ke andar sabko manage kar sakta hai.
+    if (requester.schoolId && requester.schoolId !== target.schoolId) {
+      throw ApiError.forbiddenError("You can only manage users within your own school branch.");
+    }
   }
 }
 

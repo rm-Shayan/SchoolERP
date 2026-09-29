@@ -84,6 +84,15 @@ export function buildLoginUrl({ orgSlug, schoolCode }) {
   return `${CLIENT_URL()}/login`;
 }
 
+/**
+ * Frontend page where the user consumes a forgot-password reset token and sets
+ * a new password. Separate from `buildLoginUrl` because the login URL already
+ * carries a query string (org/school branding), so a path cannot be appended.
+ */
+export function buildResetUrl() {
+  return `${CLIENT_URL()}/reset-password`;
+}
+
 function linkHtml(url, label) {
   return `<p>${label}: <a href="${url}" style="color:#4f46e5;">${url}</a></p>`;
 }

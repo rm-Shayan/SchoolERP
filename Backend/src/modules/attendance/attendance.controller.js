@@ -6,6 +6,7 @@ import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../audit/actions.js";
 import { runAttendanceAlertJob } from "../../jobs/cron/attendanceAlert.job.js";
 import ApiResponse from "../../lib/utils/ApiResponse.js";
 import ApiError from "../../lib/utils/ApiError.js";
+import { getEffectiveSchoolId } from "../../lib/scope.js";
 
 class AttendanceController {
   /**
@@ -14,7 +15,7 @@ class AttendanceController {
    */
   registerDevice = async (req, res, next) => {
     try {
-      const schoolId = req.user.schoolId || req.body.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.body.schoolId);
       if (!schoolId) {
         return next(ApiError.badRequestError("School ID is required to register a scan device"));
       }
@@ -34,7 +35,7 @@ class AttendanceController {
    */
   listDevices = async (req, res, next) => {
     try {
-      const schoolId = req.user.schoolId || req.query.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.query.schoolId);
       if (!schoolId) {
         return next(ApiError.badRequestError("School ID parameter is required"));
       }
@@ -97,7 +98,7 @@ class AttendanceController {
    */
   override = async (req, res, next) => {
     try {
-      const schoolId = req.user.schoolId || req.body.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.body.schoolId);
       if (!schoolId) {
         return next(ApiError.badRequestError("School ID is required for manual override"));
       }
@@ -117,7 +118,7 @@ class AttendanceController {
    */
   getDailyReport = async (req, res, next) => {
     try {
-      const schoolId = req.user.schoolId || req.query.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.query.schoolId);
       if (!schoolId) {
         return next(ApiError.badRequestError("School ID is required"));
       }
@@ -140,7 +141,8 @@ class AttendanceController {
       const history = await attendanceService.getStudentHistory(
         req.params.studentId,
         req.query.startDate,
-        req.query.endDate
+        req.query.endDate,
+        req.user
       );
       return res
         .status(200)
@@ -157,7 +159,8 @@ class AttendanceController {
   getStudentYearlySummaries = async (req, res, next) => {
     try {
       const summaries = await attendanceService.getStudentYearlySummaries(
-        req.params.studentId
+        req.params.studentId,
+        req.user
       );
       return res
         .status(200)
@@ -173,7 +176,7 @@ class AttendanceController {
    */
   markSectionBulkAttendance = async (req, res, next) => {
     try {
-      const schoolId = req.user.schoolId || req.body.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.body.schoolId);
       if (!schoolId) {
         return next(ApiError.badRequestError("School ID is required"));
       }
@@ -195,7 +198,7 @@ class AttendanceController {
    */
   bulkMark = async (req, res, next) => {
     try {
-      const schoolId = req.user?.schoolId || req.body.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.body.schoolId);
       if (!schoolId) {
         return next(ApiError.badRequestError("School ID is required"));
       }
@@ -239,7 +242,7 @@ class AttendanceController {
    */
   listStaff = async (req, res, next) => {
     try {
-      const schoolId = req.user.schoolId || req.query.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.query.schoolId);
       if (!schoolId) {
         return next(ApiError.badRequestError("School ID is required"));
       }
@@ -259,7 +262,7 @@ class AttendanceController {
    */
   getMonthlyReport = async (req, res, next) => {
     try {
-      const schoolId = req.user.schoolId || req.query.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.query.schoolId);
       if (!schoolId) {
         return next(ApiError.badRequestError("School ID is required"));
       }
@@ -279,7 +282,7 @@ class AttendanceController {
   // ─── OFF DAYS / HOLIDAYS ────────────────────────────────────────────────
   getOffDays = async (req, res, next) => {
     try {
-      const schoolId = req.user.schoolId || req.query.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.query.schoolId);
       if (!schoolId) return next(ApiError.badRequestError("School ID is required"));
       const offDays = await attendanceService.getOffDays(schoolId);
       return res.status(200).json(ApiResponse.ok("Off days fetched", offDays));
@@ -290,7 +293,7 @@ class AttendanceController {
 
   addOffDay = async (req, res, next) => {
     try {
-      const schoolId = req.user.schoolId || req.body.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.body.schoolId);
       if (!schoolId) return next(ApiError.badRequestError("School ID is required"));
       const { date, reason } = req.body;
       const result = await attendanceService.addOffDay(schoolId, date, reason);
@@ -302,7 +305,7 @@ class AttendanceController {
 
   removeOffDay = async (req, res, next) => {
     try {
-      const schoolId = req.user.schoolId || req.query.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.query.schoolId);
       if (!schoolId) return next(ApiError.badRequestError("School ID is required"));
       const result = await attendanceService.removeOffDay(schoolId, req.params.date);
       return res.status(200).json(ApiResponse.ok("Off day removed", result));
@@ -313,7 +316,7 @@ class AttendanceController {
 
   updateWeeklyOff = async (req, res, next) => {
     try {
-      const schoolId = req.user.schoolId || req.body.schoolId || req.query.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.body.schoolId || req.query.schoolId);
       if (!schoolId) return next(ApiError.badRequestError("School ID is required"));
       const result = await attendanceService.updateWeeklyOff(schoolId, req.body.weekdays);
       return res.status(200).json(ApiResponse.ok("Weekly off days updated", result));
@@ -352,7 +355,7 @@ class AttendanceController {
    */
   listPhantoms = async (req, res, next) => {
     try {
-      const schoolId = req.user.schoolId || req.query.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.query.schoolId);
       if (!schoolId) {
         return next(ApiError.badRequestError("School ID is required"));
       }
@@ -373,7 +376,7 @@ class AttendanceController {
    */
   cleanupPhantoms = async (req, res, next) => {
     try {
-      const schoolId = req.user.schoolId || req.body.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.body.schoolId);
       if (!schoolId) {
         return next(ApiError.badRequestError("School ID is required"));
       }
@@ -413,7 +416,7 @@ class AttendanceController {
   archiveAttendance = async (req, res, next) => {
     try {
       const { dateFrom, dateTo, yearLabel } = req.body;
-      const schoolId = req.user.schoolId || req.body.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.body.schoolId);
       if (!schoolId) return next(ApiError.badRequestError("School ID is required"));
       if (!dateFrom || !dateTo || !yearLabel) {
         return next(ApiError.badRequestError("dateFrom, dateTo, and yearLabel are required"));

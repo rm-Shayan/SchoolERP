@@ -1,14 +1,6 @@
 import api from './client';
 import type { ApiResponse, User } from '@/types';
 
-export interface SmtpPayload {
-  host: string; port: number; secure: boolean; username: string; password: string;
-}
-
-export interface CloudinaryPayload {
-  cloudName: string; apiKey: string; apiSecret: string;
-}
-
 export interface StaffCreatePayload {
   name: string;
   email: string;
@@ -21,9 +13,6 @@ export interface StaffCreatePayload {
   teacherClassId?: string;
   teacherSectionId?: string;
   teacherSubjectId?: string;
-  // Integration settings for ADMIN
-  smtp?: SmtpPayload;
-  cloudinary?: CloudinaryPayload;
 }
 
 export interface PaginatedResult<T> { items: T[]; total: number; page: number; pageSize: number; totalPages: number; }

@@ -7,31 +7,26 @@ interface BranchSecretsFieldsProps {
   values: BranchSecretsValues;
   errors: Partial<Record<keyof BranchSecretsValues, string>>;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  required: boolean;
 }
 
-export default function BranchSecretsFields({ values, errors, onChange, required }: BranchSecretsFieldsProps) {
+export default function BranchSecretsFields({ values, errors, onChange }: BranchSecretsFieldsProps) {
   return (
     <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
           SMTP & Cloudinary
         </h4>
-        {required ? (
-          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-            Required
-          </span>
-        ) : (
-          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
-            Optional
-          </span>
-        )}
+        <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+          Optional
+        </span>
       </div>
 
       <p className="text-xs text-gray-500">
-        {required
-          ? 'A new admin account is being created — there are no previous credentials to inherit, so SMTP and Cloudinary are required.'
-          : 'Leave empty to inherit SMTP and Cloudinary from the previous admin/organization. If provided, they will only apply to this branch.'}
+        Credentials branch ke saath associate hote hain — admin account ke saath
+        nahi. Sham khaali chhod dain: existing admin mode me is admin ke current
+        SMTP/Cloudinary is nayi branch par copy ho jate hain; new admin mode me
+        branch baad me Branch Settings se set ki ja sakti hai. Agar provided
+        hain to wo sirf isi branch par apply honge.
       </p>
 
       <div>
@@ -45,7 +40,6 @@ export default function BranchSecretsFields({ values, errors, onChange, required
             value={values.smtpUsername}
             onChange={onChange}
             error={errors.smtpUsername}
-            required={required}
           />
           <Input
             label="App Password"
@@ -55,7 +49,6 @@ export default function BranchSecretsFields({ values, errors, onChange, required
             value={values.smtpPassword}
             onChange={onChange}
             error={errors.smtpPassword}
-            required={required}
             autoComplete="new-password"
           />
         </div>
@@ -70,7 +63,6 @@ export default function BranchSecretsFields({ values, errors, onChange, required
           value={values.cloudName}
           onChange={onChange}
           error={errors.cloudName}
-          required={required}
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
           <Input
@@ -80,7 +72,6 @@ export default function BranchSecretsFields({ values, errors, onChange, required
             value={values.cloudApiKey}
             onChange={onChange}
             error={errors.cloudApiKey}
-            required={required}
           />
           <Input
             label="API Secret"
@@ -90,7 +81,6 @@ export default function BranchSecretsFields({ values, errors, onChange, required
             value={values.cloudApiSecret}
             onChange={onChange}
             error={errors.cloudApiSecret}
-            required={required}
             autoComplete="new-password"
           />
         </div>

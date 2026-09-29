@@ -13,8 +13,6 @@ export interface CreateUserValues {
   firstName: string; lastName: string; rollNumber: string;
   parentName: string; parentWhatsappNo: string; sectionId: string;
   teacherClassId: string; teacherSectionId: string; teacherSubjectId: string;
-  smtpUsername: string; smtpPassword: string;
-  cloudName: string; cloudApiKey: string; cloudApiSecret: string;
 }
 
 const INITIAL: CreateUserValues = {
@@ -22,7 +20,6 @@ const INITIAL: CreateUserValues = {
   organizationId: '', schoolId: '', firstName: '', lastName: '',
   rollNumber: '', parentName: '', parentWhatsappNo: '', sectionId: '',
   teacherClassId: '', teacherSectionId: '', teacherSubjectId: '',
-  smtpUsername: '', smtpPassword: '', cloudName: '', cloudApiKey: '', cloudApiSecret: '',
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -34,14 +31,6 @@ function validateFields(role: string, v: CreateUserValues): Record<string, strin
   if (!v.name?.trim()) e.name = 'Name is required';
   if (!v.email?.trim()) e.email = 'Email is required';
   else if (!EMAIL_RE.test(v.email.trim())) e.email = 'Enter a valid email';
-  if (role === 'ADMIN') {
-    if (!v.smtpUsername?.trim()) e.smtpUsername = 'SMTP email is required';
-    else if (!EMAIL_RE.test(v.smtpUsername.trim())) e.smtpUsername = 'Enter a valid email';
-    if (!v.smtpPassword?.trim()) e.smtpPassword = 'App Password is required';
-    if (!v.cloudName?.trim()) e.cloudName = 'Cloud Name is required';
-    if (!v.cloudApiKey?.trim()) e.cloudApiKey = 'API Key is required';
-    if (!v.cloudApiSecret?.trim()) e.cloudApiSecret = 'API Secret is required';
-  }
   if (role === 'TEACHER') { if (!v.schoolId) e.schoolId = 'Branch is required'; if (!v.teacherClassId) e.teacherClassId = 'Class is required'; }
   return e;
 }
@@ -81,12 +70,6 @@ export function useCreateUserForm(onCreated: () => void) {
             organizationId: v.organizationId || undefined, schoolId: v.schoolId || undefined,
           };
           if (role === 'TEACHER') { payload.teacherClassId = v.teacherClassId || undefined; payload.teacherSectionId = v.teacherSectionId || undefined; payload.teacherSubjectId = v.teacherSubjectId || undefined; }
-          if (role === 'ADMIN') {
-            const su = v.smtpUsername?.trim(); const sp = v.smtpPassword?.replace(/\s+/g, '');
-            if (su && sp) payload.smtp = { host: 'smtp.gmail.com', port: 587, secure: false, username: su.toLowerCase(), password: sp };
-            const cn = v.cloudName?.trim(); const ck = v.cloudApiKey?.trim(); const cs = v.cloudApiSecret?.trim();
-            if (cn && ck && cs) payload.cloudinary = { cloudName: cn, apiKey: ck, apiSecret: cs };
-          }
           await staffService.create(payload as any);
           toast.success('Staff account created — credentials will be emailed');
         }

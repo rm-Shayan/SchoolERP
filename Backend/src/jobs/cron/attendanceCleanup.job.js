@@ -77,13 +77,24 @@ export async function runAttendanceCleanupJob() {
       const rows = [...map.values()];
 
       if (rows.length > 0) {
-        await prisma.attendanceYearSummary.deleteMany({
-          where: { studentId: { in: rows.map((r) => r.studentId) }, yearLabel: year.name },
-        });
-        await prisma.attendanceYearSummary.createMany({ data: rows });
+        // Summary roll-up aur raw delete ek hi transaction mein — warna beech
+        // mein fail hone par summary aur raw data out-of-sync ho sakte hain
+        // (H10, non-atomic archive).
+        const [, , removed] = await prisma.$transaction([
+          prisma.attendanceYearSummary.deleteMany({
+            where: { studentId: { in: rows.map((r) => r.studentId) }, yearLabel: year.name },
+          }),
+          prisma.attendanceYearSummary.createMany({ data: rows }),
+          prisma.attendanceRecord.deleteMany({
+            where: { date: range, student: { schoolId: year.schoolId } },
+          }),
+        ]);
         totalStudents += rows.length;
         touchedYears += 1;
+        totalRecordsDeleted += removed.count;
         logger.logger.info(`[AttendanceCleanup] Year "${year.name}" (${year.schoolId}) → ${rows.length} students summarized`);
+        logger.logger.info(`[AttendanceCleanup]   raw records removed: ${removed.count}`);
+        continue;
       }
 
       const deleted = await prisma.attendanceRecord.deleteMany({
@@ -91,7 +102,7 @@ export async function runAttendanceCleanupJob() {
       });
       totalRecordsDeleted += deleted.count;
 
-      if (rows.length > 0 || deleted.count > 0) {
+      if (deleted.count > 0) {
         logger.logger.info(`[AttendanceCleanup]   raw records removed: ${deleted.count}`);
       }
     }
