@@ -167,7 +167,12 @@ class TimetableService {
     if (!section) throw ApiError.notFoundError("Section not found");
     assertOwnSchool(user, section.class.schoolId);
 
-    const workbook = xlsx.read(fileBuffer, { type: "buffer" });
+    let workbook;
+    try {
+      workbook = xlsx.read(fileBuffer, { type: "buffer" });
+    } catch {
+      throw ApiError.badRequestError("Invalid or corrupted Excel file");
+    }
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
 

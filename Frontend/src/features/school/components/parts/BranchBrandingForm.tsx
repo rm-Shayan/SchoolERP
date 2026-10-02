@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { ThemeColorPicker } from './ThemeColorPicker';
 import { LogoUpload } from './LogoUpload';
 import { buildPrimaryScale } from '@/lib/theme';
+import { useStagedImage } from './useStagedImage';
 
 export default function BranchBrandingForm() {
   const dispatch = useAppDispatch();
@@ -18,36 +19,45 @@ export default function BranchBrandingForm() {
   const [uploading, setUploading] = useState(false);
   const [themeColor, setThemeColor] = useState(school?.themeColor ?? organization?.themeColor ?? '');
   const [logoUrl, setLogoUrl] = useState(school?.logoUrl ?? '');
+  // File select pe sirf stage + local preview; upload "Save Branding" par fire hota hai.
+  const { pendingFile, previewUrl, stage, clear } = useStagedImage();
   // Show organization logo as default when branch has no logo (same as sidebar)
-  const displayLogo = logoUrl || organization?.logoUrl || '';
+  const displayLogo = previewUrl || logoUrl || organization?.logoUrl || '';
 
   if (!school) return null;
 
-  const handleLogo = async (file: File) => {
-    setUploading(true);
-    try {
-      const { url } = await schoolService.uploadLogo(file, school.id);
-      setLogoUrl(url);
-      toast.success('Logo uploaded — press Save to apply');
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Failed to upload logo');
-    } finally {
-      setUploading(false);
-    }
+  const handleLogo = (file: File | null) => stage(file);
+
+  const handleRemove = () => {
+    clear();
+    setLogoUrl('');
+  };
+
+  const handleUrlSave = (url: string) => {
+    clear();
+    setLogoUrl(url);
   };
 
   const handleSave = async () => {
     setSaving(true);
+    if (pendingFile) setUploading(true);
     try {
+      let finalLogoUrl = logoUrl;
+      if (pendingFile) {
+        const { url } = await schoolService.uploadLogo(pendingFile, school.id);
+        finalLogoUrl = url;
+      }
       const updated = await schoolService.update(school.id, {
-        logoUrl: logoUrl || null,
+        logoUrl: finalLogoUrl || null,
         themeColor: themeColor || null,
       });
+      clear();
       dispatch(setActiveSchool(updated));
       toast.success('Branch branding updated');
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Failed to update branding');
     } finally {
+      setUploading(false);
       setSaving(false);
     }
   };
@@ -89,12 +99,15 @@ export default function BranchBrandingForm() {
       <LogoUpload
         logoUrl={displayLogo}
         name={school.name || 'Branch'}
-        uploading={uploading}
+        uploading={uploading || saving}
         fileRef={fileRef}
-        onChange={(file) => file && handleLogo(file)}
-        onRemove={() => setLogoUrl('')}
-        onUrlSave={(url) => setLogoUrl(url)}
+        onChange={handleLogo}
+        onRemove={handleRemove}
+        onUrlSave={handleUrlSave}
       />
+      {pendingFile && (
+        <p className="text-xs text-amber-600">Logo staged — click &ldquo;Save Branding&rdquo; to upload and apply.</p>
+      )}
 
       {/* Theme Color */}
       <div className="space-y-3">

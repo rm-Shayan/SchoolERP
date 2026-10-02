@@ -141,6 +141,9 @@ class StaffAttendanceService {
    */
   async bulkMark(schoolId, { date, records }) {
     // records = [{ staffId, status, remarks?, checkIn? }]
+    if (!Array.isArray(records) || records.length === 0) {
+      throw ApiError.badRequestError("records array is required");
+    }
     const day = new Date(date || new Date());
     day.setHours(0, 0, 0, 0);
 
@@ -255,7 +258,12 @@ class StaffAttendanceService {
    * Expected columns: Staff Name or Email (to match), Date, Status, Remarks (optional)
    */
   async importAttendance(schoolId, fileBuffer) {
-    const workbook = xlsx.read(fileBuffer, { type: "buffer" });
+    let workbook;
+    try {
+      workbook = xlsx.read(fileBuffer, { type: "buffer" });
+    } catch {
+      throw ApiError.badRequestError("Invalid or corrupted Excel file");
+    }
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rawRows = xlsx.utils.sheet_to_json(sheet);
 

@@ -26,7 +26,12 @@ const CREATABLE_ROLES_BY = {
 
 class UserManagementService {
   async importStaffExcel(fileBuffer, requester) {
-    const workbook = xlsx.read(fileBuffer, { type: "buffer" });
+    let workbook;
+    try {
+      workbook = xlsx.read(fileBuffer, { type: "buffer" });
+    } catch {
+      throw ApiError.badRequestError("Invalid or corrupted Excel file");
+    }
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
     const rawRows = xlsx.utils.sheet_to_json(sheet);
@@ -341,10 +346,15 @@ class UserManagementService {
       created++;
       const klass = classes[i];
       if (s.role === ROLES.TEACHER && klass) {
-        await prisma.teacherAssignment.upsert({
-          where: { teacherId_classId_subjectId_sectionId: { teacherId: user.id, classId: klass.id, subjectId: null, sectionId: null } },
-          update: {}, create: { teacherId: user.id, classId: klass.id, subjectId: null, sectionId: null },
+        const existing = await prisma.teacherAssignment.findFirst({
+          where: { teacherId: user.id, classId: klass.id, subjectId: null, sectionId: null },
+          select: { id: true },
         });
+        if (!existing) {
+          await prisma.teacherAssignment.create({
+            data: { teacherId: user.id, classId: klass.id, subjectId: null, sectionId: null },
+          });
+        }
       }
       results.push({ name: user.name, email: user.email, username, role: user.role, classTeacher: klass?.name || null });
     }

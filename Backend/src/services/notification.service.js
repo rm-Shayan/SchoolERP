@@ -14,6 +14,11 @@ const logger = new Logger("notification-service");
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
 
 const EMAIL_LOGO_CACHE = new Map();
+
+// Bulk email latency guards: har send time-bounded, aur recipients ek saath
+// (batch) bhejte hain — 300 parents = 300 × SMTP RTT nahi.
+const BULK_EMAIL_CONCURRENCY = 5;
+const BULK_EMAIL_TIMEOUT_MS = 5000;
 // School data cache for circular notifications — avoids N+1 DB lookups
 // when sending emails to many parents/staff of the same school.
 const SCHOOL_CACHE = new Map();
@@ -177,7 +182,9 @@ class NotificationService {
       } catch (err) {
         logger.logger.warn(`[Notification] Branded email render failed (fallback plain): ${err.message}`);
       }
-      const result = await queueEmail({ to, subject: title, text, html, attachments, schoolId: schoolId || undefined, organizationId, allowPlatformFallback: false });
+      // Latency bound: ek attempt, max 5s. Slow SMTP par outbox me persist ho
+      // jata hai aur cron deliver karta hai — request turant return hota hai.
+      const result = await queueEmail({ to, subject: title, text, html, attachments, schoolId: schoolId || undefined, organizationId, allowPlatformFallback: false }, 1, 5000);
 
       // Outbox honesty: agar Gmail daily limit lag gayi to email drop NAHI
       // hui — PendingEmail me persist hui hai aur cron retry karega. Log
@@ -264,19 +271,27 @@ class NotificationService {
   }
 
   /**
-   * Bulk parent email dispatch — sends branded emails to many parents WITHOUT
+ * Bulk parent email dispatch — sends branded emails to many parents WITHOUT
    * creating an individual NotificationLog per recipient. Instead creates ONE
    * summary log so the admin panel stays clean (e.g. "300 parent emails sent").
+   *
+   * Latency: recipients CONCURRENTLY (max BULK_EMAIL_CONCURRENCY per batch)
+   * aur har send time-bounded — 300 parents = 300 × RTT nahi.
    */
   async sendBulkParentEmails(schoolId, title, message, recipients) {
     const emailed = new Set();
     let sent = 0;
     let failed = 0;
 
+    const targets = [];
     for (const r of recipients) {
       const email = r.email?.trim().toLowerCase();
       if (!email || !EMAIL_RE.test(email) || emailed.has(email)) continue;
       emailed.add(email);
+      targets.push(email);
+    }
+
+    const deliverOne = async (email) => {
       try {
         let school = null;
         let html = `<h3>${title}</h3><p>${message.replace(/\n/g, "<br/>")}</p>`;
@@ -288,9 +303,18 @@ class NotificationService {
             logoUrl, themeColor: school?.organization?.themeColor || "#00236f", title, message,
           });
         } catch { /* plain fallback */ }
-        await queueEmail({ to: email, subject: title, text: message, html, schoolId, organizationId: school?.organizationId, allowPlatformFallback: false });
-        sent++;
-      } catch { failed++; }
+        await queueEmail({ to: email, subject: title, text: message, html, schoolId, organizationId: school?.organizationId, allowPlatformFallback: false }, 1, BULK_EMAIL_TIMEOUT_MS);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    for (let i = 0; i < targets.length; i += BULK_EMAIL_CONCURRENCY) {
+      const batch = targets.slice(i, i + BULK_EMAIL_CONCURRENCY);
+      const results = await Promise.all(batch.map(deliverOne));
+      sent += results.filter(Boolean).length;
+      failed += results.length - results.filter(Boolean).length;
     }
 
     // ONE summary log for admin panel
@@ -315,24 +339,38 @@ class NotificationService {
     let sent = 0;
     let failed = 0;
 
+    const targets = [];
     for (const r of recipients) {
       const email = r.email?.trim().toLowerCase();
       if (!email || !EMAIL_RE.test(email) || emailed.has(email)) continue;
       emailed.add(email);
+      targets.push({ email, message: r.message });
+    }
+
+    const deliverOne = async ({ email, message: msg }) => {
       try {
         let school = null;
-        let html = `<h3>${title}</h3><p>${r.message.replace(/\n/g, "<br/>")}</p>`;
+        let html = `<h3>${title}</h3><p>${msg.replace(/\n/g, "<br/>")}</p>`;
         try {
           school = await getCachedSchool(schoolId);
           const logoUrl = await this._resolveEmailLogo(school?.logoUrl || school?.organization?.logoUrl || undefined, school?.organizationId);
           html = parentNotificationEmail({
             schoolName: school?.name || "School", orgName: school?.organization?.name || undefined,
-            logoUrl, themeColor: school?.organization?.themeColor || "#00236f", title, message: r.message,
+            logoUrl, themeColor: school?.organization?.themeColor || "#00236f", title, message: msg,
           });
         } catch { /* plain fallback */ }
-        await queueEmail({ to: email, subject: title, text: r.message, html, schoolId, organizationId: school?.organizationId, allowPlatformFallback: false });
-        sent++;
-      } catch { failed++; }
+        await queueEmail({ to: email, subject: title, text: msg, html, schoolId, organizationId: school?.organizationId, allowPlatformFallback: false }, 1, BULK_EMAIL_TIMEOUT_MS);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    for (let i = 0; i < targets.length; i += BULK_EMAIL_CONCURRENCY) {
+      const batch = targets.slice(i, i + BULK_EMAIL_CONCURRENCY);
+      const results = await Promise.all(batch.map(deliverOne));
+      sent += results.filter(Boolean).length;
+      failed += results.length - results.filter(Boolean).length;
     }
 
     if (schoolId) {

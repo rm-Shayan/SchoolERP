@@ -10,24 +10,25 @@ export function BranchProfileForm() {
   const {
     school, fileRef, saving, uploading,
     name, setName, address, setAddress, phone, setPhone,
-    logoUrl, setLogoUrl, times, setTimes, handleLogo, handleSave,
+    displayLogo, times, setTimes, handleLogo, handleRemoveLogo, hasPendingLogo, handleSave,
     bankName, setBankName, bankAccountTitle, setBankAccountTitle, bankAccountNumber, setBankAccountNumber,
   } = useBranchProfile();
 
   if (!school) return null;
-  // Show organization logo as default when branch has no logo
-  const displayLogo = logoUrl || school.logoUrl || '';
 
   return (
     <div className="max-w-3xl space-y-6">
       <LogoUpload
         logoUrl={displayLogo}
         name={name || 'Branch'}
-        uploading={uploading}
+        uploading={uploading || saving}
         fileRef={fileRef}
         onChange={(file) => file && handleLogo(file)}
-        onRemove={() => setLogoUrl('')}
+        onRemove={handleRemoveLogo}
       />
+      {hasPendingLogo && (
+        <p className="text-xs text-amber-600">Logo staged — click &ldquo;Save Changes&rdquo; to upload and apply.</p>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input label="Branch Name" value={name} onChange={(e) => setName(e.target.value)} />
         <Input label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />

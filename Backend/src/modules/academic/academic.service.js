@@ -101,7 +101,7 @@ class AcademicService {
     const examCount = history.terms.reduce((sum, t) => sum + t._count.exams, 0);
     if (
       history._count.terms > 0 ||
-      history._count.promotionRecords > 0 ||
+      history._count.promotions > 0 ||
       history._count.feeStructures > 0 ||
       examCount > 0
     ) {

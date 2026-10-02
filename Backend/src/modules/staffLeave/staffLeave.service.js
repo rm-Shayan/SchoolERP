@@ -85,6 +85,11 @@ class StaffLeaveService {
   }
 
   async create(schoolId, { staffId, dateFrom, dateTo, leaveType, reason, status = "PENDING_LEAVE" }, adminId) {
+    // staffId missing/invalid pe Prisma `id: undefined` filter ignore karke
+    // pehla user la deta tha aur create 500 fail hota tha — pehle guard karo.
+    if (!staffId || !dateFrom || !dateTo) {
+      throw ApiError.badRequestError("staffId, dateFrom and dateTo are required");
+    }
     const staff = await prisma.user.findFirst({
       where: { id: staffId, schoolId, isActive: true },
       select: { id: true, name: true },

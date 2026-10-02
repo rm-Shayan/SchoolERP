@@ -800,7 +800,12 @@ class OrganizationService {
    * Parse an uploaded Excel file and queue a bulk import job.
    */
   async importExcel(fileBuffer, requester) {
-    const workbook = xlsx.read(fileBuffer, { type: "buffer" });
+    let workbook;
+    try {
+      workbook = xlsx.read(fileBuffer, { type: "buffer" });
+    } catch {
+      throw ApiError.badRequestError("Invalid or corrupted Excel file");
+    }
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
 

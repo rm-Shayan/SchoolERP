@@ -83,7 +83,9 @@ class AttendanceService {
 
     // 3. Fire-and-forget late alert — only if this is a new check-in (no existing check-in time)
     // This is queued via a background function so the API response completes instantly.
-    if (!result.existingRecord.checkIn) {
+    // Day ka first scan: `existingRecord` null hota hai (record abhi create hua)
+    // — optional chaining zaroori, warna pehle scan pe 500.
+    if (!result.existingRecord?.checkIn) {
       const cutoffTimeStr = student.school?.attendanceCutoffTime || "08:30";
       const [cutH, cutM] = cutoffTimeStr.split(":").map(Number);
       const scanMinutes = scanTime.getHours() * 60 + scanTime.getMinutes();

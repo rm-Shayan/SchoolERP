@@ -11,6 +11,7 @@ import { emitToRoom } from "../../config/websocket.js";
 import { buildCsv } from "../../lib/utils/csv.js";
 import prisma from "../../config/db.js";
 import { assertSectionHasSeat, assertSectionHasSeats } from "../../lib/capacity.js";
+import portalNotificationService from "../notification/notification.portalService.js";
 import { cacheGet, cacheSet, cacheInvalidatePrefix } from "../../lib/utils/cache.js";
 
 const LIFECYCLE_STATUS = {

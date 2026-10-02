@@ -127,6 +127,16 @@ export const studentImportWorker = new Worker(
     logger.logger.info(
       `Student Import Job ${job.id} done. Success: ${successCount}, Skipped: ${skipCount}, Failed: ${errors.length}`
     );
+    // Guard-rejected rows (missing roll no. / section / WhatsApp) bypass the
+    // catch block, so unlogged the server pe reason invisible rehta tha.
+    if (errors.length) {
+      logger.logger.warn(
+        `Student Import Job ${job.id} rejected rows: ${errors
+          .slice(0, 10)
+          .map((e) => `row ${e.row} — ${e.error}`)
+          .join(" | ")}`
+      );
+    }
     return { successCount, skipCount, failedCount: errors.length, errors };
   },
   {

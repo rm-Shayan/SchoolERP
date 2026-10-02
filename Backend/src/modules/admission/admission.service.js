@@ -273,7 +273,12 @@ class AdmissionService {
     const targetSchoolId = getEffectiveSchoolId(user, schoolId);
     assertOwnSchool(user, targetSchoolId);
 
-    const workbook = xlsx.read(fileBuffer, { type: "buffer" });
+    let workbook;
+    try {
+      workbook = xlsx.read(fileBuffer, { type: "buffer" });
+    } catch {
+      throw ApiError.badRequestError("Invalid or corrupted Excel file");
+    }
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
 

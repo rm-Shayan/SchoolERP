@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { schoolService } from '@/lib/api';
 import { setActiveSchool } from '@/store/slices/authSlice';
 import { validateAttendanceOrder } from './attendanceTimeSlots';
+import { useStagedImage } from './useStagedImage';
 
 /**
  * Branch profile form state and logic.
@@ -61,18 +62,14 @@ export function useBranchProfile() {
     return () => { cancelled = true; };
   }, [school?.id]);
 
-  const handleLogo = async (file: File) => {
-    if (!school?.id) return;
-    setUploading(true);
-    try {
-      const { url } = await schoolService.uploadLogo(file, school.id);
-      setLogoUrl(url);
-      toast.success('Logo uploaded — press Save to apply');
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Failed to upload logo');
-    } finally {
-      setUploading(false);
-    }
+  // File select pe sirf stage + local preview; upload "Save Changes" click par.
+  const { pendingFile: pendingLogo, previewUrl, stage, clear } = useStagedImage();
+
+  const handleLogo = (file: File) => stage(file);
+
+  const handleRemoveLogo = () => {
+    clear();
+    setLogoUrl('');
   };
 
   const handleSave = async () => {
@@ -82,22 +79,30 @@ export function useBranchProfile() {
     if (timeError) { toast.error(timeError); return; }
 
     setSaving(true);
+    if (pendingLogo) setUploading(true);
     try {
+      let finalLogoUrl = logoUrl;
+      if (pendingLogo) {
+        const { url } = await schoolService.uploadLogo(pendingLogo, school.id);
+        finalLogoUrl = url;
+      }
       const updated = await schoolService.update(school.id, {
         name: name.trim(),
         address: address.trim() || undefined,
         phone: phone.trim() || undefined,
-        logoUrl: logoUrl || null,
+        logoUrl: finalLogoUrl || null,
         ...times,
         bankName: bankName.trim() || null,
         bankAccountTitle: bankAccountTitle.trim() || null,
         bankAccountNumber: bankAccountNumber.trim() || null,
       });
+      clear();
       dispatch(setActiveSchool(updated));
       toast.success('Branch profile updated');
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Failed to update branch');
     } finally {
+      setUploading(false);
       setSaving(false);
     }
   };
@@ -105,8 +110,8 @@ export function useBranchProfile() {
   return {
     school, fileRef, saving, uploading,
     name, setName, address, setAddress, phone, setPhone, logoUrl, setLogoUrl,
-    times, setTimes, handleLogo, handleSave,
+    times, setTimes, handleLogo, handleRemoveLogo, hasPendingLogo: !!pendingLogo, handleSave,
     bankName, setBankName, bankAccountTitle, setBankAccountTitle, bankAccountNumber, setBankAccountNumber,
-    displayLogo: logoUrl || '',
+    displayLogo: previewUrl || logoUrl || '',
   };
 }

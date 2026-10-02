@@ -106,14 +106,32 @@ async function persistPending({ emailData, error, cooldownMs }) {
  * me PERSIST hoti hai (drop nahi), cron auto-retry karta hai.
  *
  * Never throws — callers can safely `await queueEmail(...)` in their flows.
+ *
+ * `timeoutMs`: request latency bound. Slow/hanging SMTP handshake par outbox me
+ * persist karke cron ko chhod deta hai (jaldi 18s responses the).
  */
-export const queueEmail = async (emailData, attempts = 3) => {
+export const queueEmail = async (emailData, attempts = 3, timeoutMs = 0) => {
   const { organizationId, schoolId, priority = "NORMAL", ...mail } = emailData;
+
+  const attemptSend = async () => {
+    if (!timeoutMs) return sendEmail({ ...mail, organizationId, schoolId });
+    let timer;
+    try {
+      return await Promise.race([
+        sendEmail({ ...mail, organizationId, schoolId }),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`SMTP timeout after ${timeoutMs}ms`)), timeoutMs);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
 
   let lastErr = null;
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
-      const info = await sendEmail({ ...mail, organizationId, schoolId });
+      const info = await attemptSend();
       const attachNote = mail.attachments?.length
         ? ` | attachments: ${mail.attachments.map((a) => a.filename).join(", ")}`
         : "";

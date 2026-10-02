@@ -240,6 +240,23 @@ class StorageService {
     return mod.v2;
   }
 
+  /**
+   * Cloudinary ke auth/config rejections (401/403 "Invalid Signature", bad
+   * cloud_name) ko raw 500 ki jagah clear client error me convert karo —
+   * tenant ke stored credentials hi galat hote hain, request galat nahi.
+   * Real network/transient failures `_retryTransient` ke baad rethrow hote hain.
+   */
+  _assertCloudinaryUsable(err) {
+    const msg = `${err?.message || ""} ${typeof err?.error === "string" ? err.error : (err?.error?.message || "")}`;
+    if (err?.http_code === 400 || err?.http_code === 401 || err?.http_code === 403) {
+      logger.logger.error(`[Storage] Cloudinary rejected upload: ${msg.trim()}`);
+      throw new Error(
+        "File storage provider rejected the upload - check this school's storage settings (Cloudinary API key/secret)"
+      );
+    }
+    throw err;
+  }
+
   async _uploadToCloudinary(buffer, folder, format = "jpeg", width = IMAGE_MAX_DIMENSION, height = IMAGE_MAX_DIMENSION, existingUrl, tenantOpts = null) {
     const mime = { jpeg: "image/jpeg", png: "image/png", webp: "image/webp" }[format] || "image/jpeg";
     const options = {
@@ -268,14 +285,19 @@ class StorageService {
       options.folder = targetFolder;
     }
 
-    const result = await this._retryTransient(() =>
-      this._getCloudinaryClient().then((client) =>
-        client.uploader.upload(
-          `data:${mime};base64,${buffer.toString("base64")}`,
-          options
+    let result;
+    try {
+      result = await this._retryTransient(() =>
+        this._getCloudinaryClient().then((client) =>
+          client.uploader.upload(
+            `data:${mime};base64,${buffer.toString("base64")}`,
+            options
+          )
         )
-      )
-    );
+      );
+    } catch (err) {
+      this._assertCloudinaryUsable(err);
+    }
     return { url: result.secure_url, publicId: result.public_id, overwritten: Boolean(options.public_id) };
   }
 
@@ -424,17 +446,22 @@ class StorageService {
 
   async _uploadDocumentToCloudinary(buffer, folder, filename, tenantOpts = null) {
     const safeFolder = folder.replace(/[^a-z0-9-_]/gi, "");
-    const result = await this._retryTransient(() =>
-      this._getCloudinaryClient().then((client) =>
-        client.uploader.upload(`data:application/octet-stream;base64,${buffer.toString("base64")}`, {
-          ...(tenantOpts || {}),
-          folder: `school-erp/${safeFolder}`,
-          resource_type: "auto", // PDFs + images dono
-          use_filename: true,
-          unique_filename: true,
-        })
-      )
-    );
+    let result;
+    try {
+      result = await this._retryTransient(() =>
+        this._getCloudinaryClient().then((client) =>
+          client.uploader.upload(`data:application/octet-stream;base64,${buffer.toString("base64")}`, {
+            ...(tenantOpts || {}),
+            folder: `school-erp/${safeFolder}`,
+            resource_type: "auto", // PDFs + images dono
+            use_filename: true,
+            unique_filename: true,
+          })
+        )
+      );
+    } catch (err) {
+      this._assertCloudinaryUsable(err);
+    }
     return { url: result.secure_url, publicId: result.public_id };
   }
 

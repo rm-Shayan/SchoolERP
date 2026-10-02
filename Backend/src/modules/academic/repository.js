@@ -34,7 +34,7 @@ class AcademicRepository {
       where: { id },
       select: {
         _count: {
-          select: { terms: true, promotionRecords: true, feeStructures: true },
+          select: { terms: true, promotions: true, feeStructures: true },
         },
         terms: { select: { _count: { select: { exams: true } } } },
       },

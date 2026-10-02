@@ -43,9 +43,16 @@ class TeachingAssignmentRepository {
     });
 
     if (existing) {
-      return prisma.teacherAssignment.update({ where: { id: existing.id }, data });
+      return prisma.teacherAssignment.update({
+        where: { id: existing.id },
+        data,
+        include: { class: true, section: true, subject: true },
+      });
     }
-    return prisma.teacherAssignment.create({ data });
+    return prisma.teacherAssignment.create({
+      data,
+      include: { class: true, section: true, subject: true },
+    });
   }
 
   async listBySchool(schoolId, { teacherId, classId }) {
