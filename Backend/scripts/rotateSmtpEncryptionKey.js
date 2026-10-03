@@ -1,5 +1,5 @@
 /**
- * rotate-mail-enc-key.js — MAIL_ENC_KEY rotate karo, data khoone ke bina.
+ * rotateSmtpEncryptionKey.js — MAIL_ENC_KEY rotate karo, data khoone ke bina.
  *
  * Problem: MAIL_ENC_KEY set na hone par tenant ke Cloudinary/SMTP secrets
  * `sha256(JWT_SECRET)` se encrypt hote hain. Iska matlab JWT_SECRET badalte

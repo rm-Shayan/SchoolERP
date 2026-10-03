@@ -106,7 +106,7 @@ export async function cleanupTenant(slug) {
   return { removed: true, org: slug, counts };
 }
 
-// Run directly? `node scripts/smoke-cleanup.js [slug]`
+// Run directly? `node scripts/deleteTestTenant.js [slug]`
 // pathToFileURL keeps this correct on Windows (import.meta.url has three slashes).
 const isMain = process.argv[1] && import.meta.url === (await import("node:url")).pathToFileURL(process.argv[1]).href;
 if (isMain) {

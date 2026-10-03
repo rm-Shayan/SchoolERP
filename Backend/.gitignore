@@ -43,5 +43,5 @@ dump.rdb
 *-test.pdf
 email-preview.html
 
-# Smoke-test seed manifest (contains live test credentials)
-.smoke-manifest.json
+# Test-tenant seed manifest (contains live test credentials)
+.testTenant.json

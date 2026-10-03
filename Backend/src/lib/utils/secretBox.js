@@ -32,7 +32,7 @@ export function decryptSecret(payload) {
 }
 
 // ── Explicit-key variants ──────────────────────────────────────────────
-// Rotation scripts (scripts/rotate-mail-enc-key.js) ko ek key se decrypt
+// Rotation scripts (scripts/rotateSmtpEncryptionKey.js) ko ek key se decrypt
 // karke DOOSRI key se encrypt karna hota hai, jabki process.env me abhi
 // purani key lagi hui hai. Isliye key ko argument me lene wala core yahan
 // hai aur upar wale wrappers ambient key use karte hain.

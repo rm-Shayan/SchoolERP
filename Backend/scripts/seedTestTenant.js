@@ -1,16 +1,17 @@
 // Smoke-test seed: isolated org + branches + users for every role + academic/finance data.
 // Everything hangs off ONE organization (slug below) so cleanup is a single cascade delete.
-// Writes a manifest of ids/credentials for scripts/smoke-test.js.
+// Writes a manifest of ids/credentials to scripts/.testTenant.json, which the API
+// sweep runners read and deleteTestTenant.js uses to verify nothing was left behind.
 import "../src/config/env.js";
 import prisma from "../src/config/db.js";
 import bcrypt from "bcryptjs";
 import { generateIdentifierCode } from "../src/lib/identifier.js";
-import { cleanupTenant } from "./smoke-cleanup.js";
+import { cleanupTenant } from "./deleteTestTenant.js";
 
 const SLUG = "smoke-org";
 const CODE = "SMOKE-ORG";
 const PASSWORD = "Smoke@123";
-const MANIFEST = new URL("./.smoke-manifest.json", import.meta.url);
+const MANIFEST = new URL("./.testTenant.json", import.meta.url);
 
 const d = (s) => new Date(s);
 
@@ -216,7 +217,7 @@ async function main() {
 
   const fs = await import("node:fs");
   fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2));
-  console.log("seed complete -> scripts/.smoke-manifest.json");
+  console.log("seed complete -> scripts/.testTenant.json");
   console.log(`org=${org.slug} branches=${b1.code},${b2.code} students=${s1.identifierCode},${s2.identifierCode},${s3.identifierCode}`);
 }
 
