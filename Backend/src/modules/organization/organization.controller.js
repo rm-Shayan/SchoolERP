@@ -175,6 +175,38 @@ class OrganizationController {
   };
 
   /**
+   * PATCH /organizations/:id/default-branch
+   * Body: { schoolId }
+   * Moves the organization's main-branch flag (explicit decision, never auto).
+   */
+  setDefaultBranch = async (req, res, next) => {
+    try {
+      const { schoolId } = req.body;
+      if (!schoolId) return next(ApiError.badRequestError("schoolId is required"));
+      const result = await organizationService.setDefaultBranch(req.params.id, schoolId, req.user, req);
+      return res.status(200).json(ApiResponse.ok("Default branch updated", result));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * POST /organizations/:id/transfer-ownership
+   * Body: { userId }
+   * Hands org-level settings rights to another admin of the same organization.
+   */
+  transferOwnership = async (req, res, next) => {
+    try {
+      const { userId } = req.body;
+      if (!userId) return next(ApiError.badRequestError("userId is required"));
+      const result = await organizationService.transferOwnership(req.params.id, userId, req.user, req);
+      return res.status(200).json(ApiResponse.ok("Organization ownership transferred", result));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
    * DELETE /organizations/:id
    * Queues a background job to cascade-delete the org and all related data.
    */

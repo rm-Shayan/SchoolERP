@@ -49,6 +49,8 @@ export interface User {
   school?: School;
   /** Extra branches this same account can open (home branch = schoolId). */
   branchAccess?: string[];
+  /** Only the ADMIN created together with the organization (its default branch principal). */
+  isOrganizationOwner?: boolean;
   /** Accessible branches — home + extras (multi-branch admin). */
   schools?: School[];
 }

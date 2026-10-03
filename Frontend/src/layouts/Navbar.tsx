@@ -21,11 +21,10 @@ export default function Navbar({ title, onMenuClick }: NavbarProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  // Branch branding wins, organization branding is the fallback for any branch
+// that has not set its own logo or colour yet.
   const logo = school?.logoUrl || organization?.logoUrl || '/screen.png';
-  // Organization branding is the source of truth across every org portal page.
-  // A branch may have its own color for branch-only contexts, but it must not
-  // override the organization's theme in the org admin portal.
-  const themeColor = organization?.themeColor || getOrgThemeColor();
+  const themeColor = school?.themeColor || organization?.themeColor || getOrgThemeColor();
 
   const handleLogout = async () => {
     await dispatch(logoutAction());

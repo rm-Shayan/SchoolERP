@@ -95,5 +95,19 @@ router.delete(
   organizationController.remove
 );
 
+// ──"? DEFAULT BRANCH (explicit main-campus choice) ─?"──
+router.patch(
+  "/:id/default-branch",
+  ...orgSelf,
+  organizationController.setDefaultBranch
+);
+
+// ──"? OWNERSHIP TRANSFER (hand org settings rights to another admin) ─?"──
+router.post(
+  "/:id/transfer-ownership",
+  ...orgSelf,
+  organizationController.transferOwnership
+);
+
 export default router;
 

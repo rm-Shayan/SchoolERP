@@ -33,8 +33,7 @@ export default function BranchSettingsCard({ school, orgName, onUpdated }: Branc
   useEffect(() => { loadStatus(); }, [loadStatus]);
 
   const smtpBranch = smtpStatus?.branch;
-  const smtpOrg = smtpStatus?.organization;
-  const storageSetting = storageStatus?.setting;
+  const storageSetting = storageStatus?.branch;
 
   return (
     <Card className="overflow-hidden">
@@ -51,8 +50,8 @@ export default function BranchSettingsCard({ school, orgName, onUpdated }: Branc
             <h3 className="text-sm font-semibold text-gray-900 truncate">{school.name}</h3>
             <p className="text-xs text-gray-500 mt-0.5">{orgName} · {school.code}</p>
             <div className="flex flex-wrap gap-2 mt-2">
-              <Badge variant={smtpBranch?.primary ? 'success' : smtpOrg?.primary ? 'info' : 'warning'}>
-                SMTP: {smtpBranch?.primary ? 'Branch' : smtpOrg?.primary ? 'Org' : 'None'}
+              <Badge variant={smtpBranch?.primary ? 'success' : 'warning'}>
+                SMTP: {smtpBranch?.primary ? 'Set' : 'None'}
               </Badge>
               <Badge variant={storageSetting ? 'success' : 'warning'}>
                 Cloudinary: {storageSetting ? 'Set' : 'None'}

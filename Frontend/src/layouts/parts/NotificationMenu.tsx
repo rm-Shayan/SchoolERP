@@ -2,8 +2,10 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { getOrgThemeColor } from '@/lib/utils/orgTheme';
+import { getNotificationsPath } from '@/lib/utils';
 import {
   setPortalNotifications, removePortalNotification, setPortalUnread,
   markAllPortalRead, markPortalRead,
@@ -25,9 +27,12 @@ export default function NotificationMenu() {
   const { portalItems, portalUnread } = useAppSelector((s) => s.notifications);
   const dispatch = useAppDispatch();
   const menuRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const pathname = usePathname();
   const schoolId = school?.id;
   const organizationId = user?.organizationId;
   const themeColor = organization?.themeColor || getOrgThemeColor();
+  const notificationsPath = getNotificationsPath(user?.role, pathname);
 
   const { data: unread, refetch: refetchUnread } = useUnreadCountQuery(
     { schoolId, organizationId },
@@ -76,6 +81,11 @@ export default function NotificationMenu() {
 
   const toggle = useCallback(() => setOpen((o) => !o), []);
 
+  const goToNotifications = useCallback(() => {
+    setOpen(false);
+    router.push(notificationsPath);
+  }, [router, notificationsPath]);
+
   // Close on outside click (LinkedIn behavior)
   useEffect(() => {
     if (!open) return;
@@ -112,7 +122,7 @@ export default function NotificationMenu() {
                 </button>
               )}
               <Link
-                href="/notifications"
+                href={notificationsPath}
                 onClick={() => setOpen(false)}
                 className="text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md transition-colors"
               >
@@ -135,6 +145,7 @@ export default function NotificationMenu() {
                   themeColor={themeColor}
                   onRead={handleMarkRead}
                   onDelete={handleDelete}
+                  onNavigate={goToNotifications}
                 />
               ))
             )}

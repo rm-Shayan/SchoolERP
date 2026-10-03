@@ -2,6 +2,7 @@
 
 import { memo } from 'react';
 import { Button, Card } from '@/features/shared/components';
+import ExcelPreviewGrid from './ExcelPreviewGrid';
 
 const TEMPLATE_COLUMNS: ReadonlyArray<readonly [string, string, string]> = [
   ['Name', 'Yes', 'Falcon Academy Systems'],
@@ -33,12 +34,12 @@ const TemplateColumnRow = memo(function TemplateColumnRow({
   example: string;
 }) {
   return (
-    <tr className="border-b border-gray-100">
-      <td className="py-2 pr-4 font-medium whitespace-nowrap">{col}</td>
-      <td className="py-2 pr-4">
-        <span className={req === 'Yes' ? 'text-red-600 font-medium' : 'text-gray-400'}>{req}</span>
+    <tr className="hover:bg-slate-50/70">
+      <td className="border border-slate-200 px-3 py-2 font-mono text-xs font-semibold text-slate-800 whitespace-nowrap">{col}</td>
+      <td className="border border-slate-200 px-3 py-2 text-center whitespace-nowrap">
+        <span className={req === 'Yes' ? 'text-red-600 font-semibold' : 'text-gray-400'}>{req}</span>
       </td>
-      <td className="py-2 text-gray-500">{example}</td>
+      <td className="border border-slate-200 px-3 py-2 font-mono text-xs text-gray-600">{example}</td>
     </tr>
   );
 });
@@ -64,12 +65,12 @@ export default function ImportTemplateGuide({
         </Button>
       </div>
       <div className="overflow-x-auto rounded-2xl border border-slate-200">
-        <table className="w-full text-sm min-w-[560px]">
+        <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50 text-left text-gray-500">
-              <th className="py-2 pr-4 font-medium">Column</th>
-              <th className="py-2 pr-4 font-medium">Required</th>
-              <th className="py-2 font-medium">Example</th>
+            <tr className="bg-slate-50 text-left text-gray-500">
+              <th className="border border-slate-200 px-3 py-2 font-semibold">Column</th>
+              <th className="border border-slate-200 px-3 py-2 text-center font-semibold">Required</th>
+              <th className="border border-slate-200 px-3 py-2 font-semibold">Example</th>
             </tr>
           </thead>
           <tbody className="text-gray-700">
@@ -80,25 +81,12 @@ export default function ImportTemplateGuide({
         </table>
       </div>
 
-      <h3 className="text-sm font-semibold text-gray-900 mt-6 mb-2">Sample Row</h3>
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50/40 p-2">
-        <table className="w-full text-xs min-w-[720px]">
-          <thead>
-            <tr className="text-left text-gray-500 border-b border-gray-200">
-              {SAMPLE_HEADERS.map((h) => (
-                <th key={h} className="py-2 pr-3 font-medium whitespace-nowrap">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="text-gray-700">
-            <tr className="border-b border-gray-100">
-              {SAMPLE_ROW.map((v, i) => (
-                <td key={i} className="py-2 pr-3 whitespace-nowrap">{v}</td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <h3 className="text-sm font-semibold text-gray-900 mt-6 mb-1">Sheet layout</h3>
+      <p className="text-xs text-gray-500 mb-3">
+        Keep row 1 exactly as it is — those are the column headers the importer reads. Replace or
+        delete the sample row 2, then add your organizations from row 3 downwards.
+      </p>
+      <ExcelPreviewGrid headers={SAMPLE_HEADERS} row={SAMPLE_ROW} />
       <p className="mt-4 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
         The downloaded template includes a sample row. Replace the example values with your own
         organization data and keep at least one row with Name and Code before uploading.

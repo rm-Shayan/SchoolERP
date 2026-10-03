@@ -19,11 +19,11 @@ interface SidebarProps {
 export default function Sidebar({ links, collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const { organization, school } = useAppSelector((s) => s.auth);
-  const logo = organization?.logoUrl || school?.logoUrl || '/screen.png';
+  const logo = school?.logoUrl || organization?.logoUrl || '/screen.png';
   const title = organization?.name || school?.name || 'School ERP';
   const subtitle = school?.name || undefined;
 
-  const themeColor = organization?.themeColor || null;
+  const themeColor = school?.themeColor || organization?.themeColor || null;
   const colors = useMemo(() => sidebarColors(themeColor), [themeColor]);
 
   const expandedByDefault = useMemo(() => {

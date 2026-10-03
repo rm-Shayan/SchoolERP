@@ -1,9 +1,12 @@
-// Per-tenant media storage (Cloudinary) credentials.
-// Row present = org uploads to their own account; row absent = platform.
+// Per-branch media storage (Cloudinary) credentials.
+// Row present = this branch uploads to its own account; row absent = platform.
+// Credentials are never shared with another branch of the same organization.
 
 export interface StorageSettingInfo {
   id: string;
   organizationId: string;
+  /** Branch that owns these credentials (never null) */
+  schoolId: string;
   provider: string;
   cloudName: string;
   apiKey: string;
@@ -15,13 +18,15 @@ export interface StorageSettingInfo {
 }
 
 export interface StorageSettingsStatus {
-  /** "organization" = org's own credentials, "platform" = super admin fallback */
-  source: 'organization' | 'platform';
-  setting: StorageSettingInfo | null;
+  /** This branch's own credentials — null when the platform storage is active */
+  branch: StorageSettingInfo | null;
+  /** Which credentials are actually in use for this branch */
+  active: 'branch' | 'platform';
 }
 
 export interface StorageSettingsPayload {
   organizationId?: string;
+  /** Required — credentials always belong to a branch */
   schoolId?: string | null;
   cloudName: string;
   apiKey: string;

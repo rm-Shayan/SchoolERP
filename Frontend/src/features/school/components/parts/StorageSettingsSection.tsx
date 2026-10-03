@@ -9,6 +9,7 @@ import type { StorageSettingsStatus } from '@/types';
 import toast from 'react-hot-toast';
 import StorageStatusChips from './StorageStatusChips';
 import StorageSettingsForm from './StorageSettingsForm';
+import CredentialsSectionToggle from './CredentialsSectionToggle';
 
 interface StorageSettingsSectionProps {
   organizationId?: string;
@@ -16,11 +17,13 @@ interface StorageSettingsSectionProps {
 }
 
 export default function StorageSettingsSection({ organizationId: orgProp, schoolId: schoolProp }: StorageSettingsSectionProps = {}) {
-  const { user } = useAppSelector((st) => st.auth);
+  const { user, school } = useAppSelector((st) => st.auth);
   const orgId = orgProp ?? user?.organizationId ?? null;
-  const [open, setOpen] = useState(false);
-  const [branchId, setBranchId] = useState<string | null>(schoolProp ?? null);
   const lockedBranch = Boolean(schoolProp);
+  const [branchId, setBranchId] = useState<string | null>(
+    schoolProp ?? (!lockedBranch ? null : (user?.schoolId ?? school?.id ?? null))
+  );
+  const [open, setOpen] = useState(false);
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [status, setStatus] = useState<StorageSettingsStatus | null>(null);
   const [orgName, setOrgName] = useState('');
@@ -29,10 +32,10 @@ export default function StorageSettingsSection({ organizationId: orgProp, school
   const existingRef = useRef(false);
 
   const load = useCallback(async () => {
-    if (!orgId) return;
+    if (!orgId || !branchId) { setStatus(null); return; }
     try {
-      const s = await storageSettingsService.getStatus(orgId, branchId ?? undefined);
-      existingRef.current = s.source === 'organization' && Boolean(s.setting);
+      const s = await storageSettingsService.getStatus(orgId, branchId);
+      existingRef.current = Boolean(s.branch);
       setStatus(s);
     } catch (err: any) { toast.error(err?.response?.data?.message ?? 'Storage settings load failed'); }
   }, [orgId, branchId]);
@@ -56,10 +59,11 @@ export default function StorageSettingsSection({ organizationId: orgProp, school
       apiSecret: (v) => (!existingRef.current && !String(v || '').trim() ? 'API secret required for first-time setup' : undefined),
     },
     onSubmit: async (v) => {
+      if (!branchId) { toast.error('Select a branch first'); return; }
       try {
         await storageSettingsService.save({
           organizationId: orgId || undefined,
-          schoolId: branchId || null,
+          schoolId: branchId,
           cloudName: String(v.cloudName).trim(),
           apiKey: String(v.apiKey).trim(),
           ...(String(v.apiSecret).trim() ? { apiSecret: v.apiSecret as string } : {}),
@@ -74,17 +78,19 @@ export default function StorageSettingsSection({ organizationId: orgProp, school
   });
 
   useEffect(() => {
-    if (status?.source === 'organization' && status.setting) {
-      setValue('cloudName', status.setting.cloudName ?? '');
-      setValue('apiKey', status.setting.apiKey ?? '');
+    if (status?.branch) {
+      setValue('cloudName', status.branch.cloudName ?? '');
+      setValue('apiKey', status.branch.apiKey ?? '');
     }
   }, [status, setValue]);
 
   const onVerify = async () => {
+    if (!branchId) { toast.error('Select a branch first'); return; }
     setVerifying(true);
     try {
       await storageSettingsService.save({
         organizationId: orgId || undefined,
+        schoolId: branchId,
         cloudName: values.cloudName as string,
         apiKey: values.apiKey as string,
       });
@@ -96,8 +102,9 @@ export default function StorageSettingsSection({ organizationId: orgProp, school
   };
 
   const onRemove = async () => {
+    if (!branchId) return;
     try {
-      await storageSettingsService.remove(orgId, branchId ?? undefined);
+      await storageSettingsService.remove(orgId, branchId);
       toast.success('Storage settings removed — platform storage active');
       await load();
     } catch (err: any) {
@@ -107,27 +114,15 @@ export default function StorageSettingsSection({ organizationId: orgProp, school
 
   return (
     <Card className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <button type="button" onClick={() => setOpen((o) => !o)}
-        className="w-full bg-gradient-to-r from-slate-50 to-white px-4 py-4 text-left transition-colors hover:from-primary-50/60 sm:px-6 sm:py-5">
-        <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-md shadow-primary-200 sm:h-12 sm:w-12">
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v1H3V7z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13h18v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4z" />
-            </svg>
-          </div>
-          <div className="min-w-0 flex-1 pr-2">
-            <h3 className="text-base font-bold text-slate-900 sm:text-lg">Media Storage (Cloudinary)</h3>
-            <p className="mt-0.5 text-xs leading-5 text-slate-500 sm:text-sm">Photos, documents, and uploads storage configuration</p>
-          </div>
-          <svg className={`h-5 w-5 shrink-0 text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-        <div className="mt-4 border-t border-slate-200/80 pt-4 sm:ml-16">
-          <StorageStatusChips status={status} />
-        </div>
-      </button>
+      <CredentialsSectionToggle
+        open={open}
+        onToggle={() => setOpen((o) => !o)}
+        title="Media Storage (Cloudinary)"
+        subtitle="Photos, documents, and uploads storage configuration"
+        iconPaths={['M3 7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v1H3V7z', 'M3 13h18v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4z']}
+        showStatus={Boolean(branchId)}
+        status={<StorageStatusChips status={status} />}
+      />
 
       {open && (
         <div className="border-t border-slate-200 bg-slate-50/70 px-4 py-5 sm:px-6 sm:py-6">
@@ -135,13 +130,15 @@ export default function StorageSettingsSection({ organizationId: orgProp, school
             <div className="mb-4">
               <label className="block text-xs font-medium text-gray-500 mb-1">Configure for</label>
               <select value={branchId ?? ''} onChange={(e) => setBranchId(e.target.value || null)} className="w-full sm:w-64 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
-                <option value="">Organization (all branches)</option>
+                <option value="">Choose a branch…</option>
                 {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
-              <p className="text-[11px] text-gray-400 mt-1">Leave empty for org-level settings</p>
+              <p className="text-[11px] text-gray-400 mt-1">Har branch ki apni storage hoti hai — kisi doosri branch ki use nahi.</p>
             </div>
           )}
-          <StorageSettingsForm values={values} errors={errors} isSubmitting={isSubmitting} verifying={verifying} isOwn={status?.source === 'organization'} setting={status?.setting ?? null} existingCreds={existingRef.current} handleChange={handleChange} handleBlur={handleBlur} handleSubmit={handleSubmit} onVerify={onVerify} onRemove={onRemove} orgName={orgName} branchName={branchName} branches={branches} selectedBranch={branchId} onBranchChange={(id) => { setBranchId(id); }} lockedBranch={lockedBranch} />
+          {branchId && (
+            <StorageSettingsForm values={values} errors={errors} isSubmitting={isSubmitting} verifying={verifying} isOwn={status?.active === 'branch'} setting={status?.branch ?? null} existingCreds={existingRef.current} handleChange={handleChange} handleBlur={handleBlur} handleSubmit={handleSubmit} onVerify={onVerify} onRemove={onRemove} orgName={orgName} branchName={branchName} lockedBranch={lockedBranch} />
+          )}
         </div>
       )}
     </Card>

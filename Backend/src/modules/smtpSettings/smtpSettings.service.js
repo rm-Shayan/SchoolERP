@@ -16,16 +16,44 @@ const _clampDailyLimit = (v) => {
 };
 
 class SmtpSettingsService {
-  _assertAccess(requester, organizationId, schoolId) {
+  /**
+   * Credentials are strictly per-branch. An ADMIN may only touch a branch it
+   * actually administers: its home branch (schoolId) or any extra branch granted
+   * through `branchAccess`. Multi-branch admins therefore manage each branch's
+   * SMTP separately, and one branch's mail never leaves with another's creds.
+   */
+  async _assertAccess(requester, organizationId, schoolId) {
     if (!organizationId) throw ApiError.badRequestError("organizationId is required");
-    if (requester.role === "SUPER_ADMIN") return;
-    if (requester.role === "ADMIN" && requester.organizationId === organizationId) {
-      if (schoolId && requester.schoolId && requester.schoolId !== schoolId) {
-        throw ApiError.forbiddenError("You can only manage your own branch's SMTP settings");
-      }
+    if (!schoolId) {
+      throw ApiError.badRequestError(
+        "schoolId is required - SMTP credentials belong to a branch, not the organization."
+      );
+    }
+    if (requester.role === "SUPER_ADMIN") {
+      // Super Admins may reach any org, but the org+branch pair must still be real.
+      await this._assertBranchInOrg(organizationId, schoolId);
       return;
     }
-    throw ApiError.forbiddenError("You cannot manage SMTP settings for this organization");
+    if (requester.role === "ADMIN" && requester.organizationId === organizationId) {
+      const allowed = new Set(
+        [requester.schoolId, ...(Array.isArray(requester.branchAccess) ? requester.branchAccess : [])].filter(Boolean)
+      );
+      if (!allowed.has(schoolId)) {
+        throw ApiError.forbiddenError("You can only manage SMTP settings for a branch you administer");
+      }
+    } else {
+      throw ApiError.forbiddenError("You cannot manage SMTP settings for this organization");
+    }
+    await this._assertBranchInOrg(organizationId, schoolId);
+  }
+
+  /** A secret row pairs org+branch, so the branch must really belong to that org. */
+  async _assertBranchInOrg(organizationId, schoolId) {
+    const branch = await prisma.school.findFirst({
+      where: { id: schoolId, organizationId },
+      select: { id: true },
+    });
+    if (!branch) throw ApiError.badRequestError("schoolId does not belong to this organization");
   }
 
   _mask(setting) {
@@ -51,8 +79,9 @@ class SmtpSettingsService {
   }
 
   async _find(organizationId, schoolId, tier = "PRIMARY") {
+    if (!schoolId) throw ApiError.badRequestError("schoolId is required for SMTP settings");
     return prisma.orgSecrets.findFirst({
-      where: { organizationId, schoolId: schoolId || null, category: "SMTP", tier },
+      where: { organizationId, schoolId, category: "SMTP", tier },
     });
   }
 
@@ -77,36 +106,35 @@ class SmtpSettingsService {
   }
 
   async getStatus(requester, organizationId, schoolId) {
-    this._assertAccess(requester, organizationId, schoolId);
-    const rows = await prisma.orgSecrets.findMany({ where: { organizationId, category: "SMTP" } });
-    const pick = (scopeSchoolId, tier) =>
-      this._mask(rows.find((r) => r.tier === tier && (r.schoolId || null) === (scopeSchoolId || null)) || null);
+    await this._assertAccess(requester, organizationId, schoolId);
+    // Only this branch's rows are ever read - no org-level pool, so no bleed.
+    const rows = await prisma.orgSecrets.findMany({
+      where: { organizationId, schoolId, category: "SMTP" },
+    });
+    const pick = (tier) => this._mask(rows.find((r) => r.tier === tier) || null);
 
     // Queued school mail — outbox (PendingEmail) rows waiting for a transport.
     // School mail kabhi platform SMTP se nahi jati, to ye rows tab banti hain
-    // jab tenant SMTP missing ho ya fail ho. Settings UI par warning dikhata hai.
-    const queuedWhere = { organizationId, status: "PENDING", ...(schoolId ? { schoolId } : {}) };
+    // jab branch SMTP missing ho ya fail ho. Settings UI par warning dikhata hai.
+    const queuedWhere = { organizationId, schoolId, status: "PENDING" };
     const [pendingCount, oldestPending] = await Promise.all([
       prisma.pendingEmail.count({ where: queuedWhere }),
       prisma.pendingEmail.findFirst({ where: queuedWhere, orderBy: { createdAt: "asc" }, select: { createdAt: true } }),
     ]);
-    // Tenant SMTP available hai is scope ke liye? (branch override ya org default)
-    const hasTenantSmtp = rows.some((r) => !r.schoolId || (schoolId && r.schoolId === schoolId));
 
     return {
-      organization: { primary: pick(null, "PRIMARY"), secondary: pick(null, "SECONDARY") },
-      ...(schoolId ? { branch: { primary: pick(schoolId, "PRIMARY"), secondary: pick(schoolId, "SECONDARY") } } : {}),
+      branch: { primary: pick("PRIMARY"), secondary: pick("SECONDARY") },
       queuedMail: {
         count: pendingCount,
-        hasTenantSmtp,
+        hasTenantSmtp: rows.length > 0,
         oldestAt: oldestPending?.createdAt || null,
       },
     };
   }
 
   async upsert(requester, payload) {
-    const { organizationId, schoolId = null, host, port = 587, secure = false, username, password, fromName, dailyLimit, tier = "PRIMARY" } = payload;
-    this._assertAccess(requester, organizationId, schoolId);
+    const { organizationId, schoolId, host, port = 587, secure = false, username, password, fromName, dailyLimit, tier = "PRIMARY" } = payload;
+    await this._assertAccess(requester, organizationId, schoolId);
     if (!host || !username) throw ApiError.badRequestError("'host' and 'username' are required");
     const effectiveTier = this._normalizeTier(tier);
     const existing = await this._find(organizationId, schoolId, effectiveTier);
@@ -141,12 +169,12 @@ class SmtpSettingsService {
       ? await prisma.orgSecrets.update({ where: { id: existing.id }, data: { data, isVerified: true, lastVerifiedAt: new Date(), lastError: null } })
       : await prisma.orgSecrets.create({ data: { organizationId, schoolId, category: "SMTP", tier: effectiveTier, data, isVerified: true, lastVerifiedAt: new Date() } });
 
-    logger.logger.info(`SMTP saved [${schoolId ? "branch" : "org"}:${effectiveTier}] -> ${data.username}${skipVerification ? ' (verification skipped)' : ''}`);
+    logger.logger.info(`SMTP saved [branch:${schoolId}:${effectiveTier}] -> ${data.username}${skipVerification ? ' (verification skipped)' : ''}`);
     return this._mask(setting);
   }
 
   async remove(requester, organizationId, schoolId, tier) {
-    this._assertAccess(requester, organizationId, schoolId);
+    await this._assertAccess(requester, organizationId, schoolId);
     const existing = await this._find(organizationId, schoolId, this._normalizeTier(tier));
     if (!existing) throw ApiError.notFoundError("No SMTP settings found for this scope/tier");
     await prisma.orgSecrets.delete({ where: { id: existing.id } });
@@ -154,7 +182,7 @@ class SmtpSettingsService {
   }
 
   async sendTestEmail(requester, organizationId, schoolId) {
-    this._assertAccess(requester, organizationId, schoolId);
+    await this._assertAccess(requester, organizationId, schoolId);
     try {
       const info = await sendEmail({
         to: requester.email, organizationId, schoolId,
@@ -171,6 +199,7 @@ class SmtpSettingsService {
 
   async provision(organizationId, schoolId, smtp) {
     if (!smtp || !smtp.host || !smtp.username) return null;
+    if (!schoolId) throw ApiError.badRequestError("schoolId is required to provision SMTP settings");
     const password = String(smtp.password || "");
     if (!password) throw ApiError.badRequestError("SMTP password is required when SMTP host/username is provided");
     const tier = this._normalizeTier(smtp.tier);
@@ -188,16 +217,16 @@ class SmtpSettingsService {
       fromName: smtp.fromName ? String(smtp.fromName).trim() : null,
       dailyLimit: _clampDailyLimit(smtp.dailyLimit),
     };
-    const existing = await this._find(organizationId, schoolId || null, tier);
+    const existing = await this._find(organizationId, schoolId, tier);
     const setting = existing
       ? await prisma.orgSecrets.update({ where: { id: existing.id }, data: { data, isVerified: check.ok, lastVerifiedAt: check.ok ? new Date() : null, lastError: check.ok ? null : check.error } })
-      : await prisma.orgSecrets.create({ data: { organizationId, schoolId: schoolId || null, category: "SMTP", tier, data, isVerified: check.ok, lastVerifiedAt: check.ok ? new Date() : null, lastError: check.ok ? null : check.error } });
+      : await prisma.orgSecrets.create({ data: { organizationId, schoolId, category: "SMTP", tier, data, isVerified: check.ok, lastVerifiedAt: check.ok ? new Date() : null, lastError: check.ok ? null : check.error } });
     if (skipVerification) {
-      logger.logger.info(`SMTP provisioned (verification skipped) [${schoolId ? "branch" : "org"}:${tier}] -> ${creds.username}`);
+      logger.logger.info(`SMTP provisioned (verification skipped) [branch:${schoolId}:${tier}] -> ${creds.username}`);
     } else if (!check.ok) {
-      logger.logger.warn(`SMTP provisioned but verification failed [${schoolId ? "branch" : "org"}:${tier}] -> ${creds.username}: ${check.error}`);
+      logger.logger.warn(`SMTP provisioned but verification failed [branch:${schoolId}:${tier}] -> ${creds.username}: ${check.error}`);
     } else {
-      logger.logger.info(`SMTP provisioned [${schoolId ? "branch" : "org"}:${tier}] -> ${creds.username}`);
+      logger.logger.info(`SMTP provisioned [branch:${schoolId}:${tier}] -> ${creds.username}`);
     }
     return { ...this._mask(setting), verificationError: check.ok ? null : check.error };
   }

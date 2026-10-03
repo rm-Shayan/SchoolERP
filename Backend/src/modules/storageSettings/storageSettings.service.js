@@ -7,16 +7,42 @@ import Logger from "../../lib/utils/logger.js";
 const logger = new Logger("storage-settings-service");
 
 class StorageSettingsService {
-  _assertAccess(requester, organizationId, schoolId) {
+  /**
+   * Media credentials are strictly per-branch (no organization-level pool), and
+   * an ADMIN may only touch a branch it actually administers: home branch or any
+   * extra branch granted through `branchAccess`.
+   */
+  async _assertAccess(requester, organizationId, schoolId) {
     if (!organizationId) throw ApiError.badRequestError("organizationId is required");
-    if (requester.role === "SUPER_ADMIN") return;
-    if (requester.role === "ADMIN" && requester.organizationId === organizationId) {
-      if (schoolId && requester.schoolId && requester.schoolId !== schoolId) {
-        throw ApiError.forbiddenError("You can only manage your own branch's storage settings");
-      }
+    if (!schoolId) {
+      throw ApiError.badRequestError(
+        "schoolId is required - storage credentials belong to a branch, not the organization."
+      );
+    }
+    if (requester.role === "SUPER_ADMIN") {
+      await this._assertBranchInOrg(organizationId, schoolId);
       return;
     }
-    throw ApiError.forbiddenError("You cannot manage storage settings for this organization");
+    if (requester.role === "ADMIN" && requester.organizationId === organizationId) {
+      const allowed = new Set(
+        [requester.schoolId, ...(Array.isArray(requester.branchAccess) ? requester.branchAccess : [])].filter(Boolean)
+      );
+      if (!allowed.has(schoolId)) {
+        throw ApiError.forbiddenError("You can only manage storage settings for a branch you administer");
+      }
+    } else {
+      throw ApiError.forbiddenError("You cannot manage storage settings for this organization");
+    }
+    await this._assertBranchInOrg(organizationId, schoolId);
+  }
+
+  /** A secret row pairs org+branch, so the branch must really belong to that org. */
+  async _assertBranchInOrg(organizationId, schoolId) {
+    const branch = await prisma.school.findFirst({
+      where: { id: schoolId, organizationId },
+      select: { id: true },
+    });
+    if (!branch) throw ApiError.badRequestError("schoolId does not belong to this organization");
   }
 
   _mask(setting) {
@@ -52,23 +78,19 @@ class StorageSettingsService {
   }
 
   async getStatus(requester, organizationId, schoolId) {
-    this._assertAccess(requester, organizationId, schoolId);
-    const rows = await prisma.orgSecrets.findMany({ where: { organizationId, category: "CLOUDINARY" } });
-    const branch = rows.find((r) => r.schoolId === schoolId) || null;
-    const orgDefault = rows.find((r) => !r.schoolId) || null;
-    return {
-      branch: this._mask(branch),
-      organization: this._mask(orgDefault),
-      active: branch ? "branch" : "organization",
-    };
+    await this._assertAccess(requester, organizationId, schoolId);
+    const row = await prisma.orgSecrets.findFirst({
+      where: { organizationId, schoolId, category: "CLOUDINARY" },
+    });
+    return { branch: this._mask(row), active: row ? "branch" : "platform" };
   }
 
   async upsert(requester, payload) {
-    const { organizationId, schoolId = null, cloudName, apiKey, apiSecret } = payload;
-    this._assertAccess(requester, organizationId, schoolId);
+    const { organizationId, schoolId, cloudName, apiKey, apiSecret } = payload;
+    await this._assertAccess(requester, organizationId, schoolId);
     if (!cloudName || !apiKey) throw ApiError.badRequestError("'cloudName' and 'apiKey' are required");
 
-    const existing = await prisma.orgSecrets.findFirst({ where: { organizationId, schoolId: schoolId || null, category: "CLOUDINARY" } });
+    const existing = await prisma.orgSecrets.findFirst({ where: { organizationId, schoolId, category: "CLOUDINARY" } });
     const effectiveSecret = apiSecret && String(apiSecret).length > 0 ? String(apiSecret) : null;
     if (!effectiveSecret && !existing) throw ApiError.badRequestError("'apiSecret' is required for first-time setup");
 
@@ -83,7 +105,7 @@ class StorageSettingsService {
       ? { ok: true }
       : await this.verifyConnection({ cloudName, apiKey, apiSecret: plainSecret });
     if (!check.ok) {
-      logger.logger.warn(`Cloudinary verify failed [${schoolId ? "branch" : "org"}:${organizationId}]: ${check.error}`);
+      logger.logger.warn(`Cloudinary verify failed [branch:${schoolId}]: ${check.error}`);
       throw ApiError.badRequestError(`Cloudinary verification failed: ${check.error}`);
     }
 
@@ -96,25 +118,26 @@ class StorageSettingsService {
 
     const setting = existing
       ? await prisma.orgSecrets.update({ where: { id: existing.id }, data: { data, isVerified: true, lastVerifiedAt: new Date(), lastError: null } })
-      : await prisma.orgSecrets.create({ data: { organizationId, schoolId: schoolId || null, category: "CLOUDINARY", data, isVerified: true, lastVerifiedAt: new Date() } });
+      : await prisma.orgSecrets.create({ data: { organizationId, schoolId, category: "CLOUDINARY", data, isVerified: true, lastVerifiedAt: new Date() } });
 
     invalidateOrgStorageCache(organizationId, schoolId);
-    logger.logger.info(`Storage settings saved [${schoolId ? "branch" : "org"}:${organizationId}] -> ${data.cloudName}${skipVerification ? ' (verification skipped)' : ''}`);
+    logger.logger.info(`Storage settings saved [branch:${schoolId}] -> ${data.cloudName}${skipVerification ? ' (verification skipped)' : ''}`);
     return this._mask(setting);
   }
 
   async remove(requester, organizationId, schoolId) {
-    this._assertAccess(requester, organizationId, schoolId);
-    const existing = await prisma.orgSecrets.findFirst({ where: { organizationId, schoolId: schoolId || null, category: "CLOUDINARY" } });
-    if (!existing) throw ApiError.notFoundError("No storage settings found for this scope");
+    await this._assertAccess(requester, organizationId, schoolId);
+    const existing = await prisma.orgSecrets.findFirst({ where: { organizationId, schoolId, category: "CLOUDINARY" } });
+    if (!existing) throw ApiError.notFoundError("No storage settings found for this branch");
     await prisma.orgSecrets.delete({ where: { id: existing.id } });
     invalidateOrgStorageCache(organizationId, schoolId);
-    logger.logger.info(`Storage settings removed [${schoolId ? "branch" : "org"}:${organizationId}]`);
+    logger.logger.info(`Storage settings removed [branch:${schoolId}]`);
     return true;
   }
 
   async provision(organizationId, cloudinary, schoolId) {
     if (!cloudinary || !cloudinary.cloudName || !cloudinary.apiKey) return null;
+    if (!schoolId) throw ApiError.badRequestError("schoolId is required to provision storage settings");
     const apiSecret = String(cloudinary.apiSecret || "");
     if (!apiSecret) throw ApiError.badRequestError("'apiSecret' is required when Cloudinary cloudName/apiKey is provided");
 
@@ -131,10 +154,10 @@ class StorageSettingsService {
       apiSecretEnc: encryptSecret(apiSecret),
     };
     const setting = await prisma.orgSecrets.create({
-      data: { organizationId, schoolId: schoolId || null, category: "CLOUDINARY", data, isVerified: skipVerification, lastVerifiedAt: skipVerification ? new Date() : null, lastError: skipVerification ? null : check.error },
+      data: { organizationId, schoolId, category: "CLOUDINARY", data, isVerified: skipVerification, lastVerifiedAt: skipVerification ? new Date() : null, lastError: skipVerification ? null : check.error },
     });
     invalidateOrgStorageCache(organizationId, schoolId);
-    logger.logger.info(`Storage provisioned [${schoolId ? "branch" : "org"}:${organizationId}] -> ${data.cloudName}${skipVerification ? ' (verification skipped)' : ''}`);
+    logger.logger.info(`Storage provisioned [branch:${schoolId}] -> ${data.cloudName}${skipVerification ? ' (verification skipped)' : ''}`);
     return this._mask(setting);
   }
 }

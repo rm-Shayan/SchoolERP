@@ -134,6 +134,26 @@ export function downloadBlob(blob: Blob, filename: string) {
 // Slug-maintained home paths: all org portal URLs use /o/{slug}/... format
 // so the branded URL persists throughout the session (slug is never dropped).
 // SUPER_ADMIN is the sole platform owner (only one) — always navigates to the platform console.
+// Notifications live under role-scoped routes, and org portals are slug-prefixed
+// (/o/{slug}/...). This keeps every "View all" / item click on a real route
+// instead of a non-existent flat /notifications path (404).
+export function getNotificationsPath(role?: string, pathname?: string): string {
+  const slugMatch = pathname?.match(/^\/o\/([^/]+)/);
+  const base = slugMatch ? `/o/${slugMatch[1]}` : '';
+  switch (role) {
+    case 'SUPER_ADMIN':
+      return '/admin/notifications';
+    case 'TEACHER':
+      return `${base}/teacher/notifications`;
+    case 'PARENT':
+      return '/parent/dashboard?tab=notifications';
+    case 'STUDENT':
+      return '/student/dashboard?tab=notifications';
+    default:
+      return `${base}/branch/notifications`;
+  }
+}
+
 export function getRoleHomePath(role?: string, _organizationId?: string, slug?: string): string {
   const base = slug ? `/o/${slug}` : '';
   switch (role) {

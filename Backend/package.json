@@ -9,11 +9,10 @@
     "start": "node --import ./src/config/sentry.instrumentation.js src/index.js",
     "start:local": "node --import ./src/config/sentry.instrumentation.js --env-file=dev.env src/index.js",
     "test": "node --test",
-    "seed": "node --env-file=dev.env scripts/seed-data.js",
     "demo": "node --env-file=dev.env scripts/demo-data.js",
-    "clean": "node --env-file=dev.env scripts/clean-org-data.js",
-    "sync:neon": "node --env-file=dev.env scripts/sync-from-neon.js",
-    "rotate:key": "node scripts/rotate-mail-enc-key.js"
+    "demoToproduction": "node --env-file=dev.env scripts/demo-to-production.js",
+    "lint": "eslint --fix --ext .js src",
+    "sync:neon": "node --env-file=dev.env scripts/sync-from-neon.js"
   },
   "keywords": [],
   "author": "rm-shayan",

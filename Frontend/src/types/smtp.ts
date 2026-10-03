@@ -1,10 +1,12 @@
-// Per-tenant outgoing mail (SMTP) settings — org/branch x PRIMARY/SECONDARY.
-// Failover chain: Branch Primary -> Org Primary -> Org Secondary -> Platform env.
+// Per-branch outgoing mail (SMTP) settings — every branch x PRIMARY/SECONDARY.
+// Credentials belong to exactly one branch: failover chain is
+// Branch Primary -> Branch Secondary -> Platform env (no org-level pool).
 
 export interface SmtpSettingInfo {
   id: string;
   organizationId: string;
-  schoolId: string | null;
+  /** Branch that owns these credentials (never null) */
+  schoolId: string;
   tier: 'PRIMARY' | 'SECONDARY';
   host: string;
   port: number;
@@ -26,27 +28,26 @@ export interface SmtpTierPair {
   secondary: SmtpSettingInfo | null;
 }
 
-/** Outbox backlog info — school mail waiting because tenant SMTP is missing/failing */
+/** Outbox backlog info — school mail waiting because this branch's SMTP is missing/failing */
 export interface SmtpQueuedMail {
-  /** PENDING rows in the outbox for this scope */
+  /** PENDING rows in the outbox for this branch */
   count: number;
-  /** Tenant SMTP configured for this scope (branch override or org default) */
+  /** This branch has its own SMTP configured */
   hasTenantSmtp: boolean;
   /** Oldest queued mail timestamp, null when nothing is queued */
   oldestAt: string | null;
 }
 
 export interface SmtpSettingsStatus {
-  /** Org-level defaults (schoolId null) */
-  organization: SmtpTierPair;
-  /** Branch-level overrides — only when schoolId is provided in query */
-  branch?: SmtpTierPair;
+  /** Both tiers of the queried branch */
+  branch: SmtpTierPair;
   /** Queued school mail info — present since the outbox warning feature */
   queuedMail?: SmtpQueuedMail;
 }
 
 export interface SmtpSettingsPayload {
   organizationId?: string;
+  /** Required — credentials always belong to a branch */
   schoolId?: string | null;
   tier?: 'PRIMARY' | 'SECONDARY';
   host: string;

@@ -8,7 +8,7 @@ import { assertOwnSchool } from "../../lib/scope.js";
 import redis from "../../config/redis.js";
 import { emitToRoom } from "../../config/websocket.js";
 import { schoolImportQueue } from "../../jobs/queues/index.js";
-import { createBranchAdmin } from "../organization/provision.js";
+import { createBranchAdmin, transferOrganizationOwnership } from "../organization/provision.js";
 import { invalidateUserCache } from "../../middlewares/auth.middleware.js";
 import smtpSettingsService from "../smtpSettings/smtpSettings.service.js";
 import storageSettingsService from "../storageSettings/storageSettings.service.js";
@@ -128,12 +128,12 @@ class SchoolService {
       }
     }
 
-    // SMTP + Cloudinary ab hamesha OPTIONAL hain — chahe new admin bane ya
-    // existing. Credentials branch (school) level par set hote hain, admin par
-    // nahi. Existing admin mode me jo categories provide nahi hui unhe admin ke
-    // home-branch/org se COPY kar ke nayi branch par LAGAA dete hain (inherit),
-    // warna nayi branch khaali reh kar silent fallback par chali jaati hai.
-    const hasSmtp = !!(smtp?.host && smtp?.username);
+    // SMTP + Cloudinary hamesha OPTIONAL hain — chahe new admin bane ya existing.
+    // Credentials strictly branch (school) level par set hote hain, admin par
+    // nahi, aur kisi doosri branch ki credentials inherit NAHI hoti: har branch
+    // apna apna SMTP/Cloudinary rakhti hai ( warna ek branch doosre ki creds
+    // se mail/photos bhej rahi hoti). Credentials diye bina branch platform
+    // storage par chalti hai aur Settings me warning dikhti hai.
     const hasCloud = !!(cloudinary?.cloudName && cloudinary?.apiKey);
 
     const school = await schoolRepository.create({
@@ -164,61 +164,16 @@ class SchoolService {
       });
     }
 
-    // Branch-level Cloudinary override (org default/platform env fallback).
+    // Branch-level Cloudinary. No branch set ho to platform storage chalti hai.
     let cloudinarySetting = null;
     if (hasCloud) {
       cloudinarySetting = await storageSettingsService.provision(organizationId, cloudinary, school.id);
     }
 
-    // ── Existing-admin mode: unprovided credentials ko INHERIT karo ────────
-    // Agar admin ne SMTP/Cloudinary khud nahi diye, to nayi branch unhe us
-    // admin ke "effective scope" se copy kar leti hai — pehle uske home branch
-    // ki rows, warna org-default ki. Isse nayi branch kabhi khaali nahi rehti
-    // aur same credentials par shuru hoti hai; baad me admin har branch ki
-    // settings alag edit kar sakta hai (branch-settings screen se).
-    if (existingAdmin) {
-      const sourceScope = existingAdmin.schoolId || null;
-      const sourceRows = sourceScope
-        ? await prisma.orgSecrets.findMany({
-            where: { organizationId, OR: [{ schoolId: sourceScope }, { schoolId: null }] },
-          })
-        : await prisma.orgSecrets.findMany({ where: { organizationId, schoolId: null } });
-
-      const providedSecondary = !!(smtp?.secondary?.host && smtp?.secondary?.username);
-      const maskSecret = (r) => {
-        const d = r.data || {};
-        return {
-          ...(r.category === "SMTP"
-            ? { host: d.host, port: d.port, secure: d.secure, username: d.username, fromName: d.fromName, dailyLimit: d.dailyLimit }
-            : { provider: d.provider, cloudName: d.cloudName, apiKey: d.apiKey }),
-          id: r.id, organizationId: r.organizationId, schoolId: r.schoolId, tier: r.tier,
-          isVerified: r.isVerified, lastVerifiedAt: r.lastVerifiedAt, lastError: r.lastError,
-        };
-      };
-
-      for (const row of sourceRows) {
-        if (row.category === "SMTP") {
-          if ((row.tier === "PRIMARY" && hasSmtp) || (row.tier === "SECONDARY" && providedSecondary)) continue;
-        } else if (row.category === "CLOUDINARY" && hasCloud) {
-          continue;
-        }
-        const exists = await prisma.orgSecrets.findFirst({
-          where: { organizationId, schoolId: school.id, category: row.category, tier: row.tier },
-        });
-        if (exists) continue;
-        const copy = await prisma.orgSecrets.create({
-          data: {
-            organizationId, schoolId: school.id, category: row.category, tier: row.tier,
-            data: row.data, isVerified: row.isVerified, lastVerifiedAt: row.lastVerifiedAt, lastError: row.lastError,
-          },
-        });
-        if (row.category === "SMTP" && !smtpSetting && copy.tier === "PRIMARY") {
-          smtpSetting = maskSecret(copy);
-        } else if (row.category === "CLOUDINARY" && !cloudinarySetting) {
-          cloudinarySetting = maskSecret(copy);
-        }
-      }
-    }
+    // ── Existing-admin mode: NO credential inheritance ────────────────────────
+    // Nayi branch kisi aur branch (admin ki home branch ya koi bhi) ki
+    // credentials copy nahi karti. Is branch ke liye SMTP/Cloudinary jaan
+    // boojh kar is branch ke admin ko Settings me enter karne hote hain.
 
     emitToRoom("super_admins", "school_created", { schoolId: school.id, name: school.name, organizationId });
     emitToRoom(`org:${organizationId}`, "school_created", { schoolId: school.id, name: school.name });
@@ -403,6 +358,19 @@ class SchoolService {
 
     await this._bustAdminCaches(schoolId, school.organizationId);
 
+    // Re-assignment deactivates the previous principal — if that was the
+    // organization owner, promote someone else before the org goes orphaned.
+    const successor = await transferOrganizationOwnership(school.organizationId);
+    if (successor) {
+      await invalidateUserCache(successor.id);
+      emitToRoom(`org:${school.organizationId}`, "organization_owner_changed", {
+        organizationId: school.organizationId,
+        userId: successor.id,
+        reason: "branch_admin_reassigned",
+      });
+      emitToRoom("super_admins", "overview_updated", {});
+    }
+
     auditService.record(
       auditService.fromRequest(requester, req, {
         action: AUDIT_ACTIONS.ASSIGN_SCHOOL_ADMIN,
@@ -411,7 +379,11 @@ class SchoolService {
         entityName: school.name,
         organizationId: school.organizationId,
         schoolId,
-        details: JSON.stringify({ mode: "new", adminEmail: email }),
+        details: JSON.stringify({
+          mode: "new",
+          adminEmail: email,
+          ...(successor ? { newOrganizationOwner: successor.email } : {}),
+        }),
       })
     );
 
@@ -698,8 +670,12 @@ class SchoolService {
         // 5. Classes
         await tx.class.deleteMany({ where: f });
 
-        // 6. Branch staff — RefreshToken rows cascade with each user.
-        await tx.user.deleteMany({ where: f });
+        // 6. Branch staff — DEACTIVATED, not deleted, so attendance/fee/audit rows
+        //    keep a resolvable actor. `schoolId` MUST be cleared here:
+        //    User.schoolId is onDelete:Cascade, so leaving it set would let
+        //    tx.school.delete() wipe these accounts anyway.
+        await tx.refreshToken.deleteMany({ where: { user: f } });
+        await tx.user.updateMany({ where: f, data: { isActive: false, schoolId: null } });
 
         // 7. Parents no longer referenced by any remaining student.
         await tx.parent.deleteMany({ where: { students: { none: {} } } });
@@ -719,6 +695,20 @@ class SchoolService {
       if (!orgLogoUrl || !storageService.hasSamePublicId(existing.logoUrl, orgLogoUrl)) {
         await storageService.deleteImage({ url: existing.logoUrl, organizationId: existing.organizationId, schoolId: id }).catch(() => {});
       }
+    }
+
+    // The branch's users (possibly the organization owner) are gone by now —
+    // hand org-level ownership to a remaining branch admin so the organization
+    // is never left with nobody able to edit itself.
+    const successor = await transferOrganizationOwnership(existing.organizationId);
+    if (successor) {
+      await invalidateUserCache(successor.id);
+      emitToRoom(`org:${existing.organizationId}`, "organization_owner_changed", {
+        organizationId: existing.organizationId,
+        userId: successor.id,
+        reason: "branch_deleted",
+      });
+      emitToRoom("super_admins", "overview_updated", {});
     }
 
     // Comprehensive cache clearing

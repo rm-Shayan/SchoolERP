@@ -43,6 +43,7 @@ const USER_SELECT = {
   schoolId: true,
   organizationId: true,
   isActive: true,
+  isOrganizationOwner: true,
   branchAccess: true,
   school: { select: { id: true, name: true, code: true, status: true, logoUrl: true } },
   organization: { select: { id: true, name: true, code: true, status: true, logoUrl: true, themeColor: true } },
@@ -177,6 +178,8 @@ export const authenticate = async (req, res, next) => {
       role: user.role,
       schoolId: effectiveSchoolId,
       organizationId: user.organizationId,
+      isOrganizationOwner: Boolean(user.isOrganizationOwner),
+      branchAccess: user.branchAccess || [],
       school: user.school,
       organization: user.organization,
     };
@@ -228,9 +231,11 @@ export const authorize = (...allowedRoles) => {
 };
 
 /**
- * authorizeOrgSelf — SUPER_ADMIN hamesha; ADMIN sirf apni organization ke liye
- * aur tab bhi jab organization ke sirf ek branch (school) ho. Multi-branch org
- * par ADMIN ko org-level edit SUPER_ADMIN se karwana hai.
+ * authorizeOrgSelf — SUPER_ADMIN hamesha; ADMIN sirf tab jab uska account
+ * organization ke saath hi bana ho (default branch ka principal, i.e.
+ * `isOrganizationOwner`). Baaki branch admins organization-level settings
+ * (name, logo, theme, contact) kabhi nahi badal sakte — wo sirf apni branch
+ * manage karte hain.
  *
  * Route param `:id` organization id expect karta hai.
  */
@@ -244,33 +249,12 @@ export const authorizeOrgSelf = () => {
 
     if (req.user.role === "ADMIN") {
       const targetOrgId = req.params.id;
-      if (targetOrgId && targetOrgId === req.user.organizationId) {
-        try {
-          const schoolCount = await prisma.school.count({
-            where: { organizationId: targetOrgId },
-          });
-          // Single-branch org: koi bhi ADMIN chal sakta hai.
-          if (schoolCount <= 1) return next();
-
-          // Multi-branch org: sirf default branch (org creation waqt bani
-          // pehli school) ka ADMIN organization manage kar sakta hai.
-          if (req.user.schoolId) {
-            const defaultBranch = await prisma.school.findFirst({
-              where: { organizationId: targetOrgId },
-              orderBy: { createdAt: "asc" },
-              select: { id: true },
-            });
-            if (defaultBranch && defaultBranch.id === req.user.schoolId) {
-              return next();
-            }
-          }
-        } catch (_) {
-          /* fall through to 403 */
-        }
+      if (targetOrgId && targetOrgId === req.user.organizationId && req.user.isOrganizationOwner) {
+        return next();
       }
       return next(
         ApiError.forbiddenError(
-          "Access denied. ADMIN can edit only their own organization's default branch. Other branches or multi-branch orgs require SUPER_ADMIN."
+          "Access denied. Only the organization's owner account (the principal created together with the organization) can change organization settings."
         )
       );
     }

@@ -10,6 +10,7 @@ import type { ParentProfile } from '@/lib/api/parentService';
 import { ChildSummaryCard } from './portalCards';
 import PortalShell from './PortalShell';
 import type { PortalTab } from './parts/portalTabs';
+import { PORTAL_TABS } from './parts/portalTabs';
 import PortalTabHost from './parts/PortalTabHost';
 import type { PortalChildBrief } from './parts/portalChildGroup';
 import { OverviewSkeleton } from './parts/PortalSkeletonsA';
@@ -36,6 +37,13 @@ export default function PortalDashboard() {
   const [activeChildId, setActiveChildId] = useState('');
   const [tab, setTab] = useState<PortalTab>('overview');
   const [loading, setLoading] = useState(true);
+
+  // Deep links from the notification bell/rows land on ?tab=notifications.
+  // Read it after mount so the tab content is not prerendered on the server.
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get('tab') as PortalTab | null;
+    if (requested && PORTAL_TABS.some((t) => t.key === requested)) setTab(requested);
+  }, []);
 
   useEffect(() => {
     (async () => {

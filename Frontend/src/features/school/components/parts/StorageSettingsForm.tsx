@@ -16,7 +16,7 @@ interface Props {
   isSubmitting: boolean;
   verifying: boolean;
   isOwn: boolean;
-  setting: StorageSettingsStatus['setting'];
+  setting: StorageSettingsStatus['branch'];
   existingCreds: boolean;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleBlur: (name: string) => void;
@@ -25,16 +25,13 @@ interface Props {
   onRemove: () => void;
   orgName?: string;
   branchName?: string;
-  branches?: { id: string; name: string }[];
-  selectedBranch?: string | null;
-  onBranchChange?: (id: string | null) => void;
   lockedBranch?: boolean;
 }
 
 export default function StorageSettingsForm({
   values, errors, isSubmitting, verifying, isOwn, setting, existingCreds,
   handleChange, handleBlur, handleSubmit, onVerify, onRemove,
-  orgName, branchName, branches, selectedBranch, onBranchChange, lockedBranch,
+  orgName, branchName, lockedBranch,
 }: Props) {
   return (
     <div className="space-y-5">
@@ -92,15 +89,6 @@ export default function StorageSettingsForm({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Organization" value={orgName ?? ''} readOnly className="bg-gray-50 cursor-not-allowed" />
-            {!lockedBranch && branches && onBranchChange && (
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Branch</label>
-                <select value={selectedBranch ?? ''} onChange={(e) => onBranchChange(e.target.value || null)} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
-                  <option value="">All branches (org default)</option>
-                  {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
-            )}
             {lockedBranch && branchName && (
               <Input label="Branch" value={branchName} readOnly className="bg-gray-50 cursor-not-allowed" />
             )}

@@ -80,7 +80,7 @@ async function buildMailer(setting) {
     transporter,
     fromEmail: d.username,
     fromName,
-    source: setting.schoolId ? "branch" : "organization",
+    source: "branch",
     tier: setting.tier || "PRIMARY",
     key: setting.id,
     holder: d.username.toLowerCase(),
@@ -91,10 +91,11 @@ async function buildMailer(setting) {
 }
 
 /**
- * Outgoing-mail FAILOVER CHAIN for a tenant, priority order me:
- *   Branch PRIMARY -> Org PRIMARY -> Org SECONDARY -> Org/Branch SECONDARY
- *   -> Platform env (hamesha last).
- * Ek bhi tenant SMTP na ho to sirf [platform] milti hai. Decrypt-fail wali
+ * Outgoing-mail FAILOVER CHAIN for a branch, priority order me:
+ *   Branch PRIMARY -> Branch SECONDARY -> Platform env (hamesha last).
+ * Credentials strictly per-branch: org-level SMTP pool nahi hai, isliye ek
+ * branch ki mail kabhi doosre branch ke credentials se nahi jati.
+ * Ek bhi branch SMTP na ho to sirf [platform] milti hai. Decrypt-fail wali
  * settings skip hoti hain (chain kabhi empty nahi hoti).
  */
 export async function getTransportChain({ organizationId, schoolId } = {}) {
@@ -115,23 +116,24 @@ export async function getTransportChain({ organizationId, schoolId } = {}) {
     }
   }
   if (!orgId) return [platform];
+  // Scope-less calls (org-level/admin mail) have no branch credentials to use.
+  if (!schoolId) return [platform];
 
   let settings = [];
   try {
-    settings = await prisma.orgSecrets.findMany({ where: { organizationId: orgId, category: "SMTP" } });
+    settings = await prisma.orgSecrets.findMany({
+      where: { organizationId: orgId, schoolId, category: "SMTP" },
+    });
   } catch (err) {
     logger.logger.error(`[Routing] Transport chain query failed: ${err.message}`);
     return [platform];
   }
 
-  // Sirf is scope ke settings: requested branch ka override ya org default.
-  const relevant = settings.filter((s) => !s.schoolId || s.schoolId === schoolId);
-  const rank = (s) =>
-    (s.tier === "SECONDARY" ? 2 : 0) + (s.schoolId ? 0 : 1);
-  relevant.sort((a, b) => rank(a) - rank(b));
+  const rank = (s) => (s.tier === "SECONDARY" ? 1 : 0);
+  settings.sort((a, b) => rank(a) - rank(b));
 
   const chain = [];
-  for (const s of relevant) {
+  for (const s of settings) {
     try {
       chain.push(await buildMailer(s));
     } catch (err) {

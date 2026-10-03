@@ -2,13 +2,18 @@ import ApiResponse from "../../lib/utils/ApiResponse.js";
 import storageSettingsService from "./storageSettings.service.js";
 
 class StorageSettingsController {
+  /** Credentials always belong to a branch; admins default to their own. */
+  _branchId(req) {
+    return req.body?.schoolId ?? req.query?.schoolId ?? req.user?.schoolId ?? null;
+  }
+
   /** GET /storage/settings?organizationId=&schoolId= */
   getStatus = async (req, res, next) => {
     try {
       const result = await storageSettingsService.getStatus(
         req.user,
         req.query.organizationId || req.user?.organizationId,
-        req.query.schoolId || req.user?.schoolId
+        this._branchId(req)
       );
       return res.status(200).json(ApiResponse.ok("Storage settings fetched", result));
     } catch (error) {
@@ -21,7 +26,7 @@ class StorageSettingsController {
     try {
       const result = await storageSettingsService.upsert(req.user, {
         organizationId: req.body.organizationId || req.user?.organizationId,
-        schoolId: req.body.schoolId || req.user?.schoolId || null,
+        schoolId: this._branchId(req),
         cloudName: req.body.cloudName,
         apiKey: req.body.apiKey,
         apiSecret: req.body.apiSecret,
@@ -40,7 +45,7 @@ class StorageSettingsController {
       await storageSettingsService.remove(
         req.user,
         req.query.organizationId || req.user?.organizationId,
-        req.query.schoolId || null
+        this._branchId(req)
       );
       return res.status(200).json(ApiResponse.ok("Storage settings removed", true));
     } catch (error) {

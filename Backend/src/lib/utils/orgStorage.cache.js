@@ -40,11 +40,12 @@ export async function warmupOrgStorageCache() {
 }
 
 /**
- * Resolve Cloudinary creds for a tenant. Branch-level override wins,
- * then org-level default, then null (platform fallback).
+ * Resolve Cloudinary creds for a branch. Credentials are strictly per-branch
+ * (no organization-level row), so a branch without its own settings returns
+ * null and the platform's shared storage is used instead of another branch's.
  */
 export async function getTenantStorageCreds(organizationId, schoolId) {
-  if (!organizationId) return null;
+  if (!organizationId || !schoolId) return null;
 
   const key = _cacheKey(organizationId, schoolId);
   const hit = cache.get(key);
@@ -53,24 +54,11 @@ export async function getTenantStorageCreds(organizationId, schoolId) {
   let creds = null;
   let updatedAtIso = "";
   try {
-    // 1. Try branch-specific override first
-    if (schoolId) {
-      const branchRow = await prisma.orgSecrets.findFirst({
-        where: { organizationId, schoolId, category: "CLOUDINARY" },
-      });
-      if (branchRow) {
-        creds = _toCreds(branchRow);
-        updatedAtIso = branchRow?.updatedAt?.toISOString() || "";
-        cache.set(key, { ts: Date.now(), updatedAtIso, creds });
-        return creds;
-      }
-    }
-    // 2. Fall back to org-level default
-    const orgRow = await prisma.orgSecrets.findFirst({
-      where: { organizationId, schoolId: null, category: "CLOUDINARY" },
+    const branchRow = await prisma.orgSecrets.findFirst({
+      where: { organizationId, schoolId, category: "CLOUDINARY" },
     });
-    creds = _toCreds(orgRow);
-    updatedAtIso = orgRow?.updatedAt?.toISOString() || "";
+    creds = _toCreds(branchRow);
+    updatedAtIso = branchRow?.updatedAt?.toISOString() || "";
   } catch (err) {
     logger.logger.error(`[Cache] Lookup failed (${err.message}) — platform fallback`);
   }

@@ -129,7 +129,7 @@ export default function SchoolDetailPage() {
         <Reveal delay={0.18}><SmtpSettingsSection organizationId={org.id} schoolId={school.id} /></Reveal>
       </div>
       <div className="sa-detail-band">
-        <Reveal delay={0.2}><StorageSettingsSection organizationId={org.id} /></Reveal>
+        <Reveal delay={0.2}><StorageSettingsSection organizationId={org.id} schoolId={school.id} /></Reveal>
       </div>
       <BlockReasonDialog open={blockOpen} title="Block branch" message={`Blocking ${school.name} will lock out its admin, staff, students and parents immediately.`} loading={blocking} onConfirm={confirmBlock} onCancel={() => setBlockOpen(false)} />
       <ConfirmDialog open={confirmDelete} title="Delete branch" message={<>This permanently removes <span className="font-medium">{school.name}</span> and all its data (students, fees, attendance, etc.). This action cannot be undone.</>} confirmLabel="Delete" loading={deleting} onConfirm={handleDeleteBranch} onCancel={() => setConfirmDelete(false)} />

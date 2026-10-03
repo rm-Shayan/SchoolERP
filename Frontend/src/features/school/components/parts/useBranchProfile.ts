@@ -18,7 +18,7 @@ import { useStagedImage } from './useStagedImage';
  */
 export function useBranchProfile() {
   const dispatch = useAppDispatch();
-  const { school } = useAppSelector((s) => s.auth);
+  const { school, organization } = useAppSelector((s) => s.auth);
   const fileRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -26,6 +26,7 @@ export function useBranchProfile() {
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
+  const [themeColor, setThemeColor] = useState('');
   const [times, setTimes] = useState({
     attendanceStartTime: '07:45',
     attendanceCutoffTime: '08:30',
@@ -48,6 +49,7 @@ export function useBranchProfile() {
         setAddress(fresh.address ?? '');
         setPhone(fresh.phone ?? '');
         setLogoUrl(fresh.logoUrl ?? '');
+        setThemeColor(fresh.themeColor ?? '');
         setTimes({
           attendanceStartTime: fresh.attendanceStartTime || '07:45',
           attendanceCutoffTime: fresh.attendanceCutoffTime || '08:30',
@@ -72,6 +74,11 @@ export function useBranchProfile() {
     setLogoUrl('');
   };
 
+  const handleUrlSave = (url: string) => {
+    clear();
+    setLogoUrl(url);
+  };
+
   const handleSave = async () => {
     if (!school?.id) return;
     if (!name.trim()) { toast.error('Branch name is required'); return; }
@@ -91,6 +98,7 @@ export function useBranchProfile() {
         address: address.trim() || undefined,
         phone: phone.trim() || undefined,
         logoUrl: finalLogoUrl || null,
+        themeColor: themeColor.trim() || null,
         ...times,
         bankName: bankName.trim() || null,
         bankAccountTitle: bankAccountTitle.trim() || null,
@@ -108,10 +116,16 @@ export function useBranchProfile() {
   };
 
   return {
-    school, fileRef, saving, uploading,
+    school, organization, fileRef, saving, uploading,
     name, setName, address, setAddress, phone, setPhone, logoUrl, setLogoUrl,
-    times, setTimes, handleLogo, handleRemoveLogo, hasPendingLogo: !!pendingLogo, handleSave,
+    themeColor, setThemeColor,
+    times, setTimes, handleLogo, handleRemoveLogo, handleUrlSave,
+    hasPendingLogo: !!pendingLogo, handleSave,
     bankName, setBankName, bankAccountTitle, setBankAccountTitle, bankAccountNumber, setBankAccountNumber,
-    displayLogo: previewUrl || logoUrl || '',
+    /** Branch logo → organization logo fallback (inherited, not owned by the branch). */
+    displayLogo: previewUrl || logoUrl || organization?.logoUrl || '',
+    /** Theme falls back to the organization colour so a blank branch is not colourless. */
+    displayThemeColor: themeColor || organization?.themeColor || '#6366f1',
+    hasOwnLogo: Boolean(previewUrl || logoUrl),
   };
 }

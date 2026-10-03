@@ -8,7 +8,6 @@ import { Card, PageHeader } from '@/features/shared/components';
 import { cn } from '@/lib/utils';
 import { BranchProfileForm } from './parts/BranchProfileForm';
 import { OrgBrandingForm } from './parts/OrgBrandingForm';
-import BranchBrandingForm from './parts/BranchBrandingForm';
 import ProfileSection from './parts/ProfileSection';
 import PasswordSection from './parts/PasswordSection';
 import PortalAccessSection from './parts/PortalAccessSection';
@@ -16,38 +15,48 @@ import SmtpSettingsSection from './parts/SmtpSettingsSection';
 import StorageSettingsSection from './parts/StorageSettingsSection';
 import BranchSwitcherSection from './parts/BranchSwitcherSection';
 
-type TabKey = 'profile' | 'branch' | 'branches' | 'branding' | 'access' | 'secrets' | 'security';
+type TabKey = 'profile' | 'branch' | 'branches' | 'organization' | 'access' | 'credentials' | 'security';
 
-const BASE_TABS: { key: TabKey; label: string; icon: string }[] = [
-  { key: 'profile', label: 'My Profile', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
-  { key: 'branch', label: 'Branch Profile', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5' },
-  { key: 'branches', label: 'My Branches', icon: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4' },
-  { key: 'access', label: 'Portal Access', icon: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z' },
-  { key: 'branding', label: 'Branding & Theme', icon: 'M7 21a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12' },
-  { key: 'secrets', label: 'Secrets', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
-  { key: 'security', label: 'Change Password', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
-];
+const ICONS = {
+  user: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
+  branch: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5',
+  branches: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4',
+  org: 'M7 21a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12',
+  key: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z',
+  lock: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
+} as const;
 
 export default function SettingsPage() {
   const { school, organization } = useAppSelector((s) => s.auth);
   const user = useAppSelector((s) => s.auth.user);
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
-  const isAdminLevel = isSuperAdmin || user?.role === 'ADMIN';
-  const isReceptionist = user?.role === 'RECEPTIONIST';
+  const isAdmin = user?.role === 'ADMIN';
+  const isAdminLevel = isSuperAdmin || isAdmin;
+  /** Only the admin created with the organization may edit organization settings. */
+  const isOrgOwner = isSuperAdmin || (isAdmin && user?.isOrganizationOwner === true);
+  const activeBranchId = user?.schoolId ?? school?.id ?? null;
   const [tab, setTab] = useState<TabKey>('profile');
   const dispatch = useAppDispatch();
   const router = useRouter();
+
   const handleLogout = async () => {
     await dispatch(logoutAction());
-    // Redirect to unified login with org slug on logout
     router.push(organization?.slug ? `/login?org=${organization.slug}` : '/login');
   };
-  const tabs = BASE_TABS.filter(
-    (t) =>
-      (t.key !== 'branches' || (isAdminLevel && !!user?.schoolId)) &&
-      (t.key !== 'branding' || isAdminLevel) &&
-      (t.key !== 'secrets' || isAdminLevel)
-  );
+
+  const tabs: { key: TabKey; label: string; icon: string }[] = [
+    { key: 'profile', label: 'My Profile', icon: ICONS.user },
+    { key: 'branch', label: 'Branch Profile', icon: ICONS.branch },
+    ...(isAdminLevel && (activeBranchId || user?.branchAccess?.length)
+      ? [{ key: 'branches' as TabKey, label: 'My Branches', icon: ICONS.branches }]
+      : []),
+    ...(isAdminLevel ? [{ key: 'access' as TabKey, label: 'Portal Access', icon: ICONS.key }] : []),
+    ...(isOrgOwner ? [{ key: 'organization' as TabKey, label: 'Organization', icon: ICONS.org }] : []),
+    ...(isAdminLevel
+      ? [{ key: 'credentials' as TabKey, label: 'Branch Credentials', icon: ICONS.lock }]
+      : []),
+    { key: 'security', label: 'Change Password', icon: ICONS.lock },
+  ];
 
   return (
     <div className="space-y-6">
@@ -80,39 +89,26 @@ export default function SettingsPage() {
         {/* Tab Content */}
         <div className="p-5 sm:p-6 lg:p-8">
           {tab === 'profile' && <ProfileSection />}
-          {tab === 'branch' && <BranchProfileForm key={school?.id} />}
+          {tab === 'branch' && isAdminLevel && <BranchProfileForm key={school?.id} />}
+          {tab === 'branch' && !isAdminLevel && (
+            <p className="text-sm text-gray-500">Branch details can only be changed by a branch admin.</p>
+          )}
           {tab === 'branches' && isAdminLevel && <BranchSwitcherSection />}
-          {tab === 'branding' && (
-            <div className="space-y-8">
-              {isAdminLevel && (
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900 mb-4">Organization Branding</h3>
-                  <OrgBrandingForm />
-                </div>
-              )}
-              {isAdminLevel && (
-                <div className="border-t border-gray-100 pt-8">
-                  <h3 className="text-sm font-bold text-gray-900 mb-1">Branch Branding</h3>
-                  <p className="text-xs text-gray-400 mb-4">The organization logo is shown by default until the branch has its own logo set.</p>
-                  <BranchBrandingForm key={school?.id} />
-                </div>
-              )}
-              {!isAdminLevel && user?.role === 'RECEPTIONIST' && (
-                <p className="text-sm text-gray-500">Branding can only be changed by admin.</p>
-              )}
+          {tab === 'access' && isAdminLevel && <PortalAccessSection />}
+          {tab === 'organization' && isOrgOwner && <OrgBrandingForm />}
+          {tab === 'credentials' && isAdminLevel && activeBranchId && (
+            <div className="max-w-2xl space-y-10">
+              <p className="text-xs text-gray-400">
+                These credentials belong to <span className="font-semibold text-gray-600">{school?.name}</span> only —
+                other branches of the organization keep their own.
+              </p>
+              <SmtpSettingsSection organizationId={user?.organizationId} schoolId={activeBranchId} />
+              <div className="border-t border-gray-100" />
+              <StorageSettingsSection organizationId={user?.organizationId} schoolId={activeBranchId} />
             </div>
           )}
-          {tab === 'access' && <PortalAccessSection />}
-          {tab === 'secrets' && isAdminLevel && (
-            <div className="max-w-2xl space-y-10">
-              {/* Secrets = tenant credentials: outgoing email + media storage.
-                  Single-branch organizations use org-level credentials; branch
-                  admins can provide their own credentials via branch override
-                  (Apply To). */}
-              <SmtpSettingsSection />
-              <div className="border-t border-gray-100" />
-              <StorageSettingsSection />
-            </div>
+          {tab === 'credentials' && isAdminLevel && !activeBranchId && (
+            <p className="text-sm text-gray-500">No branch is assigned to this account yet.</p>
           )}
           {tab === 'security' && <PasswordSection />}
         </div>

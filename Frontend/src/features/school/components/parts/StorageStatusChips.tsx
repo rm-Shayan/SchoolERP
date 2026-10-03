@@ -10,15 +10,15 @@ const maskKey = (key?: string | null) => {
 };
 
 export default function StorageStatusChips({ status }: { status: StorageSettingsStatus | null }) {
-  const setting = status?.setting;
-  const isOwn = status?.source === 'organization';
+  const setting = status?.branch;
+  const isOwn = status?.active === 'branch';
 
   return (
     <div className="flex flex-wrap gap-2">
       <span className={cn('inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold',
         isOwn ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60' : 'bg-gray-100 text-gray-500 ring-1 ring-gray-200/60')}>
         <span className={cn('w-1.5 h-1.5 rounded-full', isOwn ? 'bg-emerald-500' : 'bg-gray-400')} />
-        {isOwn ? 'Apna account' : 'Platform default'}
+        {isOwn ? 'Branch account' : 'Platform default'}
       </span>
       {setting && (
         <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200/60">

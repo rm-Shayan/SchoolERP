@@ -16,8 +16,22 @@ import { buildExcelBuffer } from "../../lib/utils/excelExport.js";
 import { staffImportQueue } from "../../jobs/queues/staffImport.queue.js";
 import Logger from "../../lib/utils/logger.js";
 import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
+import { transferOrganizationOwnership } from "../organization/provision.js";
 
 const logger = new Logger("user-management-service");
+
+/**
+ * Hand organization ownership over when the current owner just lost access.
+ * No-op unless the org is genuinely ownerless, so it is safe to call after any
+ * admin deactivation.
+ */
+async function ensureOrganizationOwner(organizationId, reason) {
+  if (!organizationId) return null;
+  const successor = await transferOrganizationOwnership(organizationId);
+  if (!successor) return null;
+  logger.logger.info(`[OrgOwner] ${reason} -> ${successor.email} now owns organization ${organizationId}`);
+  return successor;
+}
 
 const CREATABLE_ROLES_BY = {
   SUPER_ADMIN: [ROLES.ADMIN, ROLES.TEACHER, ROLES.RECEPTIONIST],
@@ -109,6 +123,8 @@ class UserManagementService {
           // Deactivate old admin automatically
           await prisma.refreshToken.deleteMany({ where: { userId: existingAdmin.id } });
           await prisma.user.update({ where: { id: existingAdmin.id }, data: { isActive: false, schoolId: null } });
+          // If the replaced admin was the org owner, promote a remaining one.
+          await ensureOrganizationOwner(organizationId, `admin_replaced_by_new_user (${existingAdmin.email})`);
         }
       }
     } else if (requester.role === ROLES.ADMIN) {
@@ -291,6 +307,9 @@ class UserManagementService {
         details: JSON.stringify({ action: "replaced-by-assign", newAdminId: adminId }),
       });
     }
+
+    // The replaced admin may have been the organization owner.
+    await ensureOrganizationOwner(school.organizationId, `admin_replaced_by_assign (${oldAdmin?.email || "unknown"})`);
 
     await prisma.user.update({
       where: { id: adminId },
@@ -505,12 +524,17 @@ class UserManagementService {
     if (targetId === requester.id) throw ApiError.badRequestError("You cannot deactivate your own account.");
     await authRepository.revokeAllRefreshTokens(targetId);
     const updated = await authRepository.updateUser(targetId, { isActive: false });
+    // Deactivating the org owner would orphan the org — promote someone else.
+    const successor = await ensureOrganizationOwner(target.organizationId, `owner_deactivated (${target.email})`);
     auditService.record({
       actorId: requester.id, actorName: requester.name, actorRole: requester.role,
       action: AUDIT_ACTIONS.DEACTIVATE_STAFF, entityType: AUDIT_ENTITY_TYPES.USER,
       entityId: targetId, entityName: target.name,
       organizationId: target.organizationId, schoolId: target.schoolId,
-      ...(reason ? { details: JSON.stringify({ reason }) } : {}),
+      details: JSON.stringify({
+        ...(reason ? { reason } : {}),
+        ...(successor ? { newOrganizationOwner: successor.email } : {}),
+      }),
     });
     return updated;
   }

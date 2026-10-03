@@ -23,6 +23,10 @@ export class UserResponseDTO {
     // Extra branches this same account can open (home branch = schoolId).
     this.branchAccess = Array.isArray(user.branchAccess) ? user.branchAccess : [];
 
+    // Born with the organization (default branch principal). Only this ADMIN
+    // may edit organization-level settings; branch admins never can.
+    this.isOrganizationOwner = Boolean(user.isOrganizationOwner);
+
     // Block info (populated by moderation actions) — powers the profile
     // view + blocked-reason filter on the Super Admin users page.
     this.blockedReason = user.blockedReason || null;

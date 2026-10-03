@@ -23,6 +23,7 @@ interface Props {
   themeColor?: string | null;
   onRead: (id: string) => void;
   onDelete: (id: string) => void;
+  onNavigate?: () => void;
 }
 
 /**
@@ -32,10 +33,13 @@ interface Props {
  * - Hover: light gray overlay (neutral, not themed)
  * - Click on unread: marks as read, bg returns to white
  */
-export default function NotificationItem({ n, onRead, onDelete }: Props) {
+export default function NotificationItem({ n, onRead, onDelete, onNavigate }: Props) {
   return (
     <div
-      onClick={() => !n.isRead && onRead(n.id)}
+      onClick={() => {
+        if (!n.isRead) onRead(n.id);
+        onNavigate?.();
+      }}
       className={cn(
         'flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors duration-100',
         // LinkedIn: unread gets very subtle tint, hover is neutral gray

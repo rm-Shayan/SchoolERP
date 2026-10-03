@@ -42,3 +42,6 @@ dump.rdb
 # Test artifacts
 *-test.pdf
 email-preview.html
+
+# Smoke-test seed manifest (contains live test credentials)
+.smoke-manifest.json

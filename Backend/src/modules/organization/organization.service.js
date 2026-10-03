@@ -20,6 +20,7 @@ import { encryptSecret } from "../../lib/utils/secretBox.js";
 import { buildExcelBuffer } from "../../lib/utils/excelExport.js";
 import prisma from "../../config/db.js";
 import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
+import { invalidateUserCache } from "../../middlewares/auth.middleware.js";
 
 const ORG_CACHE_TTL = 3600; // 1 hour
 const OVERVIEW_CACHE_TTL = 120; // 120 seconds — dashboard freshness vs latency
@@ -163,28 +164,28 @@ class OrganizationService {
         branchCode = `${org.code}-${String(suffix).padStart(2, "0")}`;
       }
       const defaultBranch = await tx.school.create({
-        data: { organizationId: org.id, name: `${org.name} Main Campus`, code: branchCode },
+        data: { organizationId: org.id, name: `${org.name} Main Campus`, code: branchCode, isDefaultBranch: true },
       });
 
-      // 3. SMTP settings (primary)
+      // 3. SMTP settings (primary) - strictly owned by the default branch
       let smtpSetting = null;
       if (smtpPayload) {
         smtpSetting = await tx.orgSecrets.create({
-          data: { organizationId: org.id, schoolId: null, category: "SMTP", tier: "PRIMARY", data: smtpPayload },
+          data: { organizationId: org.id, schoolId: defaultBranch.id, category: "SMTP", tier: "PRIMARY", data: smtpPayload },
         });
       }
       // 4. SMTP settings (secondary)
       let smtpSecondary = null;
       if (smtpSecondaryPayload) {
         smtpSecondary = await tx.orgSecrets.create({
-          data: { organizationId: org.id, schoolId: null, category: "SMTP", tier: "SECONDARY", data: smtpSecondaryPayload },
+          data: { organizationId: org.id, schoolId: defaultBranch.id, category: "SMTP", tier: "SECONDARY", data: smtpSecondaryPayload },
         });
       }
       // 5. Cloudinary / storage settings
       let storageSetting = null;
       if (storagePayload) {
         storageSetting = await tx.orgSecrets.create({
-          data: { organizationId: org.id, schoolId: null, category: "CLOUDINARY", data: storagePayload },
+          data: { organizationId: org.id, schoolId: defaultBranch.id, category: "CLOUDINARY", data: storagePayload },
         });
       }
 
@@ -194,8 +195,20 @@ class OrganizationService {
         const cleanEmail = String(data.existingAdminEmail).trim().toLowerCase();
         const existingAdmin = await tx.user.findFirst({
           where: { email: cleanEmail, role: "ADMIN", isActive: true },
-          select: { id: true, name: true, email: true },
+          select: { id: true, name: true, email: true, organizationId: true, isOrganizationOwner: true },
         });
+        // This branch of the code always creates a brand-new org, so any admin that
+        // already belongs to another org (or already owns one) must be rejected
+        // — otherwise we would steal them, along with their branch access, and
+        // leave their own organization without an owner.
+        if (existingAdmin && existingAdmin.organizationId) {
+          throw ApiError.badRequestError(
+            "That admin already belongs to another organization and cannot be reused here."
+          );
+        }
+        if (existingAdmin && existingAdmin.isOrganizationOwner) {
+          throw ApiError.badRequestError("That admin is already an organization owner and cannot be reused.");
+        }
         if (existingAdmin) {
           const branchAdmin = await tx.user.findFirst({
             where: { role: "ADMIN", schoolId: defaultBranch.id, isActive: true, id: { not: existingAdmin.id } },
@@ -204,7 +217,7 @@ class OrganizationService {
           if (!branchAdmin) {
             await tx.user.update({
               where: { id: existingAdmin.id },
-              data: { schoolId: defaultBranch.id, organizationId: org.id },
+              data: { schoolId: defaultBranch.id, organizationId: org.id, isOrganizationOwner: true },
             });
           }
         }
@@ -219,6 +232,9 @@ class OrganizationService {
             role: "ADMIN",
             organizationId: org.id,
             schoolId: defaultBranch.id,
+            // This account is born with the organization, so it is the only one
+            // allowed to change organization-level settings later on.
+            isOrganizationOwner: true,
           },
         });
         adminCredentials = { email: branchAdminUser.email, password: generatedPassword };
@@ -547,6 +563,108 @@ class OrganizationService {
     emitToRoom("super_admins", "overview_updated", {});
 
     return updated;
+  }
+
+  /**
+   * Explicitly move the organization's main-branch flag to another branch.
+   *
+   * This is a deliberate business decision, so it is never done automatically -
+   * in particular, deleting the current default branch does NOT hand the flag
+   * to a random sibling. Only one branch per org may hold it (partial unique
+   * index), so the swap runs in one transaction.
+   */
+  async setDefaultBranch(organizationId, schoolId, requester = null, req = null) {
+    const org = await this.getOrganizationById(organizationId);
+    const school = await prisma.school.findFirst({
+      where: { id: schoolId, organizationId },
+      select: { id: true, name: true, isDefaultBranch: true },
+    });
+    if (!school) throw ApiError.badRequestError("That branch does not belong to this organization");
+
+    const previous = await prisma.school.findFirst({
+      where: { organizationId, isDefaultBranch: true },
+      select: { id: true, name: true },
+    });
+    if (previous && previous.id === schoolId) return { defaultBranch: school, previous: null };
+
+    await prisma.$transaction(async (tx) => {
+      await tx.school.updateMany({ where: { organizationId }, data: { isDefaultBranch: false } });
+      await tx.school.update({ where: { id: schoolId }, data: { isDefaultBranch: true } });
+    });
+
+    auditService.record(
+      auditService.fromRequest(requester, req, {
+        action: AUDIT_ACTIONS.UPDATE_ORG,
+        entityType: AUDIT_ENTITY_TYPES.ORGANIZATION,
+        entityId: organizationId,
+        entityName: org.name,
+        organizationId,
+        details: JSON.stringify({ defaultBranch: { from: previous?.name || null, to: school.name } }),
+      })
+    );
+
+    emitToRoom(`org:${organizationId}`, "organization_default_branch_changed", {
+      organizationId,
+      schoolId,
+      schoolName: school.name,
+    });
+    emitToRoom("super_admins", "overview_updated", {});
+
+    return { defaultBranch: { id: school.id, name: school.name }, previous: previous || null };
+  }
+
+  /**
+   * Explicitly hand organization ownership (right to edit org-level settings)
+   * to another admin of the same organization.
+   *
+   * The automatic succession in provision.js is only a safety net for the
+   * orphan case; this is the intentional path when ownership really moves.
+   */
+  async transferOwnership(organizationId, newOwnerId, requester = null, req = null) {
+    const org = await this.getOrganizationById(organizationId);
+
+    const target = await prisma.user.findFirst({
+      where: { id: newOwnerId, organizationId, role: "ADMIN" },
+      select: { id: true, name: true, email: true, isActive: true, isOrganizationOwner: true },
+    });
+    if (!target) throw ApiError.badRequestError("Pick an admin from this organization");
+    if (!target.isActive) throw ApiError.badRequestError("That admin is inactive and cannot own the organization");
+
+    const currentOwner = await prisma.user.findFirst({
+      where: { organizationId, isOrganizationOwner: true },
+      select: { id: true, name: true, email: true, isActive: true },
+    });
+    if (currentOwner && currentOwner.id === target.id) {
+      return { owner: target, previous: null };
+    }
+
+    // Transaction keeps the "exactly one owner" invariant even under
+    // concurrent transfers, and clears the flag on a stale inactive owner.
+    await prisma.$transaction(async (tx) => {
+      await tx.user.updateMany({ where: { organizationId }, data: { isOrganizationOwner: false } });
+      await tx.user.update({ where: { id: target.id }, data: { isOrganizationOwner: true } });
+    });
+    await invalidateUserCache(target.id);
+
+    auditService.record(
+      auditService.fromRequest(requester, req, {
+        action: AUDIT_ACTIONS.UPDATE_ORG,
+        entityType: AUDIT_ENTITY_TYPES.ORGANIZATION,
+        entityId: organizationId,
+        entityName: org.name,
+        organizationId,
+        details: JSON.stringify({ ownerTransfer: { from: currentOwner?.email || null, to: target.email } }),
+      })
+    );
+
+    emitToRoom(`org:${organizationId}`, "organization_owner_changed", {
+      organizationId,
+      userId: target.id,
+      reason: "manual_transfer",
+    });
+    emitToRoom("super_admins", "overview_updated", {});
+
+    return { owner: { id: target.id, name: target.name, email: target.email }, previous: currentOwner || null };
   }
 
   /**

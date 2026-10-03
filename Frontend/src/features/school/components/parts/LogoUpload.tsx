@@ -11,7 +11,8 @@ interface LogoUploadProps {
   uploading: boolean;
   fileRef: RefObject<HTMLInputElement | null>;
   onChange: (file: File | null) => void;
-  onRemove: () => void;
+  /** Optional so a logo that is only inherited (org fallback) shows no Remove */
+  onRemove?: () => void;
   onUrlSave?: (url: string) => void;
 }
 
@@ -52,7 +53,7 @@ export function LogoUpload({ logoUrl, name, uploading, fileRef, onChange, onRemo
                 {urlMode ? 'Cancel URL' : 'Paste URL'}
               </Button>
             )}
-            {logoUrl && (
+            {logoUrl && onRemove && (
               <Button size="sm" variant="ghost" onClick={onRemove}>Remove</Button>
             )}
           </div>

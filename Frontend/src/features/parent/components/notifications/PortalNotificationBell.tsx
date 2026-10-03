@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { portalNotificationService } from '@/lib/api/portalNotifications';
 import type { PortalNotification } from '@/lib/api/notificationService';
 import { usePortalEvents } from '@/hooks/usePortalEvents';
@@ -17,12 +18,15 @@ function timeAgo(iso: string) {
   return `${Math.floor(hrs / 24)}d`;
 }
 
-function PortalNotificationItem({ n, onRead, onDelete }: {
-  n: PortalNotification; onRead: (id: string) => void; onDelete: (id: string) => void;
+function PortalNotificationItem({ n, onRead, onDelete, onNavigate }: {
+  n: PortalNotification; onRead: (id: string) => void; onDelete: (id: string) => void; onNavigate?: () => void;
 }) {
   return (
     <div
-      onClick={() => !n.isRead && onRead(n.id)}
+      onClick={() => {
+        if (!n.isRead) onRead(n.id);
+        onNavigate?.();
+      }}
       className={cn(
         'flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors duration-100',
         !n.isRead ? 'bg-sky-50/60 hover:bg-sky-100/70' : 'hover:bg-gray-100/80',
@@ -51,6 +55,18 @@ export default function PortalNotificationBell() {
   const [unread, setUnread] = useState(0);
   const { portalNotifications } = usePortalEvents();
   const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  // Parent and student share one portal page with tab-based content, so the
+  // notifications list is the "notifications" tab of that page — not a flat route.
+  const viewAllPath = typeof window !== 'undefined' && localStorage.getItem('studentToken')
+    ? '/student/dashboard?tab=notifications'
+    : '/parent/dashboard?tab=notifications';
+
+  const goToViewAll = useCallback(() => {
+    setOpen(false);
+    router.push(viewAllPath);
+  }, [router, viewAllPath]);
 
   const load = useCallback(async () => {
     try {
@@ -127,7 +143,7 @@ export default function PortalNotificationBell() {
                   Mark all as read
                 </button>
               )}
-              <button onClick={() => setOpen(false)} className="text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md transition-colors">
+              <button onClick={goToViewAll} className="text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md transition-colors">
                 View all
               </button>
             </div>
@@ -136,7 +152,7 @@ export default function PortalNotificationBell() {
             {items.length === 0 ? (
               <div className="px-4 py-16 text-center"><p className="text-sm font-medium text-gray-500">No notifications yet</p></div>
             ) : items.map((n) => (
-              <PortalNotificationItem key={n.id} n={n} onRead={markRead} onDelete={remove} />
+              <PortalNotificationItem key={n.id} n={n} onRead={markRead} onDelete={remove} onNavigate={goToViewAll} />
             ))}
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { memo, useMemo } from 'react';
 import { Button, Card } from '@/features/shared/components';
 import type { ImportMode } from './useBranchImport';
+import ExcelPreviewGrid from './ExcelPreviewGrid';
 
 interface TemplateRowProps {
   col: string;
@@ -18,12 +19,12 @@ interface Props {
 
 const TemplateRow = memo(function TemplateRow({ col, req, example }: TemplateRowProps) {
   return (
-    <tr className="border-b border-gray-100">
-      <td className="py-2 pr-4 font-medium">{col}</td>
-      <td className="py-2 pr-4">
-        <span className={req === 'Yes' ? 'text-red-600' : 'text-gray-400'}>{req}</span>
+    <tr className="hover:bg-slate-50/70">
+      <td className="border border-slate-200 px-3 py-2 font-mono text-xs font-semibold text-slate-800 whitespace-nowrap">{col}</td>
+      <td className="border border-slate-200 px-3 py-2 text-center whitespace-nowrap">
+        <span className={req === 'Yes' ? 'text-red-600 font-semibold' : 'text-gray-400'}>{req}</span>
       </td>
-      <td className="py-2 text-gray-500">{example}</td>
+      <td className="border border-slate-200 px-3 py-2 font-mono text-xs text-gray-600">{example}</td>
     </tr>
   );
 });
@@ -63,12 +64,12 @@ export default function BranchImportTemplate({ mode, downloadingTemplate, onDown
         </Button>
       </div>
       <div className="overflow-x-auto rounded-2xl border border-slate-200">
-        <table className="w-full text-sm min-w-[420px]">
+        <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50 text-left text-gray-500">
-              <th className="py-2 pr-4 font-medium">Column</th>
-              <th className="py-2 pr-4 font-medium">Required</th>
-              <th className="py-2 font-medium">Example</th>
+            <tr className="bg-slate-50 text-left text-gray-500">
+              <th className="border border-slate-200 px-3 py-2 font-semibold">Column</th>
+              <th className="border border-slate-200 px-3 py-2 text-center font-semibold">Required</th>
+              <th className="border border-slate-200 px-3 py-2 font-semibold">Example</th>
             </tr>
           </thead>
           <tbody className="text-gray-700">
@@ -78,6 +79,12 @@ export default function BranchImportTemplate({ mode, downloadingTemplate, onDown
           </tbody>
         </table>
       </div>
+      <h3 className="mt-6 mb-1 text-sm font-semibold text-gray-900">Sheet layout</h3>
+      <p className="mb-3 text-xs text-gray-500">
+        Row 1 holds the column headers the importer reads — keep them unchanged. Replace the sample
+        row 2, then add your branches from row 3 downwards.
+      </p>
+      <ExcelPreviewGrid headers={rows.map((r) => r.col)} row={rows.map((r) => r.example)} />
       <p className="mt-4 text-xs text-gray-500">
         Rows with a duplicate branch Code or an unknown organization are skipped automatically.
         When AdminEmail is provided, a Principal (Admin) account is created for that branch and

@@ -5,12 +5,15 @@ import { Button, Input } from '@/features/shared/components';
 import { LogoUpload } from './LogoUpload';
 import { cn } from '@/lib/utils';
 import { TIME_SLOTS } from './attendanceTimeSlots';
+import { ThemeColorPicker } from './ThemeColorPicker';
 
 export function BranchProfileForm() {
   const {
-    school, fileRef, saving, uploading,
+    school, organization, fileRef, saving, uploading,
     name, setName, address, setAddress, phone, setPhone,
-    displayLogo, times, setTimes, handleLogo, handleRemoveLogo, hasPendingLogo, handleSave,
+    displayLogo, displayThemeColor, hasOwnLogo,
+    times, setTimes, handleLogo, handleRemoveLogo, handleUrlSave, hasPendingLogo, handleSave,
+    setThemeColor,
     bankName, setBankName, bankAccountTitle, setBankAccountTitle, bankAccountNumber, setBankAccountNumber,
   } = useBranchProfile();
 
@@ -24,8 +27,14 @@ export function BranchProfileForm() {
         uploading={uploading || saving}
         fileRef={fileRef}
         onChange={(file) => file && handleLogo(file)}
-        onRemove={handleRemoveLogo}
+        onRemove={hasOwnLogo ? handleRemoveLogo : undefined}
+        onUrlSave={handleUrlSave}
       />
+      {!hasOwnLogo && organization?.logoUrl && (
+        <p className="text-xs text-gray-400">
+          Showing the organization logo — upload one to give this branch its own.
+        </p>
+      )}
       {hasPendingLogo && (
         <p className="text-xs text-amber-600">Logo staged — click &ldquo;Save Changes&rdquo; to upload and apply.</p>
       )}
@@ -34,6 +43,15 @@ export function BranchProfileForm() {
         <Input label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
       </div>
       <Input label="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+
+      {/* Theme Color — only this branch, others in the organization stay untouched */}
+      <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50/60 to-white p-5">
+        <h3 className="text-sm font-bold text-gray-900 mb-1">Branch Theme Color</h3>
+        <p className="text-xs text-gray-400 mb-4">
+          Only this branch&apos;s theme changes — other branches won&apos;t be affected.
+        </p>
+        <ThemeColorPicker value={displayThemeColor} onChange={setThemeColor} />
+      </div>
 
       {/* Bank Details — printed on this branch's fee vouchers */}
       <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50/60 to-white p-5">

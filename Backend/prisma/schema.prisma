@@ -220,7 +220,8 @@ model School {
   id             String        @id @default(uuid())
   organizationId String
   name           String        // e.g. "Gulshan Campus"
-  code           String        @unique // used as branch segment alongside org slug
+code             String        @unique // used as branch segment alongside org slug
+  isDefaultBranch  Boolean       @default(false) // organization's main campus - the branch holding bootstrap data (SMTP/Cloudinary seed). Moved ONLY by an explicit admin action, never automatically on delete.
   address        String?
   phone          String?
   logoUrl        String?       // Branch-specific logo (overrides organization logo)
@@ -374,6 +375,7 @@ model User {
   blockedByName  String?       // display name snapshot of the blocker
   credentialsEmailSentAt DateTime? // set when login email is dispatched at creation
   branchAccess  Json?         // Extra branches this same user can access (school ids); home = schoolId
+  isOrganizationOwner Boolean  @default(false) // admin account created together with the organization (default branch principal) - only this admin may edit organization-level settings
   createdAt      DateTime      @default(now())
 
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -714,12 +716,12 @@ model NotificationLog {
 }
 
 // Unified secrets table — SMTP, Cloudinary, and future credentials.
-// Each row = one secret config, optionally scoped to a branch (schoolId).
+// Each row = one secret config, always scoped to a branch (schoolId).
 // data JSON stores the actual credentials (encrypted at rest).
 model OrgSecrets {
   id             String         @id @default(uuid())
   organizationId String
-  schoolId       String?        // null = org-level default; set = branch-specific override
+  schoolId       String         // Branch that OWNS these credentials. Secrets are strictly per-branch (no org-level row) so one branch can never read/send with another branch's credentials.
   category       SecretCategory // SMTP, CLOUDINARY
   tier           SmtpTier?      // PRIMARY/SECONDARY (SMTP only; null for Cloudinary)
   data           Json           // { host, port, secure, username, passwordEnc, fromName, dailyLimit } or { cloudName, apiKey, apiSecretEnc }
@@ -730,7 +732,7 @@ model OrgSecrets {
   updatedAt      DateTime       @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  school       School?      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  school       School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, schoolId, category, tier])
   @@index([organizationId])
