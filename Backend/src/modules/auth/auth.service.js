@@ -756,9 +756,17 @@ class AuthService {
       expiresAt
     );
 
-    // Dispatch OTP via Email — primary parent channel (no WhatsApp API budget yet).
-    // NOTE: future WhatsApp integration will swap this for whatsappService.sendMessage.
-    if (parent.email) {
+      // Dispatch OTP via Email — primary parent channel (no WhatsApp API budget yet).
+      // NOTE: future WhatsApp integration will swap this for whatsappService.sendMessage.
+      if (!parent.email) {
+        // Email hi parent ka sole channel hai, aur OTP production me response me
+        // nahi aata — to email ke bagair ye flow chalta hi nahi. Success message
+        // bhejne se parent ko pata hi nahi chalega ki OTP us tak nahi pahuncha.
+        throw ApiError.badRequestError(
+          "No email address on file for this account. Please contact your school to add an email address."
+        );
+      }
+      {
       // Parent ka school scope pakdo — OTP email usi branch/org ke SMTP se
       // jaye (tenant-first; platform env sirf fallback) aur NotificationLog
       // me bhi school set ho.
@@ -793,17 +801,13 @@ class AuthService {
               sentAt: new Date(),
             },
           });
-        } catch (logErr) {
-          logger.logger.warn(`[Parent OTP] Notification log skipped: ${logErr.message}`);
+          } catch (logErr) {
+            logger.logger.warn(`[Parent OTP] Notification log skipped: ${logErr.message}`);
+          }
         }
       }
-    } else {
-      logger.logger.warn(
-        `[Parent OTP] No email on file for ${parent.name} (${parent.whatsappNo}) — OTP only returned in dev response.`
-      );
-    }
 
-    return {
+      return {
       message: `OTP sent via email for ${parent.name}. Valid for ${OTP.EXPIRY_MINUTES} minutes.`,
       parentName: parent.name,
       // DEV ONLY:
@@ -1031,21 +1035,24 @@ class AuthService {
 
     // PRD §5 — OTP delivered to the parent's primary channel. WhatsApp API is
     // not yet affordable → email today, WhatsApp swap later.
-    if (parentEmail) {
-      await sendOtpEmail({
-        to: parentEmail,
-        recipientName: student.parent?.name || "Parent/Guardian",
-        otp,
-        organizationId: student.school?.organizationId || undefined,
-        schoolId: student.school?.id || undefined,
-      }).catch((err) => {
-        logger.logger.error(`[Student OTP] Email dispatch failed: ${err.message}`);
-      });
-    } else {
-      logger.logger.warn(
-        `[Student OTP] No parent email on file for ${student.firstName} ${student.lastName} — OTP not emailed.`
+    if (!parentEmail) {
+      // Guardian email hi student OTP ka sole channel hai. Email ke bagair OTP
+      // kahin nahi jata, aur production me response me bhi nahi aata — student
+      // ko "sent" dikhega par login kabhi nahi hoga.
+      throw ApiError.badRequestError(
+        "No parent/guardian email on file for this student. Please contact your school to add an email address."
       );
     }
+
+    await sendOtpEmail({
+      to: parentEmail,
+      recipientName: student.parent?.name || "Parent/Guardian",
+      otp,
+      organizationId: student.school?.organizationId || undefined,
+      schoolId: student.school?.id || undefined,
+    }).catch((err) => {
+      logger.logger.error(`[Student OTP] Email dispatch failed: ${err.message}`);
+    });
 
     return {
       message: `OTP generated for ${student.firstName} ${student.lastName}. (Sent to registered Parent email).`,

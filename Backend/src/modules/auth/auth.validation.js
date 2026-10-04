@@ -213,6 +213,7 @@ export const studentRequestOtpSchema = z.object({
   body: z.object({
     schoolCode: z.string().optional(),
     rollNumber: z.string().optional(),
+    identifierCode: z.string().optional(),
     cardId: z.string().optional(),
   }),
 });

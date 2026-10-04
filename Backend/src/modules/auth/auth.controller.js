@@ -458,8 +458,8 @@ class AuthController {
    * OTP is sent to parent contact.
    */
   studentRequestOtp = asyncHandler(async (req, res) => {
-    const { schoolCode, rollNumber, cardId } = req.body;
-    const result = await authService.requestStudentOtp({ schoolCode, rollNumber, cardId });
+      const { schoolCode, rollNumber, identifierCode, cardId } = req.body;
+      const result = await authService.requestStudentOtp({ schoolCode, rollNumber, identifierCode, cardId });
     return res.status(200).json(
       ApiResponse.ok(result.message, result)
     );

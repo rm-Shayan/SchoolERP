@@ -343,7 +343,10 @@ class AcademicService {
 
   async updateSubject(user, id, data) {
     const subject = await _owned(user, academicRepository.findSubjectById(id), "Subject", (s) => s.class.schoolId);
-    const result = await academicRepository.updateSubject(id, data);
+    const patch = {};
+    if (data.name !== undefined) patch.name = data.name;
+    if (data.code !== undefined) patch.code = data.code;
+    const result = await academicRepository.updateSubject(id, patch);
     await Promise.all([
       cacheDel(`academic:classes:${subject.class.schoolId}`),
       cacheDel(`academic:subjects:${subject.classId}`),

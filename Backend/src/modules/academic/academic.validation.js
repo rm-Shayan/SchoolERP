@@ -170,8 +170,6 @@ export const createSubjectSchema = z.object({
   body: z.object({
     name: z.string().min(1, "Subject name required (e.g. Mathematics)"),
     code: z.string().optional(),
-    fullMarks: z.number().int().positive().optional(),
-    passMarks: z.number().int().positive().optional(),
   }),
 });
 
@@ -182,8 +180,6 @@ export const updateSubjectSchema = z.object({
   body: z.object({
     name: z.string().min(1).optional(),
     code: z.string().nullable().optional(),
-    fullMarks: z.number().int().positive().optional(),
-    passMarks: z.number().int().positive().optional(),
   }),
 });
 
