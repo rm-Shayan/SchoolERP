@@ -32,7 +32,7 @@ class StaffLeaveController {
 
   review = async (req, res, next) => {
     try {
-      const schoolId = req.user?.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.query.schoolId || req.body?.schoolId);
       const { status, remarks } = req.body;
       const result = await staffLeaveService.review(schoolId, req.params.id, { status, remarks }, req.user?.id);
       return res.status(200).json(ApiResponse.ok(`Leave request ${status.toLowerCase()}`, result));
@@ -43,7 +43,7 @@ class StaffLeaveController {
 
   create = async (req, res, next) => {
     try {
-      const schoolId = req.user?.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.query.schoolId || req.body?.schoolId);
       const result = await staffLeaveService.create(schoolId, req.body, req.user?.id);
       return res.status(201).json(ApiResponse.created("Staff leave created", result));
     } catch (error) {
@@ -53,7 +53,7 @@ class StaffLeaveController {
 
   remove = async (req, res, next) => {
     try {
-      const schoolId = req.user?.schoolId;
+      const schoolId = getEffectiveSchoolId(req.user, req.query.schoolId);
       const result = await staffLeaveService.remove(schoolId, req.params.id);
       return res.status(200).json(ApiResponse.ok("Staff leave deleted", result));
     } catch (error) {

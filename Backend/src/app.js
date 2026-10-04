@@ -69,6 +69,13 @@ app.use(
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// Express 5 only fills req.body when Content-Type matches a parser, so a client
+// that omits the header (or sends no body) used to make handlers destructure
+// `undefined` and answer 500. Always hand them an object.
+app.use((req, _res, next) => {
+  if (req.body === undefined) req.body = {};
+  next();
+});
 app.use(securityHeaders);
 
 app.use(
