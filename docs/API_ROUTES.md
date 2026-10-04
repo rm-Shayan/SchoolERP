@@ -24,8 +24,14 @@
 | **Parent** | Requires Parent portal JWT |
 | **Student** | Requires Student portal JWT |
 | **Any Portal** | Requires Parent OR Student portal JWT |
+| **orgSelf** | SUPER_ADMIN, **or** the org's own owner — a user with `role=ADMIN` **and** `isOrganizationOwner=true` whose `organizationId` matches the `:id` param. There is **no** `ORG_ADMIN` role; ownership is a flag on `ADMIN`. |
 
 > `[...]` in the Role column = explicit role array (not a named group).
+>
+> **Owner field must stay in the auth snapshot.** `isOrganizationOwner` is selected by
+> `USER_SELECT` in `Backend/src/middlewares/auth.middleware.js`. If it is dropped from that
+> select, every `orgSelf` route silently 403s for the real owner while SUPER_ADMIN keeps
+> working — which is exactly the failure fixed in `auth.middleware.js`.
 
 ---
 
@@ -103,7 +109,10 @@
 
 ---
 
-## Organizations (14)
+## Organizations (16)
+
+`orgSelf` = `authorizeOrgSelf()` — SUPER_ADMIN, **or** the org's own owner (a user with
+`role=ADMIN` **and** `isOrganizationOwner=true` passing `req.user.organizationId === req.params.id`).
 
 | # | Method | Route | Role |
 |---|--------|-------|------|
@@ -118,9 +127,11 @@
 | 9 | GET | `/organizations/health` | SUPER_ADMIN (org-level health audit) |
 | 10 | GET | `/organizations/export` | SUPER_ADMIN |
 | 11 | GET | `/organizations/:id/dashboard` | SUPER_ADMIN |
-| 12 | GET | `/organizations/:id` | SUPER_ADMIN |
-| 13 | PATCH | `/organizations/:id` | SUPER_ADMIN |
-| 14 | DELETE | `/organizations/:id` | SUPER_ADMIN |
+| 12 | GET | `/organizations/:id` | orgSelf |
+| 13 | PATCH | `/organizations/:id` | orgSelf |
+| 14 | DELETE | `/organizations/:id` | orgSelf |
+| 15 | PATCH | `/organizations/:id/default-branch` | orgSelf (set explicit main campus) |
+| 16 | POST | `/organizations/:id/transfer-ownership` | orgSelf (hand org settings rights to another admin) |
 
 ---
 

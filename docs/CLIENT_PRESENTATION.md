@@ -1,4 +1,4 @@
-# SchoolERP
+﻿# SchoolERP
 ## A connected operating system for modern schools
 
 SchoolERP brings admissions, academics, attendance, fees, staff operations, communication, and family access into one multi-tenant platform. It supports organizations with one or more branches while keeping each branch's data and permissions scoped correctly.
@@ -135,32 +135,19 @@ Real-time behavior is used for selected operational events; it does not replace 
 
 ### Create local demo data
 
-From the repository root, run the backend demo seeder:
+> **Removed.** The demo seeder (`scripts/demo-data.js`) and its `npm run demo` entry were deleted in
+> commit `910d2f8`, along with the `Backend/demo-info/` credential output described below.
+>
+> For an isolated API test tenant, use the test-tenant scripts instead:
 
 ```bash
 cd Backend
-npm run demo -- --name "Your Client's School Name" --reset --yes
+npm run test:tenant:seed     # org smoke-org, 2 branches, staff/parent/student logins
+npm run test:tenant:delete   # FK-safe, idempotent teardown
 ```
 
-The seeder writes human-readable and structured credentials and portal URLs to `Backend/demo-info/`. The generated information should be treated as sensitive and used only for the demonstration environment.
-
-#### Demo example
-
-For example, to prepare a demo for **Al-Noor Public School** with a small but complete dataset:
-
-```bash
-cd Backend
-npm run demo -- --name "Al-Noor Public School" --code ALNOOR --students 12 --teachers 3 --months 3 --reset --yes
-```
-
-This creates or refreshes one demo tenant and seeds classes, sections, staff, students, parents, fees, exams, attendance, timetable, notices, homework, PTM, conduct remarks, and admission applicants. The command prints the login details and writes files similar to:
-
-```text
-Backend/demo-info/ALNOOR.md
-Backend/demo-info/ALNOOR.json
-```
-
-Open the `.md` file before the client meeting. It contains the public school page, branch dashboard URL, parent/student portal URL, and the generated demo credentials. For a normal repeat run, omit `--reset --yes`; existing demo data is kept. Use `--reset --yes` only when a fresh demo is required because it deletes that demo tenant's data.
+`seedTestTenant.js` writes ids and credentials to `Backend/scripts/.testTenant.json`. That file is
+gitignored because it holds live test credentials — treat it as sensitive and never commit it.
 
 ### Prepare a production rollout
 
@@ -173,54 +160,9 @@ Production deployment requires the environment and infrastructure to be configur
 - Tenant storage credentials where applicable
 - Credential verification enabled in production
 
-The `scripts/demo-to-production.js` utility is an operator migration tool. Run it only after reviewing the target environment, backups, organization scope, and migration confirmation requirements.
 
-#### Demo-to-production example
 
-The migration reads the selected organization from the local demo database in `Backend/dev.env` and copies it to the production database in `Backend/.env`. IDs are preserved; SMTP and Cloudinary secrets are re-encrypted with the production key.
-
-First inspect the migration plan without changing production:
-
-```bash
-cd Backend
-node --env-file=.env scripts/demo-to-production.js --dry-run --org <organization-id>
-```
-
-Example for the organization created above:
-
-```bash
-cd Backend
-node --env-file=.env scripts/demo-to-production.js --dry-run --org <ALNOOR-organization-id>
-```
-
-If the row counts and organization name are correct, take a production backup and run the confirmed migration:
-
-```bash
-node --env-file=.env scripts/demo-to-production.js --yes --org <ALNOOR-organization-id>
-```
-
-Expected successful output looks like this:
-
-```text
-Source: localhost:5432
-Target: production-host:5432
-Org: Al-Noor Public School (al-noor-public-school)
-PARSE PLAN:
-	Organization: 1
-	School: 1
-	Student: 12
-	...
-SUCCESS: Al-Noor Public School (...) production mein copy ho gaya — ... rows.
-```
-
-If the same organization already exists in production, the script stops rather than overwriting it. Only after a verified backup and explicit approval should an operator use `--replace`:
-
-```bash
-node --env-file=.env scripts/demo-to-production.js --yes --replace --org <ALNOOR-organization-id>
-```
-
-Never run `--replace` as part of a routine client demo. `--dry-run` is read-only, while `--yes` performs the write.
-
+> **Removed.** The demo-to-production migration utility was deleted in commit 910d2f8. The procedure below no longer exists in the codebase.
 ---
 
 ## 6. Recommended Client Walkthrough

@@ -180,6 +180,31 @@ unblockSchool: branch -> ACTIVE; agar koi branch blocked na bache -> org ACTIVE
 
 ---
 
+### 5.3 Default Branch (Main Campus) (2026-09-20)
+
+Har organization ka ek branch **main campus** hota hai — flag `School.isDefaultBranch`
+(migration `20260920110000_school_default_branch_flag`).
+
+- Org provision karte waqt pehla branch default ban jata hai
+- Baad me sirf org owner badal sakta hai: `PATCH /organizations/:id/default-branch` (`orgSelf`)
+- Branch delete karte waqt default branch ko hatane se pehle doosra default set karna padta hai
+
+### 5.4 Branch Delete Semantics (2026-09-20)
+
+`DELETE /schools/:id` kabhi silent cascade nahi karta. Hamesha **explicit reassignment** maangta hai
+(`school.service.js`):
+
+| Related data | Rule |
+|---|---|
+| Students / sections / classes / timetable slots | Target branch pe reassign karna padta hai |
+| Wahan branch ka admin | **Preserve** hota hai |
+| Delete hone wale branch ke admins | **Deactivate** ho jaate hain |
+
+Ye isliye zaroori tha kyunki kuch FKs `Restrict` par hain (jaise `TimetableSlot.teacherId`,
+`Student.sectionId`) — inhe children ke saath pehle hatana padta hai.
+
+---
+
 ## 6. School Health Page (Redesigned)
 
 ### 6.1 Two-Level View
@@ -308,6 +333,14 @@ Target admins receive:
 ---
 
 ## 9. Storage & SMTP Configuration
+
+> **Branch-scoped since 2026-09-20.** SMTP aur storage settings ab **org-wide nahi, per-branch**
+> hain (migration `20260920100000_branch_only_secrets_and_org_owner`). Har branch apne secrets
+> store karta hai. Cross-org ya `branchAccess` ke bahar ki branch read/write reject ho jaati hai —
+> ye check centrally `Backend/src/lib/scope.js` me hai, har controller me alag nahi.
+>
+> Frontend par iska matlab: settings page par credentials section branch ke hisaab se load hota
+> hai, aur ek branch ke secrets doosre branch me dikhte nahi.
 
 ### 9.1 Tenant-First Failover Chain
 

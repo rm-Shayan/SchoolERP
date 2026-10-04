@@ -150,7 +150,55 @@ kisi bhi staff ka naya password set kar sakta hai (`POST /auth/users/:id/reset-p
 
 ---
 
-## 6. Source Map
+## 6. Organization Owner (2026-09-20)
+
+**Role model:** koi `ORG_ADMIN` role nahi hai. Har branch ka apna `ADMIN` (Principal) hota hai —
+ek login, ek hi branch. Organization-level settings ka access ek **flag** se milta hai:
+
+```
+User.role               = ADMIN
+User.isOrganizationOwner = true      // <= yeh banata hai org owner
+User.organizationId     = <orgId>
+```
+
+Frontend bhi yehi check karta hai (`SettingsPage.tsx`):
+`isSuperAdmin || (isAdmin && user?.isOrganizationOwner === true)`.
+
+### Owner-only org routes (`authorizeOrgSelf()`)
+
+`SUPER_ADMIN` **ya** wohi user jiska `organizationId` route ke `:id` se match kare.
+
+| Method | Route | Kaam |
+|--------|-------|------|
+| GET | `/organizations/:id` | Org settings padhna |
+| PATCH | `/organizations/:id` | Org settings update |
+| DELETE | `/organizations/:id` | Org delete |
+| PATCH | `/organizations/:id/default-branch` | Explicit main campus set karna |
+| POST | `/organizations/:id/transfer-ownership` | Owner rights doosre admin ko dena |
+
+`isOrganizationOwner` `auth.middleware.js` ke `USER_SELECT` me hona **zaroori** hai. Agar wo select
+se gir jaye to `req.user.isOrganizationOwner` undefined ho jaata hai aur `authorizeOrgSelf()`
+ asli owner ko 403 de deta hai — jabki SUPER_ADMIN chalta rahta hai. Ye bug fix kiya gaya hai
+(`auth.middleware.js`), aur isi wajah se Settings ka Organization tab chup-chaap load nahi hota tha.
+
+### Exactly-one-owner invariant
+
+Har organization ka **exactly ek** owner hona chahiye. `ownerSuccession.js` ise enforce karta hai:
+
+- Owner deactivate ya delete hota hai → successor **deterministically** choose hota hai
+  (branch scope order stable rehta hai, isliye repeatable hai)
+- Owner transfer karte waqt naya owner select hota hai; purana owner normal `ADMIN` ban jata hai
+- Transfer ke waqt target user usi organization ka admin hona chahiye
+
+### Default branch (main campus)
+
+`School.isDefaultBranch` — per-org flag. Multi-branch org me ye batata hai kaunsa branch
+"main campus" hai. Org banate waqt default branch set hota hai, aur baad me
+`PATCH /organizations/:id/default-branch` se badla ja sakta hai.
+
+---
+
+## 7. Source Map
 
 | Flow | File |
 |---|---|

@@ -67,10 +67,24 @@ Note: ye **live replication nahi** hai — fresh production data chahiye to comm
 | Script | Kya karta hai |
 |---|---|
 | `NODE_ENV=local npm run dev` | Local dev server (`dev.env`, `--watch`) |
-| `npm run seed` / `npm run demo` | Local seed/demo data (`dev.env`) |
-| `npm run clean` | Org/branch data cleaner (`dev.env`) |
-| `npm run sync:neon` | Neon → local sync (dry-run) |
+| `npm run start` | Production start (`.env`) |
+| `npm run sync:neon` | Neon → local sync (dry-run; `-- --yes` se actual sync) |
+| `npm run secrets:rotate:key` | `MAIL_ENC_KEY` rotate karta hai, tenant secrets re-encrypt karke (data khoone ke bina) |
+| `npm run test:tenant:seed` | Isolated test tenant banata hai — 1 org, 2 branches, staff/parent/student logins |
+| `npm run test:tenant:delete` | Wo test tenant FK-safe, idempotent tareeke se hata deta hai |
 | `npm test` | Node built-in test runner |
+
+### `scripts/` folder
+
+| File | Kaam |
+|---|---|
+| `seedTestTenant.js` | Test tenant seed. Credentials `.testTenant.json` me likhta hai (gitignored) |
+| `deleteTestTenant.js` | Test tenant teardown |
+| `rotateSmtpEncryptionKey.js` | `MAIL_ENC_KEY` rotation |
+| `sync-from-neon.js` | Neon → local data sync |
+
+> Purane `demo` aur `demoToproduction` npm scripts hata diye gaye — unke target
+> (`demo-data.js`, `demo-to-production.js`) commit `910d2f8` me delete ho chuke the.
 
 ## Troubleshooting
 
