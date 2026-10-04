@@ -402,7 +402,24 @@ export const authenticateStudent = async (req, res, next) => {
 // ==========================================
 
 /**
- * authenticateAnyPortal — accepts both parent and student portal JWTs.
+ * Narrow a parent's portal scope down to one child (the child switcher).
+ *
+ * `schoolId` must move with the child: a parent's children can sit in different
+ * branches, and without this the school-scoped reads (circulars, notices, exam
+ * sheets, PTM, study materials, notifications) kept returning the FIRST child's
+ * branch no matter which child was selected. Pure so it can be unit tested.
+ */
+export const scopePortalToChild = (portal, child) => ({
+  ...portal,
+  children: [child],
+  studentIds: [child.id],
+  sectionIds: child.sectionId ? [child.sectionId] : [],
+  schoolId: child.schoolId,
+  organizationId: child.school?.organizationId ?? null,
+});
+
+/**
+ * authenticateAnyPortal - accepts both parent and student portal JWTs.
  * Attaches req.portal = { type, id, name, schoolId } on success.
  * Use on /portal/* routes that serve both parent and student views.
  */
@@ -457,19 +474,16 @@ export const authenticateAnyPortal = async (req, res, next) => {
 
       // Parent portal child switcher: ?studentId= de to sirf us child ka data
       // scope karo (attendance/fees/results — saare tabs per-child ho jate hain).
-      // GET only — leave POST apne body ke studentId par khud validate hota hai.
-      const scopedStudentId = req.method === "GET" ? req.query?.studentId : undefined;
+      // GET me query se, POST me body se (leave request bhi usi child ka hona
+      // chahiye warna leave galat branch me ban jaata tha).
+      const scopedStudentId =
+        req.method === "GET" ? req.query?.studentId : req.body?.studentId;
       if (scopedStudentId) {
         const match = children.find((c) => c.id === scopedStudentId);
         if (!match) {
           return next(ApiError.forbiddenError("Student is not linked to your account."));
         }
-        req.portal = {
-          ...req.portal,
-          children: [match],
-          studentIds: [match.id],
-          sectionIds: match.sectionId ? [match.sectionId] : [],
-        };
+        req.portal = scopePortalToChild(req.portal, match);
       }
       return next();
     }
