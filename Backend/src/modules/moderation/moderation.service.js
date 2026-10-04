@@ -404,11 +404,14 @@ class ModerationService {
     const target = await moderationRepository.findUserById(userId);
     if (!target) throw ApiError.notFoundError("User not found");
 
-    this._assertCanModerateStaff(requester, target, "block");
-    if (target.id === requester.id) {
-      throw ApiError.badRequestError("You cannot block your own account.");
-    }
-    if (!target.isActive) return target; // idempotent
+      // Self-check pehle: warna rank check pehle fail hota hai aur ADMIN ko
+      // galat message milta hai ("another Branch Admin") jab khud ko block karta hai.
+      if (target.id === requester.id) {
+        throw ApiError.badRequestError("You cannot block your own account.");
+      }
+
+      this._assertCanModerateStaff(requester, target, "block");
+      if (!target.isActive) return target; // idempotent
 
     const updated = await moderationRepository.updateUser(userId, {
       isActive: false,
