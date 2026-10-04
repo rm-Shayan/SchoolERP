@@ -32,17 +32,19 @@ async function main() {
     data: { name: "Smoke Test Academy", slug: SLUG, code: CODE, status: "ACTIVE" },
   });
   const b1 = await prisma.school.create({
-    data: {
-      organizationId: org.id, name: "Smoke Campus One", code: "SMOKE-B1",
-      isDefaultBranch: true, address: "Test Address 1", phone: "0300-0000001", status: "ACTIVE",
-    },
-  });
-  const b2 = await prisma.school.create({
-    data: {
-      organizationId: org.id, name: "Smoke Campus Two", code: "SMOKE-B2",
-      address: "Test Address 2", phone: "0300-0000002", status: "ACTIVE",
-    },
-  });
+      data: {
+        organizationId: org.id, name: "Smoke Campus One", code: "SMOKE-B1",
+        isDefaultBranch: true, address: "Test Address 1", phone: "0300-0000001", status: "ACTIVE",
+        portalPassword: hash,
+      },
+    });
+    const b2 = await prisma.school.create({
+      data: {
+        organizationId: org.id, name: "Smoke Campus Two", code: "SMOKE-B2",
+        address: "Test Address 2", phone: "0300-0000002", status: "ACTIVE",
+        portalPassword: hash,
+      },
+    });
 
   // ── Users, one per role ───────────────────────────────────────────
   const mkUser = (data) => prisma.user.create({ data: { password: hash, isActive: true, ...data } });

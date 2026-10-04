@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import Logger from "../lib/utils/logger.js";
 import { getTenantStorageCreds } from "../lib/utils/orgStorage.cache.js";
 import { getRequestOrganizationId, getRequestSchoolId } from "../lib/requestContext.js";
+import ApiError from "../lib/utils/ApiError.js";
 
 const logger = new Logger("storage-service");
 
@@ -130,11 +131,11 @@ class StorageService {
    */
   async uploadImage({ buffer, folder = "active-students", width = IMAGE_MAX_DIMENSION, height = IMAGE_MAX_DIMENSION, existingUrl, organizationId, schoolId }) {
     if (!buffer || buffer.length === 0) {
-      throw new Error("Empty image buffer");
+      throw ApiError.badRequestError("Empty image buffer");
     }
 
     if (buffer.length > MAX_IMAGE_UPLOAD_BYTES) {
-      throw new Error(`Image exceeds the ${MAX_IMAGE_UPLOAD_SIZE_MB}MB upload limit`);
+      throw ApiError.badRequestError(`Image exceeds the ${MAX_IMAGE_UPLOAD_SIZE_MB}MB upload limit`);
     }
 
     // Detect format from file content (client MIME is untrusted) and enforce
@@ -145,7 +146,7 @@ class StorageService {
       const meta = await sharp(buffer).metadata();
       sourceFormat = meta.format;
     } catch (err) {
-      throw new Error("Invalid or corrupt image file");
+      throw ApiError.badRequestError("Invalid or corrupt image file");
     }
     // iPhone photos HEIC/HEIF me aati hain — sharp HEIF support ho to pehle
     // JPEG me convert karo, phir normal flow (WebP compression). Ye "backend
@@ -155,11 +156,11 @@ class StorageService {
         buffer = await sharp(buffer).rotate().jpeg({ quality: 90 }).toBuffer();
         sourceFormat = "jpeg";
       } catch (err) {
-        throw new Error("HEIC photo convert nahi ho saki — JPG/PNG/WebP chuno");
+        throw ApiError.badRequestError("HEIC photo convert nahi ho saki — JPG/PNG/WebP chuno");
       }
     }
     if (!sourceFormat || !ALLOWED_FORMATS.has(sourceFormat)) {
-      throw new Error("Only JPG, PNG and WebP images are allowed");
+      throw ApiError.badRequestError("Only JPG, PNG and WebP images are allowed");
     }
 
     // Auto-compress + convert to WebP (max 500x500). Keeps storage ~100-150KB
@@ -410,12 +411,12 @@ class StorageService {
    * @returns {Promise<{ url: string }>}
    */
   async uploadDocument({ buffer, folder = "applicant-docs", filename = "document", organizationId, schoolId }) {
-    if (!buffer || buffer.length === 0) throw new Error("Empty document buffer");
+    if (!buffer || buffer.length === 0) throw ApiError.badRequestError("Empty document buffer");
 
     const maxMb = Number.parseInt(process.env.MAX_FILE_UPLOAD_SIZE_MB || "5", 10);
     const maxBytes = Number.isFinite(maxMb) ? maxMb * 1024 * 1024 : 5 * 1024 * 1024;
     if (buffer.length > maxBytes) {
-      throw new Error(`File exceeds the ${maxMb}MB upload limit`);
+      throw ApiError.badRequestError(`File exceeds the ${maxMb}MB upload limit`);
     }
 
     // Content sniff: PDF magic bytes, else require a valid image
@@ -426,10 +427,10 @@ class StorageService {
       try {
         format = (await sharp(buffer).metadata()).format;
       } catch (err) {
-        throw new Error("Invalid or corrupt file — only PDF, JPG, PNG and WebP are allowed");
+        throw ApiError.badRequestError("Invalid or corrupt file — only PDF, JPG, PNG and WebP are allowed");
       }
       if (!ALLOWED_FORMATS.has(format)) {
-        throw new Error("Only PDF, JPG, PNG and WebP documents are allowed");
+        throw ApiError.badRequestError("Only PDF, JPG, PNG and WebP documents are allowed");
       }
     }
 

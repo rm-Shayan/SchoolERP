@@ -13,7 +13,8 @@
     "sync:neon": "node --env-file=dev.env scripts/sync-from-neon.js",
     "secrets:rotate:key": "node scripts/rotateSmtpEncryptionKey.js",
     "test:tenant:seed": "node scripts/seedTestTenant.js",
-    "test:tenant:delete": "node scripts/deleteTestTenant.js"
+    "test:tenant:delete": "node scripts/deleteTestTenant.js",
+    "cache:clear": "node scripts/clearPortalCache.js"
   },
   "keywords": [],
   "author": "rm-shayan",
