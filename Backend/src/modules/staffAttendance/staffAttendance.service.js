@@ -26,7 +26,14 @@ class StaffAttendanceService {
       update: {
         status: status || "PRESENT",
         remarks: remarks || null,
-        checkIn: checkIn ? new Date(checkIn) : status !== "ABSENT" ? new Date() : null,
+        // First check-in of the day wins. Repeated marks/scans must not move
+        // checkIn to "now" and lose the original time — only an explicit
+        // checkIn (admin correction via /mark, /bulk or PUT /:id) overrides it.
+        ...(checkIn
+          ? { checkIn: new Date(checkIn) }
+          : status === "ABSENT"
+            ? { checkIn: null }
+            : {}),
       },
       create: {
         staffId,
@@ -119,13 +126,13 @@ class StaffAttendanceService {
     if (!staff) throw ApiError.notFoundError("Staff member not found or inactive");
     if (!staff.schoolId) throw ApiError.badRequestError("Staff has no branch assigned");
 
-    // Duplicate-scan guard: aaj already PRESENT?
+    // Duplicate-scan guard: aaj check-in already recorded? (PRESENT ya LATE, koi bhi)
     const day = new Date();
     day.setHours(0, 0, 0, 0);
     const existing = await prisma.staffAttendance.findUnique({
       where: { staffId_date: { staffId: staff.id, date: day } },
     });
-    if (existing && existing.status === "PRESENT") {
+    if (existing?.checkIn) {
       return { alreadyCheckedIn: true, record: existing, staffName: staff.name };
     }
 

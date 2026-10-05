@@ -12,7 +12,7 @@ class PortalRepository {
         studentId: { in: studentIds },
         date: { gte: start, lte: end },
       },
-      select: { date: true, status: true, checkIn: true, checkOut: true, studentId: true },
+      select: { date: true, status: true, checkIn: true, studentId: true },
       orderBy: { date: "asc" },
     });
 
@@ -48,7 +48,7 @@ class PortalRepository {
         date: { gte: start, lte: end },
       },
       select: {
-        date: true, status: true, checkIn: true, checkOut: true,
+        date: true, status: true, checkIn: true,
         student: { select: { id: true, firstName: true, lastName: true } },
       },
       orderBy: { date: "desc" },
