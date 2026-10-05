@@ -190,9 +190,11 @@ class AttendanceRepository {
         data: { status, checkIn: scanTime, scanLog: [...(existingRecord.scanLog || []), scanEntry].slice(-20) },
       });
     } else {
+      // Student attendance = check-in only (no checkout). Repeated scan
+      // same day: checkIn/status touch nahi hote, bas scanLog me entry.
       attendanceRecord = await prisma.attendanceRecord.update({
         where: { id: existingRecord.id },
-        data: { checkOut: scanTime, scanLog: [...(existingRecord.scanLog || []), scanEntry].slice(-20) },
+        data: { scanLog: [...(existingRecord.scanLog || []), scanEntry].slice(-20) },
       });
     }
 

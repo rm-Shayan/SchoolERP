@@ -19,8 +19,7 @@ function toLiveScanEvent(payload: any): LiveScanEvent {
     imageUrl: student.imageUrl ?? payload.imageUrl,
     identifierCode: student.identifierCode ?? payload.identifierCode,
     checkIn: payload.checkIn ?? null,
-    checkOut: payload.checkOut ?? null,
-    status: payload.status ?? 'PRESENT',
+      status: payload.status ?? 'PRESENT',
     scannedAt: payload.scannedAt ?? new Date().toISOString(),
   };
 }

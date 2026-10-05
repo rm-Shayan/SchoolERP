@@ -7,7 +7,6 @@ export interface AttendanceRecord {
   date: string;
   status: AttendanceStatus;
   checkIn?: string;
-  checkOut?: string;
   remarks?: string;
   student?: Student;
 }

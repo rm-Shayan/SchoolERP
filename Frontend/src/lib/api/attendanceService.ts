@@ -27,7 +27,6 @@ export interface ScanResult {
   imageUrl?: string;
   identifierCode: string;
   checkIn?: string;
-  checkOut?: string;
   status: AttendanceStatus | string;
   scannedAt: string;
   feeStatus?: FeeScanStatus | null;

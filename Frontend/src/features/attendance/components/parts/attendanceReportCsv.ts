@@ -109,17 +109,17 @@ export function exportStudentMonthCsv(params: {
   records.forEach((r) => map.set(key(r.studentId, r.date), r));
   const offSet = new Set(offDays.map((o) => o.date));
   const cells = monthCells(year, month, weeklyOff);
-  const header = ['Date', 'Day', 'Status', 'Check In', 'Check Out', 'Remarks'];
+  const header = ['Date', 'Day', 'Status', 'Check In', 'Remarks'];
 
   const rows = cells.map(({ day, weekend }) => {
     const date = `${year}-${pad2(month)}-${pad2(day)}`;
     const dow = new Date(year, month - 1, day).toLocaleDateString('en-PK', { weekday: 'short' });
-    if (weekend) return [date, dow, 'Weekend', '', '', ''];
-    if (offSet.has(date)) return [date, dow, 'School Off', '', '', ''];
+    if (weekend) return [date, dow, 'Weekend', '', ''];
+    if (offSet.has(date)) return [date, dow, 'School Off', '', ''];
     const rec = map.get(key(student.id, date));
-    if (!rec) return [date, dow, 'Unmarked', '', '', ''];
+    if (!rec) return [date, dow, 'Unmarked', '', ''];
     const time = (iso?: string) => (iso ? new Date(iso).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' }) : '');
-    return [date, dow, rec.status.replace('_', ' '), time(rec.checkIn), time(rec.checkOut), rec.remarks ?? ''];
+    return [date, dow, rec.status.replace('_', ' '), time(rec.checkIn), rec.remarks ?? ''];
   });
 
   toCsv(header, rows, `${student.firstName}-${student.lastName}-${year}-${pad2(month)}`);

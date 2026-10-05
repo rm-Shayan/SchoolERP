@@ -108,7 +108,6 @@ class AttendanceService {
       scanType: result.scanType,
       scannedAt: scanTime,
       checkIn: result.attendanceRecord.checkIn,
-      checkOut: result.attendanceRecord.checkOut,
     };
     emitToRoom(`section:${student.sectionId}`, "portal:attendance_marked", portalPayload);
     emitToRoom(`school:${student.schoolId}`, "portal:attendance_marked", portalPayload);
@@ -121,7 +120,6 @@ class AttendanceService {
         identifierCode: student.identifierCode,
       },
       checkIn: result.attendanceRecord.checkIn,
-      checkOut: result.attendanceRecord.checkOut,
       status: result.attendanceRecord.status,
       scannedAt: scanTime,
       schoolId: student.schoolId,
@@ -163,7 +161,6 @@ class AttendanceService {
       scanType: result.scanType,
       scannedAt: scanTime,
       checkIn: result.attendanceRecord.checkIn,
-      checkOut: result.attendanceRecord.checkOut,
       feeStatus,
     };
   }

@@ -12,7 +12,7 @@ interface Props {
   studentName?: string;
   /** Current record status (optional — shown as "Currently: X"). */
   currentStatus?: string;
-  /** Optional current record ID — uses PUT /attendance/:id so checkIn/checkOut are preserved. */
+  /** Optional current record ID — uses PUT /attendance/:id so checkIn is preserved. */
   recordId?: string;
   date: string;
   schoolId?: string;
@@ -55,7 +55,7 @@ export default function AttendanceOverrideModal({ studentId, studentName, curren
     setSaving(true);
     try {
       if (recordId) {
-        // PUT keeps checkIn / checkOut / scanLog — a scan record stays a scan record.
+        // PUT keeps checkIn / scanLog — a scan record stays a scan record.
         await attendanceService.updateRecord(recordId, { status, remarks: remarks || undefined });
       } else {
         await attendanceService.manualOverride({ studentId, date, status, remarks: remarks || undefined });

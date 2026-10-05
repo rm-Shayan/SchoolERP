@@ -8,7 +8,6 @@ export interface PortalAttendanceEvent {
   scanType: string;
   scannedAt: string;
   checkIn?: string;
-  checkOut?: string;
 }
 
 export interface PortalHomeworkEvent {

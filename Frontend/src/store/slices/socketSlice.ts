@@ -7,7 +7,6 @@ export interface LiveScanEvent {
   imageUrl?: string;
   identifierCode: string;
   checkIn?: string;
-  checkOut?: string;
   status: string;
   scannedAt: string;
 }

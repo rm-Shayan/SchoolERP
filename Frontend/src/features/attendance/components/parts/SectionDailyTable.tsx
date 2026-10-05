@@ -7,7 +7,6 @@ export interface DailyRow {
   studentId: string;
   status: string;
   checkIn?: string;
-  checkOut?: string;
   student?: {
     firstName?: string;
     lastName?: string;
@@ -43,7 +42,6 @@ export default function SectionDailyTable({ rows, onOverride, onDelete }: Props)
             <th className="text-left py-3 px-4 text-[11px] font-bold text-gray-500 uppercase">Student</th>
             <th className="text-center py-3 px-4 text-[11px] font-bold text-gray-500 uppercase">Status</th>
             <th className="text-center py-3 px-4 text-[11px] font-bold text-gray-500 uppercase">Check In</th>
-            <th className="text-center py-3 px-4 text-[11px] font-bold text-gray-500 uppercase">Check Out</th>
             <th className="text-right py-3 px-4 text-[11px] font-bold text-gray-500 uppercase">Action</th>
           </tr></thead>
           <tbody>{rows.map((r) => {
@@ -60,7 +58,6 @@ export default function SectionDailyTable({ rows, onOverride, onDelete }: Props)
                   </span>
                 </td>
                 <td className="py-3 px-4 text-center text-xs text-gray-500 tabular-nums">{timeCell(r.checkIn)}</td>
-                <td className="py-3 px-4 text-center text-xs text-gray-500 tabular-nums">{timeCell(r.checkOut)}</td>
                 <td className="py-3 px-4 text-right">
                   <div className="flex gap-2 justify-end">
                     <button onClick={() => onOverride(r)} className="text-[11px] font-semibold text-primary-600 hover:text-primary-800">Override</button>

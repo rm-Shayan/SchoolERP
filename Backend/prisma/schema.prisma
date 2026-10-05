@@ -569,8 +569,7 @@ model AttendanceRecord {
   studentId  String
   date       DateTime         @db.Date
   status     AttendanceStatus @default(ABSENT)
-  checkIn    DateTime?
-  checkOut   DateTime?
+  checkIn    DateTime?        // check-in only — checkout nahi hai (staff ke liye alag model)
   scanLog    Json?            // raw scan events: [{deviceId, method, scannedAt}]
   remarks    String?
   createdAt  DateTime         @default(now())

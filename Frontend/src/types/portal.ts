@@ -20,7 +20,7 @@ export interface PortalOverview {
 }
 
 export interface PortalAttendanceRecord {
-  date: string; status: string; checkIn?: string; checkOut?: string;
+  date: string; status: string; checkIn?: string;
   studentId?: string;
   student?: { id: string; firstName: string; lastName: string };
 }
