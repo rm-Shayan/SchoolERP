@@ -1,3 +1,5 @@
+'use client';
+
 import { cn } from '@/lib/utils';
 import type { ImportTab } from './types';
 
@@ -17,12 +19,14 @@ export default function ImportTabs({ tab, onTabChange }: ImportTabsProps) {
       {TABS.map(([value, label]) => (
         <button
           key={value}
+          type="button"
           onClick={() => onTabChange(value)}
+          aria-current={tab === value ? 'page' : undefined}
           className={cn(
             'rounded-xl px-5 py-2.5 text-sm font-bold transition-all',
             tab === value
-              ? 'bg-primary-600 text-white'
-              : 'text-gray-600 hover:bg-gray-100'
+              ? 'bg-primary-600 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-white hover:text-slate-900'
           )}
         >
           {label}

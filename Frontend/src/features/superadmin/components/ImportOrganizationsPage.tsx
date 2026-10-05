@@ -19,7 +19,7 @@ export default function ImportOrganizationsPage() {
   const [progress, setProgress] = useState<ProgressState>({ phase: 'idle' });
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { listenForProgress, resetJob } = useImportProgress();
+  const { listenForJob, resetJob } = useImportProgress();
 
   const handleDownloadTemplate = async () => {
     setDownloadingTemplate(true);
@@ -45,7 +45,10 @@ export default function ImportOrganizationsPage() {
         total: result.totalRows,
         percent: 0,
       });
-      listenForProgress(result.jobId, setProgress);
+      listenForJob(result.jobId, setProgress, {
+        successMessage: 'Import completed!',
+        failureMessage: 'Import failed',
+      });
       toast.success(
         `Import job started for ${result.totalRows} row${result.totalRows !== 1 ? 's' : ''}`
       );
@@ -74,7 +77,7 @@ export default function ImportOrganizationsPage() {
         }
       />
 
-      <div className="rounded-2xl border border-primary-100 bg-primary-50/60 p-1"><ImportTabs tab={tab} onTabChange={setTab} /></div>
+      <ImportTabs tab={tab} onTabChange={setTab} />
 
       {tab === 'branches' ? (
         <ImportBranches />

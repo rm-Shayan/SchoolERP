@@ -4,10 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { orgService, schoolService } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { downloadBlob } from '@/lib/utils';
-import { cleanupJobListeners, listenForProgress } from './branchImportSocket';
-import type { ProgressState } from './branchImportSocket';
-
-export type ImportMode = 'specific' | 'all';
+import { cleanupJobListeners, listenForProgress } from './importProgressSocket';
+import type { ImportMode, ProgressState } from './types';
 
 export default function useBranchImport() {
   const [mode, setMode] = useState<ImportMode>('specific');
@@ -67,7 +65,10 @@ export default function useBranchImport() {
         total: result.totalRows,
         percent: 0,
       });
-      listenForProgress(result.jobId, setProgress, cleanup, jobIdRef);
+      listenForProgress(result.jobId, setProgress, cleanup, jobIdRef, {
+        successMessage: 'Branch import completed!',
+        failureMessage: 'Branch import failed',
+      });
       toast.success(
         `Branch import job started for ${result.totalRows} row${result.totalRows !== 1 ? 's' : ''}`
       );

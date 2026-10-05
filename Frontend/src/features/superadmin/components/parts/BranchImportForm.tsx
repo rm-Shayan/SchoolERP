@@ -1,14 +1,20 @@
-import { cn } from '@/lib/utils';
+'use client';
+
+import { type RefObject } from 'react';
 import { Button, Card, Select } from '@/features/shared/components';
+import ImportDropzone from './ImportDropzone';
 import BranchImportProgress from './BranchImportProgress';
 import useBranchImport from './useBranchImport';
-import type { ImportMode } from './useBranchImport';
+import type { ImportMode } from './types';
 
 type BranchImportHook = ReturnType<typeof useBranchImport>;
 
 interface Props {
   hook: BranchImportHook;
 }
+
+const BRANCH_DROPZONE_HINT =
+  'Excel format only, up to 10 MB · Required: Name, Code · Optional: Address, Phone, AdminEmail';
 
 export default function BranchImportForm({ hook }: Props) {
   const {
@@ -27,99 +33,75 @@ export default function BranchImportForm({ hook }: Props) {
     inputRef,
   } = hook;
 
+  const busy = progress.phase === 'uploading' || progress.phase === 'processing';
+
   return (
-    <Card className="p-6">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Select
-          label="Import scope"
-          value={mode}
-          onChange={(e) => setMode(e.target.value as ImportMode)}
-          options={[
-            { value: 'specific', label: 'Branches of one organization' },
-            { value: 'all', label: 'Branches across all organizations' },
-          ]}
-        />
-        {mode === 'specific' ? (
+    <Card className="overflow-hidden rounded-3xl border-slate-200 bg-white p-0 shadow-sm">
+      <div className="border-b border-slate-100 px-5 py-4 sm:px-6">
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary-600">
+          Step 1 · Scope
+        </p>
+        <h2 className="mt-1 text-lg font-extrabold text-slate-900">Choose what to import</h2>
+        <p className="mt-1 text-xs text-slate-500">
+          Import branches for a single organization, or for every organization at once.
+        </p>
+      </div>
+
+      <div className="p-5 sm:p-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Select
-            label="Organization"
-            value={organizationId}
-            onChange={(e) => setOrganizationId(e.target.value)}
-            placeholder="Select an organization…"
-            options={orgs.map((o) => ({ value: o.id, label: `${o.name} (${o.code})` }))}
-            required
+            label="Import scope"
+            value={mode}
+            onChange={(e) => setMode(e.target.value as ImportMode)}
+            options={[
+              { value: 'specific', label: 'Branches of one organization' },
+              { value: 'all', label: 'Branches across all organizations' },
+            ]}
           />
-        ) : (
-          <div className="pt-6">
-            <p className="text-xs text-gray-500">
-              Each row must include an{' '}
-              <span className="font-medium text-gray-700">OrganizationCode</span> column so
-              branches are matched to their organization.
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragging(false);
-          const f = e.dataTransfer.files?.[0];
-          if (f) setFile(f);
-        }}
-        onClick={() => inputRef.current?.click()}
-        className={cn(
-          'mt-6 cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center transition-all sm:p-10',
-          dragging
-            ? 'border-primary-500 bg-primary-50/60 scale-[1.01]'
-            : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
-        )}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".xlsx,.xls"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) setFile(f);
-          }}
-        />
-        <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sa-tint-1 rounded-full flex items-center justify-center">
-          <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-          </svg>
+          {mode === 'specific' ? (
+            <Select
+              label="Organization"
+              value={organizationId}
+              onChange={(e) => setOrganizationId(e.target.value)}
+              placeholder="Select an organization…"
+              options={orgs.map((o) => ({ value: o.id, label: `${o.name} (${o.code})` }))}
+              required
+            />
+          ) : (
+            <div className="flex items-end">
+              <p className="rounded-lg border border-primary-100 bg-primary-50/60 px-3.5 py-2.5 text-xs text-slate-600">
+                Every row needs an{' '}
+                <span className="font-bold text-slate-800">OrganizationCode</span> column so
+                branches are matched to their organization.
+              </p>
+            </div>
+          )}
         </div>
-        <p className="text-sm font-medium text-gray-900 truncate">
-          {file ? file.name : 'Drag & drop your Excel file here, or click to browse'}
-        </p>
-        <p className="text-xs text-gray-500 mt-1">
-          {file
-            ? `${(file.size / 1024).toFixed(1)} KB`
-            : 'Columns: Name, Code (required) · Address, Phone, AdminEmail (optional)'}
-        </p>
-      </div>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
-        <Button
-          onClick={handleUpload}
-          disabled={!file || progress.phase === 'uploading' || progress.phase === 'processing'}
-          loading={progress.phase === 'uploading'}
-        >
-          {progress.phase === 'uploading' ? 'Uploading…' : 'Start Import'}
-        </Button>
-        {(file || progress.phase !== 'idle') && (
-          <Button variant="ghost" onClick={reset}>
-            Reset
+        <div className="mt-5">
+          <ImportDropzone
+            file={file}
+            dragging={dragging}
+            inputRef={inputRef as RefObject<HTMLInputElement | null>}
+            hint={BRANCH_DROPZONE_HINT}
+            onFileChange={setFile}
+            onDraggingChange={setDragging}
+          />
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <Button onClick={handleUpload} disabled={!file || busy} loading={progress.phase === 'uploading'}>
+            {progress.phase === 'uploading' ? 'Uploading…' : 'Start Import'}
           </Button>
-        )}
-      </div>
+          {(file || progress.phase !== 'idle') && (
+            <Button variant="ghost" onClick={reset}>
+              Reset
+            </Button>
+          )}
+        </div>
 
-      <BranchImportProgress progress={progress} />
+        <BranchImportProgress progress={progress} />
+      </div>
     </Card>
   );
 }
