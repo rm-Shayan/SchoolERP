@@ -8,7 +8,7 @@
     "dev": "node --import ./src/config/sentry.instrumentation.js --env-file=dev.env --watch src/index.js",
     "start": "node --import ./src/config/sentry.instrumentation.js src/index.js",
     "start:local": "node --import ./src/config/sentry.instrumentation.js --env-file=dev.env src/index.js",
-    "test": "node --test",
+    "test": "node --test --test-force-exit",
     "lint": "eslint --fix --ext .js src",
     "sync:neon": "node --env-file=dev.env scripts/sync-from-neon.js",
     "secrets:rotate:key": "node scripts/rotateSmtpEncryptionKey.js",
