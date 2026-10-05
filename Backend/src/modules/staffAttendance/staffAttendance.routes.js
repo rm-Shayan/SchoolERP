@@ -22,6 +22,13 @@ router.post(
   staffAttendanceController.scanCheckIn
 );
 
+// Gate scanner: staff ID-card QR se check-out (pehla check-out hi record hota hai)
+router.post(
+  "/checkout",
+  authorize("ADMIN", "TEACHER", "RECEPTIONIST", "SUPER_ADMIN"),
+  staffAttendanceController.scanCheckOut
+);
+
 // Admin/branch staff: bulk mark attendance (AttendanceHub Staff tab)
 router.post(
   "/bulk",

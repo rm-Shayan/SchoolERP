@@ -68,6 +68,19 @@ class StaffAttendanceController {
     }
   };
 
+  /** POST /staff-attendance/checkout — Gate scanner: staff ID-card QR se check-out */
+  scanCheckOut = async (req, res, next) => {
+    try {
+      const result = await staffAttendanceService.scanCheckOut(req.user, req.body?.token);
+      const msg = result.alreadyCheckedOut
+        ? `${result.staffName} already checked out today`
+        : `Check-out recorded for ${result.staffName}`;
+      return res.status(200).json(ApiResponse.ok(msg, result));
+    } catch (error) {
+      return next(error);
+    }
+  };
+
   /** DELETE /staff-attendance/:id — Admin: delete attendance record */
   deleteAttendance = async (req, res, next) => {
     try {

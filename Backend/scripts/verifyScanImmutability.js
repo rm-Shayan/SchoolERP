@@ -153,6 +153,51 @@ async function main() {
     where: { staffId_date: { staffId: ctx.staff.id, date: day } },
   });
   assert('explicit admin checkIn still overrides to 07:45', hhmm(afterFix.checkIn) === '07:45', hhmm(afterFix.checkIn));
+
+  // ── STAFF CHECK-OUT: first write wins, re-scan keeps the first time ──────
+  const out1 = await staffAttendanceService.scanCheckOut(scanner, token);
+  const out1Time = new Date(out1.record.checkOut).getTime();
+  await new Promise((r) => setTimeout(r, 1100));
+  const out2 = await staffAttendanceService.scanCheckOut(scanner, token);
+  const out3 = await staffAttendanceService.scanCheckOut(scanner, token);
+
+  const stOut = await prisma.staffAttendance.findUnique({
+    where: { staffId_date: { staffId: ctx.staff.id, date: day } },
+  });
+
+  assert('staff check-out recorded on 1st scan', Boolean(stOut.checkOut), hhmm(stOut.checkOut));
+  assert('staff check-out keeps checkIn from the morning', hhmm(stOut.checkIn) === '07:45', hhmm(stOut.checkIn));
+  assert('staff 2nd check-out scan reports alreadyCheckedOut', out2.alreadyCheckedOut === true);
+  assert('staff 3rd check-out scan reports alreadyCheckedOut', out3.alreadyCheckedOut === true);
+  assert(
+    'staff checkOut identical across re-scans (not moved to now)',
+    new Date(stOut.checkOut).getTime() === out1Time,
+    `${hhmm(new Date(out1Time))} === ${hhmm(stOut.checkOut)}`
+  );
+
+  // check-out without a check-in must be rejected
+  const fresh = await prisma.user.create({
+    data: {
+      schoolId: ctx.school.id,
+      organizationId: ctx.org.id,
+      name: 'No CheckIn Teacher',
+      email: `scan-noc-in-${stamp}@test.local`,
+      password: 'x',
+      role: 'TEACHER',
+    },
+  });
+  const freshToken = signAttendanceToken({
+    staffId: fresh.id,
+    organizationId: ctx.org.id,
+    schoolId: ctx.school.id,
+  });
+  let rejected = false;
+  try {
+    await staffAttendanceService.scanCheckOut(scanner, freshToken);
+  } catch (e) {
+    rejected = /check-in first/i.test(e.message);
+  }
+  assert('staff check-out without check-in is rejected', rejected);
 }
 
 main()

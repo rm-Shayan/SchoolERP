@@ -144,6 +144,69 @@ class StaffAttendanceService {
   }
 
   /**
+   * Gate scanner: staff ID-card QR se check-out.
+   * Same signed token + branch scoping as check-in. Pehla check-out of the day
+   * record hota hai — dobara scan karne par checkOut wahi rehta hai, naya time
+   * nahi lagta (first-write-wins, same rule as check-in).
+   */
+  async scanCheckOut(user, token) {
+    const data = verifyAttendanceToken(token);
+    if (!data) throw ApiError.badRequestError("Invalid or tampered QR code");
+
+    if (user.role !== "SUPER_ADMIN") {
+      if (
+        (data.organizationId && user.organizationId && data.organizationId !== user.organizationId) ||
+        (data.schoolId && user.schoolId && data.schoolId !== user.schoolId)
+      ) {
+        throw ApiError.forbiddenError("This ID card belongs to another branch/organization");
+      }
+    }
+
+    const staff = await prisma.user.findFirst({
+      where: {
+        id: data.staffId,
+        isActive: true,
+        role: { notIn: ["SUPER_ADMIN"] },
+      },
+    });
+    if (!staff) throw ApiError.notFoundError("Staff member not found or inactive");
+    if (!staff.schoolId) throw ApiError.badRequestError("Staff has no branch assigned");
+
+    const day = new Date();
+    day.setHours(0, 0, 0, 0);
+    const existing = await prisma.staffAttendance.findUnique({
+      where: { staffId_date: { staffId: staff.id, date: day } },
+    });
+
+    if (!existing?.checkIn) {
+      throw ApiError.badRequestError("Staff has no check-in for today — scan check-in first");
+    }
+    if (existing.checkOut) {
+      return { alreadyCheckedOut: true, record: existing, staffName: staff.name };
+    }
+
+    const record = await prisma.staffAttendance.update({
+      where: { id: existing.id },
+      data: { checkOut: new Date() },
+    });
+
+    try {
+      const dateKey = day.toISOString().split("T")[0];
+      await redis.del(`staff-attendance:daily:${staff.schoolId}:${dateKey}`);
+    } catch (_) {}
+
+    emitToRoom(`school:${staff.schoolId}`, "staff_attendance_checked_out", {
+      staffId: staff.id,
+      staffName: staff.name,
+      checkIn: record.checkIn,
+      checkOut: record.checkOut,
+      date: day,
+    });
+
+    return { alreadyCheckedOut: false, record, staffName: staff.name };
+  }
+
+  /**
    * Admin: Bulk mark attendance for all staff
    */
   async bulkMark(schoolId, { date, records }) {
