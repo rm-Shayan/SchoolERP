@@ -4,8 +4,10 @@ import { memo } from 'react';
 import { Select } from '@/features/shared/components';
 
 const CHANNELS = [
+  { value: 'WHATSAPP', label: 'WhatsApp' },
   { value: 'EMAIL', label: 'Email' },
   { value: 'SMS', label: 'SMS' },
+  { value: 'PORTAL', label: 'Portal' },
 ];
 
 const STATUSES = [

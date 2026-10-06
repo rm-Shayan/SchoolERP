@@ -2,6 +2,8 @@ import fs from "fs";
 import path from "path";
 import { sendEmail } from "./email.service.js";
 import { queueEmail } from "./emailOutbox.js";
+import { queueWhatsApp } from "./whatsappOutbox.js";
+import { normalizePkPhone } from "../lib/utils/phone.js";
 import { parentNotificationEmail } from "./email.templates.js";
 import prisma from "../config/db.js";
 import storageService from "./storage.service.js";
@@ -44,24 +46,38 @@ async function getCachedSchool(schoolId) {
 
 class NotificationService {
   /**
-   * Unified Notification Dispatcher — Email channel only.
+   * Unified Notification Dispatcher — WhatsApp pehle (agar branch ka instance
+   * ready hai), email fallback. Kuch bhi bheja hi nahi to FAILED log entry.
+   *
+   * WhatsApp ADDITIONAL channel hai, email replacement nahi: agar instance
+   * disconnected/disabled hai to email purana behavior chalate hain — koi
+   * message kho nahi jata.
    *
    * @param {string} params.schoolId
    * @param {string} [params.parentEmail]
    * @param {string} [params.parentPhone]
+   * @param {string} [params.parentWhatsapp]  normalized ya raw PK number
    * @param {string} params.message
    * @param {string} [params.title]
    * @param {Array}  [params.details]
    * @param {Array}  [params.attachments]
    * @param {object} [params.receipt]
    */
-  async notifyParent({ schoolId, parentEmail, parentPhone, message, title = "School ERP Notification", details = [], attachments, receipt }) {
+  async notifyParent({ schoolId, parentEmail, parentPhone, parentWhatsapp, message, title = "School ERP Notification", details = [], attachments, receipt }) {
     const detailsText = details.length
       ? "\n" + details.map(([label, value]) => `${label}: ${value}`).join("\n")
       : "";
     const fullMessage = `${message}${detailsText}`;
 
-    // EMAIL — primary notification channel
+    // WHATSAPP — primary if branch has a connected instance.
+    if (parentWhatsapp && schoolId) {
+      const wa = await this._sendWhatsApp({
+        schoolId, to: parentWhatsapp, title, message, details, fullMessage, receipt,
+      });
+      if (wa?.success) return wa;
+    }
+
+    // EMAIL — fallback / primary when WhatsApp is unavailable.
     if (parentEmail && EMAIL_RE.test(parentEmail)) {
       return this._sendEmail({ schoolId, to: parentEmail, title, message, details, fullMessage, attachments, receipt });
     }
@@ -222,6 +238,109 @@ class NotificationService {
         this._emitUpdate(schoolId, logRecord.id, "FAILED", to, error.message);
       }
       return { success: false, recipient: to, error: error.message, channel: "EMAIL" };
+    }
+  }
+
+  /**
+   * WhatsApp dispatch — branch ka instance use karta hai.
+   *
+   * Guarded hai: branch ka instance exists + `isEnabled` + `CONNECTED` na ho
+   * to **kuch nahi bheja** aur `success:false` return hota hai — caller phir
+   * email fallback chalata hai. Isi liye WhatsApp kisi existing flow ko break
+   * nahi kar sakta.
+   *
+   * WhatsApp plain-text hai (HTML nahi) — is liye `fullMessage` bhejte hain.
+   */
+  async _sendWhatsApp({ schoolId, to, title, message, details = [], fullMessage, receipt }) {
+    const normalized = normalizePkPhone(to);
+    if (!normalized) {
+      logger.logger.warn(`[WhatsApp] Invalid recipient number (${to}) for schoolId=${schoolId} — skipping to email fallback.`);
+      return { success: false, channel: "WHATSAPP", error: "Invalid phone number" };
+    }
+
+    let instance;
+    try {
+      instance = await prisma.whatsAppInstance.findFirst({
+        where: { schoolId },
+        select: { instanceName: true, organizationId: true, isEnabled: true, state: true, dailyQuotaUsed: true },
+      });
+    } catch (err) {
+      logger.logger.warn(`[WhatsApp] Instance lookup failed for schoolId=${schoolId}: ${err.message}`);
+      return { success: false, channel: "WHATSAPP", error: err.message };
+    }
+
+    if (!instance || !instance.isEnabled || instance.state !== "CONNECTED") {
+      const why = !instance
+        ? "no instance"
+        : !instance.isEnabled
+          ? "disabled"
+          : `state=${instance.state}`;
+      return { success: false, channel: "WHATSAPP", error: `Instance not sendable (${why})` };
+    }
+
+    const body = [fullMessage || message, receipt ? `Receipt: ${receipt}` : null]
+      .filter(Boolean)
+      .join("\n\n");
+
+    let logRecord = null;
+    try {
+      logRecord = await prisma.notificationLog.create({
+        data: {
+          schoolId,
+          recipient: normalized,
+          channel: "WHATSAPP",
+          message: `[${title}] ${message}`,
+          status: "PENDING",
+        },
+      });
+    } catch (err) {
+      logger.logger.warn(`[WhatsApp] NotificationLog create failed: ${err.message}`);
+    }
+
+    try {
+      const result = await queueWhatsApp(
+        {
+          organizationId: instance.organizationId || undefined,
+          schoolId,
+          to: normalized,
+          text: body,
+          priority: "NORMAL",
+        },
+        2, // request path me kam retries — zyada lamba khada nahi kar sakte
+        8000
+      );
+
+      const status = result?.queued ? "SENT" : "PENDING";
+
+      if (logRecord) {
+        await prisma.notificationLog.update({
+          where: { id: logRecord.id },
+          data: {
+            status,
+            ...(result?.queued
+              ? { sentAt: new Date() }
+              : { errorReason: `Queued for retry — ${result?.error || "send deferred"}` }),
+          },
+        });
+        this._emitUpdate(schoolId, logRecord.id, status, normalized);
+      }
+
+      return {
+        success: true,
+        recipient: normalized,
+        status: result?.queued ? "SENT" : "PENDING_RETRY",
+        channel: "WHATSAPP",
+      };
+    } catch (error) {
+      logger.logger.error(`[WhatsApp] Dispatch failed for ${normalized}: ${error.message}`);
+      if (logRecord) {
+        await prisma.notificationLog.update({
+          where: { id: logRecord.id },
+          data: { status: "FAILED", errorReason: error.message },
+        });
+        this._emitUpdate(schoolId, logRecord.id, "FAILED", normalized, error.message);
+      }
+      return { success: false, recipient: normalized, error: error.message, channel: "WHATSAPP" };
     }
   }
 

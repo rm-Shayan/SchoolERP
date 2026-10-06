@@ -17,7 +17,7 @@ export const listLogsSchema = z.object({
   query: z.object({
     schoolId: z.string().uuid("Invalid schoolId").optional(),
     status: z.enum(["PENDING", "SENT", "DELIVERED", "FAILED"]).optional(),
-    channel: z.enum(["SMS", "EMAIL", "PORTAL"]).optional(),
+    channel: z.enum(["WHATSAPP", "SMS", "EMAIL", "PORTAL"]).optional(),
     page: z.coerce.number().int().positive().optional(),
     pageSize: z.coerce.number().int().positive().max(100).optional(),
   }),

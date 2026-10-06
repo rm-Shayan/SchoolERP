@@ -5,9 +5,11 @@ import { Badge, EmptyState } from '@/features/shared/components';
 import { formatDate } from '@/lib/utils';
 import type { NotificationLogsResponse } from '@/types';
 
-const CHANNEL_BADGE: Record<string, 'info' | 'warning' | 'default'> = {
+const CHANNEL_BADGE: Record<string, 'info' | 'warning' | 'success' | 'default'> = {
+  WHATSAPP: 'success',
   EMAIL: 'info',
   SMS: 'warning',
+  PORTAL: 'default',
 };
 
 const STATUS_BADGE: Record<string, 'success' | 'warning' | 'danger' | 'default'> = {
@@ -18,6 +20,9 @@ const STATUS_BADGE: Record<string, 'success' | 'warning' | 'danger' | 'default'>
 };
 
 function ChannelIcon({ channel }: { channel: string }) {
+  if (channel === 'WHATSAPP') {
+    return <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 21l2.2-5.3A8.5 8.5 0 1 1 21 11.5z"/></svg>;
+  }
   return channel === 'EMAIL' ? <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg> : <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>;
 }
 function StatusIcon({ status }: { status: string }) { return status === 'FAILED' ? <span className="text-rose-500">!</span> : status === 'PENDING' ? <span className="text-amber-500">◷</span> : <span className="text-emerald-500">✓</span>; }
@@ -44,7 +49,7 @@ const NotificationLogsTable = memo(function NotificationLogsTable({ loading, dat
     return (
       <EmptyState
         title="No notifications yet"
-        description="Notifications appear here as emails/SMS messages are sent."
+        description="Notifications appear here as WhatsApp/email/SMS messages are sent."
       />
     );
   }

@@ -13,6 +13,7 @@ import { invalidateUserCache } from "../../middlewares/auth.middleware.js";
 import smtpSettingsService from "../smtpSettings/smtpSettings.service.js";
 import storageSettingsService from "../storageSettings/storageSettings.service.js";
 import storageService from "../../services/storage.service.js";
+import evolutionService from "../../services/evolution.service.js";
 import { resolveBranchLogoReplace } from "./logoSync.js";
 import auditService from "../audit/audit.service.js";
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../audit/actions.js";
@@ -629,6 +630,21 @@ class SchoolService {
     const schoolExists = await prisma.school.findUnique({ where: { id } });
     if (!schoolExists) return;
 
+    // WhatsApp instance name transaction SE PEHLE hi capture karna zaroori hai:
+    // WhatsAppInstance.schoolId par onDelete:Cascade hai, is liye tx ke andar
+    // tx.school.delete() isi row ko bhi uda dega — baad me query karne par
+    // naam mil hi nahi sakta. (Job sirf remote session ke liye chahiye.)
+    let whatsappInstanceName = null;
+    try {
+      const wa = await prisma.whatsAppInstance.findUnique({
+        where: { schoolId: id },
+        select: { instanceName: true },
+      });
+      whatsappInstanceName = wa?.instanceName || null;
+    } catch (err) {
+      // Non-blocking — branch delete WhatsApp ki wajah se rukni nahi chahiye.
+    }
+
     // Deterministic delete of the branch AND everything related to it
     // (students, staff, fees, attendance, timetables, exams, activities,
     // applicants, etc.) inside one transaction. Children are removed before
@@ -695,6 +711,16 @@ class SchoolService {
       if (!orgLogoUrl || !storageService.hasSamePublicId(existing.logoUrl, orgLogoUrl)) {
         await storageService.deleteImage({ url: existing.logoUrl, organizationId: existing.organizationId, schoolId: id }).catch(() => {});
       }
+    }
+
+    // Rule 6 — WhatsApp session teardown (branch ka instance branch ka asset
+    // hai, is liye BRANCH delete hone par hi jaati hai — admin delete par nahi).
+    //
+    // Order: DB row cascade ne transaction ke andar hi delete kar di, ab
+    // sirf REMOTE Evolution session hatana baaki hai. Post-commit + best-effort
+    // isi liye: Evolution API down hai to branch delete BLOCK nahi honi chahiye.
+    if (whatsappInstanceName) {
+      await evolutionService.safeDeleteInstance(whatsappInstanceName);
     }
 
     // The branch's users (possibly the organization owner) are gone by now —

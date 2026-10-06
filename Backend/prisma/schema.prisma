@@ -169,9 +169,20 @@ enum SmtpTier {
   SECONDARY
 }
 
+// WhatsApp instance pairing state (Evolution API).
+// AWAITING_QR -> CONNECTED: user ne QR scan ya pairing code enter kiya.
+// DISCONNECTED: instance ban gaya lekin pair nahi hua, ya logout ho gaya.
+enum WhatsAppConnectionState {
+  DISCONNECTED
+  AWAITING_QR
+  CONNECTED
+  FAILED
+}
+
 enum SecretCategory {
   SMTP
   CLOUDINARY
+  WHATSAPP       // Evolution API base URL + API key — strictly branch-owned, same rule as SMTP
 }
 
 // ==========================================
@@ -211,6 +222,7 @@ model Organization {
   branches  School[]
   users     User[]
   secrets   OrgSecrets[]
+  whatsappInstances WhatsAppInstance[]
 
   @@index([createdAt])
 }
@@ -259,6 +271,7 @@ code             String        @unique // used as branch segment alongside org s
   ptmSessions      PTMSession[]
   activities       Activity[]
   notificationLogs NotificationLog[]
+  whatsappInstances WhatsAppInstance[]
   applicants       Applicant[]
   homeworkBroadcasts HomeworkBroadcast[]
   sectionTemplates SectionTemplate[]
@@ -757,6 +770,62 @@ model PendingEmail {
 
   @@index([status, scheduledFor])
   @@index([organizationId])
+}
+
+// Branch ka WhatsApp number — Evolution API instance.
+// NUMBER BRANCH KA ASSET HAI, admin ka nahi. Isi liye FK schoolId par hai:
+// admin deactivate/delete ho to session Zinda rahe; instance sirf BRANCH
+// delete hone par jaati hai (school.service.js remove() me explicit hook).
+model WhatsAppInstance {
+  id               String                  @id @default(uuid())
+  organizationId   String
+  schoolId         String // branch jo is number ko OWN karti hai
+  instanceName     String                  @unique // Evolution instance id (deterministic, e.g. "sch-<schoolId>")
+  integration      String                  @default("WHATSAPP_BAILEYS") // "WHATSAPP_BAILEYS" (prod) | "WHATSAPP_CLOUD" (Meta, dev/testing)
+  state            WhatsAppConnectionState @default(DISCONNECTED)
+  phoneNumber      String? // E.164 digits only, e.g. 923001234567 — no '+'
+  displayName      String?
+  profilePicUrl    String?
+  isEnabled        Boolean                 @default(false) // master switch — sends only when true
+  qrCode           String? // short-lived; state AWAITING_QR par frontend ko dikhata hai
+  qrExpiresAt      DateTime?
+  lastConnectedAt DateTime?
+  lastError        String?
+  dailyQuotaUsed   Int                     @default(0)
+  quotaResetAt     DateTime?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId])
+  @@index([organizationId])
+  @@index([state])
+}
+
+// Generic outbox — PendingEmail ka generalised sibling (same atomic-claim
+// retry semantics), lekin CHANNEL ke saath: WHATSAPP aaj, SMS kal.
+// PendingEmail ko touch nahi kar rahe — woh email-only aur proven hai.
+model PendingMessage {
+  id             String         @id @default(uuid())
+  channel        MessageChannel @default(WHATSAPP)
+  organizationId String? // retry par wahi tenant routing
+  schoolId       String? // kis BRANCH ke number se bhejna hai
+  recipientAddr  String // normalized phone (digits only) — "to"
+  payload        String // JSON: { text, ... }
+  priority       EmailPriority  @default(NORMAL)
+  status         MessageStatus  @default(PENDING)
+  attempts       Int            @default(0)
+  lastError      String?
+  scheduledFor   DateTime       @default(now()) // claim lock — status ke baghair claim hota hai
+  sentAt         DateTime?
+  createdAt      DateTime       @default(now())
+
+  @@index([status, scheduledFor])
+  @@index([schoolId])
+  @@index([organizationId])
+  @@index([channel])
 }
 
 model HomeworkBroadcast {

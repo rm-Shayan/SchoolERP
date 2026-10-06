@@ -2,7 +2,7 @@ export interface NotificationLog {
   id: string;
   schoolId: string;
   recipient: string;
-  channel: 'SMS' | 'EMAIL';
+  channel: 'WHATSAPP' | 'SMS' | 'EMAIL' | 'PORTAL';
   message: string;
   status: 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED';
   errorReason?: string;
