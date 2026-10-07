@@ -18,8 +18,10 @@ const redis = createClient({
     // jata tha → fee/absent crons char bazari se kabhi chalte hi nahi the.)
     enableOfflineQueue: false,
     reconnectStrategy: (retries) => {
-      if (retries > 10) return new Error("Redis max reconnect attempts reached");
-      return Math.min(retries * 200, 3000); // exponential backoff capped at 3s
+      // Redis DOWN hone par 10 attempt (attempt마다 200ms-3s) bahut zyada hain —
+      // ab sirf 3 attempt karke ruk jao, server crash/busy spin na ho.
+      if (retries > 3) return new Error("Redis max reconnect attempts reached");
+      return Math.min(retries * 200, 1000); // exponential backoff capped at 1s
     },
   },
 });
@@ -32,7 +34,7 @@ redis.on("connect", () => logger.logger.info("Redis Connected Successfully"));
 let reconnectAttempt = 0;
 redis.on("reconnecting", () => {
   reconnectAttempt += 1;
-  const delay = Math.min(reconnectAttempt * 200, 3000);
+  const delay = Math.min(reconnectAttempt * 200, 1000);
   logger.logger.info(`Redis reconnecting in ${delay}ms (attempt ${reconnectAttempt})`);
 });
 redis.on("ready", () => {

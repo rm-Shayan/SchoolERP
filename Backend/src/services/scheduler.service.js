@@ -16,6 +16,8 @@ import { runPendingEmailJob } from "../jobs/cron/pendingEmail.job.js";
 import { runPtmCleanupJob } from "../jobs/cron/ptmCleanup.job.js";
 import { runStudyMaterialCleanupJob } from "../jobs/cron/studyMaterialCleanup.job.js";
 import { runAcademicYearRolloverJob } from "../jobs/cron/academicYearRollover.job.js";
+import { runWhatsAppHealthJob } from "../jobs/cron/whatsappHealth.job.js";
+import { runWhatsAppOutboxJob } from "../jobs/cron/whatsappOutbox.job.js";
 
 const logger = new Logger("scheduler-service");
 
@@ -77,6 +79,8 @@ const lockFns = {
   ptmCleanup: () => withJobLock("ptm-cleanup", 3600, runPtmCleanupJob),
   studyMaterialCleanup: () => withJobLock("study-material-cleanup", 3600, runStudyMaterialCleanupJob),
   academicYearRollover: () => withJobLock("academic-year-rollover", 3600, runAcademicYearRolloverJob),
+  whatsappHealth: () => withJobLock("whatsapp-health", 270, runWhatsAppHealthJob),
+  whatsappOutbox: () => withJobLock("whatsapp-outbox", 840, runWhatsAppOutboxJob),
 };
 
 class SchedulerService {
@@ -133,6 +137,12 @@ class SchedulerService {
 
     // Pending Email Retry (every 30 min)
     cron.schedule("*/30 * * * *", lockFns.pendingEmail);
+
+    // WhatsApp Device Health Check (every 5 min) - disconnect/expired QR alert
+    cron.schedule("*/5 * * * *", lockFns.whatsappHealth);
+
+    // WhatsApp Outbox Retry + crash alert (every 15 min)
+    cron.schedule("*/15 * * * *", lockFns.whatsappOutbox);
 
     logger.logger.info("Cron Schedulers registered successfully.");
   }

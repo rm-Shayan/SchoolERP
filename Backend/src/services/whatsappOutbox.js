@@ -31,7 +31,7 @@ const RETRY_SOON_MS = 15 * 60 * 1000;
 /** Instant retry — network/Evolution 5xx (recover hota hai) jaldi. */
 const RETRY_FAST_MS = 60 * 1000;
 /** Iske baad permanent FAILED. */
-const MAX_PENDING_ATTEMPTS = 5;
+const MAX_PENDING_ATTEMPTS = 3;
 
 /**
  * Evolution ke transient errors turant wapas try ho sakte hain; baaki
@@ -67,7 +67,7 @@ function deserializePayload(raw) {
  * @returns {Promise<{queued:boolean, messageId?:string, error?:string}>}
  *          queued=false ka matlab row outbox me persist ho gayi, cron try karega.
  */
-export const queueWhatsApp = async (msgData, attempts = 3, timeoutMs = 0) => {
+export const queueWhatsApp = async (msgData, attempts = 2, timeoutMs = 0) => {
   const { organizationId, schoolId, to, text, priority = "NORMAL", template, ...rest } = msgData;
 
   if (!schoolId) {
@@ -114,6 +114,10 @@ export const queueWhatsApp = async (msgData, attempts = 3, timeoutMs = 0) => {
   };
 
   let lastErr = null;
+  // Bulk-send pacing: har send se pehle thoda random rest taake WhatsApp
+  // rate-limit / ban ka risk kam ho. WHATSAPP_SEND_GAP_MS se tune karo.
+  const pacing = Math.max(0, Number(process.env.WHATSAPP_SEND_GAP_MS || 2500));
+  if (pacing > 0) await sleep(pacing / 2 + Math.random() * (pacing / 2));
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
       const info = await attemptSend();
@@ -200,6 +204,10 @@ export const retryPendingMessages = async (limit = 100) => {
       });
       logger.logger.info(`[WhatsApp outbox] Retry OK #${row.id} -> ${msg.to}`);
       summary.sent += 1;
+      // Bulk-send pacing: WhatsApp ban na ho, is liye har bheje gaye message ke
+      // baad thoda rest. WHATSAPP_SEND_GAP_MS env se tune ho sakta hai.
+      const gap = Math.max(0, Number(process.env.WHATSAPP_SEND_GAP_MS || 2500));
+      if (gap) await sleep(gap);
       continue;
     }
 

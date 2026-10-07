@@ -22,7 +22,7 @@ const logger = new Logger("redis-bullmq");
 const CONNECT_TIMEOUT = parseInt(process.env.BULLMQ_CONNECT_TIMEOUT || "5000", 10);
 const COMMAND_TIMEOUT = parseInt(process.env.BULLMQ_COMMAND_TIMEOUT || "30000", 10);
 const KEEPALIVE_MS    = parseInt(process.env.BULLMQ_KEEPALIVE || "30000", 10);
-const MAX_RETRIES     = parseInt(process.env.BULLMQ_MAX_RETRIES || "0", 10);
+const MAX_RETRIES     = parseInt(process.env.BULLMQ_MAX_RETRIES || "3", 10);
 
 function buildConnection() {
   const url = process.env.REDIS_URL;
@@ -54,8 +54,7 @@ function buildConnection() {
 
     // ── Reconnection ──────────────────────────────────────────────────
     retryStrategy(times) {
-      // DEFAULT: infinite retries (MAX_RETRIES=0). A transient cloud Redis
-      // reset must NEVER permanently kill workers until manual restart.
+      // Default: sirf 3 reconnect attempts, phir ruko - pehle infinite tha.
       if (MAX_RETRIES > 0 && times > MAX_RETRIES) {
         logger.logger.error(`BullMQ Redis: gave up after ${MAX_RETRIES} retries`);
         return null; // null = stop reconnecting, emit "end" event
