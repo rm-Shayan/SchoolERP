@@ -57,7 +57,7 @@ export default function SuperAdminLoginPage() {
           </p>
         }
       >
-        <div className="mb-7">
+        <div className="mb-7 text-center lg:text-left">
           <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Welcome back</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
             Sign in to the admin console with your email and password.
