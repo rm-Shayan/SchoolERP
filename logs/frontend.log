@@ -1,0 +1,196 @@
+
+> school-erp-nextjs@0.1.0 dev
+> next dev
+
+▲ Next.js 16.3.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.23.64.1:3000
+- Environments: .env.local
+✓ Ready in 6.7s
+✓ Running next.config.ts took 688ms
+⚠ Slow filesystem detected. The benchmark took 586ms. If \\?\D:\saas\SchoolERP\Frontend\.next\dev is a network drive, consider moving it to a local folder.
+See more: https://nextjs.org/docs/app/guides/local-development
+
+○ Compiling / ...
+ GET / 200 in 18.4s (next.js: 8.5s, proxy.ts: 2.3s, application-code: 7.6s)
+ GET / 200 in 683ms (next.js: 204ms, proxy.ts: 33ms, application-code: 447ms)
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/src_0uwtxsu._.js from "upward-radar-magenta.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['upward-radar-magenta.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/src_app_global-error_tsx_1511-6v._.js from "upward-radar-magenta.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['upward-radar-magenta.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/node_modules_16xh9qm._.js from "upward-radar-magenta.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['upward-radar-magenta.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/src_features_shared_components_1ie4m_x._.js from "upward-radar-magenta.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['upward-radar-magenta.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/node_modules_14c2pbh._.js from "upward-radar-magenta.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['upward-radar-magenta.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/src_1w-rzk5._.js from "upward-radar-magenta.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['upward-radar-magenta.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/hmr from "upward-radar-magenta.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['upward-radar-magenta.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET /login 200 in 1170ms (next.js: 309ms, proxy.ts: 17ms, application-code: 844ms)
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/_0_-sh6t._.js from "upward-radar-magenta.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['upward-radar-magenta.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/node_modules_next_dist_00pwe04._.js from "upward-radar-magenta.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['upward-radar-magenta.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET /admin/login 200 in 930ms (next.js: 225ms, proxy.ts: 23ms, application-code: 682ms)
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/node_modules_0kz1xs1._.js from "upward-radar-magenta.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['upward-radar-magenta.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/src_102g70s._.js from "upward-radar-magenta.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['upward-radar-magenta.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/node_modules_1gi61-2._.js from "upward-radar-magenta.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['upward-radar-magenta.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/src_07r78i7._.js from "upward-radar-magenta.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['upward-radar-magenta.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/src_features_1vpydet._.js from "upward-radar-magenta.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['upward-radar-magenta.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+⚠ Blocked cross-origin request to Next.js dev resource /_next/static/chunks/src_app_admin_error_tsx_116vn04._.js from "upward-radar-magenta.ngrok-free.dev".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['upward-radar-magenta.ngrok-free.dev'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET /admin/login?email=superadmin%40schoolerp.com&password=superadmin123 200 in 289ms (next.js: 19ms, proxy.ts: 36ms, application-code: 233ms)
+ GET /admin/login?email=superadmin%40schoolerp.com&password=superadmin123 200 in 157ms (next.js: 16ms, proxy.ts: 17ms, application-code: 124ms)
+ GET /admin/login?email=superadmin%40schoolerp.com&password=superadmin123 200 in 296ms (next.js: 31ms, proxy.ts: 25ms, application-code: 240ms)
+ GET /admin/login?email=superadmin%40schoolerp.com&password=superadmin123 200 in 165ms (next.js: 15ms, proxy.ts: 37ms, application-code: 113ms)
+ GET /admin/login?email=superadmin%40schoolerp.com&password=superadmin123 200 in 149ms (next.js: 12ms, proxy.ts: 8ms, application-code: 130ms)
+ GET /admin/login?email=superadmin%40schoolerp.com&password=superadmin123 200 in 170ms (next.js: 15ms, proxy.ts: 15ms, application-code: 140ms)
+ GET /admin/login?email=superadmin%40schoolerp.com&password=superadmin123 200 in 185ms (next.js: 10ms, proxy.ts: 15ms, application-code: 160ms)
+ GET /admin/login?email=superadmin%40schoolerp.com&password=superadmin123 200 in 169ms (next.js: 12ms, proxy.ts: 13ms, application-code: 145ms)
+ GET /admin/login?email=superadmin%40schoolerp.com&password=superadmin123 200 in 132ms (next.js: 11ms, proxy.ts: 16ms, application-code: 104ms)
+ GET /admin/login?email=superadmin%40schoolerp.com&password=superadmin123 200 in 188ms (next.js: 13ms, proxy.ts: 29ms, application-code: 146ms)
+ GET /admin/login?email=superadmin%40schoolerp.com&password=superadmin123 200 in 144ms (next.js: 6ms, proxy.ts: 11ms, application-code: 128ms)
+ GET /admin/login?email=superadmin%40schoolerp.com&password=superadmin123 200 in 127ms (next.js: 10ms, proxy.ts: 10ms, application-code: 108ms)
+ GET /admin/login?email=superadmin%40schoolerp.com&password=superadmin123 200 in 204ms (next.js: 12ms, proxy.ts: 15ms, application-code: 176ms)

@@ -25,10 +25,10 @@ if (connectionString) {
 const adapter = new PrismaPg({
   connectionString,
   pool: {
-    min: 2,
-    max: 15,
-    idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 15_000,
+    min: 0,
+    max: 3,
+    idleTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 10_000,
     keepAlive: true,
     keepAliveInitialDelayMillis: 10_000,
   },

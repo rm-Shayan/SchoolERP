@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/node';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
 
 const initMonitoring = () => {
     const dsn = process.env.SENTRY_DSN;
@@ -15,16 +14,8 @@ const initMonitoring = () => {
     Sentry.init({
         dsn,
 
-        integrations: [
-            nodeProfilingIntegration(),
-        ],
-
         // Performance monitoring
         tracesSampleRate: isProduction ? 0.2 : 1.0,
-
-        // Profiling
-        profileSessionSampleRate: isProduction ? 0.1 : 1.0,
-        profileLifecycle: 'trace',
 
         // Privacy
         sendDefaultPii: false,
