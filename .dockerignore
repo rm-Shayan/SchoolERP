@@ -30,3 +30,14 @@ docs/
 **/dist/
 **/build/
 **/coverage/
+
+# Runtime/disk artifacts
+**/logs/
+**/uploads/
+Backend-src.zip
+test-results/
+*.log
+
+# Local DB dumps / uploads backups
+*.sqlite
+*.db

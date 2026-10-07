@@ -46,6 +46,11 @@ ENV PORT=5000
 # na kare. Import workers disable karne ke liye DISABLE_IMPORT_WORKERS=1 bhi daal sakte ho.
 ENV NODE_OPTIONS=--max-old-space-size=220
 ENV DISABLE_IMPORT_WORKERS=1
+# Disk-growth safeguards: suga 512MB container me logs/db junk explode na ho.
+ENV LOG_TO_FILE=false
+ENV LOG_FILE_RETENTION_DAYS=3
+ENV AUDIT_LOG_RETENTION_DAYS=90
+ENV NOTIFICATION_LOG_RETENTION_DAYS=30
 # Cron + attendance automation school-local (PKT) time me chalein. Runtime TZ
 # env se override ho sakta hai.
 ENV TZ=Asia/Karachi
