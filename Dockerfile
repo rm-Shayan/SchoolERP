@@ -44,7 +44,8 @@ ENV NODE_ENV=production
 ENV PORT=5000
 # suga.run 512MB memory limit me V8 ko khud GC karne pe majboor karo — OS kill
 # na kare. Import workers disable karne ke liye DISABLE_IMPORT_WORKERS=1 bhi daal sakte ho.
-ENV NODE_OPTIONS=--max-old-space-size=220
+# Suga free tier ki memory limit sach me 256 MiB hai — V8 ko chhota heap do.
+ENV NODE_OPTIONS=--max-old-space-size=120
 ENV DISABLE_IMPORT_WORKERS=1
 # Disk-growth safeguards: suga 512MB container me logs/db junk explode na ho.
 ENV LOG_TO_FILE=false
