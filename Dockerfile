@@ -43,7 +43,7 @@ ENV NODE_ENV=production
 ENV PORT=5000
 # suga.run 512MB memory limit me V8 ko khud GC karne pe majboor karo — OS kill
 # na kare. Import workers disable karne ke liye DISABLE_IMPORT_WORKERS=1 bhi daal sakte ho.
-ENV NODE_OPTIONS="--max-old-space-size=380"
+ENV NODE_OPTIONS=--max-old-space-size=380
 ENV DISABLE_IMPORT_WORKERS=1
 # Cron + attendance automation school-local (PKT) time me chalein. Runtime TZ
 # env se override ho sakta hai.
