@@ -223,6 +223,7 @@ model Organization {
   users     User[]
   secrets   OrgSecrets[]
   whatsappInstances WhatsAppInstance[]
+  emailTemplates EmailTemplate[]
 
   @@index([createdAt])
 }
@@ -769,6 +770,26 @@ model PendingEmail {
   createdAt      DateTime      @default(now())
 
   @@index([status, scheduledFor])
+  @@index([organizationId])
+}
+
+// Org-scoped customizable mail templates — org admin Settings > Mail Templates
+// se edit hoti hain. Row na ho to BUILT-IN default (email.templates.js) chalta
+// hai; override optional hai. subject/bodyHtml null = default.
+// Placeholders: {{name}} {{email}} {{password}} {{orgName}} {{schoolName}}
+//               {{schoolCode}} {{loginUrl}} {{themeColor}} {{title}} {{message}}
+model EmailTemplate {
+  id             String   @id @default(uuid())
+  organizationId String
+  key            String   // admin_credentials | staff_credentials | parent_notification | announcement
+  subject        String?
+  bodyHtml       String?  // null = built-in default body
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, key])
   @@index([organizationId])
 }
 

@@ -23,10 +23,12 @@ import teachingAssignmentRoutes from "../modules/teachingAssignment/teachingAssi
 import portalRoutes from "../modules/portal/portal.routes.js";
 import smtpSettingsRoutes from "../modules/smtpSettings/smtpSettings.routes.js";
 import storageSettingsRoutes from "../modules/storageSettings/storageSettings.routes.js";
+import whatsappInstanceRoutes from "../modules/whatsappInstance/whatsappInstance.routes.js";
 import staffLeaveRoutes from "../modules/staffLeave/staffLeave.routes.js";
 import staffAttendanceRoutes from "../modules/staffAttendance/staffAttendance.routes.js";
 import documentsRoutes from "../modules/documents/documents.routes.js";
 import studyMaterialRoutes from "../modules/studyMaterial/studyMaterial.routes.js";
+import emailTemplatesRoutes from "../modules/emailTemplates/emailTemplates.routes.js";
 
 const router = Router();
 
@@ -54,9 +56,11 @@ router.use("/teaching-assignments", teachingAssignmentRoutes);
 router.use("/portal", portalRoutes);
 router.use("/smtp", smtpSettingsRoutes);
 router.use("/storage", storageSettingsRoutes);
+router.use("/whatsapp", whatsappInstanceRoutes);
 router.use("/staff-leave", staffLeaveRoutes);
 router.use("/staff-attendance", staffAttendanceRoutes);
 router.use("/documents", documentsRoutes);
 router.use("/study-material", studyMaterialRoutes);
+router.use("/email-templates", emailTemplatesRoutes);
 
 export default router;

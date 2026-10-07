@@ -2,7 +2,9 @@ import prisma from "../../config/db.js";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { queueEmail } from "../../services/emailOutbox.js";
-import { adminCredentialsEmail } from "../../services/email.templates.js";
+import { adminCredentialsEmail, buildLoginUrl } from "../../services/email.templates.js";
+import { applyMailOverride } from "../../services/emailTemplateRegistry.js";
+import emailTemplatesService from "../emailTemplates/emailTemplates.service.js";
 import Logger from "../../lib/utils/logger.js";
 import { pickOwnerSuccessor } from "./ownerSuccession.js";
 
@@ -152,11 +154,18 @@ export async function createBranchAdmin({
   });
 
   if (!skipEmail) {
-    // Fetch org logo for branded email
-    const org = await prisma.organization.findUnique({
-      where: { id: organizationId },
-      select: { logoUrl: true, themeColor: true },
-    }).catch(() => null);
+    // Branch branding first, org falls back — the mail is addressed TO the
+    // branch, so it must look like the branch that owns the credentials.
+    const [school, org] = await Promise.all([
+      prisma.school.findUnique({
+        where: { id: schoolId },
+        select: { name: true, logoUrl: true, themeColor: true },
+      }).catch(() => null),
+      prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { logoUrl: true, themeColor: true },
+      }).catch(() => null),
+    ]);
     const mail = adminCredentialsEmail({
       orgName,
       orgSlug,
@@ -166,12 +175,26 @@ export async function createBranchAdmin({
       username: user.username || null,
       password: generatedPassword,
       schoolCode,
-      logoUrl: org?.logoUrl || null,
-      themeColor: org?.themeColor || null,
+      logoUrl: school?.logoUrl || org?.logoUrl || null,
+      themeColor: school?.themeColor || org?.themeColor || null,
     });
+    // Org admin se customized ho to subject/body override, warna built-in.
+    const override = await emailTemplatesService.getOverride(organizationId, "admin_credentials");
+    const vars = {
+      orgName: orgName || org?.name || "",
+      schoolName,
+      schoolCode: schoolCode || "",
+      name: user.name,
+      email: cleanEmail,
+      username: user.username || "",
+      password: generatedPassword,
+      loginUrl: buildLoginUrl({ orgSlug, schoolCode }),
+      orgUrl: orgSlug ? `${process.env.CLIENT_URL || ""}/o/${encodeURIComponent(orgSlug)}` : "",
+    };
+    const final = applyMailOverride(mail, override, vars);
     await queueEmail({
       to: cleanEmail,
-      ...mail,
+      ...final,
       priority: "CRITICAL",
       organizationId,
       schoolId,

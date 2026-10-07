@@ -138,15 +138,30 @@ const evolutionService = {
    * ek branch ke liye hamesha ek hi instance rahe — dobara create duplicate na bane.
    */
   async createInstance({ instanceName, integration = "WHATSAPP_BAILEYS" }) {
+    // Evolution API expects the dash form ("WHATSAPP-BAILEYS"); DB + provider
+    // layer use the underscore form ("WHATSAPP_BAILEYS").
+    const apiIntegration = String(integration).replace(/_/g, "-");
     return request("/instance/create", {
       method: "POST",
       instanceName,
       body: {
         instanceName,
-        integration,
+        integration: apiIntegration,
         qrcode: true,
       },
     });
+  },
+
+  /** Live instance record from Evolution (owner number/jid, status). */
+  async fetchInstance(instanceName) {
+    try {
+      const data = await request(`/instance/fetchInstances`, { timeoutMs: 8000 });
+      const list = Array.isArray(data) ? data : data?.instances || [];
+      return list.find((i) => i.name === instanceName || i.instanceName === instanceName) || null;
+    } catch (err) {
+      logger.logger.warn(`[Evolution] fetchInstance failed for ${instanceName}: ${err.message}`);
+      return null;
+    }
   },
 
   /**

@@ -9,4 +9,5 @@ export * from './audit';
 export * from './portal';
 export * from './smtp';
 export * from './storage';
+export * from './emailTemplates';
 

@@ -13,9 +13,11 @@ import PasswordSection from './parts/PasswordSection';
 import PortalAccessSection from './parts/PortalAccessSection';
 import SmtpSettingsSection from './parts/SmtpSettingsSection';
 import StorageSettingsSection from './parts/StorageSettingsSection';
+import WhatsappSettingsSection from './parts/WhatsappSettingsSection';
 import BranchSwitcherSection from './parts/BranchSwitcherSection';
+import MailTemplatesSection from './parts/MailTemplatesSection';
 
-type TabKey = 'profile' | 'branch' | 'branches' | 'organization' | 'access' | 'credentials' | 'security';
+type TabKey = 'profile' | 'branch' | 'branches' | 'organization' | 'templates' | 'access' | 'credentials' | 'security';
 
 const ICONS = {
   user: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
@@ -23,6 +25,7 @@ const ICONS = {
   branches: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4',
   org: 'M7 21a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12',
   key: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z',
+  mail: 'M15.5 8.94l-7.5 5-7.5-5M21 6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V6z',
   lock: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
 } as const;
 
@@ -52,6 +55,7 @@ export default function SettingsPage() {
       : []),
     ...(isAdminLevel ? [{ key: 'access' as TabKey, label: 'Portal Access', icon: ICONS.key }] : []),
     ...(isOrgOwner ? [{ key: 'organization' as TabKey, label: 'Organization', icon: ICONS.org }] : []),
+    ...(isOrgOwner ? [{ key: 'templates' as TabKey, label: 'Mail Templates', icon: ICONS.mail }] : []),
     ...(isAdminLevel
       ? [{ key: 'credentials' as TabKey, label: 'Branch Credentials', icon: ICONS.lock }]
       : []),
@@ -96,6 +100,7 @@ export default function SettingsPage() {
           {tab === 'branches' && isAdminLevel && <BranchSwitcherSection />}
           {tab === 'access' && isAdminLevel && <PortalAccessSection />}
           {tab === 'organization' && isOrgOwner && <OrgBrandingForm />}
+          {tab === 'templates' && isOrgOwner && <MailTemplatesSection />}
           {tab === 'credentials' && isAdminLevel && activeBranchId && (
             <div className="max-w-2xl space-y-10">
               <p className="text-xs text-gray-400">
@@ -105,6 +110,8 @@ export default function SettingsPage() {
               <SmtpSettingsSection organizationId={user?.organizationId} schoolId={activeBranchId} />
               <div className="border-t border-gray-100" />
               <StorageSettingsSection organizationId={user?.organizationId} schoolId={activeBranchId} />
+              <div className="border-t border-gray-100" />
+              <WhatsappSettingsSection organizationId={user?.organizationId} schoolId={activeBranchId} />
             </div>
           )}
           {tab === 'credentials' && isAdminLevel && !activeBranchId && (

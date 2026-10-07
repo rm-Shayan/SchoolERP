@@ -1,6 +1,8 @@
 import Logger from "../lib/utils/logger.js";
 import prisma from "../config/db.js";
-import evolutionService from "./evolution.service.js";
+import { instanceNameFor, sendBranchMessage, isTransient, describeError } from "./whatsappProvider.js";
+
+export { instanceNameFor };
 
 /**
  * WhatsApp outbox — `emailOutbox.js` ka sibling, wahi atomic-claim semantics.
@@ -37,7 +39,7 @@ const MAX_PENDING_ATTEMPTS = 5;
  * cooldown lamba rakho.
  */
 function cooldownFor(err) {
-  return evolutionService.isTransient(err) ? RETRY_FAST_MS : RETRY_SOON_MS;
+  return isTransient(err) ? RETRY_FAST_MS : RETRY_SOON_MS;
 }
 
 function serializePayload(obj) {
@@ -66,7 +68,7 @@ function deserializePayload(raw) {
  *          queued=false ka matlab row outbox me persist ho gayi, cron try karega.
  */
 export const queueWhatsApp = async (msgData, attempts = 3, timeoutMs = 0) => {
-  const { organizationId, schoolId, to, text, priority = "NORMAL", ...rest } = msgData;
+  const { organizationId, schoolId, to, text, priority = "NORMAL", template, ...rest } = msgData;
 
   if (!schoolId) {
     logger.logger.error(`[WhatsApp] queue skipped — no schoolId (branch instance required) for ${to}`);
@@ -81,7 +83,7 @@ export const queueWhatsApp = async (msgData, attempts = 3, timeoutMs = 0) => {
           organizationId: organizationId || null,
           schoolId: schoolId || null,
           recipientAddr: String(to || ""),
-          payload: serializePayload({ to, text, ...rest }),
+          payload: serializePayload({ to, text, template, ...rest }),
           priority,
           lastError: error,
           scheduledFor: new Date(Date.now() + RETRY_SOON_MS),
@@ -95,13 +97,15 @@ export const queueWhatsApp = async (msgData, attempts = 3, timeoutMs = 0) => {
   };
 
   const attemptSend = async () => {
-    if (!timeoutMs) return evolutionService.sendText({ instanceName: instanceNameFor(schoolId), number: to, text });
+    const send = () =>
+      sendBranchMessage({ organizationId, schoolId, to, text, template });
+    if (!timeoutMs) return send();
     let timer;
     try {
       return await Promise.race([
-        evolutionService.sendText({ instanceName: instanceNameFor(schoolId), number: to, text }),
+        send(),
         new Promise((_, reject) => {
-          timer = setTimeout(() => reject(new Error(`Evolution timeout after ${timeoutMs}ms`)), timeoutMs);
+          timer = setTimeout(() => reject(new Error(`WhatsApp timeout after ${timeoutMs}ms`)), timeoutMs);
         }),
       ]);
     } finally {
@@ -125,13 +129,6 @@ export const queueWhatsApp = async (msgData, attempts = 3, timeoutMs = 0) => {
   logger.logger.error(`All WhatsApp attempts exhausted for ${to} — saving to outbox`);
   return persist(lastErr?.message || "Send failed");
 };
-
-/**
- * Branch ka deterministic instance name.
- * Ek branch = ek hi instance. Name stable rakho taake dobara create hone par
- * duplicate instance na bane aur deletion me exact row mile.
- */
-export const instanceNameFor = (schoolId) => `sch-${schoolId}`;
 
 /**
  * Outbox worker — PENDING messages utha kar priority order me retry karta hai.
@@ -185,10 +182,12 @@ export const retryPendingMessages = async (limit = 100) => {
     let sentInfo = null;
     let lastErr = null;
     try {
-      sentInfo = await evolutionService.sendText({
-        instanceName: instanceNameFor(row.schoolId),
-        number: msg.to || row.recipientAddr,
+      sentInfo = await sendBranchMessage({
+        organizationId: row.organizationId || undefined,
+        schoolId: row.schoolId,
+        to: msg.to || row.recipientAddr,
         text: msg.text,
+        template: msg.template || undefined,
       });
     } catch (err) {
       lastErr = err;
@@ -204,7 +203,7 @@ export const retryPendingMessages = async (limit = 100) => {
       continue;
     }
 
-    const error = evolutionService.describeError(lastErr);
+    const error = describeError(lastErr);
     const permanent = attemptsSoFar >= MAX_PENDING_ATTEMPTS;
 
     await prisma.pendingMessage.update({

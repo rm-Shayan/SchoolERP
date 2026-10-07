@@ -5,6 +5,8 @@ import { queueEmail } from "./emailOutbox.js";
 import { queueWhatsApp } from "./whatsappOutbox.js";
 import { normalizePkPhone } from "../lib/utils/phone.js";
 import { parentNotificationEmail } from "./email.templates.js";
+import { applyMailOverride } from "./emailTemplateRegistry.js";
+import emailTemplatesService from "../modules/emailTemplates/emailTemplates.service.js";
 import prisma from "../config/db.js";
 import storageService from "./storage.service.js";
 import Logger from "../lib/utils/logger.js";
@@ -36,7 +38,7 @@ async function getCachedSchool(schoolId) {
   const school = await prisma.school.findUnique({
     where: { id: schoolId },
     select: {
-      name: true, address: true, phone: true, logoUrl: true, organizationId: true,
+      name: true, address: true, phone: true, logoUrl: true, themeColor: true, organizationId: true,
       organization: { select: { name: true, logoUrl: true, themeColor: true } },
     },
   });
@@ -188,7 +190,7 @@ class NotificationService {
             schoolName: school?.name || "School",
             orgName: school?.organization?.name || undefined,
             logoUrl,
-            themeColor: school?.organization?.themeColor || "#00236f",
+            themeColor: school?.themeColor || school?.organization?.themeColor || "#00236f",
             title, message, details,
             address: school?.address || undefined,
             phone: school?.phone || undefined,
@@ -197,6 +199,32 @@ class NotificationService {
         }
       } catch (err) {
         logger.logger.warn(`[Notification] Branded email render failed (fallback plain): ${err.message}`);
+      }
+      // Org admin ka customized template override — built-in body/qurat hi badle,
+      // subject bhi. Warna (koi row nahi) exactly waise hi send hota hai jaisa pehle.
+      if (organizationId) {
+        try {
+          const override = await emailTemplatesService.getOverride(organizationId, "parent_notification");
+          if (override) {
+            const final = applyMailOverride(
+              { subject: title, html },
+              override,
+              {
+                schoolName: school?.name || "School",
+                orgName: school?.organization?.name || "",
+                title,
+                message: message.replace(/\n/g, " "),
+                address: school?.address || "",
+                phone: school?.phone || "",
+                loginUrl: "",
+              }
+            );
+            html = final.html;
+            title = final.subject;
+          }
+        } catch (err) {
+          logger.logger.warn(`[Notification] Template override failed (using built-in): ${err.message}`);
+        }
       }
       // Latency bound: ek attempt, max 5s. Slow SMTP par outbox me persist ho
       // jata hai aur cron deliver karta hai — request turant return hota hai.
@@ -262,7 +290,7 @@ class NotificationService {
     try {
       instance = await prisma.whatsAppInstance.findFirst({
         where: { schoolId },
-        select: { instanceName: true, organizationId: true, isEnabled: true, state: true, dailyQuotaUsed: true },
+        select: { instanceName: true, organizationId: true, integration: true, isEnabled: true, state: true, dailyQuotaUsed: true },
       });
     } catch (err) {
       logger.logger.warn(`[WhatsApp] Instance lookup failed for schoolId=${schoolId}: ${err.message}`);
@@ -298,11 +326,24 @@ class NotificationService {
     }
 
     try {
+      const isCloud = instance.integration === "WHATSAPP_CLOUD";
       const result = await queueWhatsApp(
         {
           organizationId: instance.organizationId || undefined,
           schoolId,
           to: normalized,
+          // Cloud API me free-form text 24h customer window ke BAHAAR 131047
+          // deta hi hai — approved template hi reliable channel hai proactive
+          // alerts ke liye. Name/env se aata hai (dev me jaspers_market_plain_text_v1).
+          ...(isCloud
+            ? {
+                template: {
+                  name: process.env.WHATSAPP_META_TEMPLATE || "",
+                  language: process.env.WHATSAPP_META_TEMPLATE_LANG || "en",
+                  components: [],
+                },
+              }
+            : {}),
           text: body,
           priority: "NORMAL",
         },
@@ -419,7 +460,7 @@ class NotificationService {
           const logoUrl = await this._resolveEmailLogo(school?.logoUrl || school?.organization?.logoUrl || undefined, school?.organizationId);
           html = parentNotificationEmail({
             schoolName: school?.name || "School", orgName: school?.organization?.name || undefined,
-            logoUrl, themeColor: school?.organization?.themeColor || "#00236f", title, message,
+            logoUrl, themeColor: school?.themeColor || school?.organization?.themeColor || "#00236f", title, message,
           });
         } catch { /* plain fallback */ }
         await queueEmail({ to: email, subject: title, text: message, html, schoolId, organizationId: school?.organizationId, allowPlatformFallback: false }, 1, BULK_EMAIL_TIMEOUT_MS);
@@ -475,7 +516,7 @@ class NotificationService {
           const logoUrl = await this._resolveEmailLogo(school?.logoUrl || school?.organization?.logoUrl || undefined, school?.organizationId);
           html = parentNotificationEmail({
             schoolName: school?.name || "School", orgName: school?.organization?.name || undefined,
-            logoUrl, themeColor: school?.organization?.themeColor || "#00236f", title, message: msg,
+            logoUrl, themeColor: school?.themeColor || school?.organization?.themeColor || "#00236f", title, message: msg,
           });
         } catch { /* plain fallback */ }
         await queueEmail({ to: email, subject: title, text: msg, html, schoolId, organizationId: school?.organizationId, allowPlatformFallback: false }, 1, BULK_EMAIL_TIMEOUT_MS);
