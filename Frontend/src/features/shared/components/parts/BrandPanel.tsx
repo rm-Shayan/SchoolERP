@@ -68,7 +68,7 @@ export default function BrandPanel({
               </div>
             </div>
           ) : (
-            <div className="flex justify-center [&_img]:w-24 sm:[&_img]:w-28 [&_img]:h-auto [&_img]:object-contain [&_img]:bg-transparent">{brandIcon}</div>
+            <div className="flex justify-start [&_img]:w-24 sm:[&_img]:w-28 [&_img]:h-auto [&_img]:object-contain [&_img]:bg-transparent">{brandIcon}</div>
           )}
         </motion.div>
 

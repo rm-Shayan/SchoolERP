@@ -80,7 +80,7 @@ export default function OrganizationsGrid({ organizations }: OrganizationsGridPr
         }
       />
       {organizations.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200/60 p-12 text-center shadow-sm">
+        <div className="mt-6 bg-white rounded-2xl border border-gray-200/60 p-12 text-center shadow-sm">
           <EmptyState
             icon={emptyIcon}
             title="No Organizations Yet"
@@ -93,7 +93,7 @@ export default function OrganizationsGrid({ organizations }: OrganizationsGridPr
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {organizations.map((org) => (
             <OrgCard key={org.id} org={org} />
           ))}
