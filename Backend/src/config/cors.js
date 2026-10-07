@@ -8,6 +8,7 @@ const configuredOrigins = (process.env.CLIENT_URL || "")
 const fixedOrigins = [
   "https://school-mchoxdsno-areesharao9-8007s-projects.vercel.app",
   "https://school-erp.vercel.app",
+  "https://school-erp-nine-iota.vercel.app",
 ];
 
 const developmentOrigins = [
