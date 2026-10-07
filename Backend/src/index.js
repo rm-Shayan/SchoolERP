@@ -101,7 +101,7 @@ const start = async () => {
 
   // 1. HTTP server
   const tHttp = performance.now();
-  await new Promise((resolve) => server.listen(PORT, resolve));
+  await new Promise((resolve) => server.listen(PORT, "0.0.0.0", resolve));
   console.log(`  ⏱  HTTP server:         ${ms(tHttp)} (port ${PORT} open)`);
 
   // 2. Socket.io + Redis adapter
