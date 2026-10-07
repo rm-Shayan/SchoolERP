@@ -58,9 +58,11 @@ const shutdown = async (signal) => {
     console.log("   ✅ Socket.io shut down");
 
     // 4. BullMQ workers — finish current jobs, stop polling
-    const workers = (await import("./jobs/index.js")).default;
-    await Promise.all(workers.map((w) => w.close()));
-    console.log("   ✅ BullMQ workers closed");
+    if (process.env.DISABLE_IMPORT_WORKERS !== "1") {
+      const workers = (await import("./jobs/index.js")).default;
+      await Promise.all(workers.map((w) => w.close()));
+      console.log("   ✅ BullMQ workers closed");
+    }
 
     // 5. Shared BullMQ Redis connection
     const { redisConnection } = await import("./lib/redis.connection.js");
@@ -132,11 +134,16 @@ const start = async () => {
   const storageCacheReady = dbReady.then(() => warmupOrgStorageCache());
 
   // 5. BullMQ workers (lazy-loaded after port is open)
+  // DISABLE_IMPORT_WORKERS=1 → 512MB containers me workers skip, sirf API+cron chale
   const tWorkers = performance.now();
-  const workersReady = (await import("./jobs/index.js")).default;
-  console.log(
-    `  ⚙️  BullMQ workers:      ${ms(tWorkers)} (${workersReady.length} workers)`,
-  );
+  if (process.env.DISABLE_IMPORT_WORKERS !== "1") {
+    const workersReady = (await import("./jobs/index.js")).default;
+    console.log(
+      `  ⚙️  BullMQ workers:      ${ms(tWorkers)} (${workersReady.length} workers)`,
+    );
+  } else {
+    console.log(`  ⚙️  BullMQ workers:      disabled (DISABLE_IMPORT_WORKERS=1)`);
+  }
 
   await dbReady;
   await storageCacheReady;
