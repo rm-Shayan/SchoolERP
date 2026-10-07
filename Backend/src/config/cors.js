@@ -1,6 +1,8 @@
+const stripSlash = (o) => o.replace(/\/+$/, "");
+
 const configuredOrigins = (process.env.CLIENT_URL || "")
   .split(",")
-  .map((origin) => origin.trim())
+  .map((origin) => stripSlash(origin.trim()))
   .filter(Boolean);
 
 const fixedOrigins = [
