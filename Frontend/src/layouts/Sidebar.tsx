@@ -78,7 +78,7 @@ export default function Sidebar({ links, collapsed, onToggle, mobileOpen, onMobi
           'flex items-center gap-3 border-b transition-all',
           collapsed ? 'justify-center px-2 py-4' : 'px-5 py-5'
         )} style={{ borderColor: colors.border }}>
-          <img src={logo} alt={title} className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-contain shrink-0 bg-white/95 p-0.5" />
+          <img src={logo} alt={title} className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-contain shrink-0 bg-white/95" />
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <h1 className="text-[11px] sm:text-xs sm:text-[13px] font-semibold text-white truncate leading-tight">{title}</h1>
@@ -88,7 +88,7 @@ export default function Sidebar({ links, collapsed, onToggle, mobileOpen, onMobi
           {!collapsed && (
             <button
               onClick={onMobileClose}
-              className="text-white/40 hover:text-white/70 lg:hidden p-1 rounded-lg hover:bg-white/10 transition-colors"
+              className="text-white/40 hover:text-white/70 lg:hidden rounded-lg hover:bg-white/10 transition-colors"
               aria-label="Close menu"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

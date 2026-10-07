@@ -23,7 +23,7 @@ function SchoolCard({ org, school, onDelete, onBlock, onUnblock }: SchoolCardPro
     <div className="group/card relative overflow-hidden rounded-2xl border border-primary-700 bg-primary-700 text-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
       <div className="relative h-20 bg-primary-700">
         <div className="absolute -bottom-6 left-5">
-          <div className="rounded-2xl bg-white p-1 shadow-lg ring-1 ring-black/5">
+          <div className="rounded-2xl bg-white shadow-lg ring-1 ring-black/5">
             <Logo src={school.logoUrl || org.logoUrl} name={school.name} size="sm" className="shrink-0" />
           </div>
         </div>
@@ -66,7 +66,7 @@ function SchoolCard({ org, school, onDelete, onBlock, onUnblock }: SchoolCardPro
         <div className="mt-4 flex items-center gap-1 border-t border-white/15 pt-4">
           <Link
             href={`/admin/organizations/${org.id}/schools/${school.id}`}
-            className="rounded-xl p-2 text-white/60 transition-all hover:bg-white/10 hover:text-white"
+            className="rounded-xl text-white/60 transition-all hover:bg-white/10 hover:text-white"
             title="Manage Branch"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -57,7 +57,7 @@ export default function BrandPanel({
         <motion.div variants={item} className="mb-4 sm:mb-6">
           {branded ? (
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="flex h-12 w-12 sm:h-16 sm:w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white p-1.5 shadow-lg ring-1 ring-black/10">
+              <div className="flex h-12 w-12 sm:h-16 sm:w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black/10">
                 {brandIcon}
               </div>
               <div className="min-w-0">

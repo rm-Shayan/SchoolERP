@@ -50,7 +50,7 @@ export default function OrgHeader({
       <div className="px-4 sm:px-7 pb-6 -mt-12 relative">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex items-end gap-4 min-w-0">
-            <div className="shrink-0 rounded-2xl bg-white p-2 shadow-xl ring-4 ring-white/60">
+            <div className="shrink-0 rounded-2xl bg-white shadow-xl ring-4 ring-white/60">
               <Logo src={org.logoUrl} name={org.name} size="lg" />
             </div>
             <div className="min-w-0 pb-1">

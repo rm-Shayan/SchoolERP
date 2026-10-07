@@ -49,7 +49,7 @@ export default function OrgFormFields({
               name="themeColor"
               value={values.themeColor || '#2563eb'}
               onChange={onChange}
-              className="h-12 w-12 rounded-lg border border-gray-300 cursor-pointer bg-white p-1"
+              className="h-12 w-12 rounded-lg border border-gray-300 cursor-pointer bg-white"
               aria-label="Brand color"
             />
             <Input

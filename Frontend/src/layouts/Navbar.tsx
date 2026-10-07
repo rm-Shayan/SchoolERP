@@ -41,7 +41,7 @@ export default function Navbar({ title, onMenuClick }: NavbarProps) {
           {onMenuClick && (
             <button
               onClick={onMenuClick}
-              className="-ml-1 shrink-0 p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-xl lg:hidden transition-colors"
+              className="-ml-1 shrink-0 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-xl lg:hidden transition-colors"
               aria-label="Open menu"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -78,13 +78,13 @@ export default function Navbar({ title, onMenuClick }: NavbarProps) {
           <div className="relative">
             <button
               onClick={() => setOpen(!open)}
-              className="flex items-center gap-2 rounded-xl p-1 px-2.5 border border-transparent hover:border-slate-100 hover:bg-slate-50 transition-all duration-300"
+              className="flex items-center gap-2 rounded-xl px-2.5 border border-transparent hover:border-slate-100 hover:bg-slate-50 transition-all duration-300"
               aria-label="User menu"
             >
               {user?.avatarUrl ? (
                 <img src={user.avatarUrl} alt={user.name} className="h-8 w-8 rounded-full object-cover ring-2 ring-primary-100/50" />
               ) : logo ? (
-                <img src={logo} alt={school?.name ?? organization?.name ?? 'logo'} className="h-8 w-8 rounded-full object-contain ring-2 ring-primary-100/50 bg-white p-0.5" />
+                <img src={logo} alt={school?.name ?? organization?.name ?? 'logo'} className="h-8 w-8 rounded-full object-contain ring-2 ring-primary-100/50 bg-white" />
               ) : (
                 <div className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white border border-white/20" style={{ backgroundColor: themeColor }}>
                   {user ? getInitials(user.name) : '?'}
@@ -101,7 +101,7 @@ export default function Navbar({ title, onMenuClick }: NavbarProps) {
             {open && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-                <div className="absolute right-0 z-50 mt-2.5 w-60 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-xl shadow-slate-200/50">
+                <div className="absolute right-0 z-50 mt-2.5 w-60 rounded-2xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50">
                   <div className="border-b border-slate-100 px-4 py-3.5 mb-1">
                     <p className="text-xs font-bold text-slate-950">{user?.name}</p>
                     <p className="truncate text-[11px] font-medium text-slate-400 mt-0.5">{user?.email}</p>

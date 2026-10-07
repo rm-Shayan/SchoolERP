@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import Link from 'next/link';
 import Logo from '@/features/shared/components/Logo';
 import OrgPageShell from './OrgPageShell';
@@ -26,7 +26,7 @@ export default function OrgGalleryPage() {
             theme={theme}
             eyebrow="School Life"
             title="Moments that make school feel like home"
-            description="Sports, science, arts and celebrations â€” a glimpse into the vibrant day-to-day life on our campuses."
+            description="Sports, science, arts and celebrations — a glimpse into the vibrant day-to-day life on our campuses."
           />
 
           <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
@@ -34,7 +34,7 @@ export default function OrgGalleryPage() {
               eyebrow="Gallery"
               title="Life at "
               highlight={org.name}
-              description="Events and milestones captured throughout the academic year â€” check back regularly for fresh updates."
+              description="Events and milestones captured throughout the academic year — check back regularly for fresh updates."
               theme={theme}
             />
 
@@ -61,7 +61,7 @@ export default function OrgGalleryPage() {
 
             <div className="mt-16 flex flex-col items-center gap-4 rounded-[32px] border border-gray-100 bg-gray-50 p-10 text-center sm:p-14">
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-white p-2 shadow-sm">
+                <div className="rounded-2xl bg-white shadow-sm">
                   <Logo src={org.logoUrl} name={org.name} size="md" />
                 </div>
                 <p className="text-lg font-bold text-gray-900">{org.name}</p>

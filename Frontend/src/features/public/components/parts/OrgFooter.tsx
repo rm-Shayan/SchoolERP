@@ -49,7 +49,7 @@ export default function OrgFooter({ org, theme }: OrgFooterProps) {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-white p-2 shadow-sm">
+              <div className="rounded-2xl bg-white shadow-sm">
                 <Logo src={org.logoUrl} name={org.name} size="md" />
               </div>
               <div>

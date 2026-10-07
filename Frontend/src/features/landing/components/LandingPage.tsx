@@ -47,7 +47,7 @@ export default function LandingPage() {
         {/* Logo + brand */}
         <Link href="/" className="mb-10 flex items-center gap-4 pu-fade-up" style={{ animationDelay: '0.05s' }}>
           <div className="relative">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl shadow-xl shadow-primary-500/20 border border-primary-100/60 bg-white p-1.5">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl shadow-xl shadow-primary-500/20 border border-primary-100/60 bg-white">
               <img
                 src="/screen.png"
                 alt="SchoolERP Logo"

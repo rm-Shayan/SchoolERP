@@ -15,7 +15,7 @@ export default function Logo({ src, name, size = 'md', className }: LogoProps) {
       <img
         src={src}
         alt={name}
-        className={cn(sizes[size], 'rounded-lg object-contain bg-white p-0.5 border border-gray-200', className)}
+        className={cn(sizes[size], 'rounded-lg object-contain bg-white border border-gray-200', className)}
       />
     );
   }

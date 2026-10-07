@@ -38,7 +38,7 @@ function OrgCardBase({ org, blocking, onBlock, onUnblock }: OrgCardProps) {
 
         {/* Logo overlapping header */}
         <div className="relative -mt-8 px-5">
-          <div className="inline-block rounded-2xl bg-white p-1.5 shadow-lg ring-1 ring-black/5">
+          <div className="inline-block rounded-2xl bg-white shadow-lg ring-1 ring-black/5">
             <Logo src={org.logoUrl} name={org.name} size="lg" />
           </div>
         </div>
@@ -69,7 +69,7 @@ function OrgCardBase({ org, blocking, onBlock, onUnblock }: OrgCardProps) {
           <div className="mt-3 flex items-center gap-1.5 border-t border-gray-100 pt-3">
             <PublicPageButton slug={org.slug} label="Public" variant="text" />
             <button type="button" title="Copy login link"
-              className="ml-auto rounded-lg p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+              className="ml-auto rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
               onClick={(e) => {
                 e.preventDefault(); e.stopPropagation();
                 navigator.clipboard.writeText(orgLoginUrl(org))

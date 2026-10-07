@@ -42,7 +42,7 @@ export default function HealthBanner({ org, totalIssues, totalBranches, healthyC
       <div className="px-4 sm:px-7 pb-5 -mt-10 relative">
         <div className="flex items-end gap-4">
           {org && (
-            <div className="shrink-0 rounded-2xl bg-white p-2 shadow-xl ring-4 ring-white/60">
+            <div className="shrink-0 rounded-2xl bg-white shadow-xl ring-4 ring-white/60">
               <Logo src={org.logoUrl} name={org.name} size="lg" />
             </div>
           )}
