@@ -3,6 +3,7 @@ FROM node:22-bookworm-slim AS build
 WORKDIR /app
 
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+ENV NODE_OPTIONS=--max-old-space-size=300
 
 COPY Backend/package.json Backend/package-lock.json ./
 RUN npm ci --ignore-scripts && npm cache clean --force
