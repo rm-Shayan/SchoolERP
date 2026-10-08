@@ -19,7 +19,7 @@ export interface ParentChild {
   gender: string | null;
   status: string;
   isActive: boolean;
-  school: { id: string; name: string; slug?: string | null; themeColor?: string; logoUrl?: string } | null;
+  school: { id: string; name: string; slug?: string | null; themeColor?: string; logoUrl?: string; branchLogoUrl?: string | null } | null;
   class: { id: string; name: string } | null;
   section: { id: string; name: string } | null;
 }

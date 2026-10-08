@@ -3,7 +3,7 @@
 import { memo } from 'react';
 import type { Homework } from '@/lib/api/homeworkService';
 import { formatDate } from '@/lib/utils';
-import { getOrgThemeColor } from '@/lib/utils/orgTheme';
+import { getPortalThemeColor } from '@/lib/utils/orgTheme';
 import Button from '@/features/shared/components/Button';
 
 interface HomeworkCardProps {
@@ -19,11 +19,14 @@ const HomeworkCard = memo(function HomeworkCard({
   onEdit,
   onDelete,
 }: HomeworkCardProps) {
-  const themeColor = getOrgThemeColor();
-  const borderStyle = themeColor ? `border-[${themeColor}30] shadow-[0_1px_3px_${themeColor}08]` : 'border-gray-200 shadow-sm';
-  const dividerStyle = themeColor ? `border-t-[${themeColor}20]` : 'border-t-gray-100';
+  const themeColor = getPortalThemeColor();
+  // Runtime-composed Tailwind classes never compile — use inline styles.
+  const cardStyle = themeColor
+    ? { borderColor: `${themeColor}30`, boxShadow: `0 1px 3px ${themeColor}08` }
+    : undefined;
+  const dividerStyle = themeColor ? { borderTopColor: `${themeColor}20` } : undefined;
   return (
-    <div className={`p-5 rounded-2xl ${borderStyle} bg-white shadow-sm hover:shadow-md transition-shadow`}>
+    <div className={`p-5 rounded-2xl bg-white border shadow-sm hover:shadow-md transition-shadow ${themeColor ? '' : 'border-gray-200'}`} style={cardStyle}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="font-semibold text-gray-900">{hw.title}</h3>
@@ -37,7 +40,7 @@ const HomeworkCard = memo(function HomeworkCard({
       <p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap">{hw.content}</p>
 
       {isOwner && (
-        <div className={`flex gap-2 mt-3 pt-3 ${dividerStyle}`}>
+        <div className={`flex gap-2 mt-3 pt-3 border-t ${themeColor ? '' : 'border-t-gray-100'}`} style={dividerStyle}>
           <Button size="sm" variant="ghost" onClick={() => onEdit(hw)}>
             Edit
           </Button>

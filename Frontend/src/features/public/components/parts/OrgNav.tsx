@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Logo from '@/features/shared/components/Logo';
@@ -21,7 +21,7 @@ export default function OrgNav({ org }: OrgNavProps) {
   const [scrolled, setScrolled] = useState(false);
   const admissionHref = `/o/${org.slug}/admission`;
   const sectionLinks = buildPageLinks(org.slug);
-  const theme = org.themeColor || '#6366f1';
+  const theme = org.themeColor || '#7c3aed';
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -39,7 +39,7 @@ export default function OrgNav({ org }: OrgNavProps) {
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
         <Link href={`/o/${org.slug}`} onClick={() => setOpen(false)} className="flex min-w-0 items-center gap-3">
-          <Logo src={org.logoUrl} name={org.name} size="sm" />
+          <Logo src={org.logoUrl} name={org.name} size="md" />
           <span className="truncate text-sm font-bold text-gray-900 sm:text-base">
             {org.name}
           </span>

@@ -31,7 +31,7 @@ export default function NotificationMenu() {
   const pathname = usePathname();
   const schoolId = school?.id;
   const organizationId = user?.organizationId;
-  const themeColor = organization?.themeColor || getOrgThemeColor();
+  const themeColor = school?.themeColor || organization?.themeColor || getOrgThemeColor();
   const notificationsPath = getNotificationsPath(user?.role, pathname);
 
   const { data: unread, refetch: refetchUnread } = useUnreadCountQuery(

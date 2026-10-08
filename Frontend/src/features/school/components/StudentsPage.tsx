@@ -23,7 +23,7 @@ import { getLastClassIds, studentCreatePayload, studentUpdatePayload } from './p
 export default function StudentsPage() {
   const { user, school, organization } = useAppSelector((s) => s.auth);
   const { isAdmin, isReceptionist } = useRoleAccess();
-  const themeColor = organization?.themeColor || school?.themeColor || undefined;
+  const themeColor = school?.themeColor || organization?.themeColor || undefined;
   const schoolId = school?.id ?? user?.schoolId;
   const [classes, setClasses] = useState<Class[]>([]);
   const [classesLoading, setClassesLoading] = useState(true);

@@ -3,6 +3,7 @@
 import { type RefObject, useState } from 'react';
 import { Button, Input } from '@/features/shared/components';
 import { getInitials } from '@/lib/utils';
+import { platformLogoFallback } from '@/lib/utils/logo';
 import toast from 'react-hot-toast';
 
 interface LogoUploadProps {
@@ -37,7 +38,7 @@ export function LogoUpload({ logoUrl, name, uploading, fileRef, onChange, onRemo
           onChange={(e) => { onChange(e.target.files?.[0] ?? null); e.target.value = ''; }} />
         {logoUrl ? (
           <img src={logoUrl} alt="Logo" className="h-16 w-16 rounded-full object-contain border border-gray-200 bg-white"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            onError={platformLogoFallback} />
         ) : (
           <div className="h-16 w-16 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-lg">
             {getInitials(name)}

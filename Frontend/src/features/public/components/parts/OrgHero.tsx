@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 import Link from 'next/link';
 import OrgHeroVisual from './OrgHeroVisual';
@@ -11,7 +11,7 @@ interface OrgHeroProps {
 }
 
 export default function OrgHero({ org, gradient }: OrgHeroProps) {
-  const theme = org.themeColor || '#6366f1';
+  const theme = org.themeColor || '#7c3aed';
   const [copied, setCopied] = useState(false);
 
   const copyLink = () => {
@@ -38,7 +38,7 @@ export default function OrgHero({ org, gradient }: OrgHeroProps) {
         <div className="pu-fade-up max-w-2xl">
           <div className="inline-flex max-w-full items-center gap-2.5 rounded-full border border-white/20 bg-white/10 py-1.5 pl-2 pr-4 text-xs font-semibold uppercase tracking-[0.18em] backdrop-blur-md">
             <span className="pu-pulse-dot h-2 w-2 rounded-full bg-emerald-400" />
-            Admissions Open 2026–27
+            Admissions Open 2026â€“27
           </div>
 
           <h1 className="mt-7 text-4xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-[4.25rem]">
@@ -49,7 +49,7 @@ export default function OrgHero({ org, gradient }: OrgHeroProps) {
           </h1>
 
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-white/75">
-            A complete digital campus — online admissions, live attendance, fees and
+            A complete digital campus â€” online admissions, live attendance, fees and
             parent communication, all beautifully connected in one place.
           </p>
 
@@ -104,7 +104,7 @@ export default function OrgHero({ org, gradient }: OrgHeroProps) {
           </div>
         </div>
 
-        {/* Right — product visual */}
+        {/* Right â€” product visual */}
         <OrgHeroVisual org={org} theme={theme} />
       </div>
     </section>

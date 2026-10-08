@@ -19,7 +19,7 @@ export function OrgBrandingForm() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [name, setName] = useState(organization?.name ?? '');
-  const [themeColor, setThemeColor] = useState(organization?.themeColor ?? '#2563eb');
+  const [themeColor, setThemeColor] = useState(organization?.themeColor ?? '#7c3aed');
   const [logoUrl, setLogoUrl] = useState(organization?.logoUrl ?? '');
   const { pendingFile, previewUrl, hasPending, stage, clear } = useStagedImage();
   const [phone, setPhone] = useState(organization?.phone ?? '');
@@ -35,7 +35,7 @@ export function OrgBrandingForm() {
   useEffect(() => {
     if (!organization) return;
     setName(organization.name ?? '');
-    setThemeColor(organization.themeColor ?? '#2563eb');
+    setThemeColor(organization.themeColor ?? '#7c3aed');
     setLogoUrl(organization.logoUrl ?? '');
     setPhone(organization.phone ?? '');
     setEmail(organization.email ?? '');
@@ -86,6 +86,7 @@ export function OrgBrandingForm() {
       });
       clear();
       dispatch(setOrganizationForSchool(updated));
+      if (updated?.themeColor) window.dispatchEvent(new Event('org-theme-changed'));
       toast.success('Organization details updated — applied instantly');
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Failed to update');

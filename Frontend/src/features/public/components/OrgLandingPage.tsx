@@ -39,16 +39,17 @@ export default function OrgLandingPage({ initialOrg }: { initialOrg?: OrgPublicD
     };
   }, [slug]);
 
+  useEffect(() => {
+    if (!org?.themeColor) return;
+    applyPortalThemeToRoot(org.themeColor);
+    return () => clearPortalThemeFromRoot();
+  }, [org?.themeColor]);
+
   if (error) return <NotFound message={error} />;
   if (!org) return <PageSpinner />;
 
   const theme = org.themeColor || '#0f172a';
   const gradient = `linear-gradient(135deg, ${theme}, ${darkenHex(theme) ?? theme})`;
-
-  useEffect(() => {
-    applyPortalThemeToRoot(org.themeColor);
-    return () => clearPortalThemeFromRoot();
-  }, [org.themeColor]);
 
   return (
     <div className="bg-white text-gray-900">

@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logoutAction } from '@/store/slices/authSlice';
 import { getInitials, getRoleLabel } from '@/lib/utils';
 import { getOrgThemeColor } from '@/lib/utils/orgTheme';
+import { platformLogoFallback } from '@/lib/utils/logo';
 import NotificationMenu from './parts/NotificationMenu';
 import PortalStatusPill from './parts/PortalStatusPill';
 
@@ -53,6 +54,7 @@ export default function Navbar({ title, onMenuClick }: NavbarProps) {
             <img
               src={logo}
               alt={school?.name ?? organization?.name ?? 'logo'}
+              onError={platformLogoFallback}
               className="h-8 w-8 sm:h-10 sm:w-10 shrink-0 rounded-lg object-contain"
             />
           )}
@@ -82,9 +84,11 @@ export default function Navbar({ title, onMenuClick }: NavbarProps) {
               aria-label="User menu"
             >
               {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt={user.name} className="h-8 w-8 rounded-full object-cover ring-2 ring-primary-100/50" />
-              ) : logo ? (
-                <img src={logo} alt={school?.name ?? organization?.name ?? 'logo'} className="h-8 w-8 rounded-full object-contain ring-2 ring-primary-100/50 bg-white" />
+                <img src={user.avatarUrl} alt={user.name} onError={platformLogoFallback} className="h-8 w-8 rounded-full object-cover ring-2 ring-primary-100/50" />
+              ) : organization?.logoUrl ? (
+                <img src={organization.logoUrl} alt={organization.name} onError={platformLogoFallback} className="h-8 w-8 rounded-full object-contain ring-2 ring-primary-100/50 bg-white" />
+              ) : school?.logoUrl ? (
+                <img src={school.logoUrl} alt={school.name} onError={platformLogoFallback} className="h-8 w-8 rounded-full object-contain ring-2 ring-primary-100/50 bg-white" />
               ) : (
                 <div className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white border border-white/20" style={{ backgroundColor: themeColor }}>
                   {user ? getInitials(user.name) : '?'}

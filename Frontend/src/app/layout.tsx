@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "@/store/Providers";
+import ThemeSync from "@/components/ThemeSync";
 
 export const metadata: Metadata = {
   title: "SchoolERP - School Management System",
@@ -20,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
+        <ThemeSync />
         <Providers>{children}</Providers>
       </body>
     </html>

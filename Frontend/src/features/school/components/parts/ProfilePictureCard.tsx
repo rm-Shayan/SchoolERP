@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setUser } from '@/store/slices/authSlice';
 import { authService } from '@/lib/api';
 import { getInitials, validateImageUpload } from '@/lib/utils';
+import { platformLogoFallback } from '@/lib/utils/logo';
 import { Button } from '@/features/shared/components';
 import toast from 'react-hot-toast';
 import { useStagedImage } from './useStagedImage';
@@ -15,7 +16,7 @@ import { useStagedImage } from './useStagedImage';
  */
 export function ProfilePictureCard() {
   const dispatch = useAppDispatch();
-  const { user } = useAppSelector((s) => s.auth);
+  const { user, school, organization } = useAppSelector((s) => s.auth);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const { pendingFile, previewUrl: preview, hasPending, stage, clear } = useStagedImage();
@@ -47,13 +48,16 @@ export function ProfilePictureCard() {
     }
   }, [dispatch, pendingFile, clear]);
 
+  // Admin photo missing → organization logo → branch logo (broken URL swaps to platform logo).
+  const avatarSrc = preview ?? user?.avatarUrl ?? organization?.logoUrl ?? school?.logoUrl ?? null;
+
   return (
     <div className="flex items-center gap-5 p-4 bg-gray-50 rounded-xl border border-gray-100">
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       <div className="relative">
         <div className="h-20 w-20 rounded-full ring-4 ring-primary-100 overflow-hidden bg-primary-50 flex items-center justify-center">
-          {preview ?? user?.avatarUrl ? (
-            <img src={preview ?? user?.avatarUrl ?? ''} alt="Profile" className="h-full w-full object-cover" />
+          {avatarSrc ? (
+            <img src={avatarSrc} alt="Profile" onError={platformLogoFallback} className="h-full w-full object-cover" />
           ) : (
             <span className="text-2xl font-bold text-primary-600">{user ? getInitials(user.name) : '?'}</span>
           )}

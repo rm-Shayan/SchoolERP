@@ -15,7 +15,7 @@ import PortalTabHost from './parts/PortalTabHost';
 import type { PortalChildBrief } from './parts/portalChildGroup';
 import { OverviewSkeleton } from './parts/PortalSkeletonsA';
 
-type SchoolInfo = { themeColor?: string | null; logoUrl?: string | null; slug?: string | null };
+type SchoolInfo = { themeColor?: string | null; logoUrl?: string | null; branchLogoUrl?: string | null; slug?: string | null };
 
 function saveOrgBranding(school?: SchoolInfo | null) {
   if (typeof window === 'undefined' || !school?.themeColor && !school?.logoUrl) return;
@@ -103,7 +103,7 @@ export default function PortalDashboard() {
   }));
   const orgSchool = isStudent ? student?.school : (children[0]?.school ?? null);
   const orgName = orgSchool?.name ?? (isStudent ? 'Student Portal' : 'Parent Portal');
-  const orgLogoUrl = orgSchool?.logoUrl ?? null;
+  const orgLogoUrl = orgSchool?.logoUrl ?? orgSchool?.branchLogoUrl ?? null;
   const avatarUrl = isStudent ? (student?.imageUrl ?? null) : (parent?.imageUrl ?? null);
   const title = isStudent ? 'Student Portal' : 'Parent Portal';
   const subtitle = isStudent

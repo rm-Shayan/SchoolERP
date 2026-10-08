@@ -14,6 +14,24 @@ export function getOrgThemeColor(): string | undefined {
   }
 }
 
+/**
+ * Active portal theme — branch (school) ka DB theme jeet-ta hai, warna org.
+ * Staff login par `school` key localStorage me school object save hoti hai.
+ */
+export function getPortalThemeColor(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const schStr = localStorage.getItem('school');
+    if (schStr) {
+      const sch = JSON.parse(schStr);
+      if (sch?.themeColor) return sch.themeColor;
+    }
+  } catch {
+    /* corrupted storage — fall through to org */
+  }
+  return getOrgThemeColor();
+}
+
 /** Org slug from saved branding (logout/login redirect ke liye). */
 export function getOrgSlug(): string | undefined {
   if (typeof window === 'undefined') return undefined;

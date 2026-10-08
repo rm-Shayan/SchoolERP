@@ -52,7 +52,7 @@ export default function PortalShell({ title, subtitle, avatarUrl, orgName, orgLo
         themeColor={themeColor}
       />
       <div className="lg:pl-64">
-        <PortalTopBar title={title} subtitle={subtitle} avatarUrl={avatarUrl} canEditPhoto={canEditPhoto} onMenuClick={() => setMobileOpen(true)} onLogout={onLogout} />
+        <PortalTopBar title={title} subtitle={subtitle} avatarUrl={avatarUrl} orgLogoUrl={orgLogoUrl} canEditPhoto={canEditPhoto} onMenuClick={() => setMobileOpen(true)} onLogout={onLogout} />
         <main className="px-4 py-6 pb-20 lg:pb-6 lg:pl-6">{children}</main>
       </div>
       <MobileBottomNav active={active} onChange={onChange} onOpenMore={() => setMobileOpen(true)} />

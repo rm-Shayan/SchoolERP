@@ -2,7 +2,7 @@
 
 import type { AdmissionFunnelStats } from '@/lib/api/admissionService';
 import { Card, CardHeader, CardContent, Badge } from '@/features/shared/components';
-import { getOrgThemeColor } from '@/lib/utils/orgTheme';
+import { getPortalThemeColor } from '@/lib/utils/orgTheme';
 
 export function Icon({ d }: { d: string }) {
   return (
@@ -24,7 +24,7 @@ function CardShimmer() {
 }
 
 export function FunnelCard({ funnel, loading }: { funnel: AdmissionFunnelStats | null; loading?: boolean }) {
-  const themeColor = getOrgThemeColor();
+  const themeColor = getPortalThemeColor();
   const stages = Object.entries(funnel ?? {}).filter(([k]) => k !== 'total');
   const maxVal = Math.max(...stages.map(([, v]) => v as number), 1);
   const cardBorder = themeColor ? 'border-0' : 'border border-gray-200/70';

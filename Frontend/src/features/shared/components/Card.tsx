@@ -7,12 +7,14 @@ interface CardProps {
   children: React.ReactNode;
   className?: string;
   onClick?: () => void;
+  style?: React.CSSProperties;
 }
 
-const Card = memo(function Card({ className, children, onClick }: CardProps) {
+const Card = memo(function Card({ className, children, onClick, style }: CardProps) {
   return (
     <div
       onClick={onClick}
+      style={style}
       className={cn(
         'bg-white rounded-2xl border border-gray-200/60',
         'shadow-[0_1px_3px_rgba(15,23,42,0.04),0_4px_20px_rgba(15,23,42,0.03)]',

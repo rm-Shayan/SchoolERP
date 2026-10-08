@@ -82,11 +82,8 @@ export default function PortalSidebar({
           <img src={orgLogoUrl} alt={orgName} onError={() => setLogoFailed(true)}
             className="h-10 w-10 shrink-0 rounded-xl bg-white/10 object-contain p-1 ring-1 ring-white/15" />
         ) : (
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white" style={{ background: `linear-gradient(135deg, ${brand}, ${brand}cc)` }}>
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
-            </svg>
-          </div>
+          <img src="/screen.png" alt="SchoolERP"
+            className="h-10 w-10 shrink-0 rounded-xl bg-white object-contain p-1 ring-1 ring-white/15" />
         )}
         <div className="min-w-0 flex-1">
           <h1 className="text-[13px] font-semibold text-white truncate leading-tight">{orgName || 'School Portal'}</h1>

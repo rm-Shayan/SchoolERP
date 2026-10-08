@@ -27,7 +27,7 @@ export default function AdminDashboard() {
   const [showSkeleton, setShowSkeleton] = useState(loading);
   const [contentVisible, setContentVisible] = useState(!loading);
 
-  const sColors = sidebarColors(organization?.themeColor || null);
+  const sColors = sidebarColors(school?.themeColor || organization?.themeColor || null);
   const bannerBg = `linear-gradient(120deg, ${sColors.bg} 0%, ${sColors.bgHover} 50%, ${sColors.bg} 100%)`;
 
   useEffect(() => {

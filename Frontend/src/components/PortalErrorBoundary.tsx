@@ -2,7 +2,7 @@
 
 import { type ReactNode } from 'react';
 import ErrorBoundary from './ErrorBoundary';
-import { getOrgThemeColor } from '@/lib/utils/orgTheme';
+import { getPortalThemeColor } from '@/lib/utils/orgTheme';
 
 interface Props {
   children: ReactNode;
@@ -18,7 +18,7 @@ interface Props {
  * instead of crashing the entire portal.
  */
 export default function PortalErrorBoundary({ children, section, onRetry }: Props) {
-  const theme = getOrgThemeColor();
+  const theme = getPortalThemeColor();
 
   return (
     <ErrorBoundary

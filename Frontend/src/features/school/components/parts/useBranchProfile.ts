@@ -125,7 +125,7 @@ export function useBranchProfile() {
     /** Branch logo → organization logo fallback (inherited, not owned by the branch). */
     displayLogo: previewUrl || logoUrl || organization?.logoUrl || '',
     /** Theme falls back to the organization colour so a blank branch is not colourless. */
-    displayThemeColor: themeColor || organization?.themeColor || '#6366f1',
+    displayThemeColor: themeColor || organization?.themeColor || '#7c3aed',
     hasOwnLogo: Boolean(previewUrl || logoUrl),
   };
 }

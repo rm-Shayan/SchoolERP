@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import Link from 'next/link';
 import type { OrgPublicData } from '@/lib/api/orgService';
 import { buildOrgLoginHref } from './orgLoginHref';
@@ -29,14 +29,14 @@ export default function OrgAdmissionCta({ org, gradient }: OrgAdmissionCtaProps)
             Ready to join <span className="bg-gradient-to-r from-white via-white/90 to-white/60 bg-clip-text text-transparent">{org.name}</span>?
           </h2>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/75">
-            Admissions are open for the 2026–27 session. Fill in a quick inquiry form and our
+            Admissions are open for the 2026â€“27 session. Fill in a quick inquiry form and our
             office will get in touch with you shortly.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href={`/o/${org.slug}/admission`}
               className="group inline-flex items-center gap-2 rounded-full bg-white px-10 py-4 text-sm font-bold shadow-2xl shadow-black/15 transition-all duration-300 hover:scale-[1.03]"
-              style={{ color: org.themeColor || '#6366f1' }}
+              style={{ color: org.themeColor || '#7c3aed' }}
             >
               Apply for Admission
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 transition-transform group-hover:translate-x-0.5">

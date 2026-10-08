@@ -42,7 +42,8 @@ class SchoolService {
   /**
    * Public tenant branding used on the login screen.
    * Accepts a school `code` (GULSHAN-01) OR an organization `slug` (gulshan).
-   * Prioritizes branch logo → falls back to organization logo.
+   * Branch-scoped → branch logo first; org-only → organization logo first
+   * (missing logo falls back to the other, then null = platform logo).
    */
   async getBranding({ code, slug, organization, school }) {
     let branch = null;
@@ -68,15 +69,26 @@ class SchoolService {
       throw ApiError.notFoundError("School not found");
     }
 
+    // Logo priority: branch-scoped login (code/school param) → branch logo
+    // first; org-only login (slug) → organization logo first. Dono me missing
+    // logo doosre wale se fallback hota hai (null = frontend platform logo).
+    const org = branch.organization || null;
+    const branchScoped = Boolean(code || school);
+    const orgLogo = org?.logoUrl || null;
+    const branchLogo = branch.logoUrl || null;
+
     return {
       code: branch.code,
       name: branch.name,
-      slug: branch.organization?.slug || null,
-      orgName: branch.organization?.name || null,
-      logoUrl: branch.logoUrl || branch.organization?.logoUrl || null,
+      slug: org?.slug || null,
+      orgName: org?.name || null,
+      logoUrl: branchScoped ? (branchLogo || orgLogo) : (orgLogo || branchLogo),
       // Sirf DB wala theme — koi hardcoded fallback nahi. Theme na ho to null
       // (frontend apna default palette use karta hai, blue force nahi hota).
-      themeColor: branch.themeColor || branch.organization?.themeColor || null,
+      themeColor: branch.themeColor || org?.themeColor || null,
+      school: branchScoped
+        ? { code: branch.code, name: branch.name, logoUrl: branchLogo || orgLogo }
+        : null,
     };
   }
 

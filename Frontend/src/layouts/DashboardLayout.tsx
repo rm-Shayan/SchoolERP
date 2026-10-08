@@ -7,6 +7,7 @@ import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { useSocket } from '@/hooks/useSocket';
 import { orgThemeStyle, applyPortalThemeToRoot, clearPortalThemeFromRoot } from '@/lib/theme';
+import { getPortalThemeColor } from '@/lib/utils/orgTheme';
 import { isNavGroup, filterLinksByRole, type SidebarNavItem } from '@/config/navLinks';
 import type { ReactNode } from 'react';
 import PortalErrorBoundary from '@/components/PortalErrorBoundary';
@@ -32,18 +33,26 @@ export default function DashboardLayout({ links, title, children }: DashboardLay
   useSocket();
   const pathname = usePathname();
   const router = useRouter();
-  const { organization, user } = useAppSelector((s) => s.auth);
+  const { organization, school, user } = useAppSelector((s) => s.auth);
 
-  const themeColor = organization?.themeColor ?? null;
-  const themeStyle = orgThemeStyle(themeColor);
+  // Branch ka apna DB theme jeet-ta hai (Sidebar/Navbar bhi school-first
+  // hain) — warna org theme, phir localStorage copy (staff/student portals).
+  const themeColor = school?.themeColor ?? organization?.themeColor ?? null;
+  const [storedTheme, setStoredTheme] = useState<string | null>(null);
+  useEffect(() => {
+    setStoredTheme(getPortalThemeColor() ?? null);
+  }, [organization, school]);
+  const effectiveTheme = themeColor ?? storedTheme;
+  const themeStyle = orgThemeStyle(effectiveTheme);
 
   // Apply the theme to :root as well — inline styles are limited to the wrapper;
   // this guarantees that every UI component (header, sidebar, cards, modals)
-  // uses the org color. Reverts to default on unmount.
+  // uses the org color. Never clear a stored theme on unmount.
   useEffect(() => {
-    applyPortalThemeToRoot(themeColor);
-    return () => clearPortalThemeFromRoot();
-  }, [themeColor]);
+    applyPortalThemeToRoot(effectiveTheme);
+    if (!effectiveTheme) return () => clearPortalThemeFromRoot();
+    return undefined;
+  }, [effectiveTheme]);
 
   const orgStatus = useAppSelector((s) => s.portalStatus.orgStatus);
   const schoolStatus = useAppSelector((s) => s.portalStatus.schoolStatus);

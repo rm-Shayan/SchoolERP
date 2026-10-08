@@ -13,12 +13,13 @@ interface Props {
   title: string;
   subtitle: string;
   avatarUrl?: string | null;
+  orgLogoUrl?: string | null;
   canEditPhoto?: boolean;
   onMenuClick?: () => void;
   onLogout: () => void;
 }
 
-export default function PortalTopBar({ title, subtitle, avatarUrl, canEditPhoto, onMenuClick, onLogout }: Props) {
+export default function PortalTopBar({ title, subtitle, avatarUrl, orgLogoUrl, canEditPhoto, onMenuClick, onLogout }: Props) {
   const [open, setOpen] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -30,6 +31,8 @@ export default function PortalTopBar({ title, subtitle, avatarUrl, canEditPhoto,
 
   const avatar = avatarUrl && !imgFailed ? (
     <img src={avatarUrl} alt={title} onError={() => setImgFailed(true)} className="h-8 w-8 rounded-full object-cover ring-2" style={{ boxShadow: `0 0 0 2px ${color}55` }} />
+  ) : orgLogoUrl ? (
+    <img src={orgLogoUrl} alt={title} className="h-8 w-8 rounded-full object-contain bg-white ring-2" style={{ boxShadow: `0 0 0 2px ${color}55` }} />
   ) : (
     <AvatarPlaceholder className="h-8 w-8 rounded-full" />
   );

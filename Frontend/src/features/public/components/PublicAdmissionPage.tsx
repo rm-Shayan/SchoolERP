@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -32,6 +32,12 @@ export default function PublicAdmissionPage() {
     };
   }, [slug]);
 
+  useEffect(() => {
+    if (!org?.themeColor) return;
+    applyPortalThemeToRoot(org.themeColor);
+    return () => clearPortalThemeFromRoot();
+  }, [org?.themeColor]);
+
   if (error) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 text-center">
@@ -51,12 +57,7 @@ export default function PublicAdmissionPage() {
     );
   }
 
-  const theme = org.themeColor || '#6366f1';
-
-  useEffect(() => {
-    applyPortalThemeToRoot(org.themeColor);
-    return () => clearPortalThemeFromRoot();
-  }, [org.themeColor]);
+  const theme = org.themeColor || '#7c3aed';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -77,7 +78,7 @@ export default function PublicAdmissionPage() {
               href={`/o/${org.slug}`}
               className="shrink-0 rounded-full border border-white/40 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
             >
-              ← Back to site
+              â† Back to site
             </Link>
           </div>
         </div>
@@ -108,7 +109,7 @@ function SuccessScreen({ onNew, theme }: { onNew: () => void; theme: string }) {
       <h2 className="mt-5 text-2xl font-black text-gray-900">Application received!</h2>
       <p className="mt-2 text-sm text-gray-500">
         The school office will contact you soon regarding the admission process. Your inquiry
-        has been received — the school will reach out to you shortly.
+        has been received â€” the school will reach out to you shortly.
       </p>
       <button
         onClick={onNew}

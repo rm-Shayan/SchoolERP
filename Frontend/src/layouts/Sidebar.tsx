@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAppSelector } from '@/store/hooks';
 import { sidebarColors } from '@/lib/theme';
+import { platformLogoFallback } from '@/lib/utils/logo';
 import { isNavGroup, type SidebarNavItem } from '@/config/navLinks';
 import SidebarNav from './parts/SidebarNav';
 
@@ -19,7 +20,9 @@ interface SidebarProps {
 export default function Sidebar({ links, collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const { organization, school } = useAppSelector((s) => s.auth);
-  const logo = school?.logoUrl || organization?.logoUrl || '/screen.png';
+  // Sidebar top box = ORGANIZATION image first (per branding policy);
+  // branch logo sirf fallback hai, phir platform logo.
+  const logo = organization?.logoUrl || school?.logoUrl || '/screen.png';
   const title = organization?.name || school?.name || 'School ERP';
   const subtitle = school?.name || undefined;
 
@@ -78,7 +81,7 @@ export default function Sidebar({ links, collapsed, onToggle, mobileOpen, onMobi
           'flex items-center gap-3 border-b transition-all',
           collapsed ? 'justify-center px-2 py-4' : 'px-5 py-5'
         )} style={{ borderColor: colors.border }}>
-          <img src={logo} alt={title} className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-contain shrink-0 bg-white/95" />
+          <img src={logo} alt={title} onError={platformLogoFallback} className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-contain shrink-0 bg-white/95" />
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <h1 className="text-[11px] sm:text-xs sm:text-[13px] font-semibold text-white truncate leading-tight">{title}</h1>

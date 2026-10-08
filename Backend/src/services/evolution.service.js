@@ -183,8 +183,13 @@ const evolutionService = {
       instanceName,
       timeoutMs: 25000,
     });
+    let qr = data?.base64 || data?.qrcode?.base64 || data?.qrcode || null;
+    if (qr && typeof qr === "string" && !qr.startsWith("data:image")) {
+      // Evolution kabhi raw base64 deta hai — frontend img ke liye data URI chahiye
+      qr = `data:image/png;base64,${qr.replace(/^data:.*;base64,/, "")}`;
+    }
     return {
-      qr: data?.base64 || data?.qrcode?.base64 || data?.qrcode || null,
+      qr,
       pairingCode: data?.pairingCode || data?.code || null,
       raw: data,
     };

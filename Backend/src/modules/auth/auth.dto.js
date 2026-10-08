@@ -106,7 +106,7 @@ export class ParentPortalDTO {
         status: s.status || "ACTIVE",
         isActive: s.status === "ACTIVE",
         school: s.school
-          ? { id: s.school.id, name: s.school.name, slug: s.school.organization?.slug || null, themeColor: s.school.organization?.themeColor || null, logoUrl: s.school.organization?.logoUrl || null }
+          ? { id: s.school.id, name: s.school.name, slug: s.school.organization?.slug || null, themeColor: s.school.organization?.themeColor || null, logoUrl: s.school.organization?.logoUrl || null, branchLogoUrl: s.school.logoUrl || null }
           : null,
         class: s.section?.class
           ? { id: s.section.class.id, name: s.section.class.name }
@@ -140,7 +140,7 @@ export class StudentPortalDTO {
     this.status = student.status || "ACTIVE";
     this.isActive = student.status === "ACTIVE";
     this.school = student.school
-      ? { id: student.school.id, name: student.school.name, slug: student.school.organization?.slug || null, themeColor: student.school.organization?.themeColor || null, logoUrl: student.school.organization?.logoUrl || null }
+      ? { id: student.school.id, name: student.school.name, slug: student.school.organization?.slug || null, themeColor: student.school.organization?.themeColor || null, logoUrl: student.school.organization?.logoUrl || null, branchLogoUrl: student.school.logoUrl || null }
       : null;
     this.class = student.section?.class
       ? { id: student.section.class.id, name: student.section.class.name }

@@ -19,6 +19,14 @@ export function usePortalTheme() {
     return () => clearPortalThemeFromRoot();
   }, [orgTheme]);
 
+  // Live refresh: org admin changes themeColor in settings → parent/student
+  // portals re-read localStorage and re-apply without a full reload.
+  useEffect(() => {
+    const sync = () => setOrgTheme(getOrgThemeColor());
+    window.addEventListener('org-theme-changed', sync);
+    return () => window.removeEventListener('org-theme-changed', sync);
+  }, []);
+
   const pageBg = useMemo(
     () => ({
       backgroundColor: '#f8fafc',

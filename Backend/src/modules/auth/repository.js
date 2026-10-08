@@ -589,7 +589,7 @@ class AuthRepository {
         students: {
           include: {
             section: { include: { class: true } },
-            school: { select: { id: true, name: true, organization: { select: { themeColor: true, logoUrl: true, slug: true } } } },
+            school: { select: { id: true, name: true, logoUrl: true, organization: { select: { themeColor: true, logoUrl: true, slug: true } } } },
           },
         },
       },
@@ -664,6 +664,7 @@ class AuthRepository {
             id: true,
             name: true,
             status: true,
+            logoUrl: true,
             organizationId: true,
             organization: { select: { id: true, status: true, themeColor: true, logoUrl: true, slug: true } },
           },
