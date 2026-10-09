@@ -25,16 +25,13 @@ RUN groupadd -r appuser && useradd -r -g appuser -d /app -s /sbin/nologin appuse
 COPY Backend/package.json Backend/package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
-COPY --from=build /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
-COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
+# Prisma 7 ships a WASM query compiler (query_compiler_fast_bg.wasm) — no Rust
+# engine binaries and no CLI are needed at runtime. Copy only the generated
+# client from the build stage instead of the whole @prisma tree, which drags in
+# studio-core + dev + pglite + react-dom (~80 MB of dev-only code).
+COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 
 COPY Backend/prisma ./prisma
-COPY Backend/prisma.config.ts ./
-# prisma.config.ts → src/config/env.js import karta hai (env file split)
-COPY Backend/src/config ./src/config
-ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
-RUN npx prisma generate
-
 COPY Backend/src ./src
 
 RUN mkdir -p logs uploads && chown -R appuser:appuser /app
