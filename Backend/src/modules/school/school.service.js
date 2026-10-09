@@ -18,6 +18,7 @@ import { resolveBranchLogoReplace } from "./logoSync.js";
 import auditService from "../audit/audit.service.js";
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from "../audit/actions.js";
 import { buildExcelBuffer } from "../../lib/utils/excelExport.js";
+import { cacheBustOrgPublicByOrgId } from "../../lib/utils/cache.js";
 
 
 
@@ -27,7 +28,7 @@ const OVERVIEW_CACHE_KEY = "superadmin:overview";
 /**
  * Best-effort Redis cache invalidation (never blocks the request on failure).
  */
-async function bustSchoolCaches(keys) {
+async function bustSchoolCaches(keys, organizationId) {
   try {
     // orgs:all holds _count.branches — must refresh when a school is
     // created/updated/deleted or the org list shows stale branch counts.
@@ -36,6 +37,8 @@ async function bustSchoolCaches(keys) {
   } catch (err) {
     // Non-blocking
   }
+  // Branch changes also invalidate the public org landing/admission cache.
+  if (organizationId) await cacheBustOrgPublicByOrgId(organizationId);
 }
 
 class SchoolService {
@@ -157,7 +160,7 @@ class SchoolService {
       phone,
     });
 
-    await bustSchoolCaches([`schools:org:${organizationId}`]);
+    await bustSchoolCaches([`schools:org:${organizationId}`], organizationId);
     try {
       await redis.del(OVERVIEW_CACHE_KEY);
     } catch (err) {
@@ -407,7 +410,7 @@ class SchoolService {
    * Invalidate caches that reflect a branch's admin assignment.
    */
   async _bustAdminCaches(schoolId, organizationId) {
-    await bustSchoolCaches([`school:${schoolId}`, `schools:org:${organizationId}`]);
+    await bustSchoolCaches([`school:${schoolId}`, `schools:org:${organizationId}`], organizationId);
     try {
       await redis.del(OVERVIEW_CACHE_KEY);
     } catch (err) {
@@ -530,7 +533,7 @@ class SchoolService {
       `schools:org:${existing.organizationId}`,
       // `school:${id}` embeds the org's logoUrl — refresh it when synced
       ...(orgImageSync ? [`org:${existing.organizationId}`] : []),
-    ]);
+    ], existing.organizationId);
     try {
       await redis.del(OVERVIEW_CACHE_KEY);
     } catch (err) {
@@ -750,7 +753,7 @@ class SchoolService {
     }
 
     // Comprehensive cache clearing
-    await bustSchoolCaches([`school:${id}`, `schools:org:${existing.organizationId}`]);
+    await bustSchoolCaches([`school:${id}`, `schools:org:${existing.organizationId}`], existing.organizationId);
     try {
       await redis.del(OVERVIEW_CACHE_KEY);
       await redis.del(`org:${existing.organizationId}`);

@@ -19,7 +19,7 @@ import portalNotificationService from "../notification/notification.portalServic
 import { encryptSecret } from "../../lib/utils/secretBox.js";
 import { buildExcelBuffer } from "../../lib/utils/excelExport.js";
 import prisma from "../../config/db.js";
-import { cacheGet, cacheSet } from "../../lib/utils/cache.js";
+import { cacheGet, cacheSet, cacheDel, cacheBustOrgCaches, cacheBustOrgPublicByOrgId } from "../../lib/utils/cache.js";
 import { invalidateUserCache } from "../../middlewares/auth.middleware.js";
 
 const ORG_CACHE_TTL = 3600; // 1 hour
@@ -267,7 +267,7 @@ class OrganizationService {
     );
 
     try {
-      await redis.del(["orgs:all", "superadmin:overview", "schools:all", `schools:org:${org.id}`]);
+      await cacheBustOrgCaches({ organizationId: org.id, orgSlug: org.slug });
     } catch (_) {}
 
     portalNotificationService.create({
@@ -541,9 +541,7 @@ class OrganizationService {
     }
 
     try {
-      await redis.del("orgs:all");
-      await redis.del(`org:${id}`);
-      await redis.del("superadmin:overview");
+      await cacheBustOrgCaches({ organizationId: id, orgSlug: updated?.slug });
     } catch (err) {
       // Ignore
     }
@@ -696,13 +694,8 @@ class OrganizationService {
 
     // Comprehensive Redis cache clearing - remove all org-related caches
     try {
-      await redis.del([
-        "orgs:all",
-        `org:${id}`,
-        "superadmin:overview",
-        `schools:org:${id}`,
-        "schools:all",
-      ]);
+      await cacheBustOrgPublicByOrgId(id);
+      await cacheDel("schools:all");
     } catch (err) {
       // Non-blocking cache clearing
     }
@@ -816,7 +809,7 @@ class OrganizationService {
       await organizationRepository.update(user.organizationId, { status: "ACTIVE" });
 
       try {
-        await redis.del(["orgs:all", `org:${user.organizationId}`, "superadmin:overview", `schools:org:${user.organizationId}`]);
+        await cacheBustOrgCaches({ organizationId: user.organizationId, orgSlug: org?.slug });
       } catch (err) {
         // Non-blocking
       }
@@ -972,10 +965,16 @@ class OrganizationService {
    * DB se dynamic bane (ORG_ADMIN_FLOW.md §2).
    */
   async getPublicBySlug(slug) {
+    // Public branding cache (cache-aside, 2 min): lazy rebuild on miss, one
+    // central bust on any org/branch write — no dual writes anywhere.
+    const cacheKey = `public:org:${slug}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) return cached;
+
     const org = await organizationRepository.findBySlugWithBranches(slug);
     if (!org) throw ApiError.notFoundError("Organization not found");
 
-    return {
+    const data = {
       id: org.id,
       name: org.name,
       code: org.code,
@@ -991,6 +990,8 @@ class OrganizationService {
       youtubeUrl: org.youtubeUrl || null,
       branches: org.branches ?? [],
     };
+    await cacheSet(cacheKey, data, 120);
+    return data;
   }
 
   /**
