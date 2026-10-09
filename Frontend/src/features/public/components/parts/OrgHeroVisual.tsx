@@ -36,7 +36,7 @@ export default function OrgHeroVisual({ org, theme }: OrgHeroVisualProps) {
           <div className="px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="rounded-2xl border border-gray-100 p-1.5 shadow-sm">
-                <Logo src={org.logoUrl} name={org.name} size="sm" />
+                <Logo src={org.logoUrl} name={org.name} size="md" />
               </div>
               <div>
                 <p className="text-sm font-black">{org.name}</p>

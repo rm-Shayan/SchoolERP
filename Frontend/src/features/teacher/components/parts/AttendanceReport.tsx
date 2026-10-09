@@ -58,7 +58,7 @@ export function openAttendanceReport(data: ReportData) {
   @media print{body{padding:20px}.no-print{display:none}}
 </style></head><body>
 <div class="no-print" style="text-align:right;margin-bottom:12px">
-  <button onclick="window.print()" style="padding:8px 16px;background:${getOrgThemeColor() || '#6366f1'};color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px">🖨️ Print / Save as PDF</button>
+  <button onclick="window.print()" style="padding:8px 16px;background:${getOrgThemeColor() || '#7c3aed'};color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px">🖨️ Print / Save as PDF</button>
 </div>
 <div class="header">
   <div><h1>Monthly Attendance Report</h1><p>${data.staffName} — ${monthName} ${data.year}</p></div>

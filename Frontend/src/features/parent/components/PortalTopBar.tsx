@@ -25,7 +25,7 @@ export default function PortalTopBar({ title, subtitle, avatarUrl, orgLogoUrl, c
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const themeColor = getOrgThemeColor() || null;
-  const color = themeColor || '#6366f1';
+  const color = themeColor || '#7c3aed';
   const colors = sidebarColors(themeColor);
   const bannerBg = `linear-gradient(135deg, ${colors.bg} 0%, ${colors.bgHover} 55%, ${colors.bg} 100%)`;
 

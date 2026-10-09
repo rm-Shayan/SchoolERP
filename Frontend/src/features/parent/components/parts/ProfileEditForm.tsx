@@ -13,7 +13,7 @@ interface ProfileEditFormProps {
 }
 
 export default function ProfileEditForm({ parent, onSaved }: ProfileEditFormProps) {
-  const color = getOrgThemeColor() || '#6366f1';
+  const color = getOrgThemeColor() || '#7c3aed';
   const gradient = `linear-gradient(135deg, ${color}, ${color}cc)`;
 
   const { values, errors, isSubmitting, handleChange, handleBlur, handleSubmit } = useForm({

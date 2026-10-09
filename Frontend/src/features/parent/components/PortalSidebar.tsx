@@ -28,7 +28,7 @@ export default function PortalSidebar({
 }: SidebarProps) {
   const theme = themeColor || getOrgThemeColor();
   const colors = sidebarColors(theme);
-  const brand = theme || '#6366f1';
+  const brand = theme || '#7c3aed';
   const [openGroups, setOpenGroups] = useState<Set<number>>(new Set());
   const [logoFailed, setLogoFailed] = useState(false);
 

@@ -49,7 +49,7 @@ function PortalNotificationItem({ n, onRead, onDelete, onNavigate }: {
 }
 
 export default function PortalNotificationBell() {
-  const color = getOrgThemeColor() || '#6366f1';
+  const color = getOrgThemeColor() || '#7c3aed';
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<PortalNotification[]>([]);
   const [unread, setUnread] = useState(0);

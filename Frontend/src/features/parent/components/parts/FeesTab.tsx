@@ -111,10 +111,10 @@ function FeeSummaryCards({ summary }: { summary: PortalFeeSummary }) {
   const theme = getOrgThemeColor();
   const outstanding = Number(summary.outstanding);
   const cards = [
-    { label: 'Total Charged', value: formatCurrency(Number(summary.totalCharged)), color: theme || '#6366f1' },
+    { label: 'Total Charged', value: formatCurrency(Number(summary.totalCharged)), color: theme || '#7c3aed' },
     { label: 'Total Paid', value: formatCurrency(Number(summary.totalPaid)), color: '#22c55e' },
     { label: 'Outstanding', value: formatCurrency(outstanding), color: outstanding > 0 ? '#ef4444' : '#22c55e' },
-    { label: 'Records', value: String(summary.recordCount), color: theme || '#6366f1' },
+    { label: 'Records', value: String(summary.recordCount), color: theme || '#7c3aed' },
   ];
 
   return (

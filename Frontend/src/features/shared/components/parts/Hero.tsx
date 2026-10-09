@@ -11,7 +11,7 @@ export default function Hero() {
       <div className="pointer-events-none absolute left-1/2 top-1/3 h-[300px] w-[300px] -translate-x-1/2 rounded-full bg-secondary-100/40 blur-[100px]" />
 
       {/* Grid pattern */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.035]" style={{ backgroundImage: 'radial-gradient(circle, #4c1d95 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.035]" style={{ backgroundImage: 'radial-gradient(circle, var(--color-primary-900) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
 
       <div className="relative mx-auto grid max-w-7xl gap-16 px-4 py-20 sm:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:px-8 lg:py-28">
         <div className="flex flex-col justify-center">

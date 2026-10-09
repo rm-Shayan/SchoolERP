@@ -26,7 +26,7 @@ interface LinkedChildrenCardProps {
 /** Linked Children — each row is clickable: clicking a child makes them ACTIVE
  *  (same as the child switcher). */
 export default function LinkedChildrenCard({ children: kids, activeChildId, onChildChange }: LinkedChildrenCardProps) {
-  const color = getOrgThemeColor() || '#6366f1';
+  const color = getOrgThemeColor() || '#7c3aed';
   if (kids.length === 0) return null;
 
   return (

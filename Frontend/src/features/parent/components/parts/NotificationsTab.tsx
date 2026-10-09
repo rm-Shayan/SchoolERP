@@ -20,7 +20,7 @@ const CAT_COLORS: Record<string, string> = {
 
 export default function NotificationsTab() {
   const theme = getOrgThemeColor();
-  const color = theme || '#6366f1';
+  const color = theme || '#7c3aed';
   const [items, setItems] = useState<PortalNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');

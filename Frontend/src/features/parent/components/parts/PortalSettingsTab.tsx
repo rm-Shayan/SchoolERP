@@ -26,7 +26,7 @@ function readProfile<T>(key: string): T | null {
 }
 
 export default function PortalSettingsTab({ activeChildId, onChildChange }: PortalSettingsTabProps) {
-  const color = getOrgThemeColor() || '#6366f1';
+  const color = getOrgThemeColor() || '#7c3aed';
   const [parent, setParent] = useState<ParentProfile | null>(null);
   const [student, setStudent] = useState<PortalStudentProfile | null>(null);
   const [studentMode, setStudentMode] = useState(false);

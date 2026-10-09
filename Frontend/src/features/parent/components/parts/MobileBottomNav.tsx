@@ -13,7 +13,7 @@ const PRIMARY = ['overview', 'attendance', 'fees', 'homework'] as PortalTab[];
 
 export default function MobileBottomNav({ active, onChange, onOpenMore }: Props) {
   const theme = getOrgThemeColor();
-  const color = theme || '#6366f1';
+  const color = theme || '#7c3aed';
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-100 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">        <div className="mx-auto flex max-w-xl items-stretch justify-around px-1">
