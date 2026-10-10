@@ -19,6 +19,14 @@
  */
 
 import "./env.js";
-import initMonitoring from "./monitoring.js";
+import { sentryEnabled } from "./sentryEnabled.js";
 
-initMonitoring();
+// Sentry is memory-heavy (~30-40MB at import) and the 256MB Suga tier was OOM
+// killing the container on boot. When disabled, NEVER import the monitoring
+// module — otherwise @sentry/node loads anyway and we gain nothing.
+if (sentryEnabled) {
+  const { default: initMonitoring } = await import("./monitoring.js");
+  initMonitoring();
+} else {
+  console.log("[Sentry] disabled — instrumentation skipped");
+}

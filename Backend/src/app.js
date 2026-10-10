@@ -2,7 +2,6 @@ import express from "express";
 import morgan from "morgan";
 import cors from "cors";
 import compression from "compression";
-import * as Sentry from "@sentry/node";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -23,6 +22,10 @@ import "./services/storage.service.js";
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === "production";
+// Sentry is loaded ONLY when enabled (SENTRY_DISABLED!=1 + DSN set). On the
+// 256MB Suga tier it stays out of the import graph so the container doesn't
+// OOM at boot. See config/sentryEnabled.js.
+const sentryEnabled = (await import("./config/sentryEnabled.js")).sentryEnabled;
 
 // Sentry.init() yahan NAHI ho sakta — express line 1 par already import ho
 // chuka hota hai, to uska instrumentation miss ho jata tha. Ab woh
@@ -142,9 +145,16 @@ app.get("/metrics", metricsHandler);
 
 // Sentry error middleware must be registered after all controllers,
 // but before any custom error-handling middleware.
-Sentry.setupExpressErrorHandler(app);
+if (sentryEnabled) {
+  const Sentry = await import("@sentry/node");
+  Sentry.setupExpressErrorHandler(app);
+}
 
-app.get("/debug-sentry", (_req, _res) => {
+app.get("/debug-sentry", async (_req, res) => {
+  if (!sentryEnabled) {
+    return res.status(503).json({ success: false, message: "Sentry is disabled" });
+  }
+  const Sentry = await import("@sentry/node");
   Sentry.logger.info("User triggered test error", {
     action: "test_error_endpoint",
   });

@@ -1,4 +1,4 @@
-# ── Stage 1: install deps + generate Prisma client ──────────────────
+# ?????? Stage 1: install deps + generate Prisma client ??????????????????????????????????????????????????????
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
 
@@ -10,12 +10,12 @@ RUN npm ci --ignore-scripts && npm cache clean --force
 
 COPY Backend/prisma ./prisma
 COPY Backend/prisma.config.ts ./
-# prisma.config.ts → src/config/env.js import karta hai (env file split)
+# prisma.config.ts ??? src/config/env.js import karta hai (env file split)
 COPY Backend/src/config ./src/config
 ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
 RUN npx prisma generate
 
-# ── Stage 2: production image ───────────────────────────────────────
+# ?????? Stage 2: production image ?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 FROM node:22-bookworm-slim AS production
 WORKDIR /app
 
@@ -25,16 +25,13 @@ RUN groupadd -r appuser && useradd -r -g appuser -d /app -s /sbin/nologin appuse
 COPY Backend/package.json Backend/package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
-COPY --from=build /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
-COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
+# Prisma 7 ships a WASM query compiler (query_compiler_fast_bg.wasm) ??? no Rust
+# engine binaries and no CLI are needed at runtime. Copy only the generated
+# client from the build stage instead of the whole @prisma tree, which drags in
+# studio-core + dev + pglite + react-dom (~80 MB of dev-only code).
+COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 
 COPY Backend/prisma ./prisma
-COPY Backend/prisma.config.ts ./
-# prisma.config.ts → src/config/env.js import karta hai (env file split)
-COPY Backend/src/config ./src/config
-ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
-RUN npx prisma generate
-
 COPY Backend/src ./src
 
 RUN mkdir -p logs uploads && chown -R appuser:appuser /app
@@ -42,11 +39,14 @@ USER appuser
 
 ENV NODE_ENV=production
 ENV PORT=5000
-# suga.run 512MB memory limit me V8 ko khud GC karne pe majboor karo — OS kill
+# suga.run 512MB memory limit me V8 ko khud GC karne pe majboor karo ??? OS kill
 # na kare. Import workers disable karne ke liye DISABLE_IMPORT_WORKERS=1 bhi daal sakte ho.
-# Suga free tier ki memory limit sach me 256 MiB hai — V8 ko chhota heap do.
+# Suga free tier ki memory limit sach me 256 MiB hai ??? V8 ko chhota heap do.
 ENV NODE_OPTIONS=--max-old-space-size=120
 ENV DISABLE_IMPORT_WORKERS=1
+# Sentry (@sentry/node ~30-40MB instrumented code) load hone se 256MB tier OOM
+# karta tha. SENTRY_DISABLED=1 → module import graph me kabhi nahi aata.
+ENV SENTRY_DISABLED=1
 # Disk-growth safeguards: suga 512MB container me logs/db junk explode na ho.
 ENV LOG_TO_FILE=false
 ENV LOG_FILE_RETENTION_DAYS=3

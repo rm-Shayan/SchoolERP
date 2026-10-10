@@ -145,12 +145,23 @@ const start = async () => {
     console.log(`  ⚙️  BullMQ workers:      disabled (DISABLE_IMPORT_WORKERS=1)`);
   }
 
-  await dbReady;
-  await storageCacheReady;
+  // Readiness = HTTP + schedulers are up. DB/Redis warmups continue in the
+  // background — on the 256MB Suga tier waiting for the first Prisma round-trip
+  // loaded the WASM compiler inside the boot window and raised peak memory past
+  // the limit (container OOM-killed → crash loop).
   markReady();
   console.log(
     `  🟢 Readiness probe:    READY — this replica can accept traffic\n`,
   );
+
+  await dbReady;
+  await storageCacheReady;
+  console.log(`  ⚙️  Warmups finished — DB + storage cache populated`);
 };
 
-start();
+start().catch((err) => {
+  // Loud, visible failure: if anything in boot throws, print the real error so
+  // the Suga logs show exactly why the container died instead of a silent exit.
+  console.error("❌ FATAL BOOT ERROR:", err);
+  process.exit(1);
+});

@@ -1,5 +1,5 @@
-import * as Sentry from "@sentry/node";
 import Logger from "../lib/utils/logger.js";
+import { sentryEnabled } from "../config/sentryEnabled.js";
 
 const appLogger = new Logger("error-handler");
 
@@ -32,8 +32,17 @@ const logRequestError = (req, statusCode, message) => {
   appLogger.logger.error(`${statusCode} - ${message} - ${req.originalUrl} - ${req.method} - IP: ${req.ip}`);
 };
 
+// Lazy Sentry: import only on the first handled error, and only if enabled.
+// Keeps @sentry/node out of the boot import graph entirely.
+let sentryImportPromise = null;
+const captureToSentry = (err) => {
+  if (!sentryEnabled) return;
+  sentryImportPromise ??= import("@sentry/node").catch(() => null);
+  void sentryImportPromise.then((Sentry) => Sentry?.captureException?.(err));
+};
+
 export const errorHandler = (err, req, res, next) => {
-  Sentry.captureException(err);
+  captureToSentry(err);
 
   if (isBodyParseError(err)) {
     logRequestError(req, 400, "Invalid JSON body");
