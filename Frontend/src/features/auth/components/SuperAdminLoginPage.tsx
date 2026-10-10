@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -40,7 +40,7 @@ export default function SuperAdminLoginPage() {
       <AuthLayout
         variant="superadmin"
         brandIcon={
-          <img src="/screen.png" alt="SchoolERP" className="h-full w-full object-contain bg-transparent" />
+          <img src="/screen.png" alt="SchoolERP" className="h-full w-full object-cover bg-transparent" />
         }
         brandLabel="School Management System"
         brandSub="Admin Console"

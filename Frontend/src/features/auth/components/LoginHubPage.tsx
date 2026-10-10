@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -55,7 +55,7 @@ export default function LoginHubPage({ orgSlug, code, initialBranding }: LoginHu
         branding?.logoUrl ? (
           <BrandVisual name={branding.name} logoUrl={branding.logoUrl} />
         ) : (
-          <img src="/screen.png" alt="SchoolERP" className="h-full w-full object-contain" />
+          <img src="/screen.png" alt="SchoolERP" className="h-full w-full object-cover" />
         )
       }
       brandLabel={label}

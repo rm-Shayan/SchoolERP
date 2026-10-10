@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -93,7 +93,7 @@ export default function EntryRouter() {
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center px-6 py-12">
         <Link href="/" className="mb-10 flex items-center gap-3">
-          <img src="/screen.png" alt="SchoolERP" className="h-12 w-12 rounded-2xl object-contain shadow-lg shadow-primary-500/20 border border-primary-100/60 bg-white" />
+          <img src="/screen.png" alt="SchoolERP" className="h-12 w-12 rounded-2xl object-cover shadow-lg shadow-primary-500/20 border border-primary-100/60 bg-white" />
           <div className="text-left">
             <p className="text-lg font-bold tracking-tight text-slate-900">SchoolERP</p>
             <p className="text-[10px] uppercase tracking-[0.24em] text-slate-500">School Management</p>

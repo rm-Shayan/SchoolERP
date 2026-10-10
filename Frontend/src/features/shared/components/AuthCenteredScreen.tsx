@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import type { ReactNode } from 'react';
 import type { AuthVariant } from './AuthLayout';
@@ -25,7 +25,7 @@ export default function AuthCenteredScreen({
 
       <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          <div className="flex h-24 w-24 items-center justify-center drop-shadow-[0_10px_24px_rgba(15,23,42,0.22)] [&_img]:h-full [&_img]:w-full [&_img]:object-contain">
+          <div className="flex h-24 w-24 items-center justify-center drop-shadow-[0_10px_24px_rgba(15,23,42,0.22)] [&_img]:h-full [&_img]:w-full [&_img]:object-cover">
             {brandIcon}
           </div>
           <div>

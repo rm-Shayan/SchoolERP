@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
@@ -81,7 +81,7 @@ export default function Sidebar({ links, collapsed, onToggle, mobileOpen, onMobi
           'flex items-center gap-3 border-b transition-all',
           collapsed ? 'justify-center px-2 py-4' : 'px-5 py-5'
         )} style={{ borderColor: colors.border }}>
-          <img src={logo} alt={title} onError={platformLogoFallback} className="h-11 w-11 sm:h-12 sm:w-12 rounded-lg object-contain shrink-0 bg-white/95" />
+          <img src={logo} alt={title} onError={platformLogoFallback} className="h-11 w-11 sm:h-12 sm:w-12 rounded-lg object-cover shrink-0 bg-white/95" />
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <h1 className="text-[11px] sm:text-xs sm:text-[13px] font-semibold text-white truncate leading-tight">{title}</h1>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -45,9 +45,9 @@ export default function ForgotPasswordPage({ branding }: ForgotPasswordPageProps
       themeColor={themeColor}
       brandIcon={
         branding?.logoUrl ? (
-          <img src={branding.logoUrl} alt={label} className="h-full w-full object-contain" />
+          <img src={branding.logoUrl} alt={label} className="h-full w-full object-cover" />
         ) : (
-          <img src="/screen.png" alt="SchoolERP" className="h-full w-full object-contain" />
+          <img src="/screen.png" alt="SchoolERP" className="h-full w-full object-cover" />
         )
       }
       brandLabel={label}

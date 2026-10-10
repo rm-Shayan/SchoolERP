@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -98,7 +98,7 @@ export default function SuperAdminSidebar({ links, collapsed, onToggle, mobileOp
       )}>
         <div className={cn('flex items-center gap-3 px-5 py-6 border-b border-white/[0.1]', compact && 'justify-center px-2')}>
           <div className="relative h-9 w-9 rounded-xl overflow-hidden ring-1 ring-white/20 shrink-0 shadow-lg bg-white">
-            <img src="/screen.png" alt="Logo" className="h-full w-full object-contain" />
+            <img src="/screen.png" alt="Logo" className="h-full w-full object-cover" />
           </div>
           {expanded && (
             <div className="min-w-0 flex-1">

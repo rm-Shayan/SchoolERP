@@ -16,8 +16,8 @@ export default function Logo({ src, name, size = 'md', className }: LogoProps) {
     lg: 'h-20 w-20 rounded-xl',
   };
 
-  // Sized box div + img h-full w-full => logo always fills 100% of its box
-  // (object-contain keeps it fully inside, never cropped).
+  // Sized box div + img h-full w-full object-cover => logo fills 100% of its
+  // box on BOTH axes (object-contain left letterbox gaps on non-square logos).
   return (
     <div
       className={cn(
@@ -30,7 +30,7 @@ export default function Logo({ src, name, size = 'md', className }: LogoProps) {
         src={src || '/screen.png'}
         alt={name}
         onError={platformLogoFallback}
-        className="h-full w-full object-contain"
+        className="h-full w-full object-cover"
       />
     </div>
   );

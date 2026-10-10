@@ -100,7 +100,7 @@ function MobileHeader({ branded, compact, brandIcon, brandSub, brandLabel, theme
     <motion.div initial={false} className={cn('text-center lg:hidden', compact ? 'mb-3' : 'mb-4 sm:mb-6')}>
       {branded ? (
         <>
-          <div className="mx-auto flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-gray-200">{brandIcon}</div>
+          <div className="mx-auto flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-gray-200 [&_img]:h-full [&_img]:w-full [&_img]:object-cover [&>div]:h-full [&>div]:w-full">{brandIcon}</div>
           <h2 className="mt-2 sm:mt-3 text-base sm:text-xl font-extrabold tracking-tight text-gray-900">{brandSub}</h2>
           <p className="mt-0.5 text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">{brandLabel}</p>
           {themeColor && <div className="mx-auto mt-2 sm:mt-3 h-1 w-8 sm:w-12 rounded-full" style={{ backgroundColor: themeColor }} />}

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -40,7 +40,7 @@ export default function SuperAdminNavbar({ title, onMenuClick }: SuperAdminNavba
             </button>
           )}
           {/* App logo — on mobile the sidebar is hidden, so the logo appears here */}
-          <img src="/screen.png" alt="SchoolERP" className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl object-contain bg-white ring-1 ring-primary-200/60 lg:hidden" />
+          <img src="/screen.png" alt="SchoolERP" className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl object-cover bg-white ring-1 ring-primary-200/60 lg:hidden" />
           <div className="min-w-0"><p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Workspace</p><h2 className="text-sm sm:text-base sm:text-lg font-bold text-slate-900 truncate tracking-tight">{title}</h2></div>
         </div>
 
