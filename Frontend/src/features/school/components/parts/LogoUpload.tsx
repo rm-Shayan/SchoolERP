@@ -37,7 +37,7 @@ export function LogoUpload({ logoUrl, name, uploading, fileRef, onChange, onRemo
         <input ref={fileRef} type="file" accept="image/*" className="hidden"
           onChange={(e) => { onChange(e.target.files?.[0] ?? null); e.target.value = ''; }} />
         {logoUrl ? (
-          <img src={logoUrl} alt="Logo" className="h-20 w-20 rounded-lg object-contain border border-gray-200 bg-white"
+          <img src={logoUrl} alt="Logo" className="h-24 w-24 rounded-lg object-contain border border-gray-200 bg-white"
             onError={platformLogoFallback} />
         ) : (
           <div className="h-16 w-16 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-lg">

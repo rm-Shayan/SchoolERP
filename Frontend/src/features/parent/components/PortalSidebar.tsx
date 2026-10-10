@@ -80,10 +80,10 @@ export default function PortalSidebar({
       <div className="flex items-center gap-3 border-b px-5 py-5" style={{ borderColor: colors.border }}>
         {orgLogoUrl && !logoFailed ? (
           <img src={orgLogoUrl} alt={orgName} onError={() => setLogoFailed(true)}
-            className="h-12 w-12 shrink-0 rounded-xl bg-white object-contain ring-1 ring-white/15" />
+            className="h-14 w-14 shrink-0 rounded-xl bg-white object-contain ring-1 ring-white/15" />
         ) : (
           <img src="/screen.png" alt="SchoolERP"
-            className="h-12 w-12 shrink-0 rounded-xl bg-white object-contain ring-1 ring-white/15" />
+            className="h-14 w-14 shrink-0 rounded-xl bg-white object-contain ring-1 ring-white/15" />
         )}
         <div className="min-w-0 flex-1">
           <h1 className="text-[13px] font-semibold text-white truncate leading-tight">{orgName || 'School Portal'}</h1>

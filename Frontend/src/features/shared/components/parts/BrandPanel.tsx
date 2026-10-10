@@ -57,7 +57,7 @@ export default function BrandPanel({
         <motion.div variants={item} className="mb-4 sm:mb-6">
           {branded ? (
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="flex h-12 w-12 sm:h-16 sm:w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black/10">
+              <div className="flex h-16 w-16 sm:h-20 sm:w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black/10">
                 {brandIcon}
               </div>
               <div className="min-w-0">
@@ -68,7 +68,7 @@ export default function BrandPanel({
               </div>
             </div>
           ) : (
-            <div className="flex justify-start [&_img]:w-24 sm:[&_img]:w-28 [&_img]:h-auto [&_img]:object-contain [&_img]:bg-transparent">{brandIcon}</div>
+            <div className="flex justify-start [&_img]:w-28 sm:[&_img]:w-36 [&_img]:h-auto [&_img]:object-contain [&_img]:bg-transparent">{brandIcon}</div>
           )}
         </motion.div>
 
