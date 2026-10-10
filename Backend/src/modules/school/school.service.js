@@ -651,7 +651,7 @@ class SchoolService {
     // naam mil hi nahi sakta. (Job sirf remote session ke liye chahiye.)
     let whatsappInstanceName = null;
     try {
-      const wa = await prisma.whatsAppInstance.findUnique({
+      const wa = await prisma.whatsAppInstance.findFirst({
         where: { schoolId: id },
         select: { instanceName: true },
       });

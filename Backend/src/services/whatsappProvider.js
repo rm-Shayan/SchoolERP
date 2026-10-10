@@ -20,7 +20,7 @@ export const instanceNameFor = (schoolId) => `sch-${schoolId}`;
 /** Branch ka integration mode — default BAILEYS jab keh rah-i na ho. */
 async function integrationFor(schoolId) {
   try {
-    const inst = await prisma.whatsAppInstance.findUnique({
+    const inst = await prisma.whatsAppInstance.findFirst({
       where: { schoolId },
       select: { integration: true },
     });

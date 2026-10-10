@@ -62,7 +62,7 @@ class WhatsAppInstanceService {
 
   async getStatus(requester, organizationId, schoolId) {
     await this._assertAccess(requester, organizationId, schoolId);
-    const row = await prisma.whatsAppInstance.findUnique({ where: { schoolId } });
+    const row = await prisma.whatsAppInstance.findFirst({ where: { schoolId } });
     return shape(row);
   }
 
@@ -84,7 +84,7 @@ class WhatsAppInstanceService {
     await this._assertAccess(requester, organizationId, schoolId);
     const instanceName = instanceNameFor(schoolId);
 
-    let row = await prisma.whatsAppInstance.findUnique({ where: { schoolId } });
+    let row = await prisma.whatsAppInstance.findFirst({ where: { schoolId } });
     if (!row) {
       row = await prisma.whatsAppInstance.create({
         data: { organizationId, schoolId, instanceName, integration: "WHATSAPP_BAILEYS", state: "DISCONNECTED" },
@@ -118,7 +118,7 @@ class WhatsAppInstanceService {
 
   async refreshQr(requester, organizationId, schoolId) {
     const row = await this._assertAccess(requester, organizationId, schoolId);
-    const existing = await prisma.whatsAppInstance.findUnique({ where: { schoolId } });
+    const existing = await prisma.whatsAppInstance.findFirst({ where: { schoolId } });
     if (!existing) {
       return this.connect(requester, organizationId, schoolId);
     }
@@ -138,7 +138,7 @@ class WhatsAppInstanceService {
   /** Evolution se live state pull karta hai; CONNECTED hone par number save + enabled. */
   async sync(requester, organizationId, schoolId) {
     await this._assertAccess(requester, organizationId, schoolId);
-    const row = await prisma.whatsAppInstance.findUnique({ where: { schoolId } });
+    const row = await prisma.whatsAppInstance.findFirst({ where: { schoolId } });
     if (!row) return null;
 
     let stateRes;
@@ -184,7 +184,7 @@ class WhatsAppInstanceService {
 
   async setEnabled(requester, organizationId, schoolId, isEnabled) {
     await this._assertAccess(requester, organizationId, schoolId);
-    const row = await prisma.whatsAppInstance.findUnique({ where: { schoolId } });
+    const row = await prisma.whatsAppInstance.findFirst({ where: { schoolId } });
     if (!row) throw ApiError.notFoundError("No WhatsApp instance for this branch");
     const updated = await prisma.whatsAppInstance.update({
       where: { id: row.id },
@@ -195,7 +195,7 @@ class WhatsAppInstanceService {
 
   async remove(requester, organizationId, schoolId) {
     await this._assertAccess(requester, organizationId, schoolId);
-    const row = await prisma.whatsAppInstance.findUnique({ where: { schoolId } });
+    const row = await prisma.whatsAppInstance.findFirst({ where: { schoolId } });
     if (!row) return true;
     await evolutionService.safeDeleteInstance(row.instanceName);
     await prisma.whatsAppInstance.delete({ where: { id: row.id } });
