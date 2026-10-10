@@ -9,7 +9,7 @@ interface LogoProps {
 }
 
 export default function Logo({ src, name, size = 'md', className }: LogoProps) {
-  const sizes = { xs: 'h-6 w-6 text-[9px]', sm: 'h-8 w-8 text-xs', md: 'h-10 w-10 text-sm', lg: 'h-14 w-14 text-lg' };
+  const sizes = { xs: 'h-8 w-8 text-[10px]', sm: 'h-10 w-10 text-xs', md: 'h-12 w-12 text-sm', lg: 'h-16 w-16 text-lg' };
 
   // Fallback chain: given logo → platform logo (broken URLs swap via onError).
   return (

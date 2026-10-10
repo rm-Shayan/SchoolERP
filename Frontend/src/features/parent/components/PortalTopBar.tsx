@@ -32,7 +32,7 @@ export default function PortalTopBar({ title, subtitle, avatarUrl, orgLogoUrl, c
   const avatar = avatarUrl && !imgFailed ? (
     <img src={avatarUrl} alt={title} onError={() => setImgFailed(true)} className="h-8 w-8 rounded-full object-cover ring-2" style={{ boxShadow: `0 0 0 2px ${color}55` }} />
   ) : orgLogoUrl ? (
-    <img src={orgLogoUrl} alt={title} className="h-8 w-8 rounded-full object-contain bg-white ring-2" style={{ boxShadow: `0 0 0 2px ${color}55` }} />
+    <img src={orgLogoUrl} alt={title} className="h-10 w-10 rounded-lg object-contain bg-white ring-2" style={{ boxShadow: `0 0 0 2px ${color}55` }} />
   ) : (
     <AvatarPlaceholder className="h-8 w-8 rounded-full" />
   );
