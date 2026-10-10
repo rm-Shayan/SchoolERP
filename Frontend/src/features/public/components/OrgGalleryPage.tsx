@@ -62,7 +62,7 @@ export default function OrgGalleryPage() {
             <div className="mt-16 flex flex-col items-center gap-4 rounded-[32px] border border-gray-100 bg-gray-50 p-10 text-center sm:p-14">
               <div className="flex items-center gap-3">
                 <div className="rounded-2xl bg-white shadow-sm">
-                  <Logo src={org.logoUrl} name={org.name} size="md" />
+                  <Logo src={org.logoUrl} name={org.name} size="lg" />
                 </div>
                 <p className="text-lg font-bold text-gray-900">{org.name}</p>
               </div>

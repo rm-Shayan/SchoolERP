@@ -68,7 +68,7 @@ export default function PublicAdmissionPage() {
         <div className="max-w-3xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
-              <Logo src={org.logoUrl} name={org.name} size="md" />
+              <Logo src={org.logoUrl} name={org.name} size="lg" />
               <div className="min-w-0">
                 <h1 className="text-lg font-black truncate">{org.name}</h1>
                 <p className="text-xs text-white/80">Admission Form</p>

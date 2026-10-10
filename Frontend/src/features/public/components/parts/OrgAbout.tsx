@@ -59,7 +59,7 @@ export default function OrgAbout({ org, theme }: OrgAboutProps) {
             </blockquote>
             <div className="mt-8 flex items-center gap-4 border-t border-gray-100 pt-7">
               <div className="rounded-2xl bg-gray-100 p-2">
-                <Logo src={org.logoUrl} name={org.name} size="md" />
+                <Logo src={org.logoUrl} name={org.name} size="lg" />
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900">{org.name}</p>
